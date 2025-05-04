@@ -15,7 +15,7 @@ class MeiliIndexerUseCase:
 
     async def execute(self, films: list[Film]) -> list[Film]:
 
-        self.indexer.add_documents(
+        self.indexer.upsert(
             docs=films,
             wait_for_completion=False,  # don't wait for the task to complete
         )

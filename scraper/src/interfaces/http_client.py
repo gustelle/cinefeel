@@ -1,7 +1,7 @@
 from typing import Literal, Protocol
 
 
-class ScrapingError(Exception):
+class HttpError(Exception):
 
     status_code: int
 

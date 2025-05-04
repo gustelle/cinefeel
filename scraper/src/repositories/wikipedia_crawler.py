@@ -2,7 +2,7 @@ import asyncio
 
 from entities.film import Film
 from interfaces.data_source import IDataSource
-from interfaces.http_client import IHttpClient, ScrapingError
+from interfaces.http_client import HttpError, IHttpClient
 from interfaces.parser import IParser
 from interfaces.task_runner import ITaskRunner
 from settings import Settings
@@ -58,7 +58,7 @@ class WikipediaCrawler(IDataSource):
                 response_type="text",
                 params=params,
             )
-        except ScrapingError as e:
+        except HttpError as e:
             if e.status_code == 404:
                 print(f"Page '{page_id}' not found")
             return None

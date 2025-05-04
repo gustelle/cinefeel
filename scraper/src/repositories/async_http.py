@@ -2,7 +2,7 @@ import asyncio
 from typing import Literal
 
 import aiohttp
-from interfaces.http_client import IHttpClient, ScrapingError
+from interfaces.http_client import HttpError, IHttpClient
 from settings import Settings
 from tenacity import (
     retry,
@@ -95,7 +95,7 @@ class AsyncHttpClient(IHttpClient):
                     print(
                         f"[{response.status}] Abandoning request to {endpoint} with params {params}"
                     )
-                    raise ScrapingError(
+                    raise HttpError(
                         f"Failed to fetch data from '{endpoint}': {e}",
                         status_code=response.status,
                     ) from e
@@ -105,7 +105,7 @@ class AsyncHttpClient(IHttpClient):
                     raise
 
             except aiohttp.ContentTypeError as e:
-                raise ScrapingError(
+                raise HttpError(
                     f"Failed to parse response from '{endpoint}': {e}",
                     status_code=e.status,
                 ) from e

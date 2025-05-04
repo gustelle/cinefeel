@@ -42,7 +42,7 @@ class MeiliIndexer(IDocumentIndexer):
 
         return self.index
 
-    def add_documents(
+    def upsert(
         self,
         docs: list[Film],
         wait_for_completion: bool = True,

@@ -8,11 +8,13 @@ class IDocumentIndexer:
     Interface for indexing documents.
     """
 
-    def add_documents(self, docs: Sequence[Film], *args, **kwargs) -> None:
+    def upsert(self, docs: Sequence[Film], *args, **kwargs) -> None:
         """
-        Index a document.
+        Index a document in the index in upsert mode.
+        This means that if the document already exists, it will be updated.
+        If it does not exist, it will be created.
 
         Args:
-            document (str): The document to index.
+            docs (Sequence[Film]): A sequence of `Film`s to index.
         """
         raise NotImplementedError("Subclasses should implement this method.")
