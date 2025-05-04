@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from entities.film import WikipediaFilm
+from entities.film import Film
 
 
 class IParser(Protocol):
@@ -8,7 +8,7 @@ class IParser(Protocol):
     Interface for a parser that extracts data from a given HTML content.
     """
 
-    def extract_list(self, html_content: str, *args, **kwargs) -> list[WikipediaFilm]:
+    def extract_list(self, html_content: str, *args, **kwargs) -> list[Film]:
         """
         Parses the given HTML content and returns a list of WikipediaFilm objects.
 
@@ -24,11 +24,11 @@ class IParser(Protocol):
 
     def extract_film_info(
         self,
-        film: WikipediaFilm,
+        film: Film,
         html_content: str,
         *args,
         **kwargs,
-    ) -> WikipediaFilm:
+    ) -> Film:
         """
         Parses the given HTML content and returns the extracted attributes as a dictionary.
 

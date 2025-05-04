@@ -1,6 +1,6 @@
 import asyncio
 
-from entities.film import WikipediaFilm
+from entities.film import Film
 from interfaces.data_source import IDataSource
 from interfaces.http_client import IHttpClient, ScrapingError
 from interfaces.parser import IParser
@@ -8,7 +8,7 @@ from interfaces.task_runner import ITaskRunner
 from settings import Settings
 
 
-class WikipediaRepository(IDataSource):
+class WikipediaCrawler(IDataSource):
     """
     this class is responsible for scraping Wikipedia pages and extracting film information.
 
@@ -63,7 +63,7 @@ class WikipediaRepository(IDataSource):
                 print(f"Page '{page_id}' not found")
             return None
 
-    async def get_films(self, page_list_id: str) -> list[WikipediaFilm]:
+    async def get_films(self, page_list_id: str) -> list[Film]:
         """
         Get the sections of a Wikipedia page.
 
@@ -81,7 +81,7 @@ class WikipediaRepository(IDataSource):
 
         # extract the list of films from the HTML
         try:
-            films: list[WikipediaFilm] = await self.async_task_runner.submit(
+            films: list[Film] = await self.async_task_runner.submit(
                 self.parser.extract_list,
                 html_content=html,
                 attrs={
@@ -110,7 +110,7 @@ class WikipediaRepository(IDataSource):
             # get the details from the page
             try:
 
-                film: WikipediaFilm = await self.async_task_runner.submit(
+                film: Film = await self.async_task_runner.submit(
                     self.parser.extract_film_info,
                     film=films[i],  # retrieve the film object !
                     html_content=details,
@@ -124,7 +124,7 @@ class WikipediaRepository(IDataSource):
 
         return final_films
 
-    async def crawl(self) -> list[WikipediaFilm]:
+    async def crawl(self) -> list[Film]:
         """
         Crawl the Wikipedia page and return a list of films.
 

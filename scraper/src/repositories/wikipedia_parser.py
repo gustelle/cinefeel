@@ -3,7 +3,7 @@ from io import StringIO
 import pandas as pd
 import polars as pl
 from bs4 import BeautifulSoup
-from entities.film import WikipediaFilm
+from entities.film import Film
 from interfaces.parser import IParser
 
 
@@ -17,7 +17,7 @@ class WikipediaFilmParser(IParser):
 
     def extract_list(
         self, html_content: str, attrs: dict, page_id: str | None = None
-    ) -> list[WikipediaFilm]:
+    ) -> list[Film]:
         """
         Parses the given HTML content and returns a list of WikipediaFilm objects.
         The HTML content is expected to contain a table with film titles and links.
@@ -48,7 +48,7 @@ class WikipediaFilmParser(IParser):
             WikipediaFilmParserError: _description_
         """
 
-        films: list[WikipediaFilm] = []
+        films: list[Film] = []
 
         try:
 
@@ -76,7 +76,7 @@ class WikipediaFilmParser(IParser):
                     continue
 
                 films.append(
-                    WikipediaFilm(
+                    Film(
                         title=series[i, 0][0],
                         work_of_art_id=linked_page_id,
                     )
@@ -89,9 +89,7 @@ class WikipediaFilmParser(IParser):
 
         return films
 
-    def extract_film_info(
-        self, film: WikipediaFilm, html_content: str
-    ) -> WikipediaFilm:
+    def extract_film_info(self, film: Film, html_content: str) -> Film:
         """
         Parses the given HTML content and returns the extracted attributes as a dictionary.
 
@@ -125,7 +123,7 @@ class WikipediaFilmParser(IParser):
                 print(f"Infobox not found for {film.work_of_art_id}")
                 return film
 
-            pd_df = pd.read_html(StringIO(infobox.decode()), extract_links="all")[0]
+            _ = pd.read_html(StringIO(infobox.decode()), extract_links="all")[0]
 
             # print(f"found details {pd_df}")
             # film.add_info(pd_df)

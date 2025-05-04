@@ -19,11 +19,14 @@ class IDataSource(Protocol):
         """
         self.scraper = scraper
 
-    def get_data(self, *args, **kwargs) -> dict:
+    def crawl(self, **kwargs) -> list:
         """
-        Get data from the data source.
+        Crawl the data source and return a list of items.
+
+        Args:
+            **kwargs: Additional arguments to pass to the crawl method.
 
         Returns:
-            dict: The data from the data source.
+            list: A list of items retrieved from the data source.
         """
         pass

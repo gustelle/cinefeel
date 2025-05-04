@@ -1,7 +1,7 @@
 import meilisearch
 import meilisearch.errors
 import meilisearch.index
-from entities.film import WikipediaFilm
+from entities.film import Film
 from interfaces.indexer import IDocumentIndexer
 from settings import Settings
 
@@ -44,7 +44,7 @@ class MeiliIndexer(IDocumentIndexer):
 
     def add_documents(
         self,
-        docs: list[WikipediaFilm],
+        docs: list[Film],
         wait_for_completion: bool = True,
     ):
         try:

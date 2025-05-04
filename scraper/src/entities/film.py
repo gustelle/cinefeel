@@ -2,13 +2,13 @@ import re
 from datetime import datetime
 from typing import Self
 
-from pydantic import BaseModel, Field, HttpUrl, model_validator
+from pydantic import Field, HttpUrl, model_validator
 
 from .person import Person
 from .woa import WorkOfArt
 
 
-class WikipediaFilm(WorkOfArt):
+class Film(WorkOfArt):
     """
     TODO: manage genres etc...
     """

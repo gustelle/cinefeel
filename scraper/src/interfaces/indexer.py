@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from entities.film import WikipediaFilm
+from entities.film import Film
 
 
 class IDocumentIndexer:
@@ -8,7 +8,7 @@ class IDocumentIndexer:
     Interface for indexing documents.
     """
 
-    def add_documents(self, docs: Sequence[WikipediaFilm], *args, **kwargs) -> None:
+    def add_documents(self, docs: Sequence[Film], *args, **kwargs) -> None:
         """
         Index a document.
 
