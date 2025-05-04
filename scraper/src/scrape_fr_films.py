@@ -1,58 +1,46 @@
-import asyncio
 import time
+
+import uvloop
+from repositories.dask_runner import DaskRunner
+from repositories.meili_indexer import MeiliIndexer
+from repositories.scraper_repository import AsyncHttpClient
+from repositories.wikipedia_parser import WikipediaFilmParser
+from repositories.wikipedia_repository import WikipediaRepository
+from settings import Settings
 
 
 async def main():
 
-    start_time = time.time()
+    settings = Settings()
 
-    # create a WikipediaRepository instance
-    from repositories.meili_indexer import MeiliIndexer
-    from repositories.scraper_repository import ConcurrentScraper
-    from repositories.wikipedia_parser import WikipediaFilmSheetParser
-    from repositories.wikipedia_repository import WikipediaRepository
+    scraper = AsyncHttpClient(settings=settings)
+    parser = WikipediaFilmParser()
+    indexer = MeiliIndexer(settings=settings)
+    task_runner = DaskRunner()
 
-    # create a scraper instance
-    scraper = ConcurrentScraper(max_connections=4)
-    parser = WikipediaFilmSheetParser()
-
-    # create a WikipediaRepository instance
-    wiki_repo = WikipediaRepository(scraper=scraper, parser=parser)
-
-    indexer = MeiliIndexer(
-        base_url="http://localhost:7700",
-        api_key="cinefeel",
-        index_name="films",
+    # init the wikipedia repository here to run in the main thread
+    # and avoid the "RuntimeError: Event loop is closed" error
+    wiki_repo = WikipediaRepository(
+        http_client=scraper,
+        parser=parser,
+        settings=settings,
+        task_runner=task_runner,
     )
 
+    start_time = time.time()
+
+    films = []
+
     # get the films for each year
-    async with wiki_repo:
-        tasks = []
-        for year in range(1906, 2024):
+    async with task_runner:
+        async with wiki_repo:
+            films = await wiki_repo.crawl()
 
-            tasks.append(
-                wiki_repo.get_films(
-                    page_list_id=f"Liste_de_films_français_sortis_en_{year}"
-                )
-            )
+            if not films:
+                print("No films found")
+                return
 
-        # wait for all tasks to complete
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        print(f"Completed {len(results)} tasks")
-
-        if any(isinstance(result, Exception) for result in results):
-            print("Some tasks failed")
-            for result in results:
-                if isinstance(result, Exception):
-                    print(f"Error: {result}")
-
-        films = [film for result in results for film in result]
-
-        if not films:
-            print("No films found")
-            return
-
+    if films is not None and len(films) > 0:
         indexer.add_documents(
             docs=films,
             wait_for_completion=False,  # don't wait for the task to complete
@@ -65,5 +53,6 @@ async def main():
 
 
 if __name__ == "__main__":
-    # run the script
-    asyncio.run(main())
+
+    # run the main function
+    uvloop.run(main())

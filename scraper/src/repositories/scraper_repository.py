@@ -1,7 +1,9 @@
+import asyncio
 from typing import Literal
 
 import aiohttp
-from interfaces.scraper import IScraper, ScrapingError
+from interfaces.http_client import IHttpClient, ScrapingError
+from settings import Settings
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -10,20 +12,33 @@ from tenacity import (
 )
 
 
-class ConcurrentScraper(IScraper):
+class AsyncHttpClient(IHttpClient):
     """in charge of scraping data from the web using aiohttp"""
 
     _session: aiohttp.ClientSession
 
-    def __init__(self, max_connections: int = 50):
+    def __init__(
+        self,
+        settings: Settings,
+    ):
 
-        connector = aiohttp.TCPConnector(limit=max_connections)
-        self._session = aiohttp.ClientSession(connector=connector)
-
-        token = ""
+        connector = aiohttp.TCPConnector(
+            limit=settings.scraper_max_concurrent_connections,
+            loop=asyncio.get_event_loop(),
+        )
+        self._session = aiohttp.ClientSession(
+            connector=connector, loop=asyncio.get_event_loop()
+        )
 
         self._session.headers.update(
-            {"User-Agent": "Cinefeel", "Authorization": f"Bearer {token}"}
+            {
+                "User-Agent": settings.scraper_user_agent,
+                "Authorization": f"Bearer {settings.mediawiki_api_key}",
+            }
+        )
+
+        print(
+            f"Scraper initialized with {settings.scraper_max_concurrent_connections} connections"
         )
 
     @retry(
@@ -31,7 +46,7 @@ class ConcurrentScraper(IScraper):
         stop=(stop_after_delay(180) | stop_after_attempt(3)),
         reraise=True,  # re-raise the last exception
     )
-    async def scrape(
+    async def send(
         self,
         endpoint: str,
         headers: dict = None,
@@ -63,6 +78,8 @@ class ConcurrentScraper(IScraper):
         ) as response:
 
             try:
+
+                print(f"Requesting {endpoint}")
 
                 response.raise_for_status()
 

@@ -1,23 +1,25 @@
-import time
-
 import meilisearch
 import meilisearch.errors
 import meilisearch.index
 from entities.film import WikipediaFilm
 from interfaces.indexer import IDocumentIndexer
+from settings import Settings
 
 
 class MeiliIndexer(IDocumentIndexer):
 
-    base_url: str
-    api_key: str
     client: meilisearch.Client
     index: meilisearch.index.Index
 
-    def __init__(self, base_url: str, api_key: str, index_name: str):
+    def __init__(
+        self,
+        settings: Settings,
+    ):
 
-        self.client = meilisearch.Client(base_url, api_key)
-        self.index = self.init_index(index_name)
+        self.client = meilisearch.Client(
+            settings.meili_base_url, settings.meili_api_key
+        )
+        self.index = self.init_index(settings.meili_index_name)
 
     def init_index(self, index_name: str) -> meilisearch.index.Index:
         try:

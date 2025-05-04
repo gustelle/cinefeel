@@ -7,11 +7,17 @@ from entities.film import WikipediaFilm
 from interfaces.parser import IParser
 
 
-class WikipediaFilmSheetParser(IParser):
+class WikipediaFilmParserError(Exception):
+    pass
+
+
+class WikipediaFilmParser(IParser):
 
     content: str
 
-    def extract_list(self, html_content: str, attrs: dict) -> list[WikipediaFilm]:
+    def extract_list(
+        self, html_content: str, attrs: dict, page_id: str | None = None
+    ) -> list[WikipediaFilm]:
         """
         Parses the given HTML content and returns a list of WikipediaFilm objects.
         The HTML content is expected to contain a table with film titles and links.
@@ -32,35 +38,54 @@ class WikipediaFilmSheetParser(IParser):
         Args:
             html_content (str): _description_
             attrs (dict): _description_
+            page_id (str | None, optional): _description_. Defaults to None.
+                The page ID is used to identify the Wikipedia page from which the films are extracted.
 
         Returns:
             list[WikipediaFilm]: _description_
+
+        Raises:
+            WikipediaFilmParserError: _description_
         """
 
         films: list[WikipediaFilm] = []
 
-        pd_df = pd.read_html(StringIO(html_content), extract_links="all", attrs=attrs)[
-            0
-        ]
+        try:
 
-        series = pl.from_pandas(pd_df).select(pl.first())
+            pd_df = pd.read_html(
+                StringIO(html_content), extract_links="all", attrs=attrs
+            )[0]
 
-        for i in range(len(series)):
+            if "1914" in page_id:
+                print(f"found details {pd_df}")
 
-            if series[i, 0] is None or len(series[i, 0]) < 2 or series[i, 0][1] is None:
-                continue
+            series = pl.from_pandas(pd_df).select(pl.first())
 
-            page_id = series[i, 0][1].split("/")[-1]
+            for i in range(len(series)):
 
-            if page_id == "":
-                continue
+                if (
+                    series[i, 0] is None
+                    or len(series[i, 0]) < 2
+                    or series[i, 0][1] is None
+                ):
+                    continue
 
-            films.append(
-                WikipediaFilm(
-                    title=series[i, 0][0],
-                    work_of_art_id=page_id,
+                linked_page_id = series[i, 0][1].split("/")[-1]
+
+                if linked_page_id == "":
+                    continue
+
+                films.append(
+                    WikipediaFilm(
+                        title=series[i, 0][0],
+                        work_of_art_id=linked_page_id,
+                    )
                 )
-            )
+        except Exception as e:
+            print(f"Error parsing HTML on '{page_id}': {e}")
+            raise WikipediaFilmParserError(
+                f"Failed to parse HTML on '{page_id}': {e}"
+            ) from e
 
         return films
 
@@ -73,9 +98,14 @@ class WikipediaFilmSheetParser(IParser):
         Attributes can include the film director, date of release, distributor, and other relevant information.
 
         Args:
+            film (WikipediaFilm): The WikipediaFilm object to populate with extracted attributes.
             html_content (str): The HTML content to parse.
-            attrs (dict): The attributes to use for parsing the HTML content.
-            The attributes can include the class name, id, or any other relevant attribute.
+
+        Returns:
+            WikipediaFilm: The WikipediaFilm object populated with extracted attributes.
+
+        Raises:
+            WikipediaFilmParserError: If there is an error while parsing the HTML content.
 
         TODO:
             - Add more attributes to the WikipediaFilm class.
@@ -85,18 +115,24 @@ class WikipediaFilmSheetParser(IParser):
             - Consider using a more robust HTML parsing library if needed.
 
         """
+        try:
 
-        soup = BeautifulSoup(html_content, "html.parser")
+            soup = BeautifulSoup(html_content, "html.parser")
 
-        infobox = soup.find("div", "infobox")
+            infobox = soup.find("div", "infobox")
 
-        if infobox is None:
-            print(f"Infobox not found for {film.work_of_art_id}")
+            if infobox is None:
+                print(f"Infobox not found for {film.work_of_art_id}")
+                return film
+
+            pd_df = pd.read_html(StringIO(infobox.decode()), extract_links="all")[0]
+
+            # print(f"found details {pd_df}")
+            # film.add_info(pd_df)
+
             return film
 
-        pd_df = pd.read_html(StringIO(infobox.decode()), extract_links="all")[0]
+        except Exception as e:
+            print(f"Error parsing HTML content: {e}")
 
-        # print(f"found details {pd_df}")
-        # film.add_info(pd_df)
-
-        return film
+            raise WikipediaFilmParserError(f"Failed to parse HTML content: {e}") from e

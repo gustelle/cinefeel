@@ -16,18 +16,18 @@ class ScrapingError(Exception):
         super().__init__(message)
 
 
-class IScraper(Protocol):
+class IHttpClient(Protocol):
     """
-    Interface for a web scraper.
+    Interface for sending HTTP requests.
     """
 
-    def scrape(
+    def send(
         self,
         url: str,
         *args,
         response_type: Literal["json", "text"] = "json",
         **kwargs,
-    ) -> dict:
+    ) -> dict | str:
         """
         Scrape the given URL and return the data as a dictionary.
 
@@ -35,7 +35,8 @@ class IScraper(Protocol):
             url (str): The URL to scrape.
 
         Returns:
-            dict: The scraped data.
+            dict: The scraped data as a dictionary if response_type is "json".
+            str: The scraped data as a string if response_type is "text".
         """
         pass
 

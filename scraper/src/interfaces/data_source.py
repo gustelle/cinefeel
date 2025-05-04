@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from interfaces.scraper import IScraper
+from interfaces.http_client import IHttpClient
 
 
 class IDataSource(Protocol):
@@ -8,9 +8,9 @@ class IDataSource(Protocol):
     Interface for a data source.
     """
 
-    scraper: IScraper
+    scraper: IHttpClient
 
-    def __init__(self, scraper: IScraper):
+    def __init__(self, scraper: IHttpClient):
         """
         Initialize the data source with a scraper.
 
