@@ -8,7 +8,7 @@ class IParser(Protocol):
     Interface for a parser that extracts data from a given HTML content.
     """
 
-    def extract_list(self, html_content: str, *args, **kwargs) -> list[Film]:
+    def extract_films_list(self, html_content: str, *args, **kwargs) -> list[Film]:
         """
         Parses the given HTML content and returns a list of WikipediaFilm objects.
 
@@ -22,7 +22,7 @@ class IParser(Protocol):
         """
         pass
 
-    def extract_film_info(
+    def extract_film_details(
         self,
         film: Film,
         html_content: str,

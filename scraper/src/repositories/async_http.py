@@ -38,7 +38,7 @@ class AsyncHttpClient(IHttpClient):
         )
 
         print(
-            f"Scraper initialized with {settings.scraper_max_concurrent_connections} connections"
+            f"AsyncHttpClient initialized with {settings.scraper_max_concurrent_connections} connections"
         )
 
     @retry(
@@ -79,7 +79,7 @@ class AsyncHttpClient(IHttpClient):
 
             try:
 
-                print(f"Requesting {endpoint}")
+                # print(f"Requesting {endpoint}")
 
                 response.raise_for_status()
 
@@ -116,7 +116,7 @@ class AsyncHttpClient(IHttpClient):
         """
         await self._session.close()
         self._session = None
-        print("Session closed")
+        # print("Session closed")
 
     async def __aexit__(self, *args):
         """

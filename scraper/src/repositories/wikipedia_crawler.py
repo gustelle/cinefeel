@@ -82,7 +82,7 @@ class WikipediaCrawler(IDataSource):
         # extract the list of films from the HTML
         try:
             films: list[Film] = await self.async_task_runner.submit(
-                self.parser.extract_list,
+                self.parser.extract_films_list,
                 html_content=html,
                 attrs={
                     "class": "wikitable",
@@ -111,7 +111,7 @@ class WikipediaCrawler(IDataSource):
             try:
 
                 film: Film = await self.async_task_runner.submit(
-                    self.parser.extract_film_info,
+                    self.parser.extract_film_details,
                     film=films[i],  # retrieve the film object !
                     html_content=details,
                 )
@@ -134,7 +134,7 @@ class WikipediaCrawler(IDataSource):
 
         tasks = []
 
-        for year in range(1907, 1910):
+        for year in range(1907, 2025):
 
             tasks.append(
                 self.get_films(

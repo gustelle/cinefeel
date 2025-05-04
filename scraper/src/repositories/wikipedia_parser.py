@@ -15,7 +15,7 @@ class WikipediaFilmParser(IParser):
 
     content: str
 
-    def extract_list(
+    def extract_films_list(
         self, html_content: str, attrs: dict, page_id: str | None = None
     ) -> list[Film]:
         """
@@ -89,7 +89,7 @@ class WikipediaFilmParser(IParser):
 
         return films
 
-    def extract_film_info(self, film: Film, html_content: str) -> Film:
+    def extract_film_details(self, film: Film, html_content: str) -> Film:
         """
         Parses the given HTML content and returns the extracted attributes as a dictionary.
 
