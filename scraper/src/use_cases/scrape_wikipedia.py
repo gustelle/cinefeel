@@ -1,6 +1,6 @@
 import time
 
-from entities.film import Film
+from interfaces.storage import IStorageHandler
 from repositories.async_http import AsyncHttpClient
 from repositories.dask_runner import DaskRunner
 from repositories.wikipedia_crawler import WikipediaCrawler
@@ -10,10 +10,14 @@ from settings import Settings
 
 class WikipediaFilmScraperUseCase:
 
-    def __init__(self, settings: Settings = None):
-        self.settings = settings or Settings()
+    storage_handler: IStorageHandler
+    settings: Settings
 
-    async def execute(self) -> list[Film]:
+    def __init__(self, storage_handler: IStorageHandler, settings: Settings = None):
+        self.settings = settings or Settings()
+        self.storage_handler = storage_handler
+
+    async def execute(self):
 
         http_client = AsyncHttpClient(settings=self.settings)
         page_parser = WikipediaFilmParser()
@@ -26,18 +30,18 @@ class WikipediaFilmScraperUseCase:
             parser=page_parser,
             settings=self.settings,
             task_runner=task_runner,
+            storage_handler=self.storage_handler,
         )
 
         start_time = time.time()
 
-        films = []
-
         # get the films for each year
         async with task_runner:
             async with wiki_repo:
-                films = await wiki_repo.crawl()
+                # TODO
+                # manage start_urls and cut in chunks
+                # to avoid too many requests
+                await wiki_repo.crawl()
 
         end_time = time.time()
         print(f"Execution time: {end_time - start_time:.2f} seconds")
-
-        return films

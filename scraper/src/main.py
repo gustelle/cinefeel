@@ -3,26 +3,29 @@ import uvloop
 
 async def main():
 
+    from repositories.json_storage import JsonStorageHandler
     from settings import Settings
     from use_cases.index_films import MeiliIndexerUseCase
     from use_cases.scrape_wikipedia import WikipediaFilmScraperUseCase
 
+    settings = Settings()
+    storage_handler = JsonStorageHandler(settings=settings)
+
     scraping_use_case = WikipediaFilmScraperUseCase(
-        settings=Settings(),
+        settings=settings,
+        storage_handler=storage_handler,
     )
 
-    films = await scraping_use_case.execute()
+    await scraping_use_case.execute()
 
     indexer = MeiliIndexerUseCase(
-        settings=Settings(),
+        settings=settings,
+        persistence_handler=storage_handler,
     )
 
-    films = indexer.execute(
-        docs=films,
-        wait_for_completion=False,  # don't wait for the task to complete
+    indexer.execute(
+        wait_for_completion=False,  # don't wait for the task to complete; return immediately
     )
-
-    print(f"Added {len(films)} films to the index")
 
 
 if __name__ == "__main__":

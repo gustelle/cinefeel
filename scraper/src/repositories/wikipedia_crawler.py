@@ -4,6 +4,7 @@ from entities.film import Film
 from interfaces.data_source import IDataSource
 from interfaces.http_client import HttpError, IHttpClient
 from interfaces.parser import IParser
+from interfaces.storage import IStorageHandler
 from interfaces.task_runner import ITaskRunner
 from settings import Settings
 
@@ -26,6 +27,7 @@ class WikipediaCrawler(IDataSource):
     page_endpoint: str = "page/"
     parser: IParser
     async_task_runner: ITaskRunner
+    storage_handler: IStorageHandler
 
     def __init__(
         self,
@@ -33,11 +35,13 @@ class WikipediaCrawler(IDataSource):
         parser: IParser,
         settings: Settings,
         task_runner: ITaskRunner,
+        storage_handler: IStorageHandler,
     ):
         super().__init__(scraper=http_client)
         self.parser = parser
         self.settings = settings
         self.async_task_runner = task_runner
+        self.storage_handler = storage_handler
 
     async def get_page_content(self, page_id: str, **params) -> str | None:
         """
@@ -124,38 +128,38 @@ class WikipediaCrawler(IDataSource):
 
         return final_films
 
-    async def crawl(self) -> list[Film]:
+    async def crawl(self) -> None:
         """
-        Crawl the Wikipedia page and return a list of films.
-
-        Returns:
-            list[WikipediaFilm]: A list of WikipediaFilm objects containing the title and link to the film page.
+        Crawl the Wikipedia page and persist the data using the persistence handler.
         """
 
         tasks = []
 
-        for year in range(1907, 2025):
-
+        for page_id in self.settings.mediawiki_start_pages:
             tasks.append(
                 self.get_films(
-                    page_list_id=f"Liste_de_films_français_sortis_en_{year}",
+                    page_list_id=page_id,
                 )
             )
 
         # wait for all tasks to complete
+        # throttling is handled by the AsyncHttpClient
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        if any(isinstance(result, Exception) for result in results):
-            for result in results:
-                if isinstance(result, Exception):
-                    print(f"Error: {result}")
+        for result in results:
+            if isinstance(result, Exception):
+                print(f"Error: {result}")
+                continue
 
-        return [
-            film
-            for result in results
-            for film in result
-            if not isinstance(result, Exception)
-        ]  # flatten the list
+            # persist the data using the persistence handler
+
+            for film in result:
+                if not isinstance(film, Film):
+                    print(f"Error: {film} is not a Film object")
+                    continue
+                self.storage_handler.insert(
+                    film=film,
+                )
 
     async def __aenter__(self):
         return self
