@@ -1,36 +1,43 @@
+from interfaces.indexer import IDocumentIndexer
 from interfaces.storage import IStorageHandler
-from repositories.meili_indexer import MeiliIndexer
-from settings import Settings
 
 
-class MeiliIndexerUseCase:
+class IndexerUseCase:
 
-    indexer: MeiliIndexer
-    storage_handler: IStorageHandler
+    _indexer: IDocumentIndexer
 
-    def __init__(self, persistence_handler: IStorageHandler, settings: Settings = None):
-        self.settings = settings or Settings()
-        self.storage_handler = persistence_handler
-        self.indexer = MeiliIndexer(
-            settings=self.settings,
-        )
+    _storage_handler: IStorageHandler
+
+    def __init__(
+        self,
+        indexer: IDocumentIndexer,
+        storage_handler: IStorageHandler,
+    ):
+        self._storage_handler = storage_handler
+        self._indexer = indexer
 
     def execute(self, wait_for_completion: bool = False):
+        """
+        TODO: index persons in a separate index
+
+        Args:
+            wait_for_completion (bool, optional): _description_. Defaults to False.
+        """
 
         # upsert in batches
-        last_film = None
+        last_ = None
         has_more = True
         batch_size = 100
 
         while has_more:
 
-            batch = self.storage_handler.query(
+            batch = self._storage_handler.query(
                 order_by="uid",
-                after_film=last_film,
+                after=last_,
                 limit=batch_size,
             )
 
-            self.indexer.upsert(
+            self._indexer.upsert(
                 docs=batch,
                 wait_for_completion=wait_for_completion,
             )
@@ -39,5 +46,5 @@ class MeiliIndexerUseCase:
                 print(f"Last batch: {len(batch)} films")
                 has_more = False
             else:
-                last_film = batch[-1]
-                print(f"Next batch starting after '{last_film.uid}'")
+                last_ = batch[-1]
+                print(f"Next batch starting after '{last_.uid}'")

@@ -162,12 +162,19 @@ class Settings(BaseSettings):
         default="cinefeel",
         description="The API key for the MeiliSearch API",
     )
-    meili_index_name: str = Field(
+    meili_films_index_name: str = Field(
         default="films",
-        description="The name of the MeiliSearch index",
+    )
+    meili_persons_index_name: str = Field(
+        default="persons",
     )
 
     persistence_directory: Path = Field(
         default=Path("./data"),
         description="The path (relative or absolute) to the dir where the scraped data will be saved",
+    )
+
+    llm_model: str = Field(
+        default="mistral:latest",
+        description="The name of the LLM model to use",
     )

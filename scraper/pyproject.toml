@@ -6,9 +6,8 @@ authors = [
     {name = "gustelle"}
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12.0,<4.0.0"
 dependencies = [
-    "wikipedia-api (>=0.8.1,<0.9.0)",
     "beautifulsoup4 (>=4.13.4,<5.0.0)",
     "pandas (>=2.2.3,<3.0.0)",
     "polars (>=1.29.0,<2.0.0)",
@@ -24,6 +23,9 @@ dependencies = [
     "uvloop (>=0.21.0,<0.22.0)",
     "orjson (>=3.10.18,<4.0.0)",
     "duckdb (>=1.2.2,<2.0.0)",
+    "ollama (>=0.4.8,<0.5.0)",
+    "langchain (>=0.3.25,<0.4.0)",
+    "typer (>=0.15.3,<0.16.0)",
 ]
 
 [tool.poetry]

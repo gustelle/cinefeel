@@ -11,7 +11,7 @@ class GenderEnum(StrEnum):
     MALE = "male"
     FEMALE = "female"
     NON_BINARY = "non-binary"
-    OTHER = "other"
+    UNKNWON = "unknown"
 
 
 class Person(BaseModel):
@@ -43,10 +43,6 @@ class Person(BaseModel):
     nationalities: list[str] | None = Field(
         None,
         description="The nationalities of the person. This can be used to filter the list of people.",
-    )
-    roles: list[str] | None = Field(
-        None,
-        description="The roles of the person. This can be used to filter the list of people.",
     )
 
     media: list[HttpUrl] | None = Field(

@@ -5,7 +5,7 @@ from typing import Self
 from pydantic import Field, HttpUrl, model_validator
 
 from .person import Person
-from .woa import WorkOfArt
+from .woa import WOAType, WorkOfArt
 
 
 class Film(WorkOfArt):
@@ -87,6 +87,6 @@ class Film(WorkOfArt):
         else:
             self.uid = re.sub(r"[^a-zA-Z0-9]", "_", self.uid)
 
-        self.type = "film"
+        self.woa_type = WOAType.FILM
 
         return self

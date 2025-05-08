@@ -4,11 +4,11 @@ from interfaces.storage import IStorageHandler
 from repositories.async_http import AsyncHttpClient
 from repositories.dask_runner import DaskRunner
 from repositories.wikipedia_crawler import WikipediaCrawler
-from repositories.wikipedia_parser import WikipediaFilmParser
+from repositories.wikipedia_parser import WikipediaPageListParser
 from settings import Settings
 
 
-class WikipediaFilmScraperUseCase:
+class WikipediaDownloadUseCase:
 
     storage_handler: IStorageHandler
     settings: Settings
@@ -20,7 +20,7 @@ class WikipediaFilmScraperUseCase:
     async def execute(self):
 
         http_client = AsyncHttpClient(settings=self.settings)
-        page_parser = WikipediaFilmParser()
+        page_parser = WikipediaPageListParser()
         task_runner = DaskRunner()
 
         # init the wikipedia repository here to run in the main thread

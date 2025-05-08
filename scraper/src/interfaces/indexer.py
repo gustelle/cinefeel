@@ -1,20 +1,21 @@
-from typing import Sequence
+from typing import Protocol, Sequence
 
 from entities.film import Film
+from entities.person import Person
 
 
-class IDocumentIndexer:
+class IDocumentIndexer[T: (Film, Person)](Protocol):
     """
     Interface for indexing documents.
     """
 
-    def upsert(self, docs: Sequence[Film], *args, **kwargs) -> None:
+    def upsert(self, docs: Sequence[T], *args, **kwargs) -> None:
         """
         Index a document in the index in upsert mode.
         This means that if the document already exists, it will be updated.
         If it does not exist, it will be created.
 
         Args:
-            docs (Sequence[Film]): A sequence of `Film`s to index.
+            docs (Sequence[T]): A sequence of `T`s to index, where `T` is a subclass of `Film` or `Person`.
         """
         raise NotImplementedError("Subclasses should implement this method.")
