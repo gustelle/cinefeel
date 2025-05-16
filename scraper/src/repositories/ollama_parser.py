@@ -11,9 +11,31 @@ class OllamaParser[T: WorkOfArt](IContentParser):
     """
 
     def __init__(self, settings: Settings = None):
+        """
+        TODO:
+        - store the model name in the settings
+        - remove temperature from the function signature
+
+        Args:
+            settings (Settings, optional): _description_. Defaults to None.
+        """
+
         self.model = "mistral:latest"
 
     def to_entity(self, context: str, question: str, temperature: float = 0) -> T:
+        """
+        TODO:
+            - remove temperature from the function signature
+            - manage pydantic validation errors
+
+        Args:
+            context (str): _description_
+            question (str): _description_
+            temperature (float, optional): _description_. Defaults to 0.
+
+        Returns:
+            T: _description_
+        """
 
         # https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
         entity_type: T = self.__orig_class__.__args__[0]
@@ -21,7 +43,7 @@ class OllamaParser[T: WorkOfArt](IContentParser):
         prompt = f"Context: {context}\n\nQuestion: {question}\nAnswer:"
 
         response = ollama.chat(
-            model="mistral:latest",
+            model=self.model,
             messages=[
                 {
                     "role": "user",

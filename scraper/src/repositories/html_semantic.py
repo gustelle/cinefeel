@@ -16,7 +16,7 @@ class InfoBoxElement(BaseModel):
     content: str | None
 
 
-class HtmlParser:
+class HtmlSemantic:
     """
     Splits a given HTML content into sections based on the specified tags.
     """

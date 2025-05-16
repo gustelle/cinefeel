@@ -7,7 +7,7 @@ from interfaces.similarity import ISimilaritySearch
 from loguru import logger
 
 from .bert_similarity import BertSimilaritySearch
-from .html_splitter import HtmlParser, HtmlSection
+from .html_semantic import HtmlSection, HtmlSemantic
 from .ollama_parser import OllamaParser
 
 
@@ -78,15 +78,12 @@ class HtmlContentAnalyzer(IContentAnalyzer):
     def analyze(self, html_content: str) -> Film | None:
         """
         TODO:
-        - split the content into sentences
-        - vectorize the content
-        - use a llm to find the most relevant entity, genre, themes, etc.
-        - scrape the content according to the entity type
+        - testing
         """
 
         logger.info("-" * 80)
 
-        splitter = HtmlParser()
+        splitter = HtmlSemantic()
 
         # split the HTML content into sections
         sections = splitter.split_sections(html_content)
@@ -115,7 +112,7 @@ class HtmlContentAnalyzer(IContentAnalyzer):
         else:
             ctx = tech_spec.content
 
-        logger.info(f"Context is '{ctx}'")
+        logger.debug(f"Context is '{ctx}'")
 
         question = "Give information about the film "
 

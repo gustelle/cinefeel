@@ -19,9 +19,10 @@ def extract():
 
     from repositories.entity_storage import FilmStorageHandler, PersonStorageHandler
     from repositories.html_analyzer import HtmlContentAnalyzer
-    from repositories.raw_content_storage import HtmlContentStorageHandler
     from settings import Settings
     from use_cases.extract_woa import WOAExtractionUseCase
+
+    from scraper.src.repositories.html_storage import HtmlContentStorageHandler
 
     settings = Settings()
     film_storage_handler = FilmStorageHandler(settings=settings)
@@ -79,7 +80,7 @@ def index():
 
 async def async_download():
 
-    from repositories.raw_content_storage import HtmlContentStorageHandler
+    from repositories.html_storage import HtmlContentStorageHandler
     from settings import Settings
     from use_cases.scrape_wikipedia import WikipediaDownloadUseCase
 
