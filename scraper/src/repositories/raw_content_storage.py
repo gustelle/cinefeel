@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Generator
 
 from interfaces.storage import IStorageHandler
 from settings import Settings
@@ -49,6 +50,20 @@ class HtmlContentStorageHandler(IStorageHandler):
         except Exception as e:
             print(f"Error loading '{path}': {e}")
             return None
+
+    def scan(self) -> Generator[str, None, None]:
+        """Scans the persistent storage and iterates over contents."""
+
+        # TODO
+        try:
+            for file in self.path.iterdir():
+                if file.is_file() and file.suffix == ".html":
+                    with open(file, "r") as f:
+                        yield f.read()
+
+        except Exception as e:
+            print(f"Error scanning '{self.path}': {e}")
+            return []
 
 
 class RawFilmStorageHandler(HtmlContentStorageHandler):

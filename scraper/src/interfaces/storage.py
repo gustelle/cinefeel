@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Protocol
+from typing import Generator, Protocol
 
 
 class IStorageHandler[T](Protocol):
@@ -16,4 +16,8 @@ class IStorageHandler[T](Protocol):
 
     def query(self, *args, **kwargs) -> list[T]:
         """query films corresponding to the given criteria."""
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
+    def scan(self, *args, **kwargs) -> Generator[T, None, None]:
+        """Scans the persistent storage and returns a list of all films."""
         raise NotImplementedError("This method should be overridden by subclasses.")

@@ -3,14 +3,15 @@ from typing import TypeVar
 
 import duckdb
 import orjson
-
 from entities.film import Film
 from entities.person import Person
 from interfaces.storage import IStorageHandler
 from settings import Settings
 
+T = TypeVar("T", bound=Film | Person)
 
-class EntityStorageHandler[T: (Film, Person)](IStorageHandler[T]):
+
+class EntityStorageHandler[T](IStorageHandler[T]):
     """
     A class to handle file persistence for entities.
     """
@@ -18,13 +19,31 @@ class EntityStorageHandler[T: (Film, Person)](IStorageHandler[T]):
     persistence_directory: Path
     entity_type: str
 
+    def __class_getitem__(cls, generic_type):
+        """Called when the class is indexed with a type parameter.
+        Enables to guess the type of the entity being stored.
+
+        Thanks to :
+        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
+        """
+        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
+        new_cls.entity_type = generic_type
+        return new_cls
+
     def __init__(self, settings: Settings):
 
-        self.entity_type = self.__orig_class__.__args__[0].__name__.lower()
+        print(f"Creating {self.__class__.__name__} for {self.entity_type}")
 
-        self.persistence_directory = (
-            settings.persistence_directory / self.entity_type / "analyzed"
-        )
+        if issubclass(self.entity_type, Film):
+            self.persistence_directory = settings.persistence_directory / "films"
+        elif issubclass(self.entity_type, Person):
+            self.persistence_directory = settings.persistence_directory / "persons"
+        else:
+            raise ValueError(
+                f"Unsupported entity type: {self.entity_type}. "
+                "Expected Film or Person."
+            )
+
         self.persistence_directory.mkdir(parents=True, exist_ok=True)
         print(f"Created dir '{self.persistence_directory}'")
 
@@ -41,6 +60,9 @@ class EntityStorageHandler[T: (Film, Person)](IStorageHandler[T]):
 
             with open(path, "wb") as file:
                 file.write(orjson.dumps(o.model_dump(mode="json")))
+
+                print(f"Saved {self.entity_type} to {path}")
+
         except Exception as e:
             print(f"Error saving film {o}: {e}")
 
