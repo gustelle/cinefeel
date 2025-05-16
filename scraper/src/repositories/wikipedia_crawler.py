@@ -32,13 +32,13 @@ class WikipediaCrawler(IDataSource):
     def __init__(
         self,
         http_client: IHttpClient,
-        parser: ILinkExtractor,
+        link_extractor: ILinkExtractor,
         settings: Settings,
         task_runner: ITaskRunner,
         storage_handler: IStorageHandler,
     ):
         super().__init__(scraper=http_client)
-        self.links_extractor = parser
+        self.links_extractor = link_extractor
         self.settings = settings
         self.async_task_runner = task_runner
         self.storage_handler = storage_handler

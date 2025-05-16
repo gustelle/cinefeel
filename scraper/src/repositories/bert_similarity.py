@@ -7,6 +7,12 @@ from settings import Settings
 class BertSimilaritySearch:
     """
     Class to handle BERT similarity calculations.
+
+    TODO:
+    - model name in settings
+    - add tests
+    - threshold for the score in the settings
+    - manage errors
     """
 
     embedder: SentenceTransformer

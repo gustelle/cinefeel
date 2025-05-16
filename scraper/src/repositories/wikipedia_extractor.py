@@ -5,7 +5,7 @@ import polars as pl
 from interfaces.parser import ILinkExtractor
 
 
-class WikipediaParsingError(Exception):
+class WikiDataExtractionError(Exception):
     pass
 
 
@@ -85,7 +85,7 @@ class WikipediaLinkExtractor(ILinkExtractor):
                 page_ids.append(linked_page_id)
         except Exception as e:
             print(f"Error parsing HTML on '{page_id}': {e}")
-            raise WikipediaParsingError(
+            raise WikiDataExtractionError(
                 f"Failed to parse HTML on '{page_id}': {e}"
             ) from e
 
