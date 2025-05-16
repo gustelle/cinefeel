@@ -1,3 +1,4 @@
+from loguru import logger
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 from settings import Settings
@@ -37,12 +38,8 @@ class BertSimilaritySearch:
         most_similar_section_title = corpus[hits[0][0]["corpus_id"]]
         score = hits[0][0]["score"]
 
-        print(
-            f"most similar doc of '{query}': {most_similar_section_title} with score {score}"
-        )
-
         if score < 0.9:
-            print(
+            logger.info(
                 f"no confidence for '{query}' (found '{most_similar_section_title}' with score {score})"
             )
             return None

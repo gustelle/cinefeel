@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Generator
 
 from interfaces.storage import IStorageHandler
+from loguru import logger
 from settings import Settings
 
 
@@ -18,7 +19,6 @@ class HtmlContentStorageHandler(IStorageHandler):
     def __init__(self, path: Path):
         self.path = path
         self.path.mkdir(parents=True, exist_ok=True)
-        print(f"Created directories '{self.path}'")
 
     def insert(self, content_id: str, content: str) -> None:
         """Saves the given data to a file."""
@@ -34,10 +34,10 @@ class HtmlContentStorageHandler(IStorageHandler):
             with open(path, "w") as file:
                 file.write(content)
 
-            # print(f"Saved '{content_id}' ")
+            # logger.info(f"Saved '{content_id}' ")
 
         except Exception as e:
-            print(f"Error saving '{content_id}': {e}")
+            logger.info(f"Error saving '{content_id}': {e}")
 
     def select(self, content_id: str) -> str:
         """Loads data from a file."""
@@ -48,7 +48,7 @@ class HtmlContentStorageHandler(IStorageHandler):
             with open(path, "r") as file:
                 return file.read()
         except Exception as e:
-            print(f"Error loading '{path}': {e}")
+            logger.info(f"Error loading '{path}': {e}")
             return None
 
     def scan(self) -> Generator[str, None, None]:
@@ -62,7 +62,7 @@ class HtmlContentStorageHandler(IStorageHandler):
                         yield f.read()
 
         except Exception as e:
-            print(f"Error scanning '{self.path}': {e}")
+            logger.info(f"Error scanning '{self.path}': {e}")
             return []
 
 

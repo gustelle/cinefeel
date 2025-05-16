@@ -1,5 +1,6 @@
 from interfaces.indexer import IDocumentIndexer
 from interfaces.storage import IStorageHandler
+from loguru import logger
 
 
 class IndexerUseCase:
@@ -43,8 +44,8 @@ class IndexerUseCase:
             )
 
             if batch is None or len(batch) == 0:
-                print(f"Last batch: {len(batch)} films")
+                logger.info(f"Last batch: {len(batch)} films")
                 has_more = False
             else:
                 last_ = batch[-1]
-                print(f"Next batch starting after '{last_.uid}'")
+                logger.info(f"Next batch starting after '{last_.uid}'")

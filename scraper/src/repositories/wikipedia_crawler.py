@@ -5,6 +5,7 @@ from interfaces.http_client import HttpError, IHttpClient
 from interfaces.parser import ILinkExtractor
 from interfaces.storage import IStorageHandler
 from interfaces.task_runner import ITaskRunner
+from loguru import logger
 from settings import Settings
 
 
@@ -75,7 +76,7 @@ class WikipediaCrawler(IDataSource):
 
         except HttpError as e:
             if e.status_code == 404:
-                print(f"Page '{page_id}' not found")
+                logger.error(f"Page '{page_id}' not found")
             return None
 
     async def download(self, start_page: str) -> list[str]:
@@ -105,7 +106,7 @@ class WikipediaCrawler(IDataSource):
                 page_id=start_page,
             )
         except Exception as e:
-            print(f"Error extracting list of films: {e}")
+            logger.error(f"Error extracting list of films: {e}")
             return []
 
         # for each film, get the details
@@ -138,7 +139,7 @@ class WikipediaCrawler(IDataSource):
 
         for result in results:
             if isinstance(result, Exception):
-                print(f"Error: {result}")
+                logger.error(f"Error: {result}")
 
     async def __aenter__(self):
         return self

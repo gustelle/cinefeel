@@ -1,11 +1,9 @@
-import re
 from datetime import datetime
-from typing import Self
 
-from pydantic import Field, HttpUrl, model_validator
+from pydantic import Field, HttpUrl
 
 from .person import Person
-from .woa import WOAType, WorkOfArt
+from .woa import WorkOfArt
 
 
 class Film(WorkOfArt):
@@ -64,29 +62,13 @@ class Film(WorkOfArt):
         None,
         description="The other roles of the film",
     )
-    woa_influences: list[WorkOfArt] | None = Field(
+    influencing_works: list[WorkOfArt] | None = Field(
         None,
         description="The work arts that influenced the film",
         examples=["Film 1", "Theatre 1", "Book 1"],
     )
-    person_influences: list[Person] | None = Field(
+    influencing_persons: list[Person] | None = Field(
         None,
         description="The personalities that influenced the film",
         examples=["Person 1", "Person 2"],
     )
-
-    @model_validator(mode="after")
-    def bring_consistency(self) -> Self:
-        """
-        - type is set to "film" to indicate that this is a film entity.
-        - uid is set to the `work_of_art_id` if not provided, however, uid is sanitized to remove any non-alphanumeric characters.
-
-        """
-        if not self.uid:
-            self.uid = re.sub(r"[^a-zA-Z0-9]", "_", self.work_of_art_id)
-        else:
-            self.uid = re.sub(r"[^a-zA-Z0-9]", "_", self.uid)
-
-        self.woa_type = WOAType.FILM
-
-        return self

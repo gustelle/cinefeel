@@ -4,13 +4,14 @@ from entities.film import Film
 from interfaces.analyzer import IContentAnalyzer
 from interfaces.content_parser import IContentParser
 from interfaces.similarity import ISimilaritySearch
+from loguru import logger
 
 from .bert_similarity import BertSimilaritySearch
 from .html_splitter import HtmlParser, HtmlSection
 from .ollama_parser import OllamaParser
 
 
-class HtmlAnalyzer(IContentAnalyzer):
+class HtmlContentAnalyzer(IContentAnalyzer):
 
     film_parser: IContentParser
     simiarity_search: ISimilaritySearch
@@ -53,7 +54,7 @@ class HtmlAnalyzer(IContentAnalyzer):
             ]
 
             if len(most_similar_sections) == 0:
-                print(
+                logger.warning(
                     f"no section found for '{text_query}' (found '{most_similar_section_title}')"
                 )
                 continue
@@ -65,7 +66,9 @@ class HtmlAnalyzer(IContentAnalyzer):
                 or most_similar_section.content is None
                 or len(most_similar_section.content) == 0
             ):
-                print(f"content of section '{most_similar_section_title}' is empty")
+                logger.warning(
+                    f"content of section '{most_similar_section_title}' is empty"
+                )
                 continue
 
             break
@@ -81,7 +84,7 @@ class HtmlAnalyzer(IContentAnalyzer):
         - scrape the content according to the entity type
         """
 
-        print("-" * 80)
+        logger.info("-" * 80)
 
         splitter = HtmlParser()
 
@@ -89,7 +92,7 @@ class HtmlAnalyzer(IContentAnalyzer):
         sections = splitter.split_sections(html_content)
 
         if sections is None or len(sections) == 0:
-            print("no sections found, skipping the content")
+            logger.warning("no sections found, skipping the content")
             return None
 
         tech_spec = self.find_tech_spec(
@@ -100,19 +103,19 @@ class HtmlAnalyzer(IContentAnalyzer):
 
             info_table = splitter.parse_info_table(html_content)
             if info_table is None or len(info_table) == 0:
-                print("no info table found, skipping the content")
+                logger.warning("no info table found, skipping the content")
                 return None
 
-            print(f"found {len(info_table)} info table elements")
+            logger.info(f"found {len(info_table)} info table elements")
 
             # convert the DataFrame to a string
             ctx = "\n".join([f"{row.title}: {row.content}" for row in info_table])
-            print(f"Context is '{ctx}'")
+            logger.info(f"Context is '{ctx}'")
 
         else:
             ctx = tech_spec.content
 
-        print(f"Context is '{ctx}'")
+        logger.info(f"Context is '{ctx}'")
 
         question = "Give information about the film "
 
@@ -121,7 +124,7 @@ class HtmlAnalyzer(IContentAnalyzer):
             question=question,
         )
 
-        print(f"response : '{resp.model_dump_json()}'")
+        logger.info(f"response : '{resp.model_dump_json()}'")
 
         return resp
 
@@ -161,18 +164,18 @@ class HtmlAnalyzer(IContentAnalyzer):
 #             infobox = soup.find("div", "infobox")
 
 #             if infobox is None:
-#                 print(f"Infobox not found for {film.work_of_art_id}")
+#                 logger.info(f"Infobox not found for {film.work_of_art_id}")
 #                 return film
 
 #             _ = pd.read_html(StringIO(infobox.decode()), extract_links="all")[0]
 
-#             # print(f"found details {pd_df}")
+#             # logger.info(f"found details {pd_df}")
 #             # film.add_info(pd_df)
 
 #             return film
 
 #         except Exception as e:
-#             print(f"Error parsing HTML content: {e}")
+#             logger.info(f"Error parsing HTML content: {e}")
 
 #             raise WikipediaParsingError(f"Failed to parse HTML content: {e}") from e
 

@@ -4,6 +4,7 @@ from typing import Awaitable
 from dask.distributed import Client as DaskClient
 from distributed import LocalCluster
 from interfaces.task_runner import ITaskRunner
+from loguru import logger
 
 
 class DaskRunner(ITaskRunner):
@@ -36,7 +37,9 @@ class DaskRunner(ITaskRunner):
     async def _init_dask(self):
 
         if self._is_initialing:
-            print("Dask client is already initializing, waiting for it to finish...")
+            logger.info(
+                "Dask client is already initializing, waiting for it to finish..."
+            )
             await self._is_ready.wait()
             return
 
@@ -55,7 +58,7 @@ class DaskRunner(ITaskRunner):
 
         elif self._dask_client is not None and self._dask_client.status != "running":
 
-            print("Dask client is not running, restarting...")
+            logger.info("Dask client is not running, restarting...")
 
             if self._cluster is not None:
                 await self._cluster.close()
@@ -73,7 +76,7 @@ class DaskRunner(ITaskRunner):
 
         self._is_ready.set()
         self._is_initialing = False
-        print("Dask client initialization complete")
+        logger.info("Dask client initialization complete")
 
     def is_ready(self) -> bool:
         """
@@ -96,12 +99,12 @@ class DaskRunner(ITaskRunner):
         if self._dask_client is not None:
             await self._dask_client.close()
             self._dask_client = None
-            print("Dask client closed")
+            logger.info("Dask client closed")
 
         if self._cluster is not None:
             await self._cluster.close()
             self._cluster = None
-            print("Dask cluster closed")
+            logger.info("Dask cluster closed")
 
     async def __aenter__(self):
         return self

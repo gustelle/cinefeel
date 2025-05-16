@@ -3,7 +3,7 @@ from interfaces.storage import IStorageHandler
 from settings import Settings
 
 
-class HtmlAnalysisUseCase:
+class WOAExtractionUseCase:
 
     analyzer: IContentAnalyzer
     film_storage_handler: IStorageHandler
@@ -56,5 +56,5 @@ class HtmlAnalysisUseCase:
                 self.film_storage_handler.insert(film)
 
             i += 1
-            if i > 3:
+            if i > 10:
                 break

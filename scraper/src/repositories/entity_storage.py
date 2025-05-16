@@ -5,19 +5,21 @@ import duckdb
 import orjson
 from entities.film import Film
 from entities.person import Person
+from entities.woa import WorkOfArt
 from interfaces.storage import IStorageHandler
+from loguru import logger
 from settings import Settings
 
 T = TypeVar("T", bound=Film | Person)
 
 
-class EntityStorageHandler[T](IStorageHandler[T]):
+class EntityStorageHandler[T: WorkOfArt](IStorageHandler[T]):
     """
     A class to handle file persistence for entities.
     """
 
     persistence_directory: Path
-    entity_type: str
+    entity_type: WorkOfArt
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -28,11 +30,10 @@ class EntityStorageHandler[T](IStorageHandler[T]):
         """
         new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
         new_cls.entity_type = generic_type
+
         return new_cls
 
     def __init__(self, settings: Settings):
-
-        print(f"Creating {self.__class__.__name__} for {self.entity_type}")
 
         if issubclass(self.entity_type, Film):
             self.persistence_directory = settings.persistence_directory / "films"
@@ -45,7 +46,7 @@ class EntityStorageHandler[T](IStorageHandler[T]):
             )
 
         self.persistence_directory.mkdir(parents=True, exist_ok=True)
-        print(f"Created dir '{self.persistence_directory}'")
+        logger.info(f"Created dir '{self.persistence_directory}'")
 
     def insert(self, o: T) -> None:
         """Saves the given data to a file."""
@@ -61,23 +62,21 @@ class EntityStorageHandler[T](IStorageHandler[T]):
             with open(path, "wb") as file:
                 file.write(orjson.dumps(o.model_dump(mode="json")))
 
-                print(f"Saved {self.entity_type} to {path}")
+                logger.info(f"Saved {self.entity_type} to {path}")
 
         except Exception as e:
-            print(f"Error saving film {o}: {e}")
+            logger.info(f"Error saving film {o}: {e}")
 
-    def select(self, path: Path) -> Film:
+    def select(self, path: Path) -> T:
         """Loads data from a file."""
 
         # TODO
         try:
             with open(path, "rb") as file:
-                data = orjson.loads(file.read())
-                film = Film.model_validate(data)
-
-                return film
+                woa = self.entity_type.model_validate_json(file.read())
+                return woa
         except Exception as e:
-            print(f"Error loading film from {path}: {e}")
+            logger.info(f"Error loading film from {path}: {e}")
             return None
 
     def query(
@@ -99,10 +98,15 @@ class EntityStorageHandler[T](IStorageHandler[T]):
         )
 
         if results.empty:
-            print(f"No films found matching the criteria: {order_by}, {after}, {limit}")
+            logger.info(
+                f"No films found matching the criteria: {order_by}, {after}, {limit}"
+            )
             return []
 
-        return [T.model_validate(dict(row)) for row in results.to_dict("records")]
+        return [
+            self.entity_type.model_validate(dict(row))
+            for row in results.to_dict("records")
+        ]
 
 
 class FilmStorageHandler(EntityStorageHandler[Film]):

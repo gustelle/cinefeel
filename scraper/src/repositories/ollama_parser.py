@@ -1,6 +1,6 @@
 import ollama
 from entities.film import Film
-from entities.woa import WorkOfArt
+from entities.woa import WOAType, WorkOfArt
 from interfaces.content_parser import IContentParser
 from settings import Settings
 
@@ -35,6 +35,14 @@ class OllamaParser[T: WorkOfArt](IContentParser):
         )
 
         msg = response.message.content
-        print(f"response : '{msg}'")
 
-        return entity_type.model_validate_json(msg)
+        woa = entity_type.model_validate_json(msg)
+
+        if issubclass(entity_type, Film):
+            # set the uid to the work of art id
+            woa.woa_type = WOAType.FILM
+
+        # weird bug, I cannot make the field_validator work
+        woa.ensure_uid()
+
+        return woa

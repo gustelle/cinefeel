@@ -1,3 +1,4 @@
+import re
 from enum import StrEnum
 from typing import Mapping
 
@@ -17,6 +18,9 @@ class WOAType(StrEnum):
     PHOTOGRAPHY = "photography"
     PERFORMANCE = "performance"
     FILM = "film"
+    SERIES = "series"
+    DOCUMENTARY = "documentary"
+    ANIMATION = "animation"
     THEATRE = "theatre"
     OPERA = "opera"
     MUSICAL = "musical"
@@ -62,3 +66,32 @@ class WorkOfArt(BaseModel):
         ...,
         description="The ID of the work of art page on Wikipedia. This is the part of the URL after 'wiki/'",
     )
+
+    # @field_validator("uid", mode="after")
+    # @classmethod
+    def ensure_uid(self):
+
+        value = self.uid
+
+        if not value or len(value.strip()) == 0:
+            # set the uid to the work of art id
+            value = self.title
+
+        value = value.strip()
+
+        if self.woa_type is not None:
+            # set the uid to the work of art id
+            value = f"{self.woa_type}_{value}"
+        else:
+            # set the uid to the work of art id
+            value = f"woa_{value}"
+
+        value = re.sub(r"[^a-zA-Z0-9]", "_", value)
+
+        # replace spaces with underscores
+        value = value.replace(" ", "_")
+
+        # lowercase the uid
+        value = value.casefold()
+
+        self.uid = value

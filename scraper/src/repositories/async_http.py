@@ -3,6 +3,7 @@ from typing import Literal
 
 import aiohttp
 from interfaces.http_client import HttpError, IHttpClient
+from loguru import logger
 from settings import Settings
 from tenacity import (
     retry,
@@ -37,7 +38,7 @@ class AsyncHttpClient(IHttpClient):
             }
         )
 
-        print(
+        logger.info(
             f"AsyncHttpClient initialized with {settings.scraper_max_concurrent_connections} connections"
         )
 
@@ -79,7 +80,7 @@ class AsyncHttpClient(IHttpClient):
 
             try:
 
-                # print(f"Requesting {endpoint}")
+                # logger.info(f"Requesting {endpoint}")
 
                 response.raise_for_status()
 
@@ -92,7 +93,7 @@ class AsyncHttpClient(IHttpClient):
             except aiohttp.ClientResponseError as e:
 
                 if response.status in [401, 403, 404, 429]:
-                    print(
+                    logger.info(
                         f"[{response.status}] Abandoning request to {endpoint} with params {params}"
                     )
                     raise HttpError(
@@ -116,7 +117,7 @@ class AsyncHttpClient(IHttpClient):
         """
         await self._session.close()
         self._session = None
-        # print("Session closed")
+        # logger.info("Session closed")
 
     async def __aexit__(self, *args):
         """
