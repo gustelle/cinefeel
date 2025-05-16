@@ -77,7 +77,6 @@ def index():
     logger.info("Persons Indexation completed.")
 
 
-@app.command()
 async def async_download():
 
     from repositories.raw_content_storage import HtmlContentStorageHandler

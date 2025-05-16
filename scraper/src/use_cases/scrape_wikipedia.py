@@ -1,10 +1,11 @@
 import time
 
 from interfaces.storage import IStorageHandler
+from loguru import logger
 from repositories.async_http import AsyncHttpClient
 from repositories.dask_runner import DaskRunner
 from repositories.wikipedia_crawler import WikipediaCrawler
-from repositories.wikipedia_parser import WikipediaPageListParser
+from repositories.wikipedia_parser import WikipediaLinkExtractor
 from settings import Settings
 
 
@@ -20,7 +21,7 @@ class WikipediaDownloadUseCase:
     async def execute(self):
 
         http_client = AsyncHttpClient(settings=self.settings)
-        page_parser = WikipediaPageListParser()
+        page_parser = WikipediaLinkExtractor()
         task_runner = DaskRunner()
 
         # init the wikipedia repository here to run in the main thread
@@ -44,4 +45,4 @@ class WikipediaDownloadUseCase:
                 await wiki_repo.crawl()
 
         end_time = time.time()
-        print(f"Execution time: {end_time - start_time:.2f} seconds")
+        logger.info(f"Execution time: {end_time - start_time:.2f} seconds")

@@ -2,7 +2,6 @@ from io import StringIO
 
 import pandas as pd
 import polars as pl
-
 from interfaces.parser import ILinkExtractor
 
 
@@ -10,10 +9,12 @@ class WikipediaParsingError(Exception):
     pass
 
 
-class WikipediaPageListParser(ILinkExtractor):
+class WikipediaLinkExtractor(ILinkExtractor):
     """
     This class is responsible for parsing Wikipedia list of links to other pages.
 
+    TODO:
+        - rename this to WikipediaLinkExtractor
     """
 
     content: str
