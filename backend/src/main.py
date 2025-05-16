@@ -1,0 +1,109 @@
+import time
+
+import typer
+import uvloop
+from loguru import logger
+
+app = typer.Typer()
+
+
+@app.command(
+    help="Download the HTML content from Wikipedia pages and store it in a local directory."
+)
+def download():
+    uvloop.run(async_download())
+
+
+@app.command()
+def extract():
+
+    from src.repositories.entity_storage import FilmStorageHandler, PersonStorageHandler
+    from src.repositories.html_analyzer import HtmlContentAnalyzer
+    from src.repositories.html_storage import HtmlContentStorageHandler
+    from src.settings import Settings
+    from src.use_cases.extract_woa import WOAExtractionUseCase
+
+    settings = Settings()
+    film_storage_handler = FilmStorageHandler(settings=settings)
+    person_strorage_handler = PersonStorageHandler(settings=settings)
+    raw_content_storage_handler = HtmlContentStorageHandler(
+        path=settings.persistence_directory / "html"
+    )
+    analyzer = HtmlContentAnalyzer()
+
+    uc = WOAExtractionUseCase(
+        film_storage_handler=film_storage_handler,  # where films will be saved
+        person_storage_handler=person_strorage_handler,  # where persons will be saved
+        raw_content_storage_handler=raw_content_storage_handler,  # where raw html can be found
+        analyzer=analyzer,
+        settings=settings,
+    )
+    uc.execute(wait_for_completion=True)
+
+    logger.info("Analysis completed.")
+
+
+@app.command()
+def index():
+
+    from src.entities.film import Film
+    from src.entities.person import Person
+    from src.repositories.entity_storage import FilmStorageHandler, PersonStorageHandler
+    from src.repositories.meili_indexer import MeiliIndexer
+    from src.settings import Settings
+    from src.use_cases.index_films import IndexerUseCase
+
+    settings = Settings()
+    film_storage_handler = FilmStorageHandler(settings=settings)
+    person_storage_handler = PersonStorageHandler(settings=settings)
+
+    uc = IndexerUseCase(
+        indexer=MeiliIndexer[Film](settings=settings),
+        storage_handler=film_storage_handler,
+    )
+    uc.execute(
+        wait_for_completion=False,  # don't wait for the task to complete; return immediately
+    )
+    logger.info("Films Indexation completed.")
+
+    uc = IndexerUseCase(
+        indexer=MeiliIndexer[Person](settings=settings),
+        storage_handler=person_storage_handler,
+    )
+    uc.execute(
+        wait_for_completion=False,  # don't wait for the task to complete; return immediately
+    )
+
+    logger.info("Persons Indexation completed.")
+
+
+async def async_download():
+
+    from src.repositories.html_storage import HtmlContentStorageHandler
+    from src.settings import Settings
+    from src.use_cases.scrape_wikipedia import WikipediaDownloadUseCase
+
+    start_time = time.time()
+    logger.info("Starting scraping...")
+
+    settings = Settings()
+    storage_handler = HtmlContentStorageHandler(
+        path=settings.persistence_directory / "html"
+    )
+
+    scraping_use_case = WikipediaDownloadUseCase(
+        settings=settings,
+        storage_handler=storage_handler,
+    )
+
+    await scraping_use_case.execute()
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+
+    logger.info("Scraping completed in %.2f seconds." % elapsed_time)
+
+
+if __name__ == "__main__":
+
+    app()

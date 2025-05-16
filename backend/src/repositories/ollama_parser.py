@@ -1,0 +1,71 @@
+import ollama
+
+from src.entities.film import Film
+from src.entities.woa import WOAType, WorkOfArt
+from src.interfaces.content_parser import IContentParser
+from src.settings import Settings
+
+
+class OllamaParser[T: WorkOfArt](IContentParser):
+    """
+    OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
+    """
+
+    def __init__(self, settings: Settings = None):
+        """
+        TODO:
+        - store the model name in the settings
+        - remove temperature from the function signature
+
+        Args:
+            settings (Settings, optional): _description_. Defaults to None.
+        """
+
+        self.model = "mistral:latest"
+
+    def to_entity(self, context: str, question: str, temperature: float = 0) -> T:
+        """
+        TODO:
+            - remove temperature from the function signature
+            - manage pydantic validation errors
+
+        Args:
+            context (str): _description_
+            question (str): _description_
+            temperature (float, optional): _description_. Defaults to 0.
+
+        Returns:
+            T: _description_
+        """
+
+        # https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
+        entity_type: T = self.__orig_class__.__args__[0]
+
+        prompt = f"Context: {context}\n\nQuestion: {question}\nAnswer:"
+
+        response = ollama.chat(
+            model=self.model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            format=entity_type.model_json_schema(),
+            options={
+                "temperature": temperature
+            },  # Set temperature to 0 for more deterministic
+        )
+
+        msg = response.message.content
+
+        woa = entity_type.model_validate_json(msg)
+
+        if issubclass(entity_type, Film):
+            # set the uid to the work of art id
+            woa.woa_type = WOAType.FILM
+
+        # weird bug, I cannot make the field_validator work
+        woa.ensure_uid()
+
+        return woa
