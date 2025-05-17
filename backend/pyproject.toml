@@ -38,7 +38,8 @@ dependencies = [
 package-mode = false
 
 [tool.poe.tasks]
-extract         = "python3 main.py extract"    
+run         = "python3 main.py"
+test        = "pytest"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.5"

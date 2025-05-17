@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import TypeVar
 
 import duckdb
 import orjson
@@ -7,20 +6,16 @@ from loguru import logger
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.entities.woa import WorkOfArt
 from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
 
-T = TypeVar("T", bound=Film | Person)
 
-
-class EntityStorageHandler[T: WorkOfArt](IStorageHandler[T]):
+class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
     """
-    A class to handle file persistence for entities.
+    handles persistence of entities into JSON files.
     """
 
     persistence_directory: Path
-    entity_type: WorkOfArt
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -36,9 +31,9 @@ class EntityStorageHandler[T: WorkOfArt](IStorageHandler[T]):
 
     def __init__(self, settings: Settings):
 
-        if issubclass(self.entity_type, Film):
+        if self.entity_type is Film:
             self.persistence_directory = settings.persistence_directory / "films"
-        elif issubclass(self.entity_type, Person):
+        elif self.entity_type is Person:
             self.persistence_directory = settings.persistence_directory / "persons"
         else:
             raise ValueError(
@@ -47,34 +42,38 @@ class EntityStorageHandler[T: WorkOfArt](IStorageHandler[T]):
             )
 
         self.persistence_directory.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Created dir '{self.persistence_directory}'")
+        logger.debug(f"Created dir '{self.persistence_directory}'")
 
-    def insert(self, o: T) -> None:
+    def insert(
+        self,
+        content_id: str,
+        content: dict,
+    ) -> None:
         """Saves the given data to a file."""
 
-        # TODO
         try:
-            path = self.persistence_directory / f"{o.uid}.json"
+            path = self.persistence_directory / f"{content_id}.json"
 
             # overwrite if exists
             if path.exists():
                 path.unlink()
 
             with open(path, "wb") as file:
-                file.write(orjson.dumps(o.model_dump(mode="json")))
+                file.write(orjson.dumps(content))
 
                 logger.info(f"Saved {self.entity_type} to {path}")
 
         except Exception as e:
-            logger.info(f"Error saving film {o}: {e}")
+            logger.info(f"Error saving content {content_id}: {e}")
 
-    def select(self, path: Path) -> T:
+    def select(self, content_id: str) -> dict:
         """Loads data from a file."""
 
-        # TODO
         try:
+            path = self.persistence_directory / f"{content_id}.json"
+
             with open(path, "rb") as file:
-                woa = self.entity_type.model_validate_json(file.read())
+                woa = orjson.loads(file.read())
                 return woa
         except Exception as e:
             logger.info(f"Error loading film from {path}: {e}")
@@ -85,7 +84,7 @@ class EntityStorageHandler[T: WorkOfArt](IStorageHandler[T]):
         order_by: str = "uid",
         after: T | None = None,
         limit: int = 100,
-    ) -> list[T]:
+    ) -> list[dict]:
         """Lists films in the persistent storage corresponding to the given criteria."""
 
         results = (
@@ -104,15 +103,12 @@ class EntityStorageHandler[T: WorkOfArt](IStorageHandler[T]):
             )
             return []
 
-        return [
-            self.entity_type.model_validate(dict(row))
-            for row in results.to_dict("records")
-        ]
+        return [dict(row) for row in results.to_dict("records")]
 
 
-class FilmStorageHandler(EntityStorageHandler[Film]):
+class JSONFilmStorageHandler(JSONEntityStorageHandler[Film]):
     pass
 
 
-class PersonStorageHandler(EntityStorageHandler[Person]):
+class JSONPersonStorageHandler(JSONEntityStorageHandler[Person]):
     pass

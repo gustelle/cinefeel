@@ -1,5 +1,3 @@
-from src.entities.film import Film
-from src.entities.person import Person
 from src.interfaces.link_extractor import WikiPageLink
 from src.repositories.wikipedia_extractor import WikipediaLinkExtractor
 
@@ -39,66 +37,15 @@ def test_extract_links_from_table():
         WikiPageLink(
             page_title="Film Title",
             page_id="Film_Title",
-            entity_type=Film,
         ),
         WikiPageLink(
             page_title="Other Film Title",
             page_id="Other_Film_Title",
-            entity_type=Film,
         ),
     ]
 
     # Call the function to test
-    result = extractor.retrieve_inner_links(html_content, entity_type=Film)
-
-    # Assert the result
-    assert all(
-        item in result for item in expected_output
-    ), f"Expected {expected_output}, but got {result}"
-    assert all(item in expected_output for item in result)
-
-
-def test_extract_links_excludes_external_links():
-    """
-    external links are not included in the result
-    """
-
-    # given
-    extractor = WikipediaLinkExtractor()
-
-    # Mock HTML content
-    html_content = """
-    <html>
-        <head>
-            <title>Test Page</title>
-        </head>
-        <body>
-            <table class="wikitable">
-                <tr>
-                    <th>Titre</th>
-                </tr>
-                <tr>
-                    <td><a href="./Film_Title">Film Title</a></td>
-                </tr>
-                <tr>
-                    <td><a href="http://www.allo.fr">Other Film Title</a></td>
-                </tr>
-            </table>
-        </body>
-    </html>
-    """
-
-    # Expected output
-    expected_output = [
-        WikiPageLink(
-            page_title="Film Title",
-            page_id="Film_Title",
-            entity_type=Film,
-        ),
-    ]
-
-    # Call the function to test
-    result = extractor.retrieve_inner_links(html_content, entity_type=Film)
+    result = extractor.retrieve_inner_links(html_content)
 
     # Assert the result
     assert all(
@@ -138,18 +85,16 @@ def test_extract_links_with_css_selector():
         WikiPageLink(
             page_title="Lucien Nonguet",
             page_id="Lucien_Nonguet",
-            entity_type=Person,
         ),
         WikiPageLink(
             page_title="Toto",
             page_id="toto",
-            entity_type=Person,
         ),
     ]
 
     # Call the function to test
     result = extractor.retrieve_inner_links(
-        html_content, css_selector="td:nth-child(2)", entity_type=Person
+        html_content, css_selector="td:nth-child(2)"
     )
 
     # Assert the result
@@ -187,14 +132,146 @@ def test_dedup_extract_links():
         WikiPageLink(
             page_title="Lucien Nonguet",
             page_id="Lucien_Nonguet",
-            entity_type=Person,
         ),
     ]
 
     # Call the function to test
     result = extractor.retrieve_inner_links(
-        html_content, css_selector="td:nth-child(2)", entity_type=Person
+        html_content, css_selector="td:nth-child(2)"
     )
 
     # Assert the result
     assert result == expected_output, f"Expected {expected_output}, but got {result}"
+
+
+def test_extract_links_with_no_links():
+    """
+    Test the extraction of links when there are no links in the HTML content.
+    """
+
+    # given
+    extractor = WikipediaLinkExtractor()
+
+    # Mock HTML content
+    html_content = """
+    <html>
+        <head>
+            <title>Test Page</title>
+        </head>
+        <body>
+            <table class="wikitable">
+                <tr>
+                    <th>Titre</th>
+                </tr>
+                <tr>
+                    <td>No Links Here</td>
+                </tr>
+            </table>
+        </body>
+    </html>
+    """
+
+    # Expected output
+    expected_output = []
+
+    # Call the function to test
+    result = extractor.retrieve_inner_links(html_content)
+
+    # Assert the result
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+
+
+def test_extract_links_excludes_external_links():
+    """
+    Test the extraction of links when there are external links in the HTML content.
+    """
+
+    # given
+    extractor = WikipediaLinkExtractor()
+
+    # Mock HTML content
+    html_content = """
+    <html>
+        <head>
+            <title>Test Page</title>
+        </head>
+        <body>
+            <table class="wikitable">
+                <tr>
+                    <th>Titre</th>
+                </tr>
+                <tr>
+                    <td><a href="./Film_Title">Film Title</a></td>
+                </tr>
+                <tr>
+                    <td><a href="http://www.external-link.com">External Link</a></td>
+                </tr>
+            </table>
+        </body>
+    </html>
+    """
+
+    # Expected output
+    expected_output = [
+        WikiPageLink(
+            page_title="Film Title",
+            page_id="Film_Title",
+        ),
+    ]
+
+    # Call the function to test
+    result = extractor.retrieve_inner_links(html_content)
+
+    # Assert the result
+    assert all(
+        item in result for item in expected_output
+    ), f"Expected {expected_output}, but got {result}"
+    assert all(item in expected_output for item in result)
+
+
+def test_extract_links_excludes_non_existing_pages():
+    """
+    Test the extraction of links when there are non-existing pages in the HTML content.
+    """
+
+    # given
+    extractor = WikipediaLinkExtractor()
+
+    # Mock HTML content
+    html_content = """
+    <html>
+        <head>
+            <title>Test Page</title>
+        </head>
+        <body>
+            <table class="wikitable">
+                <tr>
+                    <th>Titre</th>
+                </tr>
+                <tr>
+                    <td><a href="./Film_Title">Film Title</a></td>
+                </tr>
+                <tr>
+                    <td><a href="./Non_Existing_Page?action=edit" title="Non Existing Page">Non Existing Page</a></td>
+                </tr>
+            </table>
+        </body>
+    </html>
+    """
+
+    # Expected output
+    expected_output = [
+        WikiPageLink(
+            page_title="Film Title",
+            page_id="Film_Title",
+        ),
+    ]
+
+    # Call the function to test
+    result = extractor.retrieve_inner_links(html_content)
+
+    # Assert the result
+    assert all(
+        item in result for item in expected_output
+    ), f"Expected {expected_output}, but got {result}"
+    assert all(item in expected_output for item in result)

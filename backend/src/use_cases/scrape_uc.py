@@ -11,13 +11,21 @@ from src.settings import Settings
 
 
 class WikipediaDownloadUseCase:
+    """TODO
+    - test case where storage_handlers is void or None
 
-    storage_handler: IStorageHandler
+    """
+
+    storage_handlers: list[IStorageHandler]
     settings: Settings
 
-    def __init__(self, storage_handler: IStorageHandler, settings: Settings = None):
+    def __init__(
+        self,
+        storage_handlers: list[IStorageHandler] = None,
+        settings: Settings = None,
+    ):
         self.settings = settings or Settings()
-        self.storage_handler = storage_handler
+        self.storage_handlers = storage_handlers
 
     async def execute(self):
 
@@ -32,7 +40,7 @@ class WikipediaDownloadUseCase:
             link_extractor=link_extractor,
             settings=self.settings,
             task_runner=task_runner,
-            storage_handler=self.storage_handler,
+            storage_handlers=self.storage_handlers,
         )
 
         start_time = time.time()

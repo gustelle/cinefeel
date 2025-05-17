@@ -3,30 +3,54 @@ from typing import Generator
 
 from loguru import logger
 
+from src.entities.film import Film
+from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler
-from src.settings import Settings
 
 
-class HtmlContentStorageHandler(IStorageHandler):
+class HtmlContentStorageHandler[T: Film | Person](IStorageHandler[T, str]):
     """
-    A class to handle persistent storage of raw content.
+    handles storage and retrieval of HTML files on disk.
 
     TODO:
-    - take into account the content type (e.g. film, person) when saving
     - add a mechanism to delete old content
     - testing
     """
 
     path: Path
 
+    def __class_getitem__(cls, generic_type):
+        """Called when the class is indexed with a type parameter.
+        Enables to guess the type of the entity being stored.
+
+        Thanks to :
+        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
+        """
+        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
+        new_cls.entity_type = generic_type
+
+        logger.debug(
+            f"Created class '{new_cls.__name__}' with entity type '{new_cls.entity_type}'"
+        )
+
+        return new_cls
+
     def __init__(self, path: Path):
-        self.path = path
+
+        # entity_type is set by the generic type in the class definition
+        # see `IStorageHandler.__class_getitem__`
+        self.path = path / "html" / self.entity_type.__name__.lower()
         self.path.mkdir(parents=True, exist_ok=True)
 
-    def insert(self, content_id: str, content: str) -> None:
+        logger.info(f"Created dir '{self.path}'")
+
+    def insert(
+        self,
+        content_id: str,
+        content: str,
+    ) -> None:
         """Saves the given data to a file."""
 
-        # TODO
         try:
             path = self.path / f"{content_id}.html"
 
@@ -42,10 +66,12 @@ class HtmlContentStorageHandler(IStorageHandler):
         except Exception as e:
             logger.info(f"Error saving '{content_id}': {e}")
 
-    def select(self, content_id: str) -> str:
+    def select(
+        self,
+        content_id: str,
+    ) -> str:
         """Loads data from a file."""
 
-        # TODO
         try:
             path = self.path / f"{content_id}.html"
             with open(path, "r") as file:
@@ -54,10 +80,11 @@ class HtmlContentStorageHandler(IStorageHandler):
             logger.info(f"Error loading '{path}': {e}")
             return None
 
-    def scan(self) -> Generator[str, None, None]:
+    def scan(
+        self,
+    ) -> Generator[str, None, None]:
         """Scans the persistent storage and iterates over contents."""
 
-        # TODO
         try:
             for file in self.path.iterdir():
                 if file.is_file() and file.suffix == ".html":
@@ -67,15 +94,3 @@ class HtmlContentStorageHandler(IStorageHandler):
         except Exception as e:
             logger.info(f"Error scanning '{self.path}': {e}")
             return []
-
-
-class RawFilmStorageHandler(HtmlContentStorageHandler):
-
-    def __init__(self, settings: Settings):
-        super().__init__(settings.persistence_directory / "films" / "raw")
-
-
-class RawPersonStorageHandler(HtmlContentStorageHandler):
-
-    def __init__(self, settings: Settings):
-        super().__init__(settings.persistence_directory / "persons" / "raw")

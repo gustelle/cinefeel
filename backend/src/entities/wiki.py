@@ -1,9 +1,4 @@
-from typing import Type
-
 from pydantic import BaseModel, ConfigDict, Field
-
-from src.entities.film import Film
-from src.entities.person import Person
 
 
 class WikiPageLink(BaseModel):
@@ -14,12 +9,6 @@ class WikiPageLink(BaseModel):
     # use python-re to support lookbehind assertions
     # see https://github.com/pydantic/pydantic/issues/9729
     model_config = ConfigDict(regex_engine="python-re")
-
-    entity_type: Type[Film] | Type[Person] = Field(
-        ...,
-        description="The type of the page linked to. This can be a person, a list of elements, or a work of art.",
-        examples=["Film", "Person"],
-    )
 
     page_title: str | None = Field(
         None,
