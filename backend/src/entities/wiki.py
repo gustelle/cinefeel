@@ -1,14 +1,9 @@
+from typing import Type
 
 from pydantic import BaseModel, ConfigDict, Field
 
-# class WikiPageLinkType(StrEnum):
-#     """
-#     Enum for the type of page.
-#     """
-
-#     PERSON = "person"
-#     PAGE_LIST = "page_list"
-#     WORK_OF_ART = "work_of_art"
+from src.entities.film import Film
+from src.entities.person import Person
 
 
 class WikiPageLink(BaseModel):
@@ -20,11 +15,11 @@ class WikiPageLink(BaseModel):
     # see https://github.com/pydantic/pydantic/issues/9729
     model_config = ConfigDict(regex_engine="python-re")
 
-    # link_type: WikiPageLinkType = Field(
-    #     ...,
-    #     description="The type of the page linked to. This can be a person, a list of elements, or a work of art.",
-    #     examples=["person", "page_list", "work_of_art"],
-    # )
+    entity_type: Type[Film] | Type[Person] = Field(
+        ...,
+        description="The type of the page linked to. This can be a person, a list of elements, or a work of art.",
+        examples=["Film", "Person"],
+    )
 
     page_title: str | None = Field(
         None,

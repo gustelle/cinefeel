@@ -1,3 +1,5 @@
+from src.entities.film import Film
+from src.entities.person import Person
 from src.interfaces.link_extractor import WikiPageLink
 from src.repositories.wikipedia_extractor import WikipediaLinkExtractor
 
@@ -20,11 +22,12 @@ def test_extract_links_from_table():
             <table class="wikitable">
                 <tr>
                     <th>Titre</th>
-                    <th>Réalisateur</th>
                 </tr>
                 <tr>
                     <td><a href="./Film_Title">Film Title</a></td>
-                    <td><a rel="mw:WikiLink" href="./Lucien_Nonguet" title="Lucien Nonguet" id="mwFw">Lucien Nonguet</a></td>
+                </tr>
+                <tr>
+                    <td><a href="./Other_Film_Title">Other Film Title</a></td>
                 </tr>
             </table>
         </body>
@@ -36,15 +39,17 @@ def test_extract_links_from_table():
         WikiPageLink(
             page_title="Film Title",
             page_id="Film_Title",
+            entity_type=Film,
         ),
         WikiPageLink(
-            page_title="Lucien Nonguet",
-            page_id="Lucien_Nonguet",
+            page_title="Other Film Title",
+            page_id="Other_Film_Title",
+            entity_type=Film,
         ),
     ]
 
     # Call the function to test
-    result = extractor.retrieve_inner_links(html_content)
+    result = extractor.retrieve_inner_links(html_content, entity_type=Film)
 
     # Assert the result
     assert all(
@@ -53,7 +58,56 @@ def test_extract_links_from_table():
     assert all(item in expected_output for item in result)
 
 
-def test_extract_links_from_table_target_only_col():
+def test_extract_links_excludes_external_links():
+    """
+    external links are not included in the result
+    """
+
+    # given
+    extractor = WikipediaLinkExtractor()
+
+    # Mock HTML content
+    html_content = """
+    <html>
+        <head>
+            <title>Test Page</title>
+        </head>
+        <body>
+            <table class="wikitable">
+                <tr>
+                    <th>Titre</th>
+                </tr>
+                <tr>
+                    <td><a href="./Film_Title">Film Title</a></td>
+                </tr>
+                <tr>
+                    <td><a href="http://www.allo.fr">Other Film Title</a></td>
+                </tr>
+            </table>
+        </body>
+    </html>
+    """
+
+    # Expected output
+    expected_output = [
+        WikiPageLink(
+            page_title="Film Title",
+            page_id="Film_Title",
+            entity_type=Film,
+        ),
+    ]
+
+    # Call the function to test
+    result = extractor.retrieve_inner_links(html_content, entity_type=Film)
+
+    # Assert the result
+    assert all(
+        item in result for item in expected_output
+    ), f"Expected {expected_output}, but got {result}"
+    assert all(item in expected_output for item in result)
+
+
+def test_extract_links_with_css_selector():
     """
     target only the column with persons
     """
@@ -84,16 +138,18 @@ def test_extract_links_from_table_target_only_col():
         WikiPageLink(
             page_title="Lucien Nonguet",
             page_id="Lucien_Nonguet",
+            entity_type=Person,
         ),
         WikiPageLink(
             page_title="Toto",
             page_id="toto",
+            entity_type=Person,
         ),
     ]
 
     # Call the function to test
     result = extractor.retrieve_inner_links(
-        html_content, css_selector="td:nth-child(2)"
+        html_content, css_selector="td:nth-child(2)", entity_type=Person
     )
 
     # Assert the result
@@ -131,12 +187,13 @@ def test_dedup_extract_links():
         WikiPageLink(
             page_title="Lucien Nonguet",
             page_id="Lucien_Nonguet",
+            entity_type=Person,
         ),
     ]
 
     # Call the function to test
     result = extractor.retrieve_inner_links(
-        html_content, css_selector="td:nth-child(2)"
+        html_content, css_selector="td:nth-child(2)", entity_type=Person
     )
 
     # Assert the result

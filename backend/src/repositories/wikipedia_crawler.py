@@ -2,6 +2,8 @@ import asyncio
 
 from loguru import logger
 
+from src.entities.film import Film
+from src.entities.wiki import WikiPageLink
 from src.interfaces.data_source import IDataSource
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.link_extractor import ILinkExtractor
@@ -80,7 +82,7 @@ class WikipediaCrawler(IDataSource):
                 logger.error(f"Page '{page_id}' not found")
             return None
 
-    async def download(self, start_page: str) -> list[str]:
+    async def download(self, start_page: str) -> list[WikiPageLink]:
         """
         downloads the HTML pages and returns the list of page IDs.
 
@@ -88,7 +90,7 @@ class WikipediaCrawler(IDataSource):
             start_page (str): The ID of the page containing the list of films.
 
         Returns:
-            list[str]: A list of page IDs.
+            list[WikiPageLink]: A list of page links.
         """
 
         html = await self.download_page(page_id=start_page)
@@ -98,12 +100,11 @@ class WikipediaCrawler(IDataSource):
 
         # extract the list of films from the HTML
         try:
-            pages_ids: list[str] = await self.async_task_runner.submit(
+            pages_ids: list[WikiPageLink] = await self.async_task_runner.submit(
                 self.links_extractor.retrieve_inner_links,
                 html_content=html,
-                attrs={
-                    "class": "wikitable",
-                },
+                css_selector=".wikitable td:nth-child(1)",  # first column of the table containing the films
+                entity_type=Film,  # we are going to extract films
             )
         except Exception as e:
             logger.error(f"Error extracting list of films: {e}")
@@ -122,6 +123,11 @@ class WikipediaCrawler(IDataSource):
     async def crawl(self) -> None:
         """
         Crawl the Wikipedia page and persist the data using the persistence handler.
+
+        TODO:
+        - set a threshold for the number of pages to crawl
+        - add a way to stop the crawling process
+        - add a way to resume the crawling process
         """
 
         tasks = []

@@ -1,8 +1,11 @@
-from typing import Generator
+from typing import Generator, Type
 
 import polars as pl
 from bs4 import BeautifulSoup, Tag
+from loguru import logger
 
+from src.entities.film import Film
+from src.entities.person import Person
 from src.entities.wiki import WikiPageLink
 from src.interfaces.link_extractor import ILinkExtractor
 
@@ -17,9 +20,12 @@ class WikipediaLinkExtractor(ILinkExtractor):
 
     """
 
+    _inner_page_id_prefix = "./"
+
     def retrieve_inner_links(
         self,
         html_content: str,
+        entity_type: Type[Film] | Type[Person],
         css_selector: str | None = None,
     ) -> list[WikiPageLink]:
         """
@@ -34,6 +40,7 @@ class WikipediaLinkExtractor(ILinkExtractor):
 
         Args:
             html_content (str): The HTML content to parse.
+            entity_type (Type[Film] | Type[Person]): The type of entity to extract links for.
             css_selector (str): filter the links within the targeted html structure. Defaults to None.
                 Example: "td:nth-child(2)" to filter links belonging to the second column of a table.
 
@@ -56,7 +63,7 @@ class WikipediaLinkExtractor(ILinkExtractor):
                 css_selector="table td:nth-child(2)"
             )
             # links = [
-            #     WikiPageLink(page_title="Lucien Nonguet", page_id="Lucien_Nonguet"),
+            #     WikiPageLink(page_title="Lucien Nonguet", page_id="Lucien_Nonguet", entity_type=Person),
             # ]
         ```
 
@@ -75,27 +82,41 @@ class WikipediaLinkExtractor(ILinkExtractor):
         roots = soup.select(css_selector) if css_selector else soup.find_all()
 
         for root in roots:
-            for link in self._parse_structure(root):
+            for link in self._parse_structure(root, entity_type):
                 links.append(link)
 
         return self._deduplicate_links(links)
 
-    def _parse_structure(self, tag: Tag) -> Generator[WikiPageLink, None, None]:
+    def _parse_structure(
+        self, tag: Tag, entity_type: Type[Film] | Type[Person]
+    ) -> Generator[WikiPageLink, None, None]:
 
         match tag.name:
 
             case "a":
+
+                if not tag.get("href", "").startswith(self._inner_page_id_prefix):
+                    logger.debug(
+                        f"Skipping link: {tag.get('href')} (not a Wikipedia link)"
+                    )
+                    return
+
                 linked_page_id = tag.get("href").split("/")[-1]
-                yield WikiPageLink(
-                    page_title=tag.get_text(strip=True),
-                    page_id=linked_page_id,
-                )
+                try:
+                    yield WikiPageLink(
+                        entity_type=entity_type,
+                        page_title=tag.get_text(strip=True),
+                        page_id=linked_page_id,
+                    )
+                except Exception as e:
+                    logger.error(f"Error creating WikiPageLink: {e} for tag: {tag}")
+                    return
 
             case _:
 
                 for child in tag.find_all(recursive=False):
                     # Recursively parse child elements
-                    yield from self._parse_structure(child)
+                    yield from self._parse_structure(child, entity_type)
 
     def _deduplicate_links(self, links: list[WikiPageLink]) -> list[WikiPageLink]:
         """

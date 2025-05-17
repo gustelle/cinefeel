@@ -12,7 +12,9 @@ class HtmlContentStorageHandler(IStorageHandler):
     A class to handle persistent storage of raw content.
 
     TODO:
-        - testing
+    - take into account the content type (e.g. film, person) when saving
+    - add a mechanism to delete old content
+    - testing
     """
 
     path: Path

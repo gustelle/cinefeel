@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Protocol, Type
 
 from src.entities.wiki import WikiPageLink
 
@@ -9,7 +9,7 @@ class ILinkExtractor(Protocol):
     """
 
     def retrieve_inner_links(
-        self, html_content: str, *args, **kwargs
+        self, html_content: str, entity_type: Type, *args, **kwargs
     ) -> list[WikiPageLink]:
         """
         Parses the given HTML content and returns a list of `~T` objects.
