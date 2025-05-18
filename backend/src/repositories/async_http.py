@@ -1,7 +1,9 @@
 import asyncio
+import re
 from typing import Literal
 
 import aiohttp
+from aiohttp_client_cache import CachedSession, FileBackend
 from loguru import logger
 from tenacity import (
     retry,
@@ -17,7 +19,7 @@ from src.settings import Settings
 class AsyncHttpClient(IHttpClient):
     """in charge of scraping data from the web using aiohttp"""
 
-    _session: aiohttp.ClientSession
+    _session: aiohttp.ClientSession | CachedSession
 
     def __init__(
         self,
@@ -28,9 +30,22 @@ class AsyncHttpClient(IHttpClient):
             limit=settings.scraper_max_concurrent_connections,
             loop=asyncio.get_event_loop(),
         )
-        self._session = aiohttp.ClientSession(
-            connector=connector, loop=asyncio.get_event_loop()
-        )
+
+        if settings.crawler_use_cache:
+            self._session = CachedSession(
+                cache=FileBackend(
+                    cache_name=".crawler_cache",
+                    expire_after=settings.crawler_cache_expire_after,
+                    cache_control=True,  # use cache-control headers if present
+                ),
+                connector=connector,
+                loop=asyncio.get_event_loop(),
+            )
+        else:
+            self._session = aiohttp.ClientSession(
+                connector=connector,
+                loop=asyncio.get_event_loop(),
+            )
 
         self._session.headers.update(
             {
@@ -79,9 +94,18 @@ class AsyncHttpClient(IHttpClient):
             endpoint, params=params, headers=headers
         ) as response:
 
-            try:
+            if isinstance(self._session, CachedSession):
 
-                # logger.info(f"Requesting {endpoint}")
+                # debug info about the cache
+                page_path = re.match(
+                    r"https?:\/\/.*\/page\/(.*?)\/html", endpoint
+                ).group(1)
+
+                logger.debug(
+                    f"'{page_path}' came from cache {response.from_cache} (expires: {response.expires})"
+                )
+
+            try:
 
                 response.raise_for_status()
 

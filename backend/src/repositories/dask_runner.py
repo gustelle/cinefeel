@@ -1,8 +1,8 @@
 import asyncio
-from typing import Awaitable
+from typing import Awaitable, Sequence
 
 from dask.distributed import Client as DaskClient
-from distributed import LocalCluster
+from distributed import Future, LocalCluster
 from loguru import logger
 
 from src.interfaces.task_runner import ITaskRunner
@@ -34,6 +34,24 @@ class DaskRunner(ITaskRunner):
             await self._init_dask()
 
         return await self._dask_client.submit(coro, *args, **kwargs)
+
+    async def gather(self, *tasks: Sequence[Future]) -> Sequence:
+        """
+        Gather the results of the given tasks by running them with Dask in non-blocking mode.
+        :param coros: The tasks to gather.
+
+        Errors are skipped and not raised, thus the results may contain None values.
+
+        Returns:
+            The results of the tasks.
+        """
+
+        if not self.is_ready():
+            await self._init_dask()
+
+        logger.debug(f"Gathering {len(tasks)} tasks with Dask")
+
+        return await self._dask_client.gather(tasks, errors="skip", asynchronous=True)
 
     async def _init_dask(self):
 

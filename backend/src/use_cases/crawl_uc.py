@@ -10,7 +10,7 @@ from src.repositories.wikipedia_extractor import WikipediaLinkExtractor
 from src.settings import Settings
 
 
-class WikipediaDownloadUseCase:
+class WikipediaCrawlUseCase:
     """TODO
     - test case where storage_handlers is void or None
 
@@ -48,9 +48,6 @@ class WikipediaDownloadUseCase:
         # get the films for each year
         async with task_runner:
             async with wiki_repo:
-                # TODO
-                # manage start_urls and cut in chunks
-                # to avoid too many requests
                 await wiki_repo.crawl()
 
         end_time = time.time()

@@ -18,3 +18,12 @@ class ITaskRunner:
         :param task: The task to run.
         """
         raise NotImplementedError("TaskRunner.run() must be implemented.")
+
+    def gather(self, *args, **kwargs) -> None:
+        """
+        Gather the results of the given tasks.
+
+        :param tasks: The tasks to gather.
+        :return: The results of the tasks.
+        """
+        raise NotImplementedError("TaskRunner.gather() must be implemented.")

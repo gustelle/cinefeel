@@ -13,8 +13,8 @@ app = typer.Typer()
 @app.command(
     help="Download the HTML content from Wikipedia pages and store it in a local directory."
 )
-def download():
-    uvloop.run(async_download())
+def crawl():
+    uvloop.run(async_crawl())
 
 
 @app.command()
@@ -27,40 +27,31 @@ def extract():
         JSONPersonStorageHandler,
     )
     from src.settings import Settings
-    from src.use_cases.extract_uc import JsonExtractionUseCase
+    from src.use_cases.extract_uc import HtmlExtractionUseCase
 
     settings = Settings()
 
-    # where the JSON files are extracted
-    film_storage_handler = JSONFilmStorageHandler(settings=settings)
-    person_strorage_handler = JSONPersonStorageHandler(settings=settings)
-
-    # where the raw html is stored
-    html_person_retriever = HtmlContentStorageHandler[Person](
-        path=settings.persistence_directory
-    )
-    html_film_retriever = HtmlContentStorageHandler[Film](
-        path=settings.persistence_directory
-    )
-
-    analyzer = HtmlContentAnalyzer()
-
-    # TODO: Split in 2 steps:
-    # 1. extract Persons
-    # 2. extract Films
-    # instead of using the same use case for both which makes it more complex
-    uc = JsonExtractionUseCase(
-        storage_handlers=[film_storage_handler, person_strorage_handler],
-        html_retrievers=[
-            html_person_retriever,
-            html_film_retriever,
-        ],  # where raw html can be found
-        html_extractor=analyzer,
+    uc = HtmlExtractionUseCase(
+        storage_handler=JSONFilmStorageHandler(settings=settings),
+        html_retriever=HtmlContentStorageHandler[Film](
+            path=settings.persistence_directory
+        ),
+        html_extractor=HtmlContentAnalyzer(),
         settings=settings,
     )
     uc.execute(wait_for_completion=True)
 
     logger.info("Extraction of films completed.")
+
+    uc = HtmlExtractionUseCase(
+        storage_handler=JSONPersonStorageHandler(settings=settings),
+        html_retriever=HtmlContentStorageHandler[Person](
+            path=settings.persistence_directory
+        ),
+        html_extractor=HtmlContentAnalyzer(),
+        settings=settings,
+    )
+    uc.execute(wait_for_completion=True)
 
     logger.info("Extraction of persons completed.")
 
@@ -102,11 +93,11 @@ def index():
     logger.info("Indexation of Persons completed.")
 
 
-async def async_download():
+async def async_crawl():
 
     from src.repositories.html_storage import HtmlContentStorageHandler
     from src.settings import Settings
-    from src.use_cases.scrape_uc import WikipediaDownloadUseCase
+    from src.use_cases.crawl_uc import WikipediaCrawlUseCase
 
     start_time = time.time()
     logger.info("Starting scraping...")
@@ -119,12 +110,12 @@ async def async_download():
         path=settings.persistence_directory
     )
 
-    scraping_use_case = WikipediaDownloadUseCase(
+    crawl = WikipediaCrawlUseCase(
         settings=settings,
         storage_handlers=[film_storage_handler, person_storage_handler],
     )
 
-    await scraping_use_case.execute()
+    await crawl.execute()
 
     end_time = time.time()
     elapsed_time = end_time - start_time
