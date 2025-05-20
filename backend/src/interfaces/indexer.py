@@ -9,7 +9,7 @@ class IDocumentIndexer[T: (Film, Person)](Protocol):
     Interface for indexing documents.
     """
 
-    def upsert(self, docs: Sequence[T], *args, **kwargs) -> None:
+    def insert_or_update(self, docs: Sequence[T], *args, **kwargs) -> None:
         """
         Index a document in the index in upsert mode.
         This means that if the document already exists, it will be updated.

@@ -16,6 +16,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
     """
 
     persistence_directory: Path
+    entity_type: type[T]
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -84,7 +85,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
         order_by: str = "uid",
         after: T | None = None,
         limit: int = 100,
-    ) -> list[dict]:
+    ) -> list[T]:
         """Lists films in the persistent storage corresponding to the given criteria."""
 
         results = (
@@ -103,7 +104,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
             )
             return []
 
-        return [dict(row) for row in results.to_dict("records")]
+        return [self.entity_type(**dict(row)) for row in results.to_dict("records")]
 
 
 class JSONFilmStorageHandler(JSONEntityStorageHandler[Film]):

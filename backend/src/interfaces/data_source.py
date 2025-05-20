@@ -1,9 +1,9 @@
-from typing import Protocol
+from typing import Generator, Protocol
 
 from src.interfaces.http_client import IHttpClient
 
 
-class IDataSource(Protocol):
+class ICrawler(Protocol):
     """
     Interface for a data source.
     """
@@ -19,7 +19,7 @@ class IDataSource(Protocol):
         """
         self.scraper = scraper
 
-    def crawl(self, **kwargs) -> list:
+    def crawl(self, **kwargs) -> Generator[str, None, None]:
         """
         Crawl the data source and return a list of items.
 

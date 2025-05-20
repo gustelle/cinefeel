@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # `.env.prod` takes priority over `.env`
         env_file=(".env", ".env.prod")
+    )
+
+    redis_url: RedisDsn = Field(
+        default="redis://localhost:6379/0",
+        description="The URL of the Redis server",
     )
 
     crawler_use_cache: bool = Field(

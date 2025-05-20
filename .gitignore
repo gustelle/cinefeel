@@ -1,5 +1,6 @@
 meili_data/
 .venv/
+.crawler_cache/
 data/
 
 # From https://github.com/github/gitignore/blob/main/Python.gitignore

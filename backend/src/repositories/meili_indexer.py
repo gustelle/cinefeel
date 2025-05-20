@@ -75,7 +75,7 @@ class MeiliIndexer[T: (Film, Person)](IDocumentIndexer[T]):
 
         return self.index
 
-    def upsert(
+    def insert_or_update(
         self,
         docs: list[T],
         wait_for_completion: bool = True,
