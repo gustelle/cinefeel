@@ -1,11 +1,10 @@
-
 from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 
 from src.entities.film import Film
 from src.interfaces.indexer import IDocumentIndexer
-from src.repositories.json_storage import JSONFilmStorageHandler
-from src.repositories.meili_indexer import MeiliIndexer
+from src.repositories.search.meili_indexer import MeiliIndexer
+from src.repositories.storage.json_storage import JSONFilmStorageHandler
 from src.settings import Settings
 
 CONCURRENCY = 4

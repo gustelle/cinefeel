@@ -7,9 +7,9 @@ from src.entities.film import Film
 from src.entities.wiki import WikiPageLink
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.link_extractor import ILinkExtractor
-from src.repositories.async_http import AsyncHttpClient
-from src.repositories.html_storage import HtmlContentStorageHandler
-from src.repositories.wikipedia_extractor import WikipediaLinkExtractor
+from src.repositories.html.wikipedia_extractor import WikipediaLinkExtractor
+from src.repositories.http.async_http import AsyncHttpClient
+from src.repositories.storage.html_storage import HtmlContentStorageHandler
 from src.settings import Settings, WikiTOCPageConfig
 
 CONCURRENCY = 4

@@ -2,9 +2,9 @@ import time
 
 from loguru import logger
 
-from src.repositories.flow_analyzer import analyze_films
-from src.repositories.flow_downloader import download_film_pages
-from src.repositories.flow_indexer import index_films
+from src.repositories.flows.flow_analyzer import analyze_films
+from src.repositories.flows.flow_downloader import download_film_pages
+from src.repositories.flows.flow_indexer import index_films
 from src.settings import Settings
 
 
