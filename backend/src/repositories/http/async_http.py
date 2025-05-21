@@ -1,16 +1,9 @@
 import asyncio
-import re
 from typing import Literal
 
 import aiohttp
 from aiohttp_client_cache import CachedSession, FileBackend
 from loguru import logger
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    stop_after_delay,
-)
 
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.settings import Settings
@@ -58,11 +51,6 @@ class AsyncHttpClient(IHttpClient):
             f"AsyncHttpClient initialized with {settings.scraper_max_concurrent_connections} connections"
         )
 
-    @retry(
-        retry=retry_if_exception_type(aiohttp.ClientError),
-        stop=(stop_after_delay(180) | stop_after_attempt(3)),
-        reraise=True,  # re-raise the last exception
-    )
     async def send(
         self,
         endpoint: str,
@@ -94,17 +82,6 @@ class AsyncHttpClient(IHttpClient):
             endpoint, params=params, headers=headers
         ) as response:
 
-            if isinstance(self._session, CachedSession):
-
-                # debug info about the cache
-                page_path = re.match(
-                    r"https?:\/\/.*\/page\/(.*?)\/html", endpoint
-                ).group(1)
-
-                logger.debug(
-                    f"'{page_path}' came from cache {response.from_cache} (expires: {response.expires})"
-                )
-
             try:
 
                 response.raise_for_status()
@@ -115,24 +92,10 @@ class AsyncHttpClient(IHttpClient):
                     else await response.json()
                 )
 
-            except aiohttp.ClientResponseError as e:
+            except (aiohttp.ClientResponseError, aiohttp.ClientError) as e:
 
-                if response.status in [401, 403, 404, 429]:
-                    logger.info(
-                        f"[{response.status}] Abandoning request to {endpoint} with params {params}"
-                    )
-                    raise HttpError(
-                        f"Failed to fetch data from '{endpoint}': {e}",
-                        status_code=response.status,
-                    ) from e
-
-                else:
-                    # should be retried
-                    raise
-
-            except aiohttp.ContentTypeError as e:
                 raise HttpError(
-                    f"Failed to parse response from '{endpoint}': {e}",
+                    f"Error {e.status} while fetching {endpoint}: {e.message}",
                     status_code=e.status,
                 ) from e
 

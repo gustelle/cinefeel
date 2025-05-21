@@ -2,9 +2,7 @@ import time
 
 from loguru import logger
 
-from src.repositories.flows.flow_analyzer import analyze_films
-from src.repositories.flows.flow_downloader import download_film_pages
-from src.repositories.flows.flow_indexer import index_films
+from src.repositories.flows.flow_chain import run_chain
 from src.settings import Settings
 
 
@@ -26,15 +24,7 @@ class WikipediaFilmAnalysisUseCase:
 
         start_time = time.time()
 
-        await download_film_pages(
-            settings=self.settings,
-        )
-
-        analyze_films(
-            settings=self.settings,
-        )
-
-        index_films(
+        await run_chain(
             settings=self.settings,
         )
 

@@ -1,9 +1,9 @@
 from prefect import flow, get_run_logger
 
 from src.entities.film import Film
-from src.repositories.html_analyzer import HtmlContentAnalyzer
-from src.repositories.html_storage import HtmlContentStorageHandler
-from src.repositories.json_storage import JSONFilmStorageHandler
+from src.repositories.ml.html_analyzer import HtmlContentAnalyzer
+from src.repositories.storage.html_storage import HtmlContentStorageHandler
+from src.repositories.storage.json_storage import JSONFilmStorageHandler
 from src.settings import Settings
 
 CONCURRENCY = 4

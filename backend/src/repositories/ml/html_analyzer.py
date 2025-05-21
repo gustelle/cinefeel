@@ -7,8 +7,8 @@ from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.content_parser import IContentParser
 from src.interfaces.similarity import ISimilaritySearch
 
-from .html_semantic import HtmlSection, HtmlSemantic
-from .nlp.bert_similarity import BertSimilaritySearch
+from ..html_parser.html_semantic import HtmlSection, HtmlSemantic
+from .bert_similarity import BertSimilaritySearch
 from .ollama_parser import OllamaParser
 
 

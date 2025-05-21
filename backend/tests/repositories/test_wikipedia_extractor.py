@@ -1,5 +1,5 @@
 from src.interfaces.link_extractor import WikiPageLink
-from src.repositories.html.wikipedia_extractor import WikipediaLinkExtractor
+from src.repositories.html_parser.wikipedia_extractor import WikipediaLinkExtractor
 
 
 def test_extract_links_from_table():

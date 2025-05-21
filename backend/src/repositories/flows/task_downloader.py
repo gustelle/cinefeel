@@ -1,13 +1,16 @@
 import asyncio
+from typing import Any
 
-from prefect import flow, get_run_logger, task
+from prefect import Task, flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
+from prefect.client.schemas.objects import TaskRun
+from prefect.states import State
 
 from src.entities.film import Film
 from src.entities.wiki import WikiPageLink
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.link_extractor import ILinkExtractor
-from src.repositories.html.wikipedia_extractor import WikipediaLinkExtractor
+from src.repositories.html_parser.wikipedia_extractor import WikipediaLinkExtractor
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.storage.html_storage import HtmlContentStorageHandler
 from src.settings import Settings, WikiTOCPageConfig
@@ -15,7 +18,21 @@ from src.settings import Settings, WikiTOCPageConfig
 CONCURRENCY = 4
 
 
-@task(cache_policy=NO_CACHE)
+def is_retriable(task: Task[..., Any], task_run: TaskRun, state: State[Any]) -> bool:
+    try:
+        state.result()
+    except Exception as e:
+        if isinstance(e, HttpError) and e.status_code >= 429:
+            return True
+    return False
+
+
+@task(
+    retries=3,
+    retry_delay_seconds=[1, 2, 5],
+    retry_condition_fn=is_retriable,
+    cache_policy=NO_CACHE,
+)
 async def download_page(
     page_id: str,
     settings: Settings,
@@ -32,31 +49,23 @@ async def download_page(
             If not provided, no storage will be performed.
     """
 
-    logger = get_run_logger()
-    try:
+    page_endpoint: str = "page/"
 
-        page_endpoint: str = "page/"
+    endpoint = f"{settings.mediawiki_base_url}/{page_endpoint}{page_id}/html"
 
-        endpoint = f"{settings.mediawiki_base_url}/{page_endpoint}{page_id}/html"
+    html = await http_client.send(
+        endpoint=endpoint,
+        response_type="text",
+        params=params,
+    )
 
-        html = await http_client.send(
-            endpoint=endpoint,
-            response_type="text",
-            params=params,
+    if html is not None and storage_handler is not None:
+        storage_handler.insert(
+            content_id=page_id,
+            content=html,
         )
 
-        if html is not None and storage_handler is not None:
-            storage_handler.insert(
-                content_id=page_id,
-                content=html,
-            )
-
-        return html
-
-    except HttpError as e:
-        if e.status_code == 404:
-            logger.error(f"Page '{page_id}' not found")
-        return None
+    return html
 
 
 @task(cache_policy=NO_CACHE)
