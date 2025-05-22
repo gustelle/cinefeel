@@ -50,7 +50,7 @@ def index_films(
             limit=batch_size,
         )
 
-        index_batch(batch, indexer)
+        index_batch.submit(batch, indexer)
 
         if batch is None or len(batch) == 0:
             logger.info(f"Last batch: {len(batch)} films")

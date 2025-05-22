@@ -1,3 +1,4 @@
+import glob
 from pathlib import Path
 from typing import Generator
 
@@ -81,15 +82,26 @@ class HtmlContentStorageHandler[T: Film | Person](IStorageHandler[T, str]):
             return None
 
     def scan(
-        self,
+        self, file_pattern: str = "*"  # match all files,
     ) -> Generator[str, None, None]:
-        """Scans the persistent storage and iterates over contents."""
+        """Scans the persistent storage and iterates over contents.
+
+        Args:
+            file_pattern (str, optional): a filename pattern to match. Defaults to None.
+
+        Returns:
+            Generator[str, None, None]: a generator of HTML contents.
+        """
+
+        logger.info(f"Scanning '{self.path}' for pattern '{file_pattern}'")
 
         try:
-            for file in self.path.iterdir():
-                if file.is_file() and file.suffix == ".html":
-                    with open(file, "r") as f:
-                        yield f.read()
+
+            file_path = self.path / f"{file_pattern}.html"
+            for file in glob.glob(str(file_path)):
+                logger.debug(f"Found file: {file}")
+                with open(file, "r") as f:
+                    yield f.read()
 
         except Exception as e:
             logger.info(f"Error scanning '{self.path}': {e}")

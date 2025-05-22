@@ -19,7 +19,7 @@ async def async_run_flow():
     Run the entire flow: crawl, extract, and index.
     """
 
-    from src.use_cases.download_uc import WikipediaFilmAnalysisUseCase
+    from src.use_cases.analyze_uc import WikipediaFilmAnalysisUseCase
 
     start_time = time.time()
     logger.info("Starting scraping...")

@@ -1,21 +1,16 @@
 import asyncio
 from typing import Any
 
-from prefect import Task, flow, get_run_logger, task
+from prefect import Task, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 from prefect.client.schemas.objects import TaskRun
 from prefect.states import State
 
-from src.entities.film import Film
 from src.entities.wiki import WikiPageLink
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.link_extractor import ILinkExtractor
-from src.repositories.html_parser.wikipedia_extractor import WikipediaLinkExtractor
-from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.storage.html_storage import HtmlContentStorageHandler
 from src.settings import Settings, WikiTOCPageConfig
-
-CONCURRENCY = 4
 
 
 def is_retriable(task: Task[..., Any], task_run: TaskRun, state: State[Any]) -> bool:
@@ -38,15 +33,24 @@ async def download_page(
     settings: Settings,
     http_client: IHttpClient,
     storage_handler: HtmlContentStorageHandler | None = None,
+    return_content: bool = False,
     **params,
 ) -> str | None:
     """
-    Get raw HTML from the Wikipedia API.
+    TODO:
+    - testing: what happens after 3 retries?
+    - verify no retrty on 404, 429
 
     Args:
-        page_id (str): The wikipedia ID of the page to download.
-        storage_handler (IStorageHandler, optional): The storage handler to use. Defaults to None.
-            If not provided, no storage will be performed.
+        page_id (str): The page ID to download.
+        settings (Settings): The settings object.
+        http_client (IHttpClient): The HTTP client to use for downloading.
+        storage_handler (HtmlContentStorageHandler | None, optional): The storage handler to use for storing the content. Defaults to None.
+        return_content (bool, optional): Whether to return the content. Defaults to False, in which case the content ID is returned.
+        **params: Additional parameters for the HTTP request.
+
+    Returns:
+        str | None: The content ID if the download was successful, None otherwise.
     """
 
     page_endpoint: str = "page/"
@@ -64,8 +68,10 @@ async def download_page(
             content_id=page_id,
             content=html,
         )
+    if return_content:
+        return html
 
-    return html
+    return page_id if html is not None else None
 
 
 @task(cache_policy=NO_CACHE)
@@ -93,7 +99,10 @@ async def fetch_wiki_page_links(
     logger = get_run_logger()
 
     html = await download_page(
-        page_id=page.page_id, settings=settings, http_client=http_client
+        page_id=page.page_id,
+        settings=settings,
+        http_client=http_client,
+        return_content=True,  # return the content
     )
 
     if html is None:
@@ -110,48 +119,3 @@ async def fetch_wiki_page_links(
     except Exception as e:
         logger.error(f"Error extracting list of films: {e}")
         return []
-
-
-@flow()
-async def download_film_pages(
-    settings: Settings,
-) -> None:
-
-    logger = get_run_logger()
-
-    storage_handler = HtmlContentStorageHandler[Film](
-        path=settings.persistence_directory,
-    )
-    link_extractor = WikipediaLinkExtractor()
-    http_client = AsyncHttpClient(settings=settings)
-
-    for page in settings.mediawiki_start_pages:
-        page_links = await fetch_wiki_page_links(
-            page=page,
-            link_extractor=link_extractor,
-            settings=settings,
-            http_client=http_client,
-        )
-
-        contents = await asyncio.gather(
-            *[
-                download_page(
-                    page_id=page_link.page_id,
-                    settings=settings,
-                    http_client=http_client,
-                    storage_handler=storage_handler,
-                )
-                for page_link in page_links
-                if isinstance(page_link, WikiPageLink)
-            ]
-        )
-
-        for result in contents:
-            if isinstance(result, Exception):
-                logger.error(f"Error: {result}")
-
-        logger.info(
-            f"downloaded {len(contents)} contents for {page.page_id}",
-        )
-
-    logger.info("Flow completed successfully.")

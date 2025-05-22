@@ -88,9 +88,12 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
     ) -> list[T]:
         """Lists films in the persistent storage corresponding to the given criteria."""
 
+        logger.info(
+            f"Querying {self.entity_type} in '{self.persistence_directory}' with criteria: {order_by}, {after}, {limit}"
+        )
         results = (
             duckdb.sql(
-                f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
+                f"SELECT * FROM read_json_auto('./{str(self.persistence_directory)}/*.json')"
             )
             .filter(f"uid > '{after.uid}'" if after else "1=1")
             .limit(limit)

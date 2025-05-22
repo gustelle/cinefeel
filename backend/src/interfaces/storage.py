@@ -8,6 +8,8 @@ from src.entities.person import Person
 @runtime_checkable
 class IStorageHandler[U: Film | Person, V: bytes | str | dict](Protocol):
 
+    # TODO; move this to an implementation
+    # this should not be in the interface
     persistence_directory: Path
 
     # the type of the entity being stored

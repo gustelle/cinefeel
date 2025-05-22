@@ -38,37 +38,38 @@ async def run_chain(
             http_client=http_client,
         )
 
-        # TODO: contents should be a list of Film entities
-        # to pass to the analyzer
-        contents = await asyncio.gather(
+        content_ids = await asyncio.gather(
             *[
                 download_page(
                     page_id=page_link.page_id,
                     settings=settings,
                     http_client=http_client,
                     storage_handler=storage_handler,
+                    return_content=False,  # for memory constraints, return the content ID
                 )
                 for page_link in page_links
                 if isinstance(page_link, WikiPageLink)
-            ]
+            ],
+            return_exceptions=True,
         )
 
-        for result in contents:
-            if isinstance(result, Exception):
-                logger.error(f"Error: {result}")
+        content_ids = [cid for cid in content_ids if isinstance(cid, str)]
 
         logger.info(
-            f"downloaded {len(contents)} contents for {page.page_id}",
+            f"Downloaded {len(content_ids)} contents for {page.page_id}",
         )
 
-        # TODO: pass the contents to the analyzer
+        # filter the contents to only include the ones that are not already in the storage
         analyze_films(
             settings=settings,
+            content_ids=content_ids,
         )
 
-        # TODO: pass the contents to the indexer
-        index_films(
-            settings=settings,
-        )
+    # finally, index the films
+    # here we can iterate over all the films in the storage
+    # indexing is not a blocking operation
+    index_films(
+        settings=settings,
+    )
 
     logger.info("Flow completed successfully.")
