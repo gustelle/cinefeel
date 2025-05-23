@@ -1,6 +1,10 @@
+import re
 from enum import StrEnum
+from typing import Self
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import Field, HttpUrl, model_validator
+
+from src.entities.storable import Storable
 
 
 class GenderEnum(StrEnum):
@@ -14,15 +18,11 @@ class GenderEnum(StrEnum):
     UNKNWON = "unknown"
 
 
-class Person(BaseModel):
+class Person(Storable):
     """
     Represents a person with a name and an optional list of roles.
     """
 
-    uid: str | None = Field(
-        None,
-        description="The unique ID of the person. This is used to identify the person in the database.",
-    )
     full_name: str
     person_id: str = Field(
         ...,
@@ -49,3 +49,21 @@ class Person(BaseModel):
         None,
         description="The image of the person. This can be used to filter the list of people.",
     )
+
+    @model_validator(mode="after")
+    def customize_uid(self) -> Self:
+        """override the uid with a custom uid based on the work of art id and type"""
+
+        value = self.person_id.strip()
+
+        value = re.sub(r"[^a-zA-Z0-9]", "_", value)
+
+        # replace spaces with underscores
+        value = value.replace(" ", "_")
+
+        # lowercase the uid
+        value = value.casefold()
+
+        self.uid = value
+
+        return self

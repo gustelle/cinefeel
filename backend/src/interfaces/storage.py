@@ -5,6 +5,12 @@ from src.entities.film import Film
 from src.entities.person import Person
 
 
+class StorageError(Exception):
+    """Base class for all storage exceptions."""
+
+    pass
+
+
 @runtime_checkable
 class IStorageHandler[U: Film | Person, V: bytes | str | dict](Protocol):
 

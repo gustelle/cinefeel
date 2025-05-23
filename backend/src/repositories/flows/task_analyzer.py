@@ -31,7 +31,7 @@ def do_storage(
 
     if film is not None:
         # store the film entity
-        film_storage.insert(film.uid, film.model_dump(mode="json"))
+        film_storage.insert(film)
     else:
         logger = get_run_logger()
         logger.warning("Film is None, skipping storage.")

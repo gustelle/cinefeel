@@ -1,12 +1,11 @@
 from pathlib import Path
 
 import duckdb
-import orjson
 from loguru import logger
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.interfaces.storage import IStorageHandler
+from src.interfaces.storage import IStorageHandler, StorageError
 from src.settings import Settings
 
 
@@ -47,37 +46,43 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
 
     def insert(
         self,
-        content_id: str,
-        content: dict,
+        content: T,
     ) -> None:
-        """Saves the given data to a file."""
+        """Saves the given content to a file."""
+
+        path = self.persistence_directory / f"{content.uid}.json"
 
         try:
-            path = self.persistence_directory / f"{content_id}.json"
+
+            # check if the content is of the expected type
+            if not isinstance(content, self.entity_type):
+                raise ValueError(
+                    f"Unsupported entity type: {type(content)}. "
+                    f"Expected {self.entity_type}."
+                )
 
             # overwrite if exists
             if path.exists():
                 path.unlink()
 
-            with open(path, "wb") as file:
-                file.write(orjson.dumps(content))
-
-                logger.info(f"Saved {self.entity_type} to {path}")
+            with open(path, "w") as file:
+                file.write(content.model_dump_json())
 
         except Exception as e:
-            logger.info(f"Error saving content {content_id}: {e}")
+            logger.exception(f"Error saving content {content.uid}: {e}")
+            raise StorageError(f"Error saving {self.entity_type} to {path}") from e
 
-    def select(self, content_id: str) -> dict:
+    def select(self, content_id: str) -> T | None:
         """Loads data from a file."""
 
         try:
             path = self.persistence_directory / f"{content_id}.json"
 
-            with open(path, "rb") as file:
-                woa = orjson.loads(file.read())
+            with open(path, "r") as file:
+                woa = self.entity_type.model_validate_json(file.read())
                 return woa
         except Exception as e:
-            logger.info(f"Error loading film from {path}: {e}")
+            logger.exception(f"Error loading film from {path}: {e}")
             return None
 
     def query(

@@ -99,7 +99,6 @@ class HtmlContentStorageHandler[T: Film | Person](IStorageHandler[T, str]):
 
             file_path = self.path / f"{file_pattern}.html"
             for file in glob.glob(str(file_path)):
-                logger.debug(f"Found file: {file}")
                 with open(file, "r") as f:
                     yield f.read()
 

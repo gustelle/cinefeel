@@ -1,10 +1,11 @@
 import re
 from enum import StrEnum
-from typing import Mapping
+from typing import Mapping, Self
 
-from pydantic import BaseModel, Field
+from pydantic import Field, model_validator
 
 from .person import Person
+from .storable import Storable
 
 
 class WOAType(StrEnum):
@@ -28,15 +29,11 @@ class WOAType(StrEnum):
     OTHER = "other"
 
 
-class WorkOfArt(BaseModel):
+class WorkOfArt(Storable):
     """
-    Represents a work of art with a name and an optional list of roles.
+    Represents a work of art
     """
 
-    uid: str | None = Field(
-        None,
-        description="The unique ID of the work of art. This is used to identify the work of art in the database.",
-    )
     title: str
     other_titles: list[str] | None = Field(
         None,
@@ -62,22 +59,17 @@ class WorkOfArt(BaseModel):
         description="The type of the work of art. ",
         examples=[str(woa_type) for woa_type in WOAType],
     )
-    work_of_art_id: str = Field(
+    woa_id: str = Field(
         ...,
         description="The ID of the work of art page on Wikipedia. This is the part of the URL after 'wiki/'",
+        examples=["The_Scream", "Starry_Night"],
     )
 
-    # @field_validator("uid", mode="after")
-    # @classmethod
-    def ensure_uid(self):
+    @model_validator(mode="after")
+    def customize_uid(self) -> Self:
+        """override the uid with a custom uid based on the work of art id and type"""
 
-        value = self.uid
-
-        if not value or len(value.strip()) == 0:
-            # set the uid to the work of art id
-            value = self.title
-
-        value = value.strip()
+        value = self.woa_id.strip()
 
         if self.woa_type is not None:
             # set the uid to the work of art id
@@ -95,3 +87,5 @@ class WorkOfArt(BaseModel):
         value = value.casefold()
 
         self.uid = value
+
+        return self
