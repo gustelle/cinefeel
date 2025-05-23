@@ -27,7 +27,7 @@ class HtmlContentAnalyzer(IContentAnalyzer):
                 Defaults to None, which creates an ephemeral client.
         """
         self.film_parser = OllamaParser[Film](settings=settings)
-        self.simiarity_search = BertSimilaritySearch()
+        self.simiarity_search = BertSimilaritySearch(settings=settings)
 
     def find_tech_spec(
         self,

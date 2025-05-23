@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field, RedisDsn
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -67,11 +67,6 @@ class Settings(BaseSettings):
         env_file=(".env", ".env.prod")
     )
 
-    redis_url: RedisDsn = Field(
-        default="redis://localhost:6379/0",
-        description="The URL of the Redis server",
-    )
-
     crawler_use_cache: bool = Field(
         default=True,
         description="Whether to use the cache for the Wikipedia API",
@@ -126,4 +121,23 @@ class Settings(BaseSettings):
     llm_model: str = Field(
         default="mistral:latest",
         description="The name of the LLM model to use",
+    )
+
+    bert_model: str = Field(
+        default="Lajavaness/sentence-camembert-base",
+        description="""
+            The name of the BERT model to use for similarity search
+            when analyzing the content of a HTML page.
+            this model is used to find the most similar section corresponding to a query.
+            For example, the query "fiche technique" will be used to find the section
+            containing the technical specifications of a film.
+        """,
+    )
+
+    bert_similarity_threshold: float = Field(
+        default=0.9,
+        description="""
+            The threshold for the BERT similarity score.
+            If the score is below this value, the result will be considered as not found.
+        """,
     )
