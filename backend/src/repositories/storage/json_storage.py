@@ -2,6 +2,7 @@ from pathlib import Path
 
 import duckdb
 from loguru import logger
+from pydantic import ValidationError
 
 from src.entities.film import Film
 from src.entities.person import Person
@@ -11,7 +12,7 @@ from src.settings import Settings
 
 class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
     """
-    handles persistence of entities into JSON files.
+    handles persistence of `Film` or `Person` objects into JSON files.
     """
 
     persistence_directory: Path
@@ -30,6 +31,11 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
         return new_cls
 
     def __init__(self, settings: Settings):
+
+        if not hasattr(self, "entity_type"):
+            raise ValueError(
+                "JSONEntityStorageHandler must be initialized with a generic type."
+            )
 
         if self.entity_type is Film:
             self.persistence_directory = settings.persistence_directory / "films"
@@ -93,26 +99,42 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
     ) -> list[T]:
         """Lists films in the persistent storage corresponding to the given criteria."""
 
-        logger.info(
-            f"Querying {self.entity_type} in '{self.persistence_directory}' with criteria: {order_by}, {after}, {limit}"
-        )
-        results = (
-            duckdb.sql(
-                f"SELECT * FROM read_json_auto('./{str(self.persistence_directory)}/*.json')"
+        try:
+            results = (
+                duckdb.sql(
+                    f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
+                )
+                .filter(f"uid > '{after.uid}'" if after else "1=1")
+                .limit(limit)
+                .order(order_by)
+                .to_df()
             )
-            .filter(f"uid > '{after.uid}'" if after else "1=1")
-            .limit(limit)
-            .order(order_by)
-            .to_df()
-        )
 
-        if results.empty:
-            logger.info(
-                f"No films found matching the criteria: {order_by}, {after}, {limit}"
+            if results.empty:
+                logger.warning(
+                    f"No films found matching the criteria: {order_by}, {after}, {limit}"
+                )
+                return []
+
+            return [self.entity_type(**dict(row)) for row in results.to_dict("records")]
+
+        except duckdb.IOException:
+            logger.warning(
+                f"Path '{self.persistence_directory}' does not seem to contain anything"
             )
             return []
 
-        return [self.entity_type(**dict(row)) for row in results.to_dict("records")]
+        except (ValidationError, duckdb.ProgrammingError) as e:
+            import traceback
+
+            logger.error(traceback.format_exc())
+            raise StorageError(f"Error validating film data: {e}") from e
+
+        except Exception as e:
+            import traceback
+
+            logger.error(traceback.format_exc())
+            raise StorageError(f"Error querying films: {e}") from e
 
 
 class JSONFilmStorageHandler(JSONEntityStorageHandler[Film]):

@@ -248,3 +248,119 @@ def test_select_corrupt_entity():
     # teardown
     (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
     storage_handler.persistence_directory.rmdir()
+
+
+def test_query_film():
+    # given
+    local_path = current_dir
+    test_settings = Settings(persistence_directory=local_path)
+    storage_handler = JSONEntityStorageHandler[Film](test_settings)
+
+    content_id = "test_film"
+    content = {
+        "title": "Test Film",
+    }
+
+    film = Film(
+        title=content["title"],
+        woa_id=content_id,
+    )
+
+    storage_handler.insert(film)
+
+    # when
+    results = storage_handler.query()
+
+    # then
+    assert len(results) == 1
+    assert results[0].uid == film.uid
+
+    # teardown
+    (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
+    storage_handler.persistence_directory.rmdir()
+
+
+def test_query_no_files():
+    # given
+    local_path = current_dir
+    test_settings = Settings(persistence_directory=local_path)
+    storage_handler = JSONEntityStorageHandler[Film](test_settings)
+
+    # when
+    results = storage_handler.query()
+
+    # then
+    assert len(results) == 0
+
+    # teardown
+    storage_handler.persistence_directory.rmdir()
+
+
+def test_query_corrupt_file():
+    # given
+    local_path = current_dir
+    test_settings = Settings(persistence_directory=local_path)
+    storage_handler = JSONEntityStorageHandler[Film](test_settings)
+
+    content_id = "test_film"
+    content = {
+        "title": "Test Film",
+    }
+
+    film = Film(
+        title=content["title"],
+        woa_id=content_id,
+    )
+
+    storage_handler.insert(film)
+
+    # corrupt the file
+    (storage_handler.persistence_directory / f"{film.uid}.json").write_text(
+        "corrupt data"
+    )
+
+    # when
+    with pytest.raises(StorageError) as e:
+        storage_handler.query()
+
+    # then
+    assert "Error validating film data" in str(e.value)
+
+    # teardown
+    (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
+    storage_handler.persistence_directory.rmdir()
+
+
+def test_query_validation_err():
+    # given
+    local_path = current_dir
+    test_settings = Settings(persistence_directory=local_path)
+    storage_handler = JSONEntityStorageHandler[Film](test_settings)
+
+    content_id = "test_film"
+    content = {
+        "title": "Test Film",
+    }
+
+    film = Film(
+        title=content["title"],
+        woa_id=content_id,
+    )
+
+    storage_handler.insert(film)
+
+    # corrupt the file
+    (storage_handler.persistence_directory / f"{film.uid}.json").write_text(
+        orjson.dumps({"hey": "there"}).decode()
+    )
+
+    # when
+    with pytest.raises(StorageError) as e:
+        storage_handler.query()
+
+    # then
+    assert "Error validating film data" in str(e.value)
+
+    # teardown
+    (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
+    storage_handler.persistence_directory.rmdir()
