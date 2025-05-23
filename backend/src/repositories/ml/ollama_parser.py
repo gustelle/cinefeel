@@ -65,7 +65,4 @@ class OllamaParser[T: WorkOfArt](IContentParser):
             # set the uid to the work of art id
             woa.woa_type = WOAType.FILM
 
-        # weird bug, I cannot make the field_validator work
-        woa.ensure_uid()
-
         return woa
