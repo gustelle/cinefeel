@@ -9,13 +9,9 @@ from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler
 
 
-class HtmlContentStorageHandler[T: Film | Person](IStorageHandler[T, str]):
+class LocalTextStorage[T: Film | Person](IStorageHandler[T, str]):
     """
     handles storage and retrieval of HTML files on disk.
-
-    TODO:
-    - add a mechanism to delete old content
-    - testing
     """
 
     path: Path
@@ -38,12 +34,15 @@ class HtmlContentStorageHandler[T: Film | Person](IStorageHandler[T, str]):
 
     def __init__(self, path: Path):
 
+        if not hasattr(self, "entity_type"):
+            raise ValueError(
+                "LocalTextStorage must be initialized with a generic type."
+            )
+
         # entity_type is set by the generic type in the class definition
         # see `IStorageHandler.__class_getitem__`
         self.path = path / "html" / self.entity_type.__name__.lower()
         self.path.mkdir(parents=True, exist_ok=True)
-
-        logger.info(f"Created dir '{self.path}'")
 
     def insert(
         self,
@@ -62,10 +61,8 @@ class HtmlContentStorageHandler[T: Film | Person](IStorageHandler[T, str]):
             with open(path, "w") as file:
                 file.write(content)
 
-            # logger.info(f"Saved '{content_id}' ")
-
         except Exception as e:
-            logger.info(f"Error saving '{content_id}': {e}")
+            logger.error(f"Error saving '{content_id}': {e}")
 
     def select(
         self,
@@ -78,30 +75,38 @@ class HtmlContentStorageHandler[T: Film | Person](IStorageHandler[T, str]):
             with open(path, "r") as file:
                 return file.read()
         except Exception as e:
-            logger.info(f"Error loading '{path}': {e}")
+            logger.error(f"Error loading '{path}': {e}")
             return None
 
-    def scan(
-        self, file_pattern: str = "*"  # match all files,
-    ) -> Generator[str, None, None]:
+    def scan(self, file_pattern: str = "*.html") -> Generator[str, None, None]:
         """Scans the persistent storage and iterates over contents.
 
         Args:
-            file_pattern (str, optional): a filename pattern to match. Defaults to None.
+            file_pattern (str, optional): a filename pattern to match. Defaults to `*.html`
+                This is a glob pattern, so it can be used to match multiple files.
+
+        Example:
+        ```python
+            for content in storage.scan("*.html"):
+                print(content)
+
+            # This will match all HTML files in the storage directory.
+            <html>...</html>
+            <html>...</html>
+
+        ```
 
         Returns:
             Generator[str, None, None]: a generator of HTML contents.
         """
 
-        logger.info(f"Scanning '{self.path}' for pattern '{file_pattern}'")
-
         try:
 
-            file_path = self.path / f"{file_pattern}.html"
+            file_path = self.path / file_pattern
             for file in glob.glob(str(file_path)):
                 with open(file, "r") as f:
                     yield f.read()
 
         except Exception as e:
-            logger.info(f"Error scanning '{self.path}': {e}")
+            logger.error(f"Error scanning '{self.path}': {e}")
             return []

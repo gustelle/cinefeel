@@ -3,7 +3,7 @@ from prefect.futures import PrefectFuture
 
 from src.entities.film import Film
 from src.repositories.ml.html_analyzer import HtmlContentAnalyzer
-from src.repositories.storage.html_storage import HtmlContentStorageHandler
+from src.repositories.storage.html_storage import LocalTextStorage
 from src.repositories.storage.json_storage import JSONFilmStorageHandler
 from src.settings import Settings
 
@@ -46,7 +46,7 @@ def analyze_films(
 
     logger = get_run_logger()
 
-    html_storage = HtmlContentStorageHandler[Film](
+    html_storage = LocalTextStorage[Film](
         path=settings.persistence_directory,
     )
 

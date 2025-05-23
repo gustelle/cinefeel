@@ -84,8 +84,6 @@ class AsyncHttpClient(IHttpClient):
 
             try:
 
-                logger.debug(f"GET {endpoint}")
-
                 response.raise_for_status()
 
                 return (

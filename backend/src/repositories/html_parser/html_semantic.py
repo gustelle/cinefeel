@@ -135,7 +135,6 @@ class HtmlSemantic:
                 continue
 
             section_contents.append("\n")
-
             sections.append(
                 HtmlSection(
                     title=section_title.get_text().strip(),

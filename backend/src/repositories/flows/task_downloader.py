@@ -9,7 +9,7 @@ from prefect.states import State
 from src.entities.wiki import WikiPageLink
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.link_extractor import ILinkExtractor
-from src.repositories.storage.html_storage import HtmlContentStorageHandler
+from src.repositories.storage.html_storage import LocalTextStorage
 from src.settings import Settings, WikiTOCPageConfig
 
 
@@ -32,7 +32,7 @@ async def download_page(
     page_id: str,
     settings: Settings,
     http_client: IHttpClient,
-    storage_handler: HtmlContentStorageHandler | None = None,
+    storage_handler: LocalTextStorage | None = None,
     return_content: bool = False,
     **params,
 ) -> str | None:

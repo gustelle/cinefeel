@@ -6,7 +6,7 @@ from src.entities.film import Film
 from src.entities.wiki import WikiPageLink
 from src.repositories.html_parser.wikipedia_extractor import WikipediaLinkExtractor
 from src.repositories.http.async_http import AsyncHttpClient
-from src.repositories.storage.html_storage import HtmlContentStorageHandler
+from src.repositories.storage.html_storage import LocalTextStorage
 from src.settings import Settings
 
 from .task_analyzer import analyze_films
@@ -21,7 +21,7 @@ async def run_chain(
 
     logger = get_run_logger()
 
-    storage_handler = HtmlContentStorageHandler[Film](
+    storage_handler = LocalTextStorage[Film](
         path=settings.persistence_directory,
     )
     link_extractor = WikipediaLinkExtractor()

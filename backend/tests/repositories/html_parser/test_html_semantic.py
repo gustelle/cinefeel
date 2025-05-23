@@ -82,4 +82,16 @@ def test_split_sections_void_section():
 
 
 def test_parse_info_table():
-    pass
+
+    # given
+    html_file = current_dir / "wikipedia_html/Beethoven.html"
+    html_content = html_file.read_text(encoding="utf-8")
+
+    semantic = HtmlSemantic()
+
+    # when
+    info_box = semantic.parse_info_table(html_content)
+
+    # then
+    assert info_box is not None
+    assert len(info_box) > 0
