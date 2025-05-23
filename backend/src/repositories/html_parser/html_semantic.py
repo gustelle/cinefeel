@@ -1,31 +1,15 @@
+import re
 from io import StringIO
 
 import pandas as pd
 from bs4 import BeautifulSoup
 from htmlrag import clean_html
 from loguru import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class HtmlSemanticError(Exception):
     pass
-
-
-class HtmlSectionIdentifier(BaseModel):
-    tag: str = "div"
-    section_id: str | None = Field(
-        default=None,
-        alias="id",
-    )
-    section_class: str = Field(
-        default="mw-heading2", alias="class", examples=["mw-heading2"]
-    )  # mw-heading2 is the default class for sections in Wikipedia articles
-
-
-class HtmlSectionHeaderIdentifier(BaseModel):
-    tag: str = "h2"
-    header_id: str | None = None
-    header_class: str | None = None
 
 
 class HtmlSection(BaseModel):
@@ -95,7 +79,7 @@ class HtmlSemantic:
 
         for section_title in simple_soup.find_all("h2"):
 
-            if section_title is None or not section_title.get_text().strip():
+            if section_title is None or len(section_title.get_text().strip()) == 0:
                 logger.debug(f"Skipping void section: {section_title.get_text()}")
                 continue
 
@@ -121,8 +105,9 @@ class HtmlSemantic:
                 # if the text is empty or void
                 # or if the content belongs to a skipped tag
                 if (
-                    text.lower() == self.VOID_SECTION_MARKER
+                    re.match(self.VOID_SECTION_MARKER, text, re.IGNORECASE)
                     or content.name in _SKIPPED_TAGS
+                    or len(text) == 0
                 ):
                     continue
 
@@ -144,6 +129,10 @@ class HtmlSemantic:
                     text += ". "
 
                 section_contents.append(text)
+
+            if len(section_contents) == 0:
+                logger.debug(f"Skipping void section: {section_title.get_text()}")
+                continue
 
             section_contents.append("\n")
 
