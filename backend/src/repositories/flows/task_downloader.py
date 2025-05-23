@@ -53,9 +53,7 @@ async def download_page(
         str | None: The content ID if the download was successful, None otherwise.
     """
 
-    page_endpoint: str = "page/"
-
-    endpoint = f"{settings.mediawiki_base_url}/{page_endpoint}{page_id}/html"
+    endpoint = f"{settings.mediawiki_base_url}/page/{page_id}/html"
 
     html = await http_client.send(
         endpoint=endpoint,

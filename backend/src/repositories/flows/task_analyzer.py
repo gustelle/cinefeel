@@ -52,7 +52,7 @@ def analyze_films(
 
     film_storage = JSONFilmStorageHandler(settings=settings)
 
-    analyzer = HtmlContentAnalyzer()
+    analyzer = HtmlContentAnalyzer(settings=settings)
 
     i = 0
 

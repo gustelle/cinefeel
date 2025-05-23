@@ -6,6 +6,7 @@ from src.entities.film import Film
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.content_parser import IContentParser
 from src.interfaces.similarity import ISimilaritySearch
+from src.settings import Settings
 
 from ..html_parser.html_semantic import HtmlSection, HtmlSemantic
 from .bert_similarity import BertSimilaritySearch
@@ -17,9 +18,7 @@ class HtmlContentAnalyzer(IContentAnalyzer):
     film_parser: IContentParser
     simiarity_search: ISimilaritySearch
 
-    def __init__(
-        self,
-    ):
+    def __init__(self, settings: Settings):
         """
         Initializes the HtmlAnalyzer with a ChromaDB client.
 
@@ -27,7 +26,7 @@ class HtmlContentAnalyzer(IContentAnalyzer):
             client (chromadb.Client, optional): A ChromaDB client instance.
                 Defaults to None, which creates an ephemeral client.
         """
-        self.film_parser = OllamaParser[Film]()
+        self.film_parser = OllamaParser[Film](settings=settings)
         self.simiarity_search = BertSimilaritySearch()
 
     def find_tech_spec(
@@ -39,7 +38,6 @@ class HtmlContentAnalyzer(IContentAnalyzer):
 
         for text_query in ["fiche technique", "synopsis", "résumé"]:
 
-            # score = section_title_query_result.points[0].score
             most_similar_section_title = self.simiarity_search.most_similar(
                 query=text_query,
                 corpus=[section.title for section in sections],

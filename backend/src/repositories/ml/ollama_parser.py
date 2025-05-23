@@ -1,33 +1,23 @@
 import ollama
 
 from src.entities.film import Film
-from src.entities.woa import WOAType, WorkOfArt
+from src.entities.person import Person
+from src.entities.woa import WOAType
 from src.interfaces.content_parser import IContentParser
 from src.settings import Settings
 
 
-class OllamaParser[T: WorkOfArt](IContentParser):
+class OllamaParser[T: Film | Person](IContentParser):
     """
     OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
     """
 
     def __init__(self, settings: Settings = None):
-        """
-        TODO:
-        - store the model name in the settings
-        - remove temperature from the function signature
 
-        Args:
-            settings (Settings, optional): _description_. Defaults to None.
-        """
+        self.model = settings.llm_model
 
-        self.model = "mistral:latest"
-
-    def to_entity(self, context: str, question: str, temperature: float = 0) -> T:
+    def to_entity(self, context: str, question: str) -> T:
         """
-        TODO:
-            - remove temperature from the function signature
-            - manage pydantic validation errors
 
         Args:
             context (str): _description_
@@ -52,17 +42,20 @@ class OllamaParser[T: WorkOfArt](IContentParser):
                 }
             ],
             format=entity_type.model_json_schema(),
-            options={
-                "temperature": temperature
-            },  # Set temperature to 0 for more deterministic
+            options={"temperature": 0},  # Set temperature to 0 for more deterministic
         )
 
         msg = response.message.content
 
-        woa = entity_type.model_validate_json(msg)
+        try:
 
-        if issubclass(entity_type, Film):
-            # set the uid to the work of art id
-            woa.woa_type = WOAType.FILM
+            woa = entity_type.model_validate_json(msg)
 
-        return woa
+            if issubclass(entity_type, Film):
+                # set the uid to the work of art id
+                woa.woa_type = WOAType.FILM
+
+            return woa
+
+        except Exception as e:
+            raise ValueError(f"Error parsing response: {e}") from e
