@@ -1,7 +1,10 @@
 from prefect import flow, get_run_logger, task
 from prefect.futures import PrefectFuture
+from prefect_dask import DaskTaskRunner
 
 from src.entities.film import Film
+from src.interfaces.analyzer import IContentAnalyzer
+from src.interfaces.storage import IStorageHandler
 from src.repositories.html_parser.splitter import HtmlSplitter
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.ml.bert_similarity import BertSimilaritySearch
@@ -14,8 +17,8 @@ from src.settings import Settings
 CONCURRENCY = 4
 
 
-@task
-def do_analysis(analyzer: HtmlContentAnalyzer, html_content: str) -> Film | None:
+@task(timeout_seconds=60)
+def do_analysis(analyzer: IContentAnalyzer, html_content: str) -> Film | None:
     """
     Submit tasks to the executor with a specified concurrency level.
     """
@@ -23,30 +26,33 @@ def do_analysis(analyzer: HtmlContentAnalyzer, html_content: str) -> Film | None
 
 
 @task
-def do_storage(
-    film_storage: JSONFilmStorageHandler,
-    future: PrefectFuture[Film | None],
-) -> None:
+def do_storage(film_storage: IStorageHandler, film: Film | None) -> None:
     """
     Store the film entity in the storage.
     """
-    result = future.result()
-    film = result if isinstance(result, Film) else None
+    try:
 
-    if film is not None:
-        # store the film entity
-        film_storage.insert(film)
-    else:
         logger = get_run_logger()
-        logger.warning("Film is None, skipping storage.")
+
+        if film is not None and isinstance(film, Film):
+            logger.info(f"Storing film: {film}")
+            # store the film entity
+            film_storage.insert(film.uid, film)
+        else:
+            logger = get_run_logger()
+            logger.warning("skipping storage, film is None or not a Film instance.")
+
+    except Exception as e:
+        logger = get_run_logger()
+        logger.error(f"Error storing film: {e}")
+        raise e
 
 
-@flow()
+@flow(task_runner=DaskTaskRunner())
 def analyze_films(
     settings: Settings,
     content_ids: list[str] | None = None,
 ) -> None:
-    """ """
 
     logger = get_run_logger()
 
@@ -65,24 +71,41 @@ def analyze_films(
 
     i = 0
 
-    # iterate over the list of films
+    # send concurrent tasks to analyze HTML content
+    # don't wait for the task to be completed
+    futures = []
     for content_id in content_ids:
-        for file_content in html_storage.scan(
-            file_pattern=content_id,
-        ):
-            # analyze the HTML content
-            future = do_analysis.submit(
-                analyzer=analyzer,
-                html_content=file_content,
-            )
 
+        file_content = html_storage.select(content_id)
+
+        if file_content is None:
+            logger.warning(f"Content with ID '{content_id}' not found in storage.")
+            continue
+
+        logger.info(f"Analyzing content: '{content_id}'")
+
+        # analyze the HTML content
+        future = do_analysis.submit(
+            analyzer=analyzer,
+            html_content=file_content,
+        )
+
+        futures.append(
             do_storage.submit(
                 film_storage=film_storage,
-                future=future,
+                film=future,
             )
+        )
 
         i += 1
         if i > 2:
             break
 
-    logger.info("Flow completed successfully.")
+    # now wait for all tasks to complete
+    for future in futures:
+        if isinstance(future, PrefectFuture):
+            future.wait()
+        else:
+            logger.warning(f"Future ended up being not a PrefectFuture {future}.")
+
+    logger.info("'analyze_films' flow completed successfully.")

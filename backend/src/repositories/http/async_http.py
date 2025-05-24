@@ -53,7 +53,7 @@ class AsyncHttpClient(IHttpClient):
 
     async def send(
         self,
-        endpoint: str,
+        url: str,
         headers: dict = None,
         params: dict = None,
         response_type: Literal["json", "text"] = "json",
@@ -78,9 +78,7 @@ class AsyncHttpClient(IHttpClient):
             for k, v in (params or {}).items()
         }
 
-        async with self._session.get(
-            endpoint, params=params, headers=headers
-        ) as response:
+        async with self._session.get(url, params=params, headers=headers) as response:
 
             try:
 
@@ -95,7 +93,7 @@ class AsyncHttpClient(IHttpClient):
             except (aiohttp.ClientResponseError, aiohttp.ClientError) as e:
 
                 raise HttpError(
-                    f"Error {e.status} while fetching {endpoint}: {e.message}",
+                    f"Error {e.status} while fetching {url}: {e.message}",
                     status_code=e.status,
                 ) from e
 

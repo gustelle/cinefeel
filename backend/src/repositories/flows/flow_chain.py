@@ -58,6 +58,7 @@ async def run_chain(
         logger.info(
             f"Downloaded {len(content_ids)} contents for {page.page_id}",
         )
+        logger.info(f"Content IDs: {content_ids}")
 
         # filter the contents to only include the ones that are not already in the storage
         analyze_films(

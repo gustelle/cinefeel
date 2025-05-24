@@ -1,5 +1,6 @@
 from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
+from prefect.futures import PrefectFuture
 
 from src.entities.film import Film
 from src.interfaces.indexer import IDocumentIndexer
@@ -42,6 +43,8 @@ def index_films(
     has_more = True
     batch_size = 100
 
+    futures = []
+
     while has_more:
 
         batch = storage_handler.query(
@@ -50,13 +53,26 @@ def index_films(
             limit=batch_size,
         )
 
-        index_batch.submit(batch, indexer)
+        futures.append(index_batch.submit(batch, indexer))
 
         if batch is None or len(batch) == 0:
-            logger.info(f"Last batch: {len(batch)} films")
+            logger.info(
+                f"Reached the last batch: {len(batch)} films, no more to process"
+            )
+            has_more = False
+        elif last_ is not None and last_.uid == batch[-1].uid:
+            logger.info(
+                f"Reached the last batch: {len(batch)} films, no more to process"
+            )
             has_more = False
         else:
             last_ = batch[-1]
             logger.info(f"Next batch starting after '{last_.uid}'")
 
-    logger.info("Flow completed successfully.")
+    for future in futures:
+        if isinstance(future, PrefectFuture):
+            future.wait()
+        else:
+            logger.warning(f"Future ended up being not a PrefectFuture {future}.")
+
+    logger.info("'index_films' Flow completed successfully.")

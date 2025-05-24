@@ -52,6 +52,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
 
     def insert(
         self,
+        content_id: str,
         content: T,
     ) -> None:
         """Saves the given content to a file."""

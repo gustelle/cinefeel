@@ -13,12 +13,22 @@ from src.repositories.storage.html_storage import LocalTextStorage
 from src.settings import Settings, WikiTOCPageConfig
 
 
-def is_retriable(task: Task[..., Any], task_run: TaskRun, state: State[Any]) -> bool:
+async def is_retriable(
+    task: Task[..., Any], task_run: TaskRun, state: State[Any]
+) -> bool:
+    logger = get_run_logger()
     try:
-        state.result()
+        await state.result()
     except Exception as e:
         if isinstance(e, HttpError) and e.status_code >= 429:
             return True
+        elif isinstance(e, HttpError):
+            logger.warning(
+                f"HTTP error with status {e.status_code} will not be retried"
+            )
+            return False
+        else:
+            logger.warning(f"Exception is not retriable: {e}")
     return False
 
 
@@ -37,9 +47,6 @@ async def download_page(
     **params,
 ) -> str | None:
     """
-    TODO:
-    - testing: what happens after 3 retries?
-    - verify no retrty on 404, 429
 
     Args:
         page_id (str): The page ID to download.
@@ -56,7 +63,7 @@ async def download_page(
     endpoint = f"{settings.mediawiki_base_url}/page/{page_id}/html"
 
     html = await http_client.send(
-        endpoint=endpoint,
+        url=endpoint,
         response_type="text",
         params=params,
     )
@@ -82,10 +89,6 @@ async def fetch_wiki_page_links(
     """
     downloads the HTML pages and returns the list of page IDs.
 
-    TODO:
-    - retrieve_inner_links with dramatiq not dask which is not intended for this
-    - testing of case where an exception is raised in one of the tasks
-    - use a dramatiq or dask worker to run the tasks in parallel
 
     Args:
         page (WikiTOCPageConfig): The page to download.
