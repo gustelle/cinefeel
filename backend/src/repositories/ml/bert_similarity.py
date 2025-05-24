@@ -1,7 +1,10 @@
+import re
+
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 
+from src.interfaces.content_splitter import Section
 from src.interfaces.similarity import ISimilaritySearch
 from src.settings import Settings
 
@@ -70,6 +73,11 @@ class BertSimilaritySearch(ISimilaritySearch):
         """
 
         try:
+
+            if len(corpus) == 0:
+                logger.warning("empty corpus, skipping the similarity search")
+                return None
+
             # see https://www.sbert.net/examples/sentence_transformer/applications/semantic-search/README.html
             # to improve the performance of the semantic search
             # use to("cuda") if you have a GPU
@@ -100,3 +108,55 @@ class BertSimilaritySearch(ISimilaritySearch):
 
             logger.error(traceback.format_exc())
             raise SimilaritySearchError(f"Error in BERT similarity search: {e}") from e
+
+    def most_similar_section(
+        self, title: str, sections: list[Section]
+    ) -> Section | None:
+        """
+        Find the most similar `Section` to the given title within the list of sections.
+
+        Args:
+            title (str): The title to find the most similar section for.
+            sections (list[Section]): The list of sections to search within.
+
+        Returns:
+            str | None: The most similar section title, or None if no similar title is found.
+        """
+        _section_content = None
+
+        most_similar_section_title = self.most_similar(
+            query=title,
+            corpus=[section.title for section in sections],
+        )
+
+        if most_similar_section_title is None:
+            return None
+
+        pattern = re.compile(rf"\s*{title}\s*", re.IGNORECASE)
+
+        _similar_sec_contents = [
+            section for section in sections if pattern.match(section.title)
+        ]
+
+        if len(_similar_sec_contents) == 0:
+            logger.warning(
+                f"no section found for '{title}' (found '{most_similar_section_title}')"
+            )
+            return None
+
+        _section_content = _similar_sec_contents[0]
+
+        if (
+            _section_content is None
+            or _section_content.content is None
+            or len(_section_content.content) == 0
+        ):
+            logger.warning(
+                f"content of section '{most_similar_section_title}' is empty"
+            )
+            return None
+
+        return Section(
+            title=most_similar_section_title,
+            content=_section_content.content,
+        )

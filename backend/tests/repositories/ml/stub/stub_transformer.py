@@ -9,7 +9,7 @@ class StubEntityTransformer(IEntityTransformer):
 
     is_parsed: bool = False
 
-    def to_entity(self, title: str) -> dict:
+    def to_entity(self, content: str) -> dict:
         """
         Parse the given content and return a dictionary representation.
 
@@ -19,6 +19,8 @@ class StubEntityTransformer(IEntityTransformer):
         Returns:
             dict: A dictionary representation of the parsed content.
         """
+        self.is_parsed = True
         return Film(
-            title=title,
+            title=content,
+            woa_id="stub_film_id",
         )

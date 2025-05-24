@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.repositories.html_parser.html_semantic import HtmlSplitter, Section
+from src.repositories.html_parser.splitter import HtmlSplitter, Section
 
 current_dir = Path(__file__).parent
 
@@ -79,19 +79,3 @@ def test_split_sections_void_section():
 
     # then
     assert len(sections) == 0
-
-
-def test_parse_info_table():
-
-    # given
-    html_file = current_dir / "wikipedia_html/Beethoven.html"
-    html_content = html_file.read_text(encoding="utf-8")
-
-    semantic = HtmlSplitter()
-
-    # when
-    info_box = semantic.retrieve_infobox(html_content)
-
-    # then
-    assert info_box is not None
-    assert len(info_box) > 0

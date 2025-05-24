@@ -6,9 +6,9 @@ from prefect.cache_policies import NO_CACHE
 from prefect.client.schemas.objects import TaskRun
 from prefect.states import State
 
-from src.entities.wiki import WikiPageLink
+from src.entities.content import WikiPageLink
+from src.interfaces.extractor import IHtmlExtractor
 from src.interfaces.http_client import HttpError, IHttpClient
-from src.interfaces.link_extractor import IHtmlExtractor
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.settings import Settings, WikiTOCPageConfig
 

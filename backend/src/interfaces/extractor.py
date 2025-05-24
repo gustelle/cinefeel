@@ -1,6 +1,6 @@
 from typing import Protocol, Type
 
-from src.entities.wiki import InfoBoxElement, WikiPageLink
+from src.entities.content import InfoBoxElement, WikiPageLink
 
 
 class IHtmlExtractor(Protocol):

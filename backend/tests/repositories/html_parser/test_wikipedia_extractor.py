@@ -1,4 +1,6 @@
-from src.interfaces.link_extractor import WikiPageLink
+from pathlib import Path
+
+from src.interfaces.extractor import WikiPageLink
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 
 
@@ -275,3 +277,20 @@ def test_extract_links_excludes_non_existing_pages():
         item in result for item in expected_output
     ), f"Expected {expected_output}, but got {result}"
     assert all(item in expected_output for item in result)
+
+
+def test_parse_info_table():
+
+    # given
+    current_dir = Path(__file__).parent
+    html_file = current_dir / "wikipedia_html/Beethoven.html"
+    html_content = html_file.read_text(encoding="utf-8")
+
+    semantic = WikipediaExtractor()
+
+    # when
+    info_box = semantic.retrieve_infoboxes(html_content)
+
+    # then
+    assert info_box is not None
+    assert len(info_box) > 0

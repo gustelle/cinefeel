@@ -1,3 +1,4 @@
+from src.interfaces.content_splitter import Section
 from src.repositories.ml.bert_similarity import BertSimilaritySearch
 from src.settings import Settings
 
@@ -24,3 +25,71 @@ def test_bert_similarity_search():
 
     # Check that the most similar section title is correct
     assert most_similar_section_title == "film"
+
+
+def test_most_similar_section():
+    """
+    Test the most similar section method.
+    """
+
+    # given
+    bert_similarity_search = BertSimilaritySearch(Settings())
+
+    # Define a title and sections
+    title = "film"
+    sections = [
+        {"title": "film", "content": "This is a film."},
+        {"title": "cinema", "content": "This is a cinema."},
+        {"title": "personne", "content": "This is a person."},
+    ]
+    sections = [Section(**section) for section in sections]
+
+    # Perform the similarity search
+    most_similar_section = bert_similarity_search.most_similar_section(title, sections)
+
+    # Check that the most similar section is correct
+    assert most_similar_section.title == "film"
+    assert most_similar_section.content == "This is a film."
+
+
+def test_most_similar_section_empty():
+    """
+    Test the most similar section method with an empty list of sections.
+    """
+
+    # given
+    bert_similarity_search = BertSimilaritySearch(Settings())
+
+    # Define a title and an empty list of sections
+    title = "film"
+    sections: list[Section] = []
+
+    # Perform the similarity search
+    most_similar_section = bert_similarity_search.most_similar_section(title, sections)
+
+    # Check that the most similar section is None
+    assert most_similar_section is None
+
+
+def test_most_similar_section_no_match():
+    """
+    Test the most similar section method with no matching sections.
+    """
+
+    # given
+    bert_similarity_search = BertSimilaritySearch(Settings())
+
+    # Define a title and sections with no match
+    title = "nonexistent"
+    sections = [
+        {"title": "film", "content": "This is a film."},
+        {"title": "cinema", "content": "This is a cinema."},
+        {"title": "personne", "content": "This is a person."},
+    ]
+    sections = [Section(**section) for section in sections]
+
+    # Perform the similarity search
+    most_similar_section = bert_similarity_search.most_similar_section(title, sections)
+
+    # Check that the most similar section is None
+    assert most_similar_section is None

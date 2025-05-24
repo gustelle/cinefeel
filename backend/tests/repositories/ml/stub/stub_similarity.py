@@ -1,15 +1,16 @@
+from src.interfaces.content_splitter import Section
 from src.interfaces.similarity import ISimilaritySearch
 
 
-class StubSimilaritySearch(ISimilaritySearch):
+class Return1stSearch(ISimilaritySearch):
     """
     A stub implementation of the ISimilaritySearch interface for testing purposes.
     """
 
-    def most_similar(self, query: str, corpus: list[str]) -> str | None:
-        """
-        Return the first item in the corpus as the most similar item.
-        """
-        if not corpus:
-            return None
-        return corpus[0]
+    sections: list[Section]
+
+    def __init__(self, sections: list[Section]):
+        self.sections = sections
+
+    def most_similar_section(self, title, sections):
+        return self.sections[0] if self.sections else None

@@ -6,8 +6,8 @@ import polars as pl
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
-from src.entities.wiki import InfoBoxElement, WikiPageLink
-from src.interfaces.link_extractor import IHtmlExtractor
+from src.entities.content import InfoBoxElement, WikiPageLink
+from src.interfaces.extractor import IHtmlExtractor
 
 
 class WikiDataExtractionError(Exception):
