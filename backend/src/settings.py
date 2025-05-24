@@ -124,7 +124,12 @@ class Settings(BaseSettings):
     )
 
     llm_question: str = Field(
-        default="Give information about the film",
+        default="Donne-moi des informations sur le film, réponds en français et de manière concise, sans faire de phrases. Si tu ne trouves pas d'informations, n'invente pas.",
+        examples=[
+            "Donne-moi des informations sur le film",
+            "Quelles sont les informations sur le film ?",
+            "Peux-tu me parler du film ?",
+        ],
         description="The question to ask the LLM model to get information about the film",
     )
 

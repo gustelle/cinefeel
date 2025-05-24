@@ -12,24 +12,24 @@ class ContentAnalysisError(Exception):
     pass
 
 
-class IContentAnalyzer(Protocol):
+class IContentAnalyzer[T: Film | Person](Protocol):
     """
     Interface for a parser that extracts data from a given HTML content.
     """
 
     def analyze(
         self,
+        content_id: str,
         html_content: str,
         *args,
         **kwargs,
-    ) -> Film | Person | None:
+    ) -> T | None:
         """
         Parses the given HTML content and returns an entity from it, either a Film or a Person.
 
         Args:
+            content_id (str): The unique identifier for the content being analyzed.
             html_content (str): The HTML content to parse.
-            *args: Additional arguments to pass to the parser.
-            **kwargs: Additional keyword arguments to pass to the parser.
 
         Returns:
             Film | Person | None: A Film or Person object containing the parsed data.

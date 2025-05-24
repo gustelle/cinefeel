@@ -9,7 +9,7 @@ from src.interfaces.indexer import IDocumentIndexer
 from src.settings import Settings
 
 
-class MeiliIndexer[T: (Film, Person)](IDocumentIndexer[T]):
+class MeiliIndexer[T: Film | Person](IDocumentIndexer[T]):
 
     client: meilisearch.Client
     index: meilisearch.index.Index
@@ -83,9 +83,23 @@ class MeiliIndexer[T: (Film, Person)](IDocumentIndexer[T]):
 
         try:
 
-            task_info = self.index.update_documents(
-                [woa.model_dump(mode="json") for woa in docs], primary_key="uid"
-            )
+            json_docs = []
+            for doc in docs:
+                try:
+                    logger.debug(f"Processing {type(doc).__name__} document: {doc.uid}")
+                    json_docs.append(doc.model_dump(mode="json"))
+                except Exception as e:
+                    import traceback
+
+                    logger.error(traceback.format_exc())
+                    logger.error(f"Error serializing document {doc.model_dump()}: {e}")
+                    continue
+
+            if not json_docs:
+                logger.warning("No valid documents to insert or update.")
+                return
+
+            task_info = self.index.update_documents(json_docs, primary_key="uid")
 
             if wait_for_completion:
                 task_info = self.client.wait_for_task(task_info.task_uid)
@@ -95,4 +109,7 @@ class MeiliIndexer[T: (Film, Person)](IDocumentIndexer[T]):
                     )
 
         except Exception as e:
-            logger.info(f"Error adding documents to index '{self.index}': {e}")
+            import traceback
+
+            logger.error(traceback.format_exc())
+            logger.error(f"Error adding documents to index '{self.index}': {e}")

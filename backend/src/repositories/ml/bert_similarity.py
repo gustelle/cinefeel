@@ -96,9 +96,6 @@ class BertSimilaritySearch(ISimilaritySearch):
             score = hits[0][0]["score"]
 
             if score < self.settings.bert_similarity_threshold:
-                logger.info(
-                    f"no confidence for '{query}' (found '{most_similar_section_title}' with score {score})"
-                )
                 return None
 
             return most_similar_section_title

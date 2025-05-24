@@ -4,13 +4,13 @@ from prefect import flow, get_run_logger
 
 from src.entities.content import WikiPageLink
 from src.entities.film import Film
+from src.repositories.flows.task_analyzer import analyze_films
+from src.repositories.flows.task_downloader import download_page, fetch_wiki_page_links
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.settings import Settings
 
-from .task_analyzer import analyze_films
-from .task_downloader import download_page, fetch_wiki_page_links
 from .task_indexer import index_films
 
 

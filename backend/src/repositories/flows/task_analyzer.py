@@ -9,7 +9,7 @@ from src.repositories.html_parser.splitter import HtmlSplitter
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.ml.bert_similarity import BertSimilaritySearch
 from src.repositories.ml.html_analyzer import HtmlContentAnalyzer
-from src.repositories.ml.ollama_parser import OllamaTransformer
+from src.repositories.ml.ollama_parser import OllamaParser
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.repositories.storage.json_storage import JSONFilmStorageHandler
 from src.settings import Settings
@@ -18,11 +18,13 @@ CONCURRENCY = 4
 
 
 @task(timeout_seconds=60)
-def do_analysis(analyzer: IContentAnalyzer, html_content: str) -> Film | None:
+def do_analysis(
+    analyzer: IContentAnalyzer, content_id: str, html_content: str
+) -> Film | None:
     """
     Submit tasks to the executor with a specified concurrency level.
     """
-    return analyzer.analyze(html_content)
+    return analyzer.analyze(content_id, html_content)
 
 
 @task
@@ -62,8 +64,8 @@ def analyze_films(
 
     film_storage = JSONFilmStorageHandler(settings=settings)
 
-    analyzer = HtmlContentAnalyzer(
-        entity_transformer=OllamaTransformer[Film](settings=settings),
+    analyzer = HtmlContentAnalyzer[Film](
+        content_parser=OllamaParser[Film](settings=settings),
         section_searcher=BertSimilaritySearch(settings=settings),
         html_splitter=HtmlSplitter(),
         html_extractor=WikipediaExtractor(),
@@ -87,6 +89,7 @@ def analyze_films(
         # analyze the HTML content
         future = do_analysis.submit(
             analyzer=analyzer,
+            content_id=content_id,
             html_content=file_content,
         )
 
@@ -102,10 +105,15 @@ def analyze_films(
             break
 
     # now wait for all tasks to complete
+    future: PrefectFuture
     for future in futures:
-        if isinstance(future, PrefectFuture):
-            future.wait()
-        else:
-            logger.warning(f"Future ended up being not a PrefectFuture {future}.")
+        try:
+            future.result(timeout=30, raise_on_failure=True)
+        except TimeoutError:
+            logger.warning(
+                f"Task timed out for {future.task_run_id}, skipping storage."
+            )
+        except Exception as e:
+            logger.error(f"Error in task execution: {e}")
 
     logger.info("'analyze_films' flow completed successfully.")

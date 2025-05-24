@@ -1,15 +1,15 @@
 from src.entities.film import Film
-from src.interfaces.entity_transformer import IEntityTransformer
+from src.interfaces.content_parser import IContentParser
 
 
-class StubEntityTransformer(IEntityTransformer):
+class StubContentParser[T: Film](IContentParser[T]):
     """
     A stub implementation of the IContentParser interface for testing purposes.
     """
 
     is_parsed: bool = False
 
-    def to_entity(self, content: str) -> dict:
+    def resolve(self, content: str) -> Film:
         """
         Parse the given content and return a dictionary representation.
 

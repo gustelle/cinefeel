@@ -1,24 +1,25 @@
-
 from loguru import logger
 
 from src.entities.film import Film
+from src.entities.person import Person
 from src.interfaces.analyzer import IContentAnalyzer
-from src.interfaces.entity_transformer import IEntityTransformer
+from src.interfaces.content_parser import IContentParser
 from src.interfaces.extractor import IHtmlExtractor
 from src.interfaces.similarity import ISimilaritySearch
 from src.repositories.html_parser.splitter import HtmlSplitter
 
 
-class HtmlContentAnalyzer(IContentAnalyzer):
+class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
 
-    entity_transformer: IEntityTransformer
+    content_parser: IContentParser
     section_searcher: ISimilaritySearch
     html_splitter: HtmlSplitter
     html_extractor: IHtmlExtractor
+    entity_type: type[T] = Film
 
     def __init__(
         self,
-        entity_transformer: IEntityTransformer,
+        content_parser: IContentParser,
         section_searcher: ISimilaritySearch,
         html_splitter: HtmlSplitter,
         html_extractor: IHtmlExtractor,
@@ -30,14 +31,34 @@ class HtmlContentAnalyzer(IContentAnalyzer):
             client (chromadb.Client, optional): A ChromaDB client instance.
                 Defaults to None, which creates an ephemeral client.
         """
-        self.entity_transformer = entity_transformer
+        self.content_parser = content_parser
         self.section_searcher = section_searcher
         self.html_splitter = html_splitter
         self.html_extractor = html_extractor
 
-    def analyze(self, html_content: str) -> Film | None:
+    def __class_getitem__(cls, generic_type):
+        """Called when the class is indexed with a type parameter.
+        Enables to guess the type of the entity being stored.
+
+        Thanks to :
+        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
         """
-        Analyzes the HTML content and extracts a film.
+        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
+        new_cls.entity_type = generic_type
+
+        return new_cls
+
+    def analyze(self, content_id: str, html_content: str) -> T | None:
+        """
+        Analyzes the HTML content and resolves it into an entity of type T.
+
+        Args:
+            content_id (str): The unique identifier for the content being analyzed.
+            html_content (str): The HTML content to analyze.
+
+        Returns:
+            Film | Person | None: An entity of type T containing the parsed data,
+            or None if the parsing fails or the content is not relevant.
         """
 
         # split the HTML content into sections
@@ -73,9 +94,16 @@ class HtmlContentAnalyzer(IContentAnalyzer):
         else:
             ctx = tech_spec.content
 
-        resp = self.entity_transformer.to_entity(
+        resp: T = self.content_parser.resolve(
             content=ctx,
         )
+
+        if resp is None:
+            logger.warning("no entity found, skipping the content")
+            return None
+
+        # set the content ID to the entity
+        resp.woa_id = content_id
 
         logger.info(f"response : '{resp.model_dump_json()}'")
 

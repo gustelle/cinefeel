@@ -3,11 +3,11 @@ import ollama
 from src.entities.film import Film
 from src.entities.person import Person
 from src.entities.woa import WOAType
-from src.interfaces.entity_transformer import IEntityTransformer
+from src.interfaces.content_parser import IContentParser
 from src.settings import Settings
 
 
-class OllamaTransformer[T: Film | Person](IEntityTransformer):
+class OllamaParser[T: Film | Person](IContentParser[T]):
     """
     OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
     """
@@ -20,7 +20,7 @@ class OllamaTransformer[T: Film | Person](IEntityTransformer):
         self.model = settings.llm_model
         self.question = settings.llm_question
 
-    def to_entity(self, content: str) -> T:
+    def resolve(self, content: str) -> T:
         """
         Transform the given content into an entity of type T.
         """
@@ -46,13 +46,13 @@ class OllamaTransformer[T: Film | Person](IEntityTransformer):
 
         try:
 
-            woa = entity_type.model_validate_json(msg)
+            ent = entity_type.model_validate_json(msg)
 
             if issubclass(entity_type, Film):
                 # set the uid to the work of art id
-                woa.woa_type = WOAType.FILM
+                ent.woa_type = WOAType.FILM
 
-            return woa
+            return ent
 
         except Exception as e:
             raise ValueError(f"Error parsing response: {e}") from e

@@ -69,10 +69,15 @@ def index_films(
             last_ = batch[-1]
             logger.info(f"Next batch starting after '{last_.uid}'")
 
+    future: PrefectFuture
     for future in futures:
-        if isinstance(future, PrefectFuture):
-            future.wait()
-        else:
-            logger.warning(f"Future ended up being not a PrefectFuture {future}.")
+        try:
+            future.result(timeout=5, raise_on_failure=True)
+        except TimeoutError:
+            logger.warning(
+                f"Task timed out for {future.task_run_id}, skipping storage."
+            )
+        except Exception as e:
+            logger.error(f"Error in task execution: {e}")
 
     logger.info("'index_films' Flow completed successfully.")

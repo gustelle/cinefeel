@@ -1,4 +1,3 @@
-from datetime import datetime
 
 from pydantic import Field, HttpUrl
 
@@ -8,7 +7,9 @@ from .woa import WorkOfArt
 
 class Film(WorkOfArt):
     """
-    TODO: manage genres etc...
+    TODO:
+    - manage genres etc...
+    - fix issue with datetime
     """
 
     # optional
@@ -18,10 +19,10 @@ class Film(WorkOfArt):
         None,
         description="Misc. information about the film that is not covered by the other fields.",
     )
-    release_date: datetime | None = Field(
-        None,
-        description="The year the film was released",
-    )
+    # release_date: datetime | None = Field(
+    #     None,
+    #     description="The year the film was released",
+    # )
     directors: list[str] | None = Field(
         None,
         description="The directors of the film",
@@ -50,7 +51,7 @@ class Film(WorkOfArt):
         None,
         description="The scriptwriters of the film",
     )
-    duration: int | None = Field(
+    duration: float | None = Field(
         None,
         description="The duration of the film in minutes",
     )
