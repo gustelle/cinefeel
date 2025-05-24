@@ -74,7 +74,7 @@ def test_insert_film():
         woa_id=content_id,
     )
 
-    storage_handler.insert(film)
+    storage_handler.insert(film.uid, film)
 
     # then
     assert (storage_handler.persistence_directory / f"{film.uid}.json").exists()
@@ -108,7 +108,7 @@ def test_insert_person():
         full_name=content["full_name"],
     )
 
-    storage_handler.insert(person)
+    storage_handler.insert(person.uid, person)
 
     # then
     assert (storage_handler.persistence_directory / f"{person.uid}.json").exists()
@@ -144,7 +144,7 @@ def test_insert_bad_type():
 
     # then
     with pytest.raises(StorageError) as e:
-        storage_handler.insert(film)
+        storage_handler.insert(film.uid, film)
 
     assert "Error saving" in str(e.value)
 
@@ -174,7 +174,7 @@ def test_select_film():
         woa_id=content_id,
     )
 
-    storage_handler.insert(film)
+    storage_handler.insert(film.uid, film)
 
     # then
     assert storage_handler.select(film.uid) == film
@@ -235,7 +235,7 @@ def test_select_corrupt_entity():
         woa_id=content_id,
     )
 
-    storage_handler.insert(film)
+    storage_handler.insert(film.uid, film)
 
     # corrupt the file
     (storage_handler.persistence_directory / f"{film.uid}.json").write_text(
@@ -266,7 +266,7 @@ def test_query_film():
         woa_id=content_id,
     )
 
-    storage_handler.insert(film)
+    storage_handler.insert(film.uid, film)
 
     # when
     results = storage_handler.query()
@@ -312,7 +312,7 @@ def test_query_corrupt_file():
         woa_id=content_id,
     )
 
-    storage_handler.insert(film)
+    storage_handler.insert(film.uid, film)
 
     # corrupt the file
     (storage_handler.persistence_directory / f"{film.uid}.json").write_text(
@@ -347,7 +347,7 @@ def test_query_validation_err():
         woa_id=content_id,
     )
 
-    storage_handler.insert(film)
+    storage_handler.insert(film.uid, film)
 
     # corrupt the file
     (storage_handler.persistence_directory / f"{film.uid}.json").write_text(
