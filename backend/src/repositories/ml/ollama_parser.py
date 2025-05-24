@@ -3,35 +3,32 @@ import ollama
 from src.entities.film import Film
 from src.entities.person import Person
 from src.entities.woa import WOAType
-from src.interfaces.content_parser import IContentParser
+from src.interfaces.entity_transformer import IEntityTransformer
 from src.settings import Settings
 
 
-class OllamaParser[T: Film | Person](IContentParser):
+class OllamaTransformer[T: Film | Person](IEntityTransformer):
     """
     OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
     """
 
+    model: str
+    question: str
+
     def __init__(self, settings: Settings = None):
 
         self.model = settings.llm_model
+        self.question = settings.llm_question
 
-    def to_entity(self, context: str, question: str) -> T:
+    def to_entity(self, content: str) -> T:
         """
-
-        Args:
-            context (str): _description_
-            question (str): _description_
-            temperature (float, optional): _description_. Defaults to 0.
-
-        Returns:
-            T: _description_
+        Transform the given content into an entity of type T.
         """
 
         # https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
         entity_type: T = self.__orig_class__.__args__[0]
 
-        prompt = f"Context: {context}\n\nQuestion: {question}\nAnswer:"
+        prompt = f"Context: {content}\n\nQuestion: {self.question}\nAnswer:"
 
         response = ollama.chat(
             model=self.model,

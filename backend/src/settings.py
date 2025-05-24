@@ -123,6 +123,11 @@ class Settings(BaseSettings):
         description="The name of the LLM model to use",
     )
 
+    llm_question: str = Field(
+        default="Give information about the film",
+        description="The question to ask the LLM model to get information about the film",
+    )
+
     bert_model: str = Field(
         default="Lajavaness/sentence-camembert-base",
         description="""

@@ -4,21 +4,26 @@ from loguru import logger
 
 from src.entities.film import Film
 from src.interfaces.analyzer import IContentAnalyzer
-from src.interfaces.content_parser import IContentParser
+from src.interfaces.entity_transformer import IEntityTransformer
+from src.interfaces.link_extractor import IHtmlExtractor
 from src.interfaces.similarity import ISimilaritySearch
-from src.settings import Settings
-
-from ..html_parser.html_semantic import HtmlSection, HtmlSemantic
-from .bert_similarity import BertSimilaritySearch
-from .ollama_parser import OllamaParser
+from src.repositories.html_parser.html_semantic import HtmlSplitter, Section
 
 
 class HtmlContentAnalyzer(IContentAnalyzer):
 
-    film_parser: IContentParser
-    simiarity_search: ISimilaritySearch
+    entity_transformer: IEntityTransformer
+    title_matcher: ISimilaritySearch
+    html_splitter: HtmlSplitter
+    html_extractor: IHtmlExtractor
 
-    def __init__(self, settings: Settings):
+    def __init__(
+        self,
+        entity_transformer: IEntityTransformer,
+        title_matcher: ISimilaritySearch,
+        html_splitter: HtmlSplitter,
+        html_extractor: IHtmlExtractor,
+    ):
         """
         Initializes the HtmlAnalyzer with a ChromaDB client.
 
@@ -26,19 +31,21 @@ class HtmlContentAnalyzer(IContentAnalyzer):
             client (chromadb.Client, optional): A ChromaDB client instance.
                 Defaults to None, which creates an ephemeral client.
         """
-        self.film_parser = OllamaParser[Film](settings=settings)
-        self.simiarity_search = BertSimilaritySearch(settings=settings)
+        self.entity_transformer = entity_transformer
+        self.title_matcher = title_matcher
+        self.html_splitter = html_splitter
+        self.html_extractor = html_extractor
 
-    def find_tech_spec(
+    def _find_tech_spec(
         self,
-        sections: list[HtmlSection],
-    ) -> HtmlSection | None:
+        sections: list[Section],
+    ) -> Section | None:
 
         most_similar_section = None
 
         for text_query in ["fiche technique", "synopsis", "résumé"]:
 
-            most_similar_section_title = self.simiarity_search.most_similar(
+            most_similar_section_title = self.title_matcher.most_similar(
                 query=text_query,
                 corpus=[section.title for section in sections],
             )
@@ -76,111 +83,42 @@ class HtmlContentAnalyzer(IContentAnalyzer):
 
     def analyze(self, html_content: str) -> Film | None:
         """
-        TODO:
-        - testing
+        Analyzes the HTML content and extracts a film.
         """
 
-        logger.info("-" * 80)
-
-        splitter = HtmlSemantic()
-
         # split the HTML content into sections
-        sections = splitter.split_sections(html_content)
+        sections = self.html_splitter.split(html_content)
 
         if sections is None or len(sections) == 0:
             logger.warning("no sections found, skipping the content")
             return None
 
-        tech_spec = self.find_tech_spec(
+        tech_spec = self._find_tech_spec(
             sections=sections,
         )
 
         if tech_spec is None or tech_spec.content is None:
 
-            info_table = splitter.parse_info_table(html_content)
+            info_table = self.html_extractor.retrieve_infoboxes(html_content)
+
             if info_table is None or len(info_table) == 0:
                 logger.warning("no info table found, skipping the content")
                 return None
 
-            logger.info(f"found {len(info_table)} info table elements")
-
             # convert the DataFrame to a string
             ctx = "\n".join([f"{row.title}: {row.content}" for row in info_table])
-            logger.info(f"Context is '{ctx}'")
+
+            logger.debug(f"Using info table as context: '{ctx}'")
 
         else:
             ctx = tech_spec.content
 
-        logger.debug(f"Context is '{ctx}'")
+            logger.debug(f"Using tech splec as context: '{ctx}'")
 
-        question = "Give information about the film "
-
-        resp = self.film_parser.to_entity(
-            context=ctx,
-            question=question,
+        resp = self.entity_transformer.to_entity(
+            content=ctx,
         )
 
         logger.info(f"response : '{resp.model_dump_json()}'")
 
         return resp
-
-
-# class WikipediaFilmParser(IPageParser[Film]):
-
-#     content: str
-
-#     def enrich(self, film: Film, html_content: str) -> Film:
-#         """
-#         Parses the given HTML content and returns the extracted attributes as a dictionary.
-
-#         Attributes can include the film director, date of release, distributor, and other relevant information.
-
-#         Args:
-#             film (WikipediaFilm): The WikipediaFilm object to populate with extracted attributes.
-#             html_content (str): The HTML content to parse.
-
-#         Returns:
-#             WikipediaFilm: The WikipediaFilm object populated with extracted attributes.
-
-#         Raises:
-#             WikipediaFilmParserError: If there is an error while parsing the HTML content.
-
-#         TODO:
-#             - Add more attributes to the WikipediaFilm class.
-#             - Add more parsing logic to extract additional information from the HTML content.
-#             - Handle cases where the HTML structure may vary or be inconsistent.
-#             - Add error handling for cases where the HTML content is not as expected.
-#             - Consider using a more robust HTML parsing library if needed.
-
-#         """
-#         try:
-
-#             soup = BeautifulSoup(html_content, "html.parser")
-
-#             infobox = soup.find("div", "infobox")
-
-#             if infobox is None:
-#                 logger.info(f"Infobox not found for {film.work_of_art_id}")
-#                 return film
-
-#             _ = pd.read_html(StringIO(infobox.decode()), extract_links="all")[0]
-
-#             # logger.info(f"found details {pd_df}")
-#             # film.add_info(pd_df)
-
-#             return film
-
-#         except Exception as e:
-#             logger.info(f"Error parsing HTML content: {e}")
-
-#             raise WikipediaParsingError(f"Failed to parse HTML content: {e}") from e
-
-
-# class WikipediaPersonParser(IPageParser[Person]):
-
-#     content: str
-
-#     def enrich(self, person: Person, html_content: str) -> Film:
-#         # TODO
-
-#         return person

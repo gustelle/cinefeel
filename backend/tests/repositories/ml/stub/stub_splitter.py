@@ -1,0 +1,14 @@
+from src.interfaces.content_splitter import IContentSplitter
+
+
+class StubHtmlSplitter(IContentSplitter):
+    """
+    A stub implementation of the IContentSplitter interface for testing purposes.
+    """
+
+    def split(self, *args, **kwargs) -> list:
+        """
+        Stub method to simulate splitting HTML content into sections.
+        Returns an empty list to indicate no sections were found.
+        """
+        return []

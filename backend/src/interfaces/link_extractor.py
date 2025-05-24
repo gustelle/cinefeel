@@ -1,9 +1,9 @@
 from typing import Protocol, Type
 
-from src.entities.wiki import WikiPageLink
+from src.entities.wiki import InfoBoxElement, WikiPageLink
 
 
-class ILinkExtractor(Protocol):
+class IHtmlExtractor(Protocol):
     """
     Interface for a parser that extracts data from a given HTML content.
     """
@@ -23,3 +23,9 @@ class ILinkExtractor(Protocol):
             list[WikiPageLink]: A list of `WikiPageLink` objects representing the extracted links.
         """
         pass
+
+    def retrieve_infoboxes(self, *args, **kwargs) -> list[InfoBoxElement] | None:
+        """
+        Retrieves the infobox elements from the sections.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")

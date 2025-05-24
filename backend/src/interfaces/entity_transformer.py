@@ -3,7 +3,7 @@ from typing import Protocol
 from src.entities.woa import WorkOfArt
 
 
-class IContentParser(Protocol):
+class IEntityTransformer(Protocol):
     """
     Interface for entity resolver classes.
     """

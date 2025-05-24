@@ -29,3 +29,8 @@ class WikiPageLink(BaseModel):
         when using print()
         """
         return f"<'{self.page_title}': {self.page_id}>"
+
+
+class InfoBoxElement(BaseModel):
+    title: str
+    content: str | None

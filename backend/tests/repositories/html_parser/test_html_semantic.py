@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.repositories.html_parser.html_semantic import HtmlSection, HtmlSemantic
+from src.repositories.html_parser.html_semantic import HtmlSplitter, Section
 
 current_dir = Path(__file__).parent
 
@@ -13,16 +13,16 @@ def test_split_sections():
     html_file = current_dir / "wikipedia_html/Beethoven.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = HtmlSemantic()
+    semantic = HtmlSplitter()
 
     # when
-    sections = semantic.split_sections(html_content)
+    sections = semantic.split(html_content)
 
     # then
     assert sections is not None
     assert len(sections) > 0
     assert all(
-        isinstance(section, HtmlSection) for section in sections
+        isinstance(section, Section) for section in sections
     ), "All sections should be of type HtmlSection"
 
 
@@ -32,10 +32,10 @@ def test_split_sections_example():
     html_file = current_dir / "test_html/example.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = HtmlSemantic()
+    semantic = HtmlSplitter()
 
     # when
-    sections = semantic.split_sections(html_content)
+    sections = semantic.split(html_content)
 
     # then
     assert any("Sommaire" == section.title for section in sections)
@@ -57,10 +57,10 @@ def test_split_sections_no_title():
     html_file = current_dir / "test_html/no_title.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = HtmlSemantic()
+    semantic = HtmlSplitter()
 
     # when
-    sections = semantic.split_sections(html_content)
+    sections = semantic.split(html_content)
 
     # then
     assert len(sections) == 0
@@ -72,10 +72,10 @@ def test_split_sections_void_section():
     html_file = current_dir / "test_html/void_section.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = HtmlSemantic()
+    semantic = HtmlSplitter()
 
     # when
-    sections = semantic.split_sections(html_content)
+    sections = semantic.split(html_content)
 
     # then
     assert len(sections) == 0
@@ -87,10 +87,10 @@ def test_parse_info_table():
     html_file = current_dir / "wikipedia_html/Beethoven.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = HtmlSemantic()
+    semantic = HtmlSplitter()
 
     # when
-    info_box = semantic.parse_info_table(html_content)
+    info_box = semantic.retrieve_infobox(html_content)
 
     # then
     assert info_box is not None

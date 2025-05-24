@@ -8,7 +8,7 @@ from prefect.states import State
 
 from src.entities.wiki import WikiPageLink
 from src.interfaces.http_client import HttpError, IHttpClient
-from src.interfaces.link_extractor import ILinkExtractor
+from src.interfaces.link_extractor import IHtmlExtractor
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.settings import Settings, WikiTOCPageConfig
 
@@ -75,7 +75,7 @@ async def download_page(
 @task(cache_policy=NO_CACHE)
 async def fetch_wiki_page_links(
     page: WikiTOCPageConfig,
-    link_extractor: ILinkExtractor,
+    link_extractor: IHtmlExtractor,
     settings: Settings,
     http_client: IHttpClient,
 ) -> list[WikiPageLink]:

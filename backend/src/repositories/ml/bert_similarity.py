@@ -2,6 +2,7 @@ from loguru import logger
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 
+from src.interfaces.similarity import ISimilaritySearch
 from src.settings import Settings
 
 
@@ -13,7 +14,7 @@ class SimilaritySearchError(Exception):
     pass
 
 
-class BertSimilaritySearch:
+class BertSimilaritySearch(ISimilaritySearch):
     """
     Class to handle BERT similarity calculations.
     """

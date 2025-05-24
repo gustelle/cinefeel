@@ -2,7 +2,11 @@ from prefect import flow, get_run_logger, task
 from prefect.futures import PrefectFuture
 
 from src.entities.film import Film
+from src.repositories.html_parser.html_semantic import HtmlSplitter
+from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
+from src.repositories.ml.bert_similarity import BertSimilaritySearch
 from src.repositories.ml.html_analyzer import HtmlContentAnalyzer
+from src.repositories.ml.ollama_parser import OllamaTransformer
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.repositories.storage.json_storage import JSONFilmStorageHandler
 from src.settings import Settings
@@ -52,7 +56,12 @@ def analyze_films(
 
     film_storage = JSONFilmStorageHandler(settings=settings)
 
-    analyzer = HtmlContentAnalyzer(settings=settings)
+    analyzer = HtmlContentAnalyzer(
+        entity_transformer=OllamaTransformer[Film](settings=settings),
+        title_matcher=BertSimilaritySearch(settings=settings),
+        html_splitter=HtmlSplitter(),
+        html_extractor=WikipediaExtractor(),
+    )
 
     i = 0
 

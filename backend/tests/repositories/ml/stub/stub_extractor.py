@@ -1,0 +1,28 @@
+from typing import Type
+
+from src.entities.wiki import InfoBoxElement, WikiPageLink
+from src.interfaces.link_extractor import IHtmlExtractor
+
+
+class StubHtmlExtractor(IHtmlExtractor):
+    """
+    A stub implementation of the IHtmlExtractor interface for testing purposes.
+    This class simulates the behavior of an HTML extractor without performing actual parsing.
+    """
+
+    def retrieve_inner_links(
+        self, html_content: str, entity_type: Type, *args, **kwargs
+    ) -> list[WikiPageLink]:
+        """
+        Returns a predefined list of WikiPageLink objects for testing.
+        """
+        return [
+            WikiPageLink(page_title="Test Page", page_id="Test_Page"),
+            WikiPageLink(page_title="Another Page", page_id="Another_Page"),
+        ]
+
+    def retrieve_infoboxes(self, *args, **kwargs) -> list[InfoBoxElement] | None:
+        """
+        Returns a predefined list of InfoBoxElement objects for testing.
+        """
+        return [InfoBoxElement(title="Test Infobox", content="Some content")]

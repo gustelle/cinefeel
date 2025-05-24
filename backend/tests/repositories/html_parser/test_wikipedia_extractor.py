@@ -1,5 +1,5 @@
 from src.interfaces.link_extractor import WikiPageLink
-from src.repositories.html_parser.wikipedia_extractor import WikipediaLinkExtractor
+from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 
 
 def test_extract_links_from_table():
@@ -8,7 +8,7 @@ def test_extract_links_from_table():
     """
 
     # given
-    extractor = WikipediaLinkExtractor()
+    extractor = WikipediaExtractor()
 
     # Mock HTML content
     html_content = """
@@ -60,7 +60,7 @@ def test_extract_links_with_css_selector():
     """
 
     # given
-    extractor = WikipediaLinkExtractor()
+    extractor = WikipediaExtractor()
 
     # Mock HTML content
     html_content = """
@@ -107,7 +107,7 @@ def test_extract_links_with_css_selector():
 def test_dedup_extract_links():
 
     # given
-    extractor = WikipediaLinkExtractor()
+    extractor = WikipediaExtractor()
 
     # Mock HTML content
     html_content = """
@@ -150,7 +150,7 @@ def test_extract_links_with_no_links():
     """
 
     # given
-    extractor = WikipediaLinkExtractor()
+    extractor = WikipediaExtractor()
 
     # Mock HTML content
     html_content = """
@@ -187,7 +187,7 @@ def test_extract_links_excludes_external_links():
     """
 
     # given
-    extractor = WikipediaLinkExtractor()
+    extractor = WikipediaExtractor()
 
     # Mock HTML content
     html_content = """
@@ -235,7 +235,7 @@ def test_extract_links_excludes_non_existing_pages():
     """
 
     # given
-    extractor = WikipediaLinkExtractor()
+    extractor = WikipediaExtractor()
 
     # Mock HTML content
     html_content = """

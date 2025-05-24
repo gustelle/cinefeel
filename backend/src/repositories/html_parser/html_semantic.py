@@ -1,28 +1,13 @@
 import re
-from io import StringIO
 
-import pandas as pd
 from bs4 import BeautifulSoup
 from htmlrag import clean_html
 from loguru import logger
-from pydantic import BaseModel
+
+from src.interfaces.content_splitter import IContentSplitter, Section
 
 
-class HtmlSemanticError(Exception):
-    pass
-
-
-class HtmlSection(BaseModel):
-    title: str
-    content: str | None
-
-
-class InfoBoxElement(BaseModel):
-    title: str
-    content: str | None
-
-
-class HtmlSemantic:
+class HtmlSplitter(IContentSplitter):
     """
     Splits a given HTML content into sections based on the specified tags.
     """
@@ -36,10 +21,10 @@ class HtmlSemantic:
         "publications",
     ]
 
-    def split_sections(
+    def split(
         self,
         html_content: str,
-    ) -> list[HtmlSection] | None:
+    ) -> list[Section] | None:
         """
         Splits the HTML content into sections based on the specified tags.
 
@@ -75,7 +60,7 @@ class HtmlSemantic:
         # cut simplified_html into sections
         simple_soup = BeautifulSoup(simplified_html, "html.parser")
 
-        sections: list[HtmlSection] = []
+        sections: list[Section] = []
 
         for section_title in simple_soup.find_all("h2"):
 
@@ -136,40 +121,10 @@ class HtmlSemantic:
 
             section_contents.append("\n")
             sections.append(
-                HtmlSection(
+                Section(
                     title=section_title.get_text().strip(),
                     content=" ".join(section_contents).strip(),
                 )
             )
 
         return sections
-
-    def parse_info_table(self, html_content: str) -> list[InfoBoxElement] | None:
-        """
-        Extracts the information table from the HTML content.
-
-        :param html_content: The HTML content to be processed.
-        :return: The information table as a string.
-        """
-        soup = BeautifulSoup(html_content, "html.parser")
-        content = soup.find("div", attrs={"class": "infobox"})
-
-        if not content:
-            return None
-
-        # convert the HTML to text
-        # using pandas
-        df = pd.read_html(StringIO(content.find("table").prettify()))[0]
-        if df.empty:
-            return None
-
-        # convert the DataFrame to a list of InfoBoxElement
-        info_table = [
-            InfoBoxElement(
-                title=str(row[0]),
-                content=str(row[1]) if len(row) > 1 else None,
-            )
-            for row in df.values
-        ]
-
-        return info_table

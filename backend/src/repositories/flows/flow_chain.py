@@ -4,7 +4,7 @@ from prefect import flow, get_run_logger
 
 from src.entities.film import Film
 from src.entities.wiki import WikiPageLink
-from src.repositories.html_parser.wikipedia_extractor import WikipediaLinkExtractor
+from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.settings import Settings
@@ -24,7 +24,7 @@ async def run_chain(
     storage_handler = LocalTextStorage[Film](
         path=settings.persistence_directory,
     )
-    link_extractor = WikipediaLinkExtractor()
+    link_extractor = WikipediaExtractor()
     http_client = AsyncHttpClient(settings=settings)
 
     for page in settings.mediawiki_start_pages:
