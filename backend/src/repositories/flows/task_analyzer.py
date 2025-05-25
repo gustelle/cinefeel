@@ -1,3 +1,5 @@
+import dask
+import dask.distributed
 from prefect import flow, get_run_logger, task
 from prefect.futures import PrefectFuture
 from prefect_dask import DaskTaskRunner
@@ -14,16 +16,24 @@ from src.repositories.storage.html_storage import LocalTextStorage
 from src.repositories.storage.json_storage import JSONFilmStorageHandler
 from src.settings import Settings
 
-CONCURRENCY = 4
+client = dask.distributed.Client(
+    n_workers=4,
+    resources={"GPU": 1, "process": 1},
+    dashboard_address=":8787",
+    memory_limit="4GB",
+)
 
 
-@task(timeout_seconds=60)
+@task(timeout_seconds=120)
 def do_analysis(
     analyzer: IContentAnalyzer, content_id: str, html_content: str
 ) -> Film | None:
     """
     Submit tasks to the executor with a specified concurrency level.
     """
+    logger = get_run_logger()
+    logger.info(f"Analyzing content: '{content_id}'")
+
     return analyzer.analyze(content_id, html_content)
 
 
@@ -50,7 +60,7 @@ def do_storage(film_storage: IStorageHandler, film: Film | None) -> None:
         raise e
 
 
-@flow(task_runner=DaskTaskRunner())
+@flow(task_runner=DaskTaskRunner(address=client.scheduler.address))
 def analyze_films(
     settings: Settings,
     content_ids: list[str] | None = None,
@@ -84,14 +94,15 @@ def analyze_films(
             logger.warning(f"Content with ID '{content_id}' not found in storage.")
             continue
 
-        logger.info(f"Analyzing content: '{content_id}'")
-
         # analyze the HTML content
-        future = do_analysis.submit(
-            analyzer=analyzer,
-            content_id=content_id,
-            html_content=file_content,
-        )
+        with dask.annotate(resources={"GPU": 1}), dask.config.set(
+            {"array.chunk-size": "512 MiB"}
+        ):
+            future = do_analysis.submit(
+                analyzer=analyzer,
+                content_id=content_id,
+                html_content=file_content,
+            )
 
         futures.append(
             do_storage.submit(

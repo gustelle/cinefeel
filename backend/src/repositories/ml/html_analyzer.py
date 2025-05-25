@@ -65,7 +65,7 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
         sections = self.html_splitter.split(html_content)
 
         if sections is None or len(sections) == 0:
-            logger.warning("no sections found, skipping the content")
+            logger.warning(f"no sections found, skipping the content '{content_id}'")
             return None
 
         for text_query in ["fiche technique", "synopsis", "résumé"]:
@@ -83,15 +83,20 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
             info_table = self.html_extractor.retrieve_infoboxes(html_content)
 
             if info_table is None or len(info_table) == 0:
-                logger.warning("no info table found, skipping the content")
+                logger.warning(
+                    f"no info table found, skipping analysis of the content '{content_id}'"
+                )
                 return None
 
             # convert the DataFrame to a string
             ctx = "\n".join([f"{row.title}: {row.content}" for row in info_table])
 
-            logger.debug(f"Using info table as context: '{ctx}'")
+            logger.debug(f"Using info table as context for content '{content_id}'")
 
         else:
+            logger.debug(
+                f"Using section '{tech_spec.title}' as context for content '{content_id}'"
+            )
             ctx = tech_spec.content
 
         resp: T = self.content_parser.resolve(

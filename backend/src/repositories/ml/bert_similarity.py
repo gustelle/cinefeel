@@ -136,9 +136,6 @@ class BertSimilaritySearch(ISimilaritySearch):
         ]
 
         if len(_similar_sec_contents) == 0:
-            logger.warning(
-                f"no section found for '{title}' (found '{most_similar_section_title}')"
-            )
             return None
 
         _section_content = _similar_sec_contents[0]
@@ -148,9 +145,6 @@ class BertSimilaritySearch(ISimilaritySearch):
             or _section_content.content is None
             or len(_section_content.content) == 0
         ):
-            logger.warning(
-                f"content of section '{most_similar_section_title}' is empty"
-            )
             return None
 
         return Section(
