@@ -71,7 +71,7 @@ def test_insert_film():
 
     film = Film(
         title=content["title"],
-        woa_id=content_id,
+        uid=content_id,
     )
 
     storage_handler.insert(film.uid, film)
@@ -104,7 +104,7 @@ def test_insert_person():
     }
 
     person = Person(
-        person_id=content_id,
+        uid=content_id,
         full_name=content["full_name"],
     )
 
@@ -139,7 +139,7 @@ def test_insert_bad_type():
 
     film = Film(
         title=content["title"],
-        woa_id=content_id,
+        uid=content_id,
     )
 
     # then
@@ -171,7 +171,7 @@ def test_select_film():
 
     film = Film(
         title=content["title"],
-        woa_id=content_id,
+        uid=content_id,
     )
 
     storage_handler.insert(film.uid, film)
@@ -203,7 +203,7 @@ def test_select_non_existing_film():
 
     film = Film(
         title=content["title"],
-        woa_id=content_id,
+        uid=content_id,
     )
 
     # then
@@ -232,7 +232,7 @@ def test_select_corrupt_entity():
 
     film = Film(
         title=content["title"],
-        woa_id=content_id,
+        uid=content_id,
     )
 
     storage_handler.insert(film.uid, film)
@@ -263,7 +263,7 @@ def test_query_film():
 
     film = Film(
         title=content["title"],
-        woa_id=content_id,
+        uid=content_id,
     )
 
     storage_handler.insert(film.uid, film)
@@ -309,7 +309,7 @@ def test_query_corrupt_file():
 
     film = Film(
         title=content["title"],
-        woa_id=content_id,
+        uid=content_id,
     )
 
     storage_handler.insert(film.uid, film)
@@ -344,7 +344,7 @@ def test_query_validation_err():
 
     film = Film(
         title=content["title"],
-        woa_id=content_id,
+        uid=content_id,
     )
 
     storage_handler.insert(film.uid, film)

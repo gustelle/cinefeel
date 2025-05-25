@@ -22,5 +22,5 @@ class StubContentParser[T: Film](IContentParser[T]):
         self.is_parsed = True
         return Film(
             title=content,
-            woa_id="stub_film_id",
+            uid="stub_film_id",
         )

@@ -3,7 +3,6 @@ from pathlib import Path
 import duckdb
 from loguru import logger
 from pydantic import ValidationError
-
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler, StorageError
@@ -57,7 +56,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
     ) -> None:
         """Saves the given content to a file."""
 
-        path = self.persistence_directory / f"{content.uid}.json"
+        path = self.persistence_directory / f"{content_id}.json"
 
         try:
 
@@ -76,7 +75,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
                 file.write(content.model_dump_json())
 
         except Exception as e:
-            logger.exception(f"Error saving content {content.uid}: {e}")
+            logger.exception(f"Error saving content {content_id}: {e}")
             raise StorageError(f"Error saving {self.entity_type} to {path}") from e
 
     def select(self, content_id: str) -> T | None:

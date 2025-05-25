@@ -2,10 +2,11 @@ import asyncio
 
 from prefect import flow, get_run_logger
 
-from src.entities.content import WikiPageLink
+from src.entities.content import PageLink
 from src.entities.film import Film
-from src.repositories.flows.task_analyzer import analyze_films
-from src.repositories.flows.task_downloader import download_page, fetch_wiki_page_links
+from src.entities.person import Person
+from src.repositories.flows.task_analyzer import analyze_films, analyze_persons
+from src.repositories.flows.task_downloader import download_page, fetch_page_links
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.storage.html_storage import LocalTextStorage
@@ -21,49 +22,59 @@ async def run_chain(
 
     logger = get_run_logger()
 
-    storage_handler = LocalTextStorage[Film](
+    local_film_storage = LocalTextStorage[Film](
+        path=settings.persistence_directory,
+    )
+    local_person_storage = LocalTextStorage[Person](
         path=settings.persistence_directory,
     )
     link_extractor = WikipediaExtractor()
     http_client = AsyncHttpClient(settings=settings)
 
-    for page in settings.mediawiki_start_pages:
+    # film pages
+    film_pages = [
+        p for p in settings.mediawiki_start_pages if p.toc_content_type == "film"
+    ]
 
-        logger.info(f"Processing page: {page.page_id}")
+    person_pages = [
+        p for p in settings.mediawiki_start_pages if p.toc_content_type == "person"
+    ]
 
-        page_links = await fetch_wiki_page_links(
-            page=page,
+    for config in film_pages:
+
+        page_links = await fetch_page_links(
+            config=config,
             link_extractor=link_extractor,
             settings=settings,
             http_client=http_client,
         )
 
-        content_ids = await asyncio.gather(
+        film_ids = await asyncio.gather(
             *[
                 download_page(
                     page_id=page_link.page_id,
                     settings=settings,
                     http_client=http_client,
-                    storage_handler=storage_handler,
+                    storage_handler=local_film_storage,
                     return_content=False,  # for memory constraints, return the content ID
                 )
                 for page_link in page_links
-                if isinstance(page_link, WikiPageLink)
+                if isinstance(page_link, PageLink)
             ],
             return_exceptions=True,
         )
 
-        content_ids = [cid for cid in content_ids if isinstance(cid, str)]
+        film_ids = [cid for cid in film_ids if isinstance(cid, str)]
 
         logger.info(
-            f"Downloaded {len(content_ids)} contents for {page.page_id}",
+            f"Downloaded {len(film_ids)} contents for {config.page_id}",
         )
-        logger.info(f"Content IDs: {content_ids}")
+        logger.info(f"Film IDs: {film_ids}")
 
         # filter the contents to only include the ones that are not already in the storage
         analyze_films(
             settings=settings,
-            content_ids=content_ids,
+            content_ids=film_ids,
         )
 
     # finally, index the films
@@ -72,5 +83,44 @@ async def run_chain(
     index_films(
         settings=settings,
     )
+
+    logger.info("Films indexed successfully.")
+    logger.info("Starting to download person pages...")
+
+    for config in person_pages:
+
+        page_links = await fetch_page_links(
+            config=config,
+            link_extractor=link_extractor,
+            settings=settings,
+            http_client=http_client,
+        )
+
+        person_ids = await asyncio.gather(
+            *[
+                download_page(
+                    page_id=page_link.page_id,
+                    settings=settings,
+                    http_client=http_client,
+                    storage_handler=local_person_storage,
+                    return_content=False,  # for memory constraints, return the content ID
+                )
+                for page_link in page_links
+                if isinstance(page_link, PageLink)
+            ],
+            return_exceptions=True,
+        )
+
+        person_ids = [cid for cid in person_ids if isinstance(cid, str)]
+
+        logger.info(
+            f"Downloaded {len(person_ids)} contents for {config.page_id}",
+        )
+        logger.info(f"Person IDs: {film_ids}")
+
+        analyze_persons(
+            settings=settings,
+            content_ids=person_ids,
+        )
 
     logger.info("Flow completed successfully.")

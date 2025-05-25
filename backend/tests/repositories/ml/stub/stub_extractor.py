@@ -1,6 +1,6 @@
 from typing import Type
 
-from src.entities.content import InfoBoxElement, WikiPageLink
+from src.entities.content import InfoBoxElement, PageLink
 from src.interfaces.extractor import IHtmlExtractor
 
 
@@ -21,13 +21,13 @@ class StubHtmlExtractor(IHtmlExtractor):
 
     def retrieve_inner_links(
         self, html_content: str, entity_type: Type, *args, **kwargs
-    ) -> list[WikiPageLink]:
+    ) -> list[PageLink]:
         """
         Returns a predefined list of WikiPageLink objects for testing.
         """
         return [
-            WikiPageLink(page_title="Test Page", page_id="Test_Page"),
-            WikiPageLink(page_title="Another Page", page_id="Another_Page"),
+            PageLink(page_title="Test Page", page_id="Test_Page"),
+            PageLink(page_title="Another Page", page_id="Another_Page"),
         ]
 
     def retrieve_infoboxes(self, *args, **kwargs) -> list[InfoBoxElement] | None:

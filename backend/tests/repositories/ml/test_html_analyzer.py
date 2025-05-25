@@ -48,7 +48,7 @@ def test_html_analyzer():
         [InfoBoxElement(title="Test Infobox", content="Some content")]
     )
 
-    analyzer = HtmlContentAnalyzer(
+    analyzer = HtmlContentAnalyzer[Film](
         content_parser=entity_transformer,
         section_searcher=similarity_search,
         html_splitter=splitter,
@@ -62,7 +62,7 @@ def test_html_analyzer():
     assert result is not None
     assert isinstance(result, Film)
     assert entity_transformer.is_parsed is True
-    assert result.woa_id == content_id  # Ensure the content ID is set correctly
+    assert result.uid == content_id  # Ensure the content ID is set correctly
 
 
 def test_html_analyzer_from_infobox():
@@ -99,7 +99,7 @@ def test_html_analyzer_from_infobox():
         [InfoBoxElement(title="Test Infobox", content="Some content")]
     )
 
-    analyzer = HtmlContentAnalyzer(
+    analyzer = HtmlContentAnalyzer[Film](
         content_parser=entity_transformer,
         section_searcher=similarity_search,
         html_splitter=splitter,
@@ -113,7 +113,7 @@ def test_html_analyzer_from_infobox():
     assert result is not None
     assert isinstance(result, Film)
     assert entity_transformer.is_parsed is True
-    assert result.woa_id == content_id  # Ensure the content ID is set correctly
+    assert result.uid == content_id  # Ensure the content ID is set correctly
 
 
 def test_html_analyzer_no_sections_no_infobox():
@@ -128,7 +128,7 @@ def test_html_analyzer_no_sections_no_infobox():
     splitter = StubHtmlSplitter()
     extractor = StubHtmlExtractor([])
 
-    analyzer = HtmlContentAnalyzer(
+    analyzer = HtmlContentAnalyzer[Film](
         content_parser=entity_transformer,
         section_searcher=similarity_search,
         html_splitter=splitter,

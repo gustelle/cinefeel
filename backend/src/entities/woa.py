@@ -1,8 +1,7 @@
-import re
 from enum import StrEnum
-from typing import Mapping, Self
+from typing import Mapping
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from .person import Person
 from .storable import Storable
@@ -59,33 +58,3 @@ class WorkOfArt(Storable):
         description="The type of the work of art. ",
         examples=[str(woa_type) for woa_type in WOAType],
     )
-    woa_id: str = Field(
-        ...,
-        description="The ID of the work of art page on Wikipedia. This is the part of the URL after 'wiki/'",
-        examples=["The_Scream", "Starry_Night"],
-    )
-
-    @model_validator(mode="after")
-    def customize_uid(self) -> Self:
-        """override the uid with a custom uid based on the work of art id and type"""
-
-        value = self.woa_id.strip()
-
-        if self.woa_type is not None:
-            # set the uid to the work of art id
-            value = f"{self.woa_type}_{value}"
-        else:
-            # set the uid to the work of art id
-            value = f"woa_{value}"
-
-        value = re.sub(r"[^a-zA-Z0-9]", "_", value)
-
-        # replace spaces with underscores
-        value = value.replace(" ", "_")
-
-        # lowercase the uid
-        value = value.casefold()
-
-        self.uid = value
-
-        return self

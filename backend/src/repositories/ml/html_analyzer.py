@@ -15,7 +15,7 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
     section_searcher: ISimilaritySearch
     html_splitter: HtmlSplitter
     html_extractor: IHtmlExtractor
-    entity_type: type[T] = Film
+    entity_type: type[T]
 
     def __init__(
         self,
@@ -61,14 +61,32 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
             or None if the parsing fails or the content is not relevant.
         """
 
+        if not hasattr(self, "entity_type"):
+            raise ValueError(
+                "Entity type is not set. Please use the class with a specific entity type."
+            )
+
         # split the HTML content into sections
         sections = self.html_splitter.split(html_content)
+
+        queries = []
+
+        if self.entity_type is Film:
+            queries = ["fiche technique", "synopsis", "résumé"]
+        elif self.entity_type is Person:
+            queries = ["biographie"]
+        else:
+            logger.error(
+                f"Unsupported entity type: {self.entity_type}. "
+                "Only Film and Person are supported."
+            )
+            return None
 
         if sections is None or len(sections) == 0:
             logger.warning(f"no sections found, skipping the content '{content_id}'")
             return None
 
-        for text_query in ["fiche technique", "synopsis", "résumé"]:
+        for text_query in queries:
 
             tech_spec = self.section_searcher.most_similar_section(
                 title=text_query,
@@ -108,7 +126,7 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
             return None
 
         # set the content ID to the entity
-        resp.woa_id = content_id
+        resp.uid = content_id
 
         logger.info(f"response : '{resp.model_dump_json()}'")
 

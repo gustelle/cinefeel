@@ -19,14 +19,6 @@ class WikiTOCPageConfig(BaseModel):
         examples=["Film_Title", "Liste_de_films_français_sortis_en_1907"],
     )
 
-    toc_css_selector: str = Field(
-        default=".wikitable td:nth-child(1)",
-        description="""
-            The CSS selector to use to extract the links from the table of contents.
-        """,
-        examples=[".wikitable td:nth-child(1)"],
-    )
-
     toc_content_type: Literal["film", "person"] = Field(
         ...,
         description="""
@@ -37,6 +29,14 @@ class WikiTOCPageConfig(BaseModel):
             - "person" for a page containing a list of people.
         """,
         examples=["film", "person"],
+    )
+
+    toc_css_selector: str | None = Field(
+        None,
+        description="""
+            The CSS selector to use to extract the links from the table of contents.
+        """,
+        examples=[".wikitable td:nth-child(1)"],
     )
 
 
@@ -58,6 +58,28 @@ _default_person_tocs = [
     for year in range(1907, 1908)
 ]
 _default_tocs = _default_film_tocs + _default_person_tocs
+
+
+class LLMQuestion(BaseModel):
+    """Configuration for a question to ask the LLM model."""
+
+    question: str = Field(
+        ...,
+        description="The question to ask the LLM model",
+        examples=[
+            "Donne-moi des informations sur le film",
+            "Quelles sont les informations sur le film ?",
+            "Peux-tu me parler du film ?",
+        ],
+    )
+    content_type: Literal["film", "person"] = Field(
+        ...,
+        description="""
+            The type of content to ask the question about.
+            Can be either "film" or "person".
+        """,
+        examples=["film", "person"],
+    )
 
 
 class Settings(BaseSettings):
@@ -123,14 +145,18 @@ class Settings(BaseSettings):
         description="The name of the LLM model to use",
     )
 
-    llm_question: str = Field(
-        default="Donne-moi des informations sur le film, réponds en français et de manière concise, sans faire de phrases. Si tu ne trouves pas d'informations, n'invente pas.",
-        examples=[
-            "Donne-moi des informations sur le film",
-            "Quelles sont les informations sur le film ?",
-            "Peux-tu me parler du film ?",
+    llm_questions: list[LLMQuestion] = Field(
+        default=[
+            LLMQuestion(
+                question="Donne-moi des informations sur le film. Réponds en français et de manière concise",
+                content_type="film",
+            ),
+            LLMQuestion(
+                question="Quelles sont les informations sur la personne ? Réponds en français et de manière concise",
+                content_type="person",
+            ),
         ],
-        description="The question to ask the LLM model to get information about the film",
+        description="The questions to ask the LLM model to get information",
     )
 
     bert_model: str = Field(

@@ -5,8 +5,7 @@ from prefect import Task, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 from prefect.client.schemas.objects import TaskRun
 from prefect.states import State
-
-from src.entities.content import WikiPageLink
+from src.entities.content import PageLink
 from src.interfaces.extractor import IHtmlExtractor
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.repositories.storage.html_storage import LocalTextStorage
@@ -80,27 +79,26 @@ async def download_page(
 
 
 @task(cache_policy=NO_CACHE)
-async def fetch_wiki_page_links(
-    page: WikiTOCPageConfig,
+async def fetch_page_links(
+    config: WikiTOCPageConfig,
     link_extractor: IHtmlExtractor,
     settings: Settings,
     http_client: IHttpClient,
-) -> list[WikiPageLink]:
+) -> list[PageLink]:
     """
     downloads the HTML pages and returns the list of page IDs.
 
-
     Args:
-        page (WikiTOCPageConfig): The page to download.
+        page (WikiTOCPageConfig): The configuration for the page to be downloaded.
 
     Returns:
-        list[WikiPageLink]: A list of page links.
+        list[PageLink]: A list of page links.
     """
 
     logger = get_run_logger()
 
     html = await download_page(
-        page_id=page.page_id,
+        page_id=config.page_id,
         settings=settings,
         http_client=http_client,
         return_content=True,  # return the content
@@ -114,7 +112,7 @@ async def fetch_wiki_page_links(
         return await asyncio.to_thread(
             link_extractor.retrieve_inner_links,
             html_content=html,
-            css_selector=page.toc_css_selector,
+            config=config,
         )
 
     except Exception as e:

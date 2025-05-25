@@ -1,7 +1,9 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class WikiPageLink(BaseModel):
+class PageLink(BaseModel):
     """
     A class representing a link to a film page on Wikipedia.
     """
@@ -22,6 +24,12 @@ class WikiPageLink(BaseModel):
         description="The ID of the linked page on Wikipedia. Must not start with a slash or './'.",
         pattern=r"^(?!\.?\/).*",
         examples=["À_Biribi,_disciplinaires_français"],
+    )
+
+    content_type: Literal["film", "person"] = Field(
+        ...,
+        description="The type of content the link refers to. This can be either 'film' or 'person'.",
+        examples=["film", "person"],
     )
 
     def __repr__(self) -> str:

@@ -5,7 +5,7 @@ from prefect.futures import wait
 from prefect.testing.utilities import prefect_test_harness
 
 from src.entities.film import Film
-from src.repositories.flows.task_analyzer import do_storage
+from src.repositories.flows.task_analyzer import store_film
 
 from .stubs.stub_storage import StubStorage
 
@@ -22,7 +22,7 @@ def test_do_storage():
         """
         sleep(5)
         get_run_logger().info("Slept for 5 second")
-        return Film(title="Test Film", woa_id="test_woa_id")
+        return Film(title="Test Film", uid="test_id")
 
     @flow
     def fake_flow():
@@ -30,7 +30,7 @@ def test_do_storage():
         A fake flow to test the task analyzer.
         """
         analysis_fut = fake_analysis.submit()
-        storage_fut = do_storage.submit(stub_storage, analysis_fut)
+        storage_fut = store_film.submit(stub_storage, analysis_fut)
         wait([storage_fut])
 
     # when

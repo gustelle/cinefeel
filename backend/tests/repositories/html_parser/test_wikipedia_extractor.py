@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from src.interfaces.extractor import WikiPageLink
+from src.interfaces.extractor import PageLink
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
+from src.settings import WikiTOCPageConfig
 
 
 def test_extract_links_from_table():
@@ -34,20 +35,28 @@ def test_extract_links_from_table():
     </html>
     """
 
+    config = WikiTOCPageConfig(
+        page_id="My TOC Page",
+        toc_content_type="film",
+        toc_css_selector=".wikitable td:nth-child(1)",
+    )
+
     # Expected output
     expected_output = [
-        WikiPageLink(
+        PageLink(
             page_title="Film Title",
             page_id="Film_Title",
+            content_type="film",
         ),
-        WikiPageLink(
+        PageLink(
             page_title="Other Film Title",
             page_id="Other_Film_Title",
+            content_type="film",
         ),
     ]
 
     # Call the function to test
-    result = extractor.retrieve_inner_links(html_content)
+    result = extractor.retrieve_inner_links(html_content, config)
 
     # Assert the result
     assert all(
@@ -63,6 +72,12 @@ def test_extract_links_with_css_selector():
 
     # given
     extractor = WikipediaExtractor()
+
+    config = WikiTOCPageConfig(
+        page_id="My TOC Page",
+        toc_content_type="person",
+        toc_css_selector=".wikitable td:nth-child(2)",
+    )
 
     # Mock HTML content
     html_content = """
@@ -84,20 +99,20 @@ def test_extract_links_with_css_selector():
 
     # Expected output
     expected_output = [
-        WikiPageLink(
+        PageLink(
             page_title="Lucien Nonguet",
             page_id="Lucien_Nonguet",
+            content_type="person",
         ),
-        WikiPageLink(
+        PageLink(
             page_title="Toto",
             page_id="toto",
+            content_type="person",
         ),
     ]
 
     # Call the function to test
-    result = extractor.retrieve_inner_links(
-        html_content, css_selector="td:nth-child(2)"
-    )
+    result = extractor.retrieve_inner_links(html_content, config)
 
     # Assert the result
     assert all(
@@ -110,6 +125,12 @@ def test_dedup_extract_links():
 
     # given
     extractor = WikipediaExtractor()
+
+    config = WikiTOCPageConfig(
+        page_id="My TOC Page",
+        toc_content_type="person",
+        toc_css_selector=".wikitable td:nth-child(2)",
+    )
 
     # Mock HTML content
     html_content = """
@@ -131,16 +152,15 @@ def test_dedup_extract_links():
 
     # Expected output
     expected_output = [
-        WikiPageLink(
+        PageLink(
             page_title="Lucien Nonguet",
             page_id="Lucien_Nonguet",
+            content_type="person",
         ),
     ]
 
     # Call the function to test
-    result = extractor.retrieve_inner_links(
-        html_content, css_selector="td:nth-child(2)"
-    )
+    result = extractor.retrieve_inner_links(html_content, config)
 
     # Assert the result
     assert result == expected_output, f"Expected {expected_output}, but got {result}"
@@ -153,6 +173,11 @@ def test_extract_links_with_no_links():
 
     # given
     extractor = WikipediaExtractor()
+
+    config = WikiTOCPageConfig(
+        page_id="My TOC Page",
+        toc_content_type="person",
+    )
 
     # Mock HTML content
     html_content = """
@@ -177,7 +202,7 @@ def test_extract_links_with_no_links():
     expected_output = []
 
     # Call the function to test
-    result = extractor.retrieve_inner_links(html_content)
+    result = extractor.retrieve_inner_links(html_content, config)
 
     # Assert the result
     assert result == expected_output, f"Expected {expected_output}, but got {result}"
@@ -190,6 +215,11 @@ def test_extract_links_excludes_external_links():
 
     # given
     extractor = WikipediaExtractor()
+
+    config = WikiTOCPageConfig(
+        page_id="My TOC Page",
+        toc_content_type="film",
+    )
 
     # Mock HTML content
     html_content = """
@@ -215,14 +245,15 @@ def test_extract_links_excludes_external_links():
 
     # Expected output
     expected_output = [
-        WikiPageLink(
+        PageLink(
             page_title="Film Title",
             page_id="Film_Title",
+            content_type="film",
         ),
     ]
 
     # Call the function to test
-    result = extractor.retrieve_inner_links(html_content)
+    result = extractor.retrieve_inner_links(html_content, config)
 
     # Assert the result
     assert all(
@@ -238,6 +269,11 @@ def test_extract_links_excludes_non_existing_pages():
 
     # given
     extractor = WikipediaExtractor()
+
+    config = WikiTOCPageConfig(
+        page_id="My TOC Page",
+        toc_content_type="film",
+    )
 
     # Mock HTML content
     html_content = """
@@ -263,14 +299,15 @@ def test_extract_links_excludes_non_existing_pages():
 
     # Expected output
     expected_output = [
-        WikiPageLink(
+        PageLink(
             page_title="Film Title",
             page_id="Film_Title",
+            content_type="film",
         ),
     ]
 
     # Call the function to test
-    result = extractor.retrieve_inner_links(html_content)
+    result = extractor.retrieve_inner_links(html_content, config)
 
     # Assert the result
     assert all(

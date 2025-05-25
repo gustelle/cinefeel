@@ -4,7 +4,7 @@ from src.entities.film import Film
 from src.entities.person import Person
 from src.entities.woa import WOAType
 from src.interfaces.content_parser import IContentParser
-from src.settings import Settings
+from src.settings import LLMQuestion, Settings
 
 
 class OllamaParser[T: Film | Person](IContentParser[T]):
@@ -13,46 +13,79 @@ class OllamaParser[T: Film | Person](IContentParser[T]):
     """
 
     model: str
-    question: str
+    questions: list[LLMQuestion]
+    entity_type: type[T]
 
     def __init__(self, settings: Settings = None):
 
         self.model = settings.llm_model
-        self.question = settings.llm_question
+        self.questions = settings.llm_questions
+
+    def __class_getitem__(cls, generic_type):
+        """Called when the class is indexed with a type parameter.
+        Enables to guess the type of the entity being stored.
+
+        Thanks to :
+        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
+        """
+        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
+        new_cls.entity_type = generic_type
+
+        return new_cls
 
     def resolve(self, content: str) -> T:
         """
         Transform the given content into an entity of type T.
+
+        TODO:
+        - Ability to complete an entity with multiple questions.
+
+        Args:
+            content (str): The content to parse, typically a string containing text.
+
+        Returns:
+            T: An instance of the entity type T, such as Film or Person, containing the parsed data.
+            Raises ValueError if parsing fails or if the content is not relevant.
+
+        Raises:
+            ValueError: If the content cannot be parsed into an entity of type T.
         """
 
-        # https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
-        entity_type: T = self.__orig_class__.__args__[0]
+        result: T | None = None
 
-        prompt = f"Context: {content}\n\nQuestion: {self.question}\nAnswer:"
+        for question in self.questions:
 
-        response = ollama.chat(
-            model=self.model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-            format=entity_type.model_json_schema(),
-            options={"temperature": 0},  # Set temperature to 0 for more deterministic
-        )
+            if question.content_type != self.entity_type.__name__.lower():
+                continue
 
-        msg = response.message.content
+            prompt = f"Context: {content}\n\nQuestion: {question}\nRéponse:"
 
-        try:
+            response = ollama.chat(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                format=self.entity_type.model_json_schema(),
+                options={
+                    # Set temperature to 0 for more deterministic responses
+                    "temperature": 0
+                },
+            )
 
-            ent = entity_type.model_validate_json(msg)
+            msg = response.message.content
 
-            if issubclass(entity_type, Film):
-                # set the uid to the work of art id
-                ent.woa_type = WOAType.FILM
+            try:
 
-            return ent
+                result = self.entity_type.model_validate_json(msg)
 
-        except Exception as e:
-            raise ValueError(f"Error parsing response: {e}") from e
+                if issubclass(self.entity_type, Film):
+                    # set the uid to the work of art id
+                    result.woa_type = WOAType.FILM
+
+            except Exception as e:
+                raise ValueError(f"Error parsing response: {e}") from e
+
+        return result

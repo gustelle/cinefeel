@@ -5,9 +5,9 @@ import pandas as pd
 import polars as pl
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
-
-from src.entities.content import InfoBoxElement, WikiPageLink
+from src.entities.content import InfoBoxElement, PageLink
 from src.interfaces.extractor import IHtmlExtractor
+from src.settings import WikiTOCPageConfig
 
 
 class WikiDataExtractionError(Exception):
@@ -23,10 +23,8 @@ class WikipediaExtractor(IHtmlExtractor):
     _inner_page_id_prefix = "./"
 
     def retrieve_inner_links(
-        self,
-        html_content: str,
-        css_selector: str | None = None,
-    ) -> list[WikiPageLink]:
+        self, html_content: str, config: WikiTOCPageConfig
+    ) -> list[PageLink]:
         """
         Parses the given HTML content and discovers wikipedia links to Wikipedia pages.
         A wikipedia link starts with `./` and is followed by the page ID.
@@ -39,8 +37,7 @@ class WikipediaExtractor(IHtmlExtractor):
 
         Args:
             html_content (str): The HTML content to parse.
-            css_selector (str): filter the links within the targeted html structure. Defaults to None.
-                Example: "td:nth-child(2)" to filter links belonging to the second column of a table.
+            config (WikiTOCPageConfig): The configuration for the page to be downloaded, which may include CSS selectors.
 
         Example:
         ```
@@ -58,29 +55,37 @@ class WikipediaExtractor(IHtmlExtractor):
 
             links = extractor.retrieve_inner_links(
                 html_content,
-                css_selector="table td:nth-child(2)"
+                config=WikiTOCPageConfig(
+                    toc_css_selector=".wikitable td:nth-child(2)",
+                    toc_content_type="person",
+
+                )
             )
             # links = [
-            #     WikiPageLink(page_title="Lucien Nonguet", page_id="Lucien_Nonguet"),
+            #     PageLink(page_title="Lucien Nonguet", page_id="Lucien_Nonguet", content_type="person"),
             # ]
         ```
 
         Returns:
-            list[WikiPageLink]: a list of wikipedia pages, described by their IDs and eventually titles.
+            list[PageLink]: a list of wikipedia pages, described by their IDs and eventually titles.
 
         Raises:
             WikiDataExtractionError: if the HTML content cannot be parsed or if the table structure is not as expected.
         """
 
-        links: list[WikiPageLink] = []
+        links: list[PageLink] = []
         soup = BeautifulSoup(html_content, "html.parser")
 
         # discover the structure of the HTML content
         # and extract the relevant links
-        roots = soup.select(css_selector) if css_selector else soup.find_all()
+        roots = (
+            soup.select(config.toc_css_selector)
+            if config.toc_css_selector
+            else soup.find_all()
+        )
 
         for root in roots:
-            for link in self._parse_structure(root):
+            for link in self._parse_structure(root, config):
                 links.append(link)
 
         return self._deduplicate_links(links)
@@ -88,7 +93,8 @@ class WikipediaExtractor(IHtmlExtractor):
     def _parse_structure(
         self,
         tag: Tag,
-    ) -> Generator[WikiPageLink, None, None]:
+        config: WikiTOCPageConfig,
+    ) -> Generator[PageLink, None, None]:
 
         match tag.name:
 
@@ -108,9 +114,10 @@ class WikipediaExtractor(IHtmlExtractor):
                 linked_page_id = tag.get("href").split("/")[-1]
 
                 try:
-                    yield WikiPageLink(
+                    yield PageLink(
                         page_title=tag.get_text(strip=True),
                         page_id=linked_page_id,
+                        content_type=config.toc_content_type,
                     )
                 except Exception as e:
                     logger.error(f"Error creating WikiPageLink: {e} for tag: {tag}")
@@ -120,9 +127,9 @@ class WikipediaExtractor(IHtmlExtractor):
 
                 for child in tag.find_all(recursive=False):
                     # Recursively parse child elements
-                    yield from self._parse_structure(child)
+                    yield from self._parse_structure(child, config)
 
-    def _deduplicate_links(self, links: list[WikiPageLink]) -> list[WikiPageLink]:
+    def _deduplicate_links(self, links: list[PageLink]) -> list[PageLink]:
         """
         Deduplicates the list of links based on their page_id.
 
@@ -138,7 +145,7 @@ class WikipediaExtractor(IHtmlExtractor):
         df = pl.from_records(links)
         df = df.unique(subset=["page_id"])
 
-        return [WikiPageLink(**row) for row in df.to_dicts()]
+        return [PageLink(**row) for row in df.to_dicts()]
 
     def retrieve_infoboxes(self, html_content: str) -> list[InfoBoxElement] | None:
         """

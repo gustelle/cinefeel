@@ -1,6 +1,6 @@
-from typing import Protocol, Type
+from typing import Protocol
 
-from src.entities.content import InfoBoxElement, WikiPageLink
+from src.entities.content import InfoBoxElement, PageLink
 
 
 class IHtmlExtractor(Protocol):
@@ -9,8 +9,8 @@ class IHtmlExtractor(Protocol):
     """
 
     def retrieve_inner_links(
-        self, html_content: str, entity_type: Type, *args, **kwargs
-    ) -> list[WikiPageLink]:
+        self, html_content: str, *args, **kwargs
+    ) -> list[PageLink]:
         """
         Parses the given HTML content and returns a list of `~T` objects.
 
@@ -20,7 +20,7 @@ class IHtmlExtractor(Protocol):
             **kwargs: Additional keyword arguments to pass to the parser.
 
         Returns:
-            list[WikiPageLink]: A list of `WikiPageLink` objects representing the extracted links.
+            list[PageLink]: A list of `PageLink` objects representing the extracted links.
         """
         pass
 
