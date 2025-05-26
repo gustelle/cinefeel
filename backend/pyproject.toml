@@ -36,6 +36,7 @@ dependencies = [
     "aiosqlite (>=0.21.0,<0.22.0)",
     "prefect[dask] (>=3.4.3,<4.0.0)",
     "bokeh (>=3.7.3,<4.0.0)",
+    "bert-extractive-summarizer (>=0.10.1,<0.11.0)",
 ]
 
 [tool.poetry]

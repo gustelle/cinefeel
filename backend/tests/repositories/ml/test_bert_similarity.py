@@ -1,5 +1,5 @@
 from src.interfaces.content_splitter import Section
-from src.repositories.ml.bert_similarity import BertSimilaritySearch
+from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.settings import Settings
 
 
@@ -10,7 +10,7 @@ def test_bert_similarity_search():
 
     # given
     # Initialize the BERT similarity search
-    bert_similarity_search = BertSimilaritySearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(Settings())
 
     # Define a query and a corpus
     query = "film"
@@ -21,7 +21,9 @@ def test_bert_similarity_search():
     ]
 
     # Perform the similarity search
-    most_similar_section_title = bert_similarity_search.most_similar(query, corpus)
+    most_similar_section_title = bert_similarity_search._most_similar_text(
+        query, corpus
+    )
 
     # Check that the most similar section title is correct
     assert most_similar_section_title == "film"
@@ -33,7 +35,7 @@ def test_most_similar_section():
     """
 
     # given
-    bert_similarity_search = BertSimilaritySearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(Settings())
 
     # Define a title and sections
     title = "film"
@@ -45,7 +47,7 @@ def test_most_similar_section():
     sections = [Section(**section) for section in sections]
 
     # Perform the similarity search
-    most_similar_section = bert_similarity_search.most_similar_section(title, sections)
+    most_similar_section = bert_similarity_search.process(title, sections)
 
     # Check that the most similar section is correct
     assert most_similar_section.title == "film"
@@ -58,14 +60,14 @@ def test_most_similar_section_empty():
     """
 
     # given
-    bert_similarity_search = BertSimilaritySearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(Settings())
 
     # Define a title and an empty list of sections
     title = "film"
     sections: list[Section] = []
 
     # Perform the similarity search
-    most_similar_section = bert_similarity_search.most_similar_section(title, sections)
+    most_similar_section = bert_similarity_search.process(title, sections)
 
     # Check that the most similar section is None
     assert most_similar_section is None
@@ -77,7 +79,7 @@ def test_most_similar_section_no_match():
     """
 
     # given
-    bert_similarity_search = BertSimilaritySearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(Settings())
 
     # Define a title and sections with no match
     title = "nonexistent"
@@ -89,7 +91,7 @@ def test_most_similar_section_no_match():
     sections = [Section(**section) for section in sections]
 
     # Perform the similarity search
-    most_similar_section = bert_similarity_search.most_similar_section(title, sections)
+    most_similar_section = bert_similarity_search.process(title, sections)
 
     # Check that the most similar section is None
     assert most_similar_section is None

@@ -1,10 +1,24 @@
 import ollama
+from loguru import logger
+from pydantic import BaseModel, Field
 
 from src.entities.film import Film
 from src.entities.person import Person
 from src.entities.woa import WOAType
 from src.interfaces.content_parser import IContentParser
 from src.settings import LLMQuestion, Settings
+
+
+class LLMResponse(BaseModel):
+    """
+    Represents a response from the LLM (Language Model).
+    Contains the content of the response and the type of content.
+    """
+
+    content: str = Field(
+        ...,
+        description="The content of the response from the LLM.",
+    )
 
 
 class OllamaParser[T: Film | Person](IContentParser[T]):
@@ -58,34 +72,62 @@ class OllamaParser[T: Film | Person](IContentParser[T]):
             if question.content_type != self.entity_type.__name__.lower():
                 continue
 
+            logger.debug(f"Processing question: {question.question}")
+
             prompt = f"Context: {content}\n\nQuestion: {question}\nRéponse:"
 
-            response = ollama.chat(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
-                format=self.entity_type.model_json_schema(),
-                options={
-                    # Set temperature to 0 for more deterministic responses
-                    "temperature": 0
-                },
-            )
+            if result is None:
+                # case where the entity needs to be created
+                response = ollama.chat(
+                    model=self.model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                    format=self.entity_type.model_json_schema(),
+                    options={
+                        # Set temperature to 0 for more deterministic responses
+                        "temperature": 0
+                    },
+                )
 
-            msg = response.message.content
+                msg = response.message.content
 
-            try:
+                try:
 
-                result = self.entity_type.model_validate_json(msg)
+                    result = self.entity_type.model_validate_json(msg)
 
-                if issubclass(self.entity_type, Film):
-                    # set the uid to the work of art id
-                    result.woa_type = WOAType.FILM
+                    if issubclass(self.entity_type, Film):
+                        # set the uid to the work of art id
+                        result.woa_type = WOAType.FILM
 
-            except Exception as e:
-                raise ValueError(f"Error parsing response: {e}") from e
+                except Exception as e:
+                    raise ValueError(f"Error parsing response: {e}") from e
+            else:
+                # case where the entity already exists and we want to complete it
+                response = ollama.chat(
+                    model=self.model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                    format=question.response_format
+                    or self.entity_type.model_json_schema(),
+                    options={
+                        # Set temperature to 0 for more deterministic responses
+                        "temperature": 0
+                    },
+                )
+
+                msg = response.message.content
+
+                try:
+                    logger.debug(f"Response from LLM: {msg}")
+                except Exception as e:
+                    raise ValueError(f"Error parsing response: {e}") from e
 
         return result

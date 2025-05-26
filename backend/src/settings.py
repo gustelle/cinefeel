@@ -1,8 +1,10 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from src.entities.person import GenderEnum
 
 
 class WikiTOCPageConfig(BaseModel):
@@ -72,6 +74,16 @@ class LLMQuestion(BaseModel):
             "Peux-tu me parler du film ?",
         ],
     )
+
+    response_format: dict | None = Field(
+        None,
+        description="""
+            The expected response format from the LLM model.
+            This is used to validate the response from the LLM model.
+            When not provided, the response will not be validated against a schema.
+        """,
+    )
+
     content_type: Literal["film", "person"] = Field(
         ...,
         description="""
@@ -155,18 +167,26 @@ class Settings(BaseSettings):
                 question="Quelles sont les informations sur la personne ? Réponds en français et de manière concise",
                 content_type="person",
             ),
+            LLMQuestion(
+                question="Est-ce que cette personne est un homme, une femme ou non-binaire ? Réponds en français et de manière concise",
+                content_type="person",
+                response_format=TypeAdapter(GenderEnum).json_schema(),
+            ),
         ],
         description="The questions to ask the LLM model to get information",
     )
 
-    bert_model: str = Field(
+    bert_similarity_model: str = Field(
         default="Lajavaness/sentence-camembert-base",
         description="""
             The name of the BERT model to use for similarity search
-            when analyzing the content of a HTML page.
-            this model is used to find the most similar section corresponding to a query.
-            For example, the query "fiche technique" will be used to find the section
-            containing the technical specifications of a film.
+        """,
+    )
+
+    bert_summary_model: str = Field(
+        default="paraphrase-albert-small-v2",
+        description="""
+            The name of the BERT model to use for summarizing contents.
         """,
     )
 

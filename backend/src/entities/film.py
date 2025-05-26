@@ -1,4 +1,3 @@
-
 from pydantic import Field, HttpUrl
 
 from .person import Person
@@ -9,7 +8,7 @@ class Film(WorkOfArt):
     """
     TODO:
     - manage genres etc...
-    - fix issue with datetime
+    - fix issue with release_date
     """
 
     # optional

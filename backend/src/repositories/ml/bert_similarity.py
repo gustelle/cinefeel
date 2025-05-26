@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 
 from src.interfaces.content_splitter import Section
-from src.interfaces.similarity import ISimilaritySearch
+from src.interfaces.similarity import MLProcessor
 from src.settings import Settings
 
 
@@ -17,7 +17,7 @@ class SimilaritySearchError(Exception):
     pass
 
 
-class BertSimilaritySearch(ISimilaritySearch):
+class SimilarSectionSearch(MLProcessor[Section]):
     """
     Class to handle BERT similarity calculations.
     """
@@ -33,9 +33,9 @@ class BertSimilaritySearch(ISimilaritySearch):
             model_name (str): The name of the BERT model to use.
         """
         self.settings = settings
-        self.embedder = SentenceTransformer(settings.bert_model)
+        self.embedder = SentenceTransformer(settings.bert_similarity_model)
 
-    def most_similar(self, query: str, corpus: list[str]) -> str | None:
+    def _most_similar_text(self, query: str, corpus: list[str]) -> str | None:
         """
         Find the most similar phrase to the given query within the corpus using BERT embeddings.
 
@@ -106,9 +106,7 @@ class BertSimilaritySearch(ISimilaritySearch):
             logger.error(traceback.format_exc())
             raise SimilaritySearchError(f"Error in BERT similarity search: {e}") from e
 
-    def most_similar_section(
-        self, title: str, sections: list[Section]
-    ) -> Section | None:
+    def process(self, title: str, sections: list[Section]) -> Section | None:
         """
         Find the most similar `Section` to the given title within the list of sections.
 
@@ -121,7 +119,7 @@ class BertSimilaritySearch(ISimilaritySearch):
         """
         _section_content = None
 
-        most_similar_section_title = self.most_similar(
+        most_similar_section_title = self._most_similar_text(
             query=title,
             corpus=[section.title for section in sections],
         )

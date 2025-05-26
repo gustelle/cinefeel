@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.repositories.html_parser.splitter import HtmlSplitter, Section
+from src.repositories.html_parser.html_splitter import HtmlSplitter, Section
 
 current_dir = Path(__file__).parent
 

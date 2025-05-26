@@ -1,7 +1,6 @@
 import re
 
 from bs4 import BeautifulSoup
-from htmlrag import clean_html
 
 from src.interfaces.content_splitter import IContentSplitter, Section
 
@@ -22,7 +21,7 @@ class HtmlSplitter(IContentSplitter):
 
     def split(
         self,
-        html_content: str,
+        simplified_html: str,
     ) -> list[Section] | None:
         """
         Splits the HTML content into sections based on the specified tags.
@@ -51,10 +50,6 @@ class HtmlSplitter(IContentSplitter):
         _SKIPPED_TAGS = [
             "figcaption",
         ]
-
-        # simplify the HTML content
-        # for better embedding
-        simplified_html = clean_html(html_content)
 
         # cut simplified_html into sections
         simple_soup = BeautifulSoup(simplified_html, "html.parser")

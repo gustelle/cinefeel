@@ -7,12 +7,11 @@ from src.entities.film import Film
 from src.entities.person import Person
 from src.repositories.flows.task_analyzer import analyze_films, analyze_persons
 from src.repositories.flows.task_downloader import download_page, fetch_page_links
+from src.repositories.flows.task_indexer import index_films
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.settings import Settings
-
-from .task_indexer import index_films
 
 
 @flow()
@@ -116,7 +115,7 @@ async def run_chain(
         logger.info(
             f"Downloaded {len(person_ids)} contents for {config.page_id}",
         )
-        logger.info(f"Person IDs: {film_ids}")
+        logger.info(f"Person IDs: {person_ids}")
 
         analyze_persons(
             settings=settings,

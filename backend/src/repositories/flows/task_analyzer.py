@@ -8,10 +8,10 @@ from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.storage import IStorageHandler
-from src.repositories.html_parser.splitter import HtmlSplitter
+from src.repositories.html_parser.html_analyzer import HtmlContentAnalyzer
+from src.repositories.html_parser.html_splitter import HtmlSplitter
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
-from src.repositories.ml.bert_similarity import BertSimilaritySearch
-from src.repositories.ml.html_analyzer import HtmlContentAnalyzer
+from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.ollama_parser import OllamaParser
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.repositories.storage.json_storage import (
@@ -98,7 +98,7 @@ def analyze_films(
 
     analyzer = HtmlContentAnalyzer[Film](
         content_parser=OllamaParser[Film](settings=settings),
-        section_searcher=BertSimilaritySearch(settings=settings),
+        section_searcher=SimilarSectionSearch(settings=settings),
         html_splitter=HtmlSplitter(),
         html_extractor=WikipediaExtractor(),
     )
@@ -107,7 +107,12 @@ def analyze_films(
 
     # send concurrent tasks to analyze HTML content
     # don't wait for the task to be completed
-    futures = []
+    storage_futures = []
+
+    # need to keep track of the futures to wait for them later
+    # see: https://github.com/PrefectHQ/prefect/issues/17517
+    analysis_futures = []
+
     for content_id in content_ids:
 
         file_content = html_storage.select(content_id)
@@ -125,8 +130,9 @@ def analyze_films(
                 content_id=content_id,
                 html_content=file_content,
             )
+            analysis_futures.append(future)
 
-        futures.append(
+        storage_futures.append(
             store_film.submit(
                 film_storage=film_storage,
                 film=future,
@@ -139,9 +145,9 @@ def analyze_films(
 
     # now wait for all tasks to complete
     future: PrefectFuture
-    for future in futures:
+    for future in storage_futures:
         try:
-            future.result(timeout=30, raise_on_failure=True)
+            future.result(timeout=60, raise_on_failure=True)
         except TimeoutError:
             logger.warning(
                 f"Task timed out for {future.task_run_id}, skipping storage."
@@ -168,7 +174,7 @@ def analyze_persons(
 
     analyzer = HtmlContentAnalyzer[Person](
         content_parser=OllamaParser[Person](settings=settings),
-        section_searcher=BertSimilaritySearch(settings=settings),
+        section_searcher=SimilarSectionSearch(settings=settings),
         html_splitter=HtmlSplitter(),
         html_extractor=WikipediaExtractor(),
     )
@@ -177,7 +183,12 @@ def analyze_persons(
 
     # send concurrent tasks to analyze HTML content
     # don't wait for the task to be completed
-    futures = []
+    storage_futures = []
+
+    # need to keep track of the futures to wait for them later
+    # see: https://github.com/PrefectHQ/prefect/issues/17517
+    analysis_futures = []
+
     for content_id in content_ids:
 
         file_content = html_storage.select(content_id)
@@ -195,8 +206,9 @@ def analyze_persons(
                 content_id=content_id,
                 html_content=file_content,
             )
+            analysis_futures.append(future)
 
-        futures.append(
+        storage_futures.append(
             store_film.submit(
                 film_storage=person_storage,
                 film=future,
@@ -209,9 +221,9 @@ def analyze_persons(
 
     # now wait for all tasks to complete
     future: PrefectFuture
-    for future in futures:
+    for future in storage_futures:
         try:
-            future.result(timeout=30, raise_on_failure=True)
+            future.result(timeout=60, raise_on_failure=True)
         except TimeoutError:
             logger.warning(
                 f"Task timed out for {future.task_run_id}, skipping storage."

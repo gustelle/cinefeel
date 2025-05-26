@@ -5,14 +5,14 @@ from src.entities.person import Person
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.content_parser import IContentParser
 from src.interfaces.extractor import IHtmlExtractor
-from src.interfaces.similarity import ISimilaritySearch
-from src.repositories.html_parser.splitter import HtmlSplitter
+from src.interfaces.similarity import MLProcessor
+from src.repositories.html_parser.html_splitter import HtmlSplitter
 
 
 class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
 
     content_parser: IContentParser
-    section_searcher: ISimilaritySearch
+    section_searcher: MLProcessor
     html_splitter: HtmlSplitter
     html_extractor: IHtmlExtractor
     entity_type: type[T]
@@ -20,7 +20,7 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
     def __init__(
         self,
         content_parser: IContentParser,
-        section_searcher: ISimilaritySearch,
+        section_searcher: MLProcessor,
         html_splitter: HtmlSplitter,
         html_extractor: IHtmlExtractor,
     ):
@@ -88,7 +88,7 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
 
         for text_query in queries:
 
-            tech_spec = self.section_searcher.most_similar_section(
+            tech_spec = self.section_searcher.process(
                 title=text_query,
                 sections=sections,
             )

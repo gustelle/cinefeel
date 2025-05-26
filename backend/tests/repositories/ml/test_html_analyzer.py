@@ -1,6 +1,6 @@
 from src.entities.content import InfoBoxElement, Section
 from src.entities.film import Film
-from src.repositories.ml.html_analyzer import HtmlContentAnalyzer
+from src.repositories.html_parser.html_analyzer import HtmlContentAnalyzer
 
 from .stub.stub_extractor import StubHtmlExtractor
 from .stub.stub_parser import StubContentParser
