@@ -1,5 +1,6 @@
 from loguru import logger
 
+from src.entities.content import Section
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.analyzer import IContentAnalyzer
@@ -10,17 +11,25 @@ from src.repositories.html_parser.html_splitter import HtmlSplitter
 
 
 class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
+    """
+    TODO:
+    - use a data pipeline to process the HTML content
+    """
 
     content_parser: IContentParser
     section_searcher: MLProcessor
+    summarizer: MLProcessor
     html_splitter: HtmlSplitter
+    html_simplifier: MLProcessor
     html_extractor: IHtmlExtractor
     entity_type: type[T]
 
     def __init__(
         self,
         content_parser: IContentParser,
+        html_simplifier: MLProcessor,
         section_searcher: MLProcessor,
+        summarizer: MLProcessor,
         html_splitter: HtmlSplitter,
         html_extractor: IHtmlExtractor,
     ):
@@ -28,13 +37,19 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
         Initializes the HtmlAnalyzer with a ChromaDB client.
 
         Args:
-            client (chromadb.Client, optional): A ChromaDB client instance.
-                Defaults to None, which creates an ephemeral client.
+            content_parser (IContentParser): The content parser to resolve the HTML content into an entity.
+            html_simplifier (MLProcessor): The processor to simplify the HTML content.
+            section_searcher (MLProcessor): The processor to search for sections in the HTML content.
+            summarizer (MLProcessor): The processor to summarize sections if they are too long.
+            html_splitter (HtmlSplitter): The splitter to divide the HTML content into sections.
+            html_extractor (IHtmlExtractor): The extractor to retrieve infoboxes from the HTML content.
         """
         self.content_parser = content_parser
         self.section_searcher = section_searcher
         self.html_splitter = html_splitter
         self.html_extractor = html_extractor
+        self.summarizer = summarizer
+        self.html_simplifier = html_simplifier
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -66,6 +81,12 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
                 "Entity type is not set. Please use the class with a specific entity type."
             )
 
+        # simplify the HTML content
+        html_content = self.html_simplifier.process(html_content)
+        if html_content is None or len(html_content) == 0:
+            logger.warning(f"no HTML content found for content '{content_id}'")
+            return None
+
         # split the HTML content into sections
         sections = self.html_splitter.split(html_content)
 
@@ -88,12 +109,23 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
 
         for text_query in queries:
 
-            tech_spec = self.section_searcher.process(
+            tech_spec: Section = self.section_searcher.process(
                 title=text_query,
                 sections=sections,
             )
 
             if tech_spec is not None:
+                # summarize the section if it is too long
+                if len(tech_spec.content) > 1000:
+                    logger.debug(
+                        f"section '{tech_spec.title}' is too long, summarizing it"
+                    )
+                    tech_spec = self.summarizer.process(tech_spec)
+                else:  # section is short enough, no need to summarize
+                    logger.debug(
+                        f"section '{tech_spec.title}' is short enough ({len(tech_spec.content)} characters)"
+                    )
+
                 break
 
         if tech_spec is None or tech_spec.content is None:

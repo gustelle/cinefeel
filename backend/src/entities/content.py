@@ -18,6 +18,7 @@ class PageLink(BaseModel):
         examples=[
             "À Biribi, disciplinaires français",
         ],
+        repr=False,
     )
     page_id: str = Field(
         ...,
@@ -30,13 +31,8 @@ class PageLink(BaseModel):
         ...,
         description="The type of content the link refers to. This can be either 'film' or 'person'.",
         examples=["film", "person"],
+        repr=False,
     )
-
-    def __repr__(self) -> str:
-        """human readable representation of the object
-        when using print()
-        """
-        return f"<'{self.page_title}': {self.page_id}>"
 
 
 class InfoBoxElement(BaseModel):

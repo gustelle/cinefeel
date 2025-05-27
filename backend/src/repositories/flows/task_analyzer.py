@@ -12,6 +12,8 @@ from src.repositories.html_parser.html_analyzer import HtmlContentAnalyzer
 from src.repositories.html_parser.html_splitter import HtmlSplitter
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.ml.bert_similarity import SimilarSectionSearch
+from src.repositories.ml.bert_summary import SectionSummarizer
+from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.ollama_parser import OllamaParser
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.repositories.storage.json_storage import (
@@ -28,7 +30,7 @@ client = dask.distributed.Client(
 )
 
 
-@task(timeout_seconds=120)
+@task(task_run_name="do_analysis-{content_id}", timeout_seconds=120)
 def do_analysis(
     analyzer: IContentAnalyzer, content_id: str, html_content: str
 ) -> Film | None:
@@ -41,48 +43,41 @@ def do_analysis(
     return analyzer.analyze(content_id, html_content)
 
 
-@task
-def store_film(film_storage: IStorageHandler, film: Film | None) -> None:
+@task(
+    task_run_name="store_film-{film}",
+)
+def store_film(storage: IStorageHandler, film: Film | None) -> None:
     """
     Store the film entity in the storage.
     """
-    try:
 
-        logger = get_run_logger()
+    logger = get_run_logger()
 
-        if film is not None and isinstance(film, Film):
-            # store the film entity
-            film_storage.insert(film.uid, film)
-        else:
-            logger.warning("skipping storage, film is None or not a Film instance.")
-
-    except Exception as e:
-        logger.error(f"Error storing film: {e}")
-        raise e
+    if film is not None and isinstance(film, Film):
+        storage.insert(film.uid, film)
+    else:
+        logger.warning("skipping storage, film is None or not a Film instance.")
 
 
-@task
-def store_person(person_storage: IStorageHandler, person: Person | None) -> None:
+@task(
+    task_run_name="store_person-{person}",
+)
+def store_person(storage: IStorageHandler, person: Person | None) -> None:
     """
     Store the film entity in the storage.
     """
-    try:
 
-        logger = get_run_logger()
+    logger = get_run_logger()
 
-        if person is not None and isinstance(person, Person):
-            # store the film entity
-            person_storage.insert(person.uid, person)
-        else:
-            logger.warning("skipping storage, person is None or not a Person instance.")
-
-    except Exception as e:
-        logger = get_run_logger()
-        logger.error(f"Error storing film: {e}")
-        raise e
+    if person is not None and isinstance(person, Person):
+        storage.insert(person.uid, person)
+    else:
+        logger.warning("skipping storage, person is None or not a Person instance.")
 
 
-@flow(task_runner=DaskTaskRunner(address=client.scheduler.address))
+@flow(
+    name="analyze_films", task_runner=DaskTaskRunner(address=client.scheduler.address)
+)
 def analyze_films(
     settings: Settings,
     content_ids: list[str] | None = None,
@@ -101,6 +96,8 @@ def analyze_films(
         section_searcher=SimilarSectionSearch(settings=settings),
         html_splitter=HtmlSplitter(),
         html_extractor=WikipediaExtractor(),
+        html_simplifier=HTMLSimplifier(),
+        summarizer=SectionSummarizer(settings=settings),
     )
 
     i = 0
@@ -134,7 +131,7 @@ def analyze_films(
 
         storage_futures.append(
             store_film.submit(
-                film_storage=film_storage,
+                storage=film_storage,
                 film=future,
             )
         )
@@ -158,7 +155,9 @@ def analyze_films(
     logger.info("'analyze_films' flow completed successfully.")
 
 
-@flow(task_runner=DaskTaskRunner(address=client.scheduler.address))
+@flow(
+    name="analyze_persons", task_runner=DaskTaskRunner(address=client.scheduler.address)
+)
 def analyze_persons(
     settings: Settings,
     content_ids: list[str] | None = None,
@@ -177,6 +176,8 @@ def analyze_persons(
         section_searcher=SimilarSectionSearch(settings=settings),
         html_splitter=HtmlSplitter(),
         html_extractor=WikipediaExtractor(),
+        html_simplifier=HTMLSimplifier(),
+        summarizer=SectionSummarizer(settings=settings),
     )
 
     i = 0
@@ -209,9 +210,9 @@ def analyze_persons(
             analysis_futures.append(future)
 
         storage_futures.append(
-            store_film.submit(
-                film_storage=person_storage,
-                film=future,
+            store_person.submit(
+                storage=person_storage,
+                person=future,
             )
         )
 

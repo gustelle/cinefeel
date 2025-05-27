@@ -86,7 +86,7 @@ class MeiliIndexer[T: Film | Person](IDocumentIndexer[T]):
             json_docs = []
             for doc in docs:
                 try:
-                    logger.debug(f"Processing {type(doc).__name__} document: {doc.uid}")
+                    logger.debug(f"Processing {type(doc).__name__}: '{doc.uid}'")
                     json_docs.append(doc.model_dump(mode="json"))
                 except Exception as e:
                     import traceback
@@ -100,6 +100,10 @@ class MeiliIndexer[T: Film | Person](IDocumentIndexer[T]):
                 return
 
             task_info = self.index.update_documents(json_docs, primary_key="uid")
+
+            logger.info(
+                f"Indexation started with {len(json_docs)} {type(doc).__name__}."
+            )
 
             if wait_for_completion:
                 task_info = self.client.wait_for_task(task_info.task_uid)

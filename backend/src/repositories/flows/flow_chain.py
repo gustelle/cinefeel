@@ -7,7 +7,7 @@ from src.entities.film import Film
 from src.entities.person import Person
 from src.repositories.flows.task_analyzer import analyze_films, analyze_persons
 from src.repositories.flows.task_downloader import download_page, fetch_page_links
-from src.repositories.flows.task_indexer import index_films
+from src.repositories.flows.task_indexer import index_films, index_persons
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.storage.html_storage import LocalTextStorage
@@ -83,7 +83,7 @@ async def run_chain(
         settings=settings,
     )
 
-    logger.info("Films indexed successfully.")
+    # logger.info("Films indexed successfully.")
     logger.info("Starting to download person pages...")
 
     for config in person_pages:
@@ -121,5 +121,11 @@ async def run_chain(
             settings=settings,
             content_ids=person_ids,
         )
+
+    index_persons(
+        settings=settings,
+    )
+
+    logger.info("Persons indexed successfully.")
 
     logger.info("Flow completed successfully.")

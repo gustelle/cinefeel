@@ -3,6 +3,7 @@ from pathlib import Path
 import duckdb
 from loguru import logger
 from pydantic import ValidationError
+
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler, StorageError
@@ -97,9 +98,14 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
         after: T | None = None,
         limit: int = 100,
     ) -> list[T]:
-        """Lists films in the persistent storage corresponding to the given criteria."""
+        """Lists entities in the persistent storage corresponding to the given criteria."""
 
         try:
+
+            logger.debug(
+                f"Querying {self.entity_type.__name__}s with order_by='{order_by}', after='{after}', limit={limit}"
+            )
+
             results = (
                 duckdb.sql(
                     f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
@@ -112,7 +118,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
 
             if results.empty:
                 logger.warning(
-                    f"No films found matching the criteria: {order_by}, {after}, {limit}"
+                    f"No {self.entity_type} found matching the criteria: {order_by}, {after}, {limit}"
                 )
                 return []
 

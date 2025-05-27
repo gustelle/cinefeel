@@ -3,16 +3,20 @@ from prefect.cache_policies import NO_CACHE
 from prefect.futures import PrefectFuture
 
 from src.entities.film import Film
+from src.entities.person import Person
 from src.interfaces.indexer import IDocumentIndexer
 from src.repositories.search.meili_indexer import MeiliIndexer
-from src.repositories.storage.json_storage import JSONFilmStorageHandler
+from src.repositories.storage.json_storage import (
+    JSONFilmStorageHandler,
+    JSONPersonStorageHandler,
+)
 from src.settings import Settings
 
 CONCURRENCY = 4
 
 
 @task(cache_policy=NO_CACHE)
-def index_batch(
+def index_films_batch(
     films: list[Film],
     indexer: IDocumentIndexer,
 ) -> None:
@@ -28,7 +32,26 @@ def index_batch(
     )
 
 
-@flow()
+@task(cache_policy=NO_CACHE)
+def index_persons_batch(
+    persons: list[Person],
+    indexer: IDocumentIndexer,
+) -> None:
+    """
+    TODO: index persons in a separate index
+
+    Args:
+        wait_for_completion (bool, optional): _description_. Defaults to False.
+    """
+    indexer.insert_or_update(
+        docs=persons,
+        wait_for_completion=True,  # TODO: set to False for performance
+    )
+
+
+@flow(
+    name="index_films",
+)
 def index_films(
     settings: Settings,
 ) -> None:
@@ -53,7 +76,7 @@ def index_films(
             limit=batch_size,
         )
 
-        futures.append(index_batch.submit(batch, indexer))
+        futures.append(index_films_batch.submit(batch, indexer))
 
         if batch is None or len(batch) == 0:
             logger.info(
@@ -81,3 +104,60 @@ def index_films(
             logger.error(f"Error in task execution: {e}")
 
     logger.info("'index_films' Flow completed successfully.")
+
+
+@flow(
+    name="index_persons",
+)
+def index_persons(
+    settings: Settings,
+) -> None:
+
+    logger = get_run_logger()
+
+    storage_handler = JSONPersonStorageHandler(settings=settings)
+    indexer = MeiliIndexer[Person](settings=settings)
+
+    # upsert in batches
+    last_ = None
+    has_more = True
+    batch_size = 100
+
+    futures = []
+
+    while has_more:
+
+        batch = storage_handler.query(
+            order_by="uid",
+            after=last_,
+            limit=batch_size,
+        )
+
+        futures.append(index_persons_batch.submit(batch, indexer))
+
+        if batch is None or len(batch) == 0:
+            logger.info(
+                f"Reached the last batch: {len(batch)} persons, no more to process"
+            )
+            has_more = False
+        elif last_ is not None and last_.uid == batch[-1].uid:
+            logger.info(
+                f"Reached the last batch: {len(batch)} persons, no more to process"
+            )
+            has_more = False
+        else:
+            last_ = batch[-1]
+            logger.info(f"Next batch starting after '{last_.uid}'")
+
+    future: PrefectFuture
+    for future in futures:
+        try:
+            future.result(timeout=5, raise_on_failure=True)
+        except TimeoutError:
+            logger.warning(
+                f"Task timed out for {future.task_run_id}, skipping storage."
+            )
+        except Exception as e:
+            logger.error(f"Error in task execution: {e}")
+
+    logger.info("'index_persons' Flow completed successfully.")

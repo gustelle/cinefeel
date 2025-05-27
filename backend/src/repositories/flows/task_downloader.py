@@ -5,6 +5,7 @@ from prefect import Task, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 from prefect.client.schemas.objects import TaskRun
 from prefect.states import State
+
 from src.entities.content import PageLink
 from src.interfaces.extractor import IHtmlExtractor
 from src.interfaces.http_client import HttpError, IHttpClient
@@ -32,6 +33,7 @@ async def is_retriable(
 
 
 @task(
+    task_run_name="download_page-{page_id}",
     retries=3,
     retry_delay_seconds=[1, 2, 5],
     retry_condition_fn=is_retriable,

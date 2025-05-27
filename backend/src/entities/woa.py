@@ -33,14 +33,19 @@ class WorkOfArt(Storable):
     Represents a work of art
     """
 
-    title: str
+    title: str = Field(
+        ...,
+        description="The title of the work of art.",
+    )
     other_titles: list[str] | None = Field(
         None,
         description="Other titles of the work of art if any.",
+        repr=False,
     )
     authors: list[Person] | None = Field(
         None,
         description="The authors of the work of art. This can be used to filter the list of works of art.",
+        repr=False,
     )
     roles: Mapping[str, list[Person]] | None = Field(
         None,
@@ -51,10 +56,12 @@ class WorkOfArt(Storable):
                 "actor": ["Person 3", "Person 4"],
             },
         ],
+        repr=False,
     )
 
     woa_type: WOAType | None = Field(
         None,
         description="The type of the work of art. ",
         examples=[str(woa_type) for woa_type in WOAType],
+        repr=False,
     )
