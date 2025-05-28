@@ -1,11 +1,12 @@
-import dask
-import dask.distributed
+from typing import Type
+
 from prefect import flow, get_run_logger, task
 from prefect.futures import PrefectFuture
 from prefect_dask import DaskTaskRunner
 
 from src.entities.film import Film
 from src.entities.person import Person
+from src.entities.storable import Storable
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.storage import IStorageHandler
 from src.repositories.html_parser.html_analyzer import HtmlContentAnalyzer
@@ -15,221 +16,145 @@ from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.ollama_parser import OllamaParser
-from src.repositories.storage.html_storage import LocalTextStorage
-from src.repositories.storage.json_storage import (
-    JSONFilmStorageHandler,
-    JSONPersonStorageHandler,
-)
+from src.repositories.storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
-client = dask.distributed.Client(
-    n_workers=4,
-    resources={"GPU": 1, "process": 1},
-    dashboard_address=":8787",
-    memory_limit="4GB",
-)
+# TODO: externalize the Dask client configuration to settings
+# client = dask.distributed.Client(
+#     n_workers=4,
+#     resources={"GPU": 1, "process": 1},
+#     dashboard_address=":8787",
+#     memory_limit="4GB",
+# )
 
 
-@task(task_run_name="do_analysis-{content_id}", timeout_seconds=120)
-def do_analysis(
-    analyzer: IContentAnalyzer, content_id: str, html_content: str
-) -> Film | None:
+class AnalysisFlowRunner:
     """
-    Submit tasks to the executor with a specified concurrency level.
-    """
-    logger = get_run_logger()
-    logger.info(f"Analyzing content: '{content_id}'")
-
-    return analyzer.analyze(content_id, html_content)
-
-
-@task(
-    task_run_name="store_film-{film}",
-)
-def store_film(storage: IStorageHandler, film: Film | None) -> None:
-    """
-    Store the film entity in the storage.
+    handles persistence of `Film` or `Person` objects into JSON files.
     """
 
-    logger = get_run_logger()
+    entity_type: type[Film | Person]
+    settings: Settings
 
-    if film is not None and isinstance(film, Film):
-        storage.insert(film.uid, film)
-    else:
-        logger.warning("skipping storage, film is None or not a Film instance.")
+    def __init__(self, settings: Settings, entity_type: Type[Film | Person]):
+        self.settings = settings
+        self.entity_type = entity_type
 
+    def __class_getitem__(cls, generic_type):
+        """Called when the class is indexed with a type parameter.
+        Enables to guess the type of the entity being stored.
 
-@task(
-    task_run_name="store_person-{person}",
-)
-def store_person(storage: IStorageHandler, person: Person | None) -> None:
-    """
-    Store the film entity in the storage.
-    """
+        Thanks to :
+        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
+        """
+        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
+        new_cls.entity_type = generic_type
 
-    logger = get_run_logger()
+        return new_cls
 
-    if person is not None and isinstance(person, Person):
-        storage.insert(person.uid, person)
-    else:
-        logger.warning("skipping storage, person is None or not a Person instance.")
+    @task(task_run_name="do_analysis-{content_id}", timeout_seconds=120)
+    def do_analysis(
+        self, analyzer: IContentAnalyzer, content_id: str, html_content: str
+    ) -> Storable | None:
+        """
+        Submit tasks to the executor with a specified concurrency level.
+        """
+        logger = get_run_logger()
+        logger.info(f"Analyzing content: '{content_id}'")
 
+        return analyzer.analyze(content_id, html_content)
 
-@flow(
-    name="analyze_films", task_runner=DaskTaskRunner(address=client.scheduler.address)
-)
-def analyze_films(
-    settings: Settings,
-    content_ids: list[str] | None = None,
-) -> None:
-
-    logger = get_run_logger()
-
-    html_storage = LocalTextStorage[Film](
-        path=settings.persistence_directory,
+    @task(
+        task_run_name="store_entity-{entity}",
     )
+    def store(self, storage: IStorageHandler, entity: Storable) -> None:
+        """
+        Store the film entity in the storage.
+        """
 
-    film_storage = JSONFilmStorageHandler(settings=settings)
+        logger = get_run_logger()
 
-    analyzer = HtmlContentAnalyzer[Film](
-        content_parser=OllamaParser[Film](settings=settings),
-        section_searcher=SimilarSectionSearch(settings=settings),
-        html_splitter=HtmlSplitter(),
-        html_extractor=WikipediaExtractor(),
-        html_simplifier=HTMLSimplifier(),
-        summarizer=SectionSummarizer(settings=settings),
+        if entity is not None:
+            storage.insert(entity.uid, entity)
+        else:
+            logger.warning("skipping storage, entity is None")
+
+    @flow(
+        name="analyze",
+        task_runner=DaskTaskRunner(),  # address=client.scheduler.address),
     )
+    def analyze(
+        self,
+        content_ids: list[str] | None,
+        storage_handler: IStorageHandler,
+    ) -> None:
 
-    i = 0
+        logger = get_run_logger()
 
-    # send concurrent tasks to analyze HTML content
-    # don't wait for the task to be completed
-    storage_futures = []
+        person_storage = JSONEntityStorageHandler[self.entity_type](
+            settings=self.settings
+        )
 
-    # need to keep track of the futures to wait for them later
-    # see: https://github.com/PrefectHQ/prefect/issues/17517
-    analysis_futures = []
+        analyzer = HtmlContentAnalyzer[self.entity_type](
+            content_parser=OllamaParser[self.entity_type](settings=self.settings),
+            section_searcher=SimilarSectionSearch(settings=self.settings),
+            html_splitter=HtmlSplitter(),
+            html_extractor=WikipediaExtractor(),
+            html_simplifier=HTMLSimplifier(),
+            summarizer=SectionSummarizer(settings=self.settings),
+        )
 
-    for content_id in content_ids:
+        i = 0
 
-        file_content = html_storage.select(content_id)
+        # send concurrent tasks to analyze HTML content
+        # don't wait for the task to be completed
+        storage_futures = []
 
-        if file_content is None:
-            logger.warning(f"Content with ID '{content_id}' not found in storage.")
-            continue
+        # need to keep track of the futures to wait for them later
+        # see: https://github.com/PrefectHQ/prefect/issues/17517
+        analysis_futures = []
 
-        # analyze the HTML content
-        with dask.annotate(resources={"GPU": 1}), dask.config.set(
-            {"array.chunk-size": "512 MiB"}
-        ):
-            future = do_analysis.submit(
+        for content_id in content_ids:
+
+            file_content = storage_handler.select(content_id)
+
+            if file_content is None:
+                logger.warning(f"Content with ID '{content_id}' not found in storage.")
+                continue
+
+            # analyze the HTML content
+            # with (
+            #     dask.annotate(resources={"GPU": 1}),
+            #     dask.config.set({"array.chunk-size": "512 MiB"}),
+            # ):
+            future = self.do_analysis.submit(
                 analyzer=analyzer,
                 content_id=content_id,
                 html_content=file_content,
             )
             analysis_futures.append(future)
 
-        storage_futures.append(
-            store_film.submit(
-                storage=film_storage,
-                film=future,
+            storage_futures.append(
+                self.store.submit(
+                    storage=person_storage,
+                    entity=future,
+                )
             )
-        )
 
-        i += 1
-        if i > 2:
-            break
+            i += 1
+            if i > 2:
+                break
 
-    # now wait for all tasks to complete
-    future: PrefectFuture
-    for future in storage_futures:
-        try:
-            future.result(timeout=60, raise_on_failure=True)
-        except TimeoutError:
-            logger.warning(
-                f"Task timed out for {future.task_run_id}, skipping storage."
-            )
-        except Exception as e:
-            logger.error(f"Error in task execution: {e}")
+        # now wait for all tasks to complete
+        future: PrefectFuture
+        for future in storage_futures:
+            try:
+                future.result(timeout=60, raise_on_failure=True)
+            except TimeoutError:
+                logger.warning(
+                    f"Task timed out for {future.task_run_id}, skipping storage."
+                )
+            except Exception as e:
+                logger.error(f"Error in task execution: {e}")
 
-    logger.info("'analyze_films' flow completed successfully.")
-
-
-@flow(
-    name="analyze_persons", task_runner=DaskTaskRunner(address=client.scheduler.address)
-)
-def analyze_persons(
-    settings: Settings,
-    content_ids: list[str] | None = None,
-) -> None:
-
-    logger = get_run_logger()
-
-    html_storage = LocalTextStorage[Person](
-        path=settings.persistence_directory,
-    )
-
-    person_storage = JSONPersonStorageHandler(settings=settings)
-
-    analyzer = HtmlContentAnalyzer[Person](
-        content_parser=OllamaParser[Person](settings=settings),
-        section_searcher=SimilarSectionSearch(settings=settings),
-        html_splitter=HtmlSplitter(),
-        html_extractor=WikipediaExtractor(),
-        html_simplifier=HTMLSimplifier(),
-        summarizer=SectionSummarizer(settings=settings),
-    )
-
-    i = 0
-
-    # send concurrent tasks to analyze HTML content
-    # don't wait for the task to be completed
-    storage_futures = []
-
-    # need to keep track of the futures to wait for them later
-    # see: https://github.com/PrefectHQ/prefect/issues/17517
-    analysis_futures = []
-
-    for content_id in content_ids:
-
-        file_content = html_storage.select(content_id)
-
-        if file_content is None:
-            logger.warning(f"Content with ID '{content_id}' not found in storage.")
-            continue
-
-        # analyze the HTML content
-        with dask.annotate(resources={"GPU": 1}), dask.config.set(
-            {"array.chunk-size": "512 MiB"}
-        ):
-            future = do_analysis.submit(
-                analyzer=analyzer,
-                content_id=content_id,
-                html_content=file_content,
-            )
-            analysis_futures.append(future)
-
-        storage_futures.append(
-            store_person.submit(
-                storage=person_storage,
-                person=future,
-            )
-        )
-
-        i += 1
-        if i > 2:
-            break
-
-    # now wait for all tasks to complete
-    future: PrefectFuture
-    for future in storage_futures:
-        try:
-            future.result(timeout=60, raise_on_failure=True)
-        except TimeoutError:
-            logger.warning(
-                f"Task timed out for {future.task_run_id}, skipping storage."
-            )
-        except Exception as e:
-            logger.error(f"Error in task execution: {e}")
-
-    logger.info("'analyze_persons' flow completed successfully.")
+        logger.info("'analyze_persons' flow completed successfully.")

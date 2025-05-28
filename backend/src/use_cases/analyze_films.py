@@ -2,18 +2,12 @@ import time
 
 from loguru import logger
 
-from src.repositories.flows.flow_chain import run_chain
+from src.entities.film import Film
+from src.repositories.flows.pipeline import PipelineRunner
 from src.settings import Settings
 
 
 class WikipediaFilmAnalysisUseCase:
-    """
-    TODO: filter the settings on the list of films to start the analysis
-
-    we should have 2 use cases:
-    - one for analyzing the films
-    - one for analyzing the persons
-    """
 
     settings: Settings
 
@@ -24,9 +18,10 @@ class WikipediaFilmAnalysisUseCase:
 
         start_time = time.time()
 
-        await run_chain(
+        await PipelineRunner(
             settings=self.settings,
-        )
+            entity_type=Film,
+        ).run_chain()
 
         end_time = time.time()
         logger.info(f"Execution time: {end_time - start_time:.2f} seconds")

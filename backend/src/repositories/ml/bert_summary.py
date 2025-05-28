@@ -27,14 +27,9 @@ class SectionSummarizer(MLProcessor[Section]):
 
     def process(self, section: Section) -> Section | None:
         """
-        Find the most similar `Section` to the given title within the list of sections.
 
-        Args:
-            title (str): The title to find the most similar section for.
-            sections (list[Section]): The list of sections to search within.
-
-        Returns:
-            str | None: The most similar section title, or None if no similar title is found.
+        TODO:
+        - add param `max_length` to limit the length of the summary.
         """
         new_content = self.summarizer.run(section.content)
 

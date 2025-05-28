@@ -116,7 +116,7 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
 
             if tech_spec is not None:
                 # summarize the section if it is too long
-                if len(tech_spec.content) > 1000:
+                if len(tech_spec.content) > 1000:  # TODO: transfer to the summarizer
                     logger.debug(
                         f"section '{tech_spec.title}' is too long, summarizing it"
                     )

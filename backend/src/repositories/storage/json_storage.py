@@ -143,6 +143,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
             raise StorageError(f"Error querying films: {e}") from e
 
 
+# TODO: remove these classes if not needed
 class JSONFilmStorageHandler(JSONEntityStorageHandler[Film]):
     pass
 
