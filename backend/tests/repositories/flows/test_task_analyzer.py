@@ -1,41 +1,53 @@
-from time import sleep
-
-from prefect import flow, get_run_logger, task
-from prefect.futures import wait
 from prefect.testing.utilities import prefect_test_harness
 
 from src.entities.film import Film
-from src.repositories.flows.task_analyzer import store_film
+from src.repositories.flows.task_analyzer import AnalysisFlow
 
+from .stubs.stub_analyzer import StubAnalyzer
 from .stubs.stub_storage import StubStorage
 
 
-def test_do_storage():
+def test_task_store():
 
     # given
     stub_storage = StubStorage()
-
-    @task
-    def fake_analysis() -> Film | None:
-        """
-        Submit tasks to the executor with a specified concurrency level.
-        """
-        sleep(5)
-        get_run_logger().info("Slept for 5 second")
-        return Film(title="Test Film", uid="test_id")
-
-    @flow
-    def fake_flow():
-        """
-        A fake flow to test the task analyzer.
-        """
-        analysis_fut = fake_analysis.submit()
-        storage_fut = store_film.submit(stub_storage, analysis_fut)
-        wait([storage_fut])
+    flow_runner = AnalysisFlow(
+        settings=None,  # Assuming settings are not needed for this test
+        entity_type=Film,
+    )
+    entity = Film(
+        title="Test Film",
+        uid="test_film_id",
+    )
 
     # when
     with prefect_test_harness():
-        fake_flow()
+        flow_runner.store(stub_storage, entity)
 
     # then
     assert stub_storage.is_inserted, "Film was not inserted into the storage."
+
+
+def test_task_analyze():
+    # given
+    flow_runner = AnalysisFlow(
+        settings=None,  # Assuming settings are not needed for this test
+        entity_type=Film,
+    )
+    analyzer = StubAnalyzer()
+
+    content_id = "test_content_id"
+    html_content = "<html><body>Test Content</body></html>"
+
+    # when
+    with prefect_test_harness():
+        result = flow_runner.do_analysis(
+            analyzer=analyzer,
+            content_id=content_id,
+            html_content=html_content,
+        )
+
+    # then
+
+    assert isinstance(result, Film), "Result is not of type Film."
+    assert analyzer.is_analyzed, "Analyzer was not called."

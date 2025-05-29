@@ -2,38 +2,27 @@ from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 from prefect.futures import PrefectFuture
 
-from src.entities.film import Film
-from src.entities.person import Person
+from src.entities.storable import Storable
 from src.interfaces.indexer import IDocumentIndexer
+from src.interfaces.task import ITaskExecutor
 from src.repositories.search.meili_indexer import MeiliIndexer
 from src.repositories.storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
 
-class IndexerFlowRunner[T: Film | Person]:
+class IndexerFlow(ITaskExecutor):
 
-    entity_type: type[T]
+    entity_type: type[Storable]
     settings: Settings
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, entity_type: type[Storable]):
         self.settings = settings
-
-    def __class_getitem__(cls, generic_type):
-        """Called when the class is indexed with a type parameter.
-        Enables to guess the type of the entity being stored.
-
-        Thanks to :
-        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
-        """
-        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
-        new_cls.entity_type = generic_type
-
-        return new_cls
+        self.entity_type = entity_type
 
     @task(cache_policy=NO_CACHE)
     def index_batch(
         self,
-        films: list[T],
+        films: list[Storable],
         indexer: IDocumentIndexer,
     ) -> None:
         """
@@ -50,7 +39,7 @@ class IndexerFlowRunner[T: Film | Person]:
     @flow(
         name="index",
     )
-    def index(
+    def execute(
         self,
     ) -> None:
 

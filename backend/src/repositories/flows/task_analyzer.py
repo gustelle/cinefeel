@@ -9,6 +9,7 @@ from src.entities.person import Person
 from src.entities.storable import Storable
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.storage import IStorageHandler
+from src.interfaces.task import ITaskExecutor
 from src.repositories.html_parser.html_analyzer import HtmlContentAnalyzer
 from src.repositories.html_parser.html_splitter import HtmlSplitter
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
@@ -28,7 +29,7 @@ from src.settings import Settings
 # )
 
 
-class AnalysisFlowRunner:
+class AnalysisFlow(ITaskExecutor):
     """
     handles persistence of `Film` or `Person` objects into JSON files.
     """
@@ -40,27 +41,21 @@ class AnalysisFlowRunner:
         self.settings = settings
         self.entity_type = entity_type
 
-    def __class_getitem__(cls, generic_type):
-        """Called when the class is indexed with a type parameter.
-        Enables to guess the type of the entity being stored.
-
-        Thanks to :
-        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
-        """
-        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
-        new_cls.entity_type = generic_type
-
-        return new_cls
-
     @task(task_run_name="do_analysis-{content_id}", timeout_seconds=120)
     def do_analysis(
         self, analyzer: IContentAnalyzer, content_id: str, html_content: str
     ) -> Storable | None:
         """
-        Submit tasks to the executor with a specified concurrency level.
+        Analyze the content and return a storable entity.
+
+        Args:
+            analyzer (IContentAnalyzer): _description_
+            content_id (str): _description_
+            html_content (str): _description_
+
+        Returns:
+            Storable | None: _description_
         """
-        logger = get_run_logger()
-        logger.info(f"Analyzing content: '{content_id}'")
 
         return analyzer.analyze(content_id, html_content)
 
@@ -83,7 +78,7 @@ class AnalysisFlowRunner:
         name="analyze",
         task_runner=DaskTaskRunner(),  # address=client.scheduler.address),
     )
-    def analyze(
+    def execute(
         self,
         content_ids: list[str] | None,
         storage_handler: IStorageHandler,

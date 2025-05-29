@@ -1,11 +1,14 @@
+
 from src.entities.content import InfoBoxElement, Section
 from src.entities.film import Film
 from src.repositories.html_parser.html_analyzer import HtmlContentAnalyzer
 
 from .stub.stub_extractor import StubHtmlExtractor
 from .stub.stub_parser import StubContentParser
-from .stub.stub_similarity import Return1stSearch
+from .stub.stub_similarity import StubSimilaritySearch
+from .stub.stub_simplifier import StubSimplifier
 from .stub.stub_splitter import StubHtmlSplitter
+from .stub.stub_summarizer import StubSummarizer
 
 
 def test_html_analyzer():
@@ -42,17 +45,21 @@ def test_html_analyzer():
     )
 
     entity_transformer = StubContentParser[Film]()
-    similarity_search = Return1stSearch([section_found])
+    similarity_search = StubSimilaritySearch([section_found])
     splitter = StubHtmlSplitter()
     extractor = StubHtmlExtractor(
         [InfoBoxElement(title="Test Infobox", content="Some content")]
     )
+    summarizer = StubSummarizer()
+    html_simplifier = StubSimplifier()
 
     analyzer = HtmlContentAnalyzer[Film](
         content_parser=entity_transformer,
         section_searcher=similarity_search,
         html_splitter=splitter,
         html_extractor=extractor,
+        html_simplifier=html_simplifier,
+        summarizer=summarizer,
     )
 
     # when
@@ -93,17 +100,21 @@ def test_html_analyzer_from_infobox():
     """
 
     entity_transformer = StubContentParser[Film]()
-    similarity_search = Return1stSearch([])
+    similarity_search = StubSimilaritySearch([])
     splitter = StubHtmlSplitter()
     extractor = StubHtmlExtractor(
         [InfoBoxElement(title="Test Infobox", content="Some content")]
     )
+    summarizer = StubSummarizer()
+    html_simplifier = StubSimplifier()
 
     analyzer = HtmlContentAnalyzer[Film](
         content_parser=entity_transformer,
         section_searcher=similarity_search,
         html_splitter=splitter,
         html_extractor=extractor,
+        html_simplifier=html_simplifier,
+        summarizer=summarizer,
     )
 
     # when
@@ -124,15 +135,19 @@ def test_html_analyzer_no_sections_no_infobox():
     html_content = "<html><body>No relevant content here.</body></html>"
 
     entity_transformer = StubContentParser[Film]()
-    similarity_search = Return1stSearch([])
+    similarity_search = StubSimilaritySearch([])
     splitter = StubHtmlSplitter()
     extractor = StubHtmlExtractor([])
+    summarizer = StubSummarizer()
+    html_simplifier = StubSimplifier()
 
     analyzer = HtmlContentAnalyzer[Film](
         content_parser=entity_transformer,
         section_searcher=similarity_search,
         html_splitter=splitter,
         html_extractor=extractor,
+        html_simplifier=html_simplifier,
+        summarizer=summarizer,
     )
 
     # when

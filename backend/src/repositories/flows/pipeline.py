@@ -5,9 +5,9 @@ from prefect import flow, get_run_logger
 from src.entities.content import PageLink
 from src.entities.film import Film
 from src.entities.person import Person
-from src.repositories.flows.task_analyzer import AnalysisFlowRunner
+from src.repositories.flows.task_analyzer import AnalysisFlow
 from src.repositories.flows.task_downloader import download_page, fetch_page_links
-from src.repositories.flows.task_indexer import IndexerFlowRunner
+from src.repositories.flows.task_indexer import IndexerFlow
 from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.storage.html_storage import LocalTextStorage
@@ -22,18 +22,6 @@ class PipelineRunner:
     def __init__(self, settings: Settings, entity_type: type[Film | Person]):
         self.entity_type = entity_type
         self.settings = settings
-
-    def __class_getitem__(cls, generic_type):
-        """Called when the class is indexed with a type parameter.
-        Enables to guess the type of the entity being stored.
-
-        Thanks to :
-        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
-        """
-        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
-        new_cls.entity_type = generic_type
-
-        return new_cls
 
     @flow(
         name="Wikipedia Analysis Flow",
@@ -94,10 +82,10 @@ class PipelineRunner:
             logger.info(f"IDs: {film_ids}")
 
             # filter the contents to only include the ones that are not already in the storage
-            AnalysisFlowRunner(
+            AnalysisFlow(
                 settings=self.settings,
                 entity_type=self.entity_type,
-            ).analyze(
+            ).execute(
                 content_ids=film_ids,
                 storage_handler=local_film_storage,
             )
@@ -105,8 +93,9 @@ class PipelineRunner:
         # finally, index the films
         # here we can iterate over all the films in the storage
         # indexing is not a blocking operation
-        IndexerFlowRunner[self.entity_type](
+        IndexerFlow(
             settings=self.settings,
-        ).index()
+            entity_type=self.entity_type,
+        ).execute()
 
         logger.info("Flow completed successfully.")

@@ -2,7 +2,7 @@ from src.interfaces.content_splitter import Section
 from src.interfaces.similarity import MLProcessor
 
 
-class Return1stSearch(MLProcessor):
+class StubSimilaritySearch(MLProcessor):
     """
     A stub implementation of the ISimilaritySearch interface for testing purposes.
     """
