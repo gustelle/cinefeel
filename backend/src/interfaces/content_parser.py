@@ -11,7 +11,8 @@ class IContentParser[T: Film | Person](Protocol):
 
     def resolve(self, *args, **kwargs) -> T:
         """
-        Resolves a content into an entity of type T.
+        Resolves a content into an entity of type T, meaning that it extracts the relevant information
+        from the content and returns an instance of the entity type T.
 
         Returns:
             T: An instance of the entity type T.

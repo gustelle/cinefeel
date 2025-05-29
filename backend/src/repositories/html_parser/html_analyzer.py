@@ -81,14 +81,19 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
                 "Entity type is not set. Please use the class with a specific entity type."
             )
 
-        # simplify the HTML content
-        html_content = self.html_simplifier.process(html_content)
         if html_content is None or len(html_content) == 0:
             logger.warning(f"no HTML content found for content '{content_id}'")
             return None
 
+        # simplify the HTML content
+        html_content = self.html_simplifier.process(html_content)
+
         # split the HTML content into sections
         sections = self.html_splitter.split(html_content)
+
+        if sections is None or len(sections) == 0:
+            logger.warning(f"no sections found, skipping the content '{content_id}'")
+            return None
 
         queries = []
 
@@ -103,10 +108,6 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
             )
             return None
 
-        if sections is None or len(sections) == 0:
-            logger.warning(f"no sections found, skipping the content '{content_id}'")
-            return None
-
         for text_query in queries:
 
             tech_spec: Section = self.section_searcher.process(
@@ -116,16 +117,7 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
 
             if tech_spec is not None:
                 # summarize the section if it is too long
-                if len(tech_spec.content) > 1000:  # TODO: transfer to the summarizer
-                    logger.debug(
-                        f"section '{tech_spec.title}' is too long, summarizing it"
-                    )
-                    tech_spec = self.summarizer.process(tech_spec)
-                else:  # section is short enough, no need to summarize
-                    logger.debug(
-                        f"section '{tech_spec.title}' is short enough ({len(tech_spec.content)} characters)"
-                    )
-
+                tech_spec = self.summarizer.process(tech_spec)
                 break
 
         if tech_spec is None or tech_spec.content is None:
