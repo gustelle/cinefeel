@@ -42,9 +42,5 @@ class SectionSummarizer(MLProcessor[Section]):
             new_content = self.summarizer.run(
                 section.content, max_length=self.settings.bert_summary_max_length
             )
-        else:  # section is short enough, no need to summarize
-            logger.debug(
-                f"section '{section.title}' is short enough ({len(section.content)} characters)"
-            )
 
         return Section(title=section.title, content=new_content)

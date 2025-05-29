@@ -1,5 +1,7 @@
 from typing import Type
 
+import dask
+import distributed
 from prefect import flow, get_run_logger, task
 from prefect.futures import PrefectFuture
 from prefect_dask import DaskTaskRunner
@@ -20,14 +22,6 @@ from src.repositories.ml.ollama_parser import OllamaParser
 from src.repositories.storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
-# TODO: externalize the Dask client configuration to settings
-# client = dask.distributed.Client(
-#     n_workers=4,
-#     resources={"GPU": 1, "process": 1},
-#     dashboard_address=":8787",
-#     memory_limit="4GB",
-# )
-
 
 class AnalysisFlow(ITaskExecutor):
     """
@@ -36,6 +30,8 @@ class AnalysisFlow(ITaskExecutor):
 
     entity_type: type[Film | Person]
     settings: Settings
+    dask_client: distributed.Client
+    dask_client_address: str
 
     def __init__(self, settings: Settings, entity_type: Type[Film | Person]):
         self.settings = settings
@@ -76,7 +72,14 @@ class AnalysisFlow(ITaskExecutor):
 
     @flow(
         name="analyze",
-        task_runner=DaskTaskRunner(),  # address=client.scheduler.address),
+        task_runner=DaskTaskRunner(
+            cluster_kwargs={
+                "n_workers": 4,
+                "resources": {"GPU": 1, "process": 1},
+                "dashboard_address": ":8787",
+                "memory_limit": "4GB",
+            }
+        ),
     )
     def execute(
         self,
@@ -118,23 +121,23 @@ class AnalysisFlow(ITaskExecutor):
                 continue
 
             # analyze the HTML content
-            # with (
-            #     dask.annotate(resources={"GPU": 1}),
-            #     dask.config.set({"array.chunk-size": "512 MiB"}),
-            # ):
-            future = self.do_analysis.submit(
-                analyzer=analyzer,
-                content_id=content_id,
-                html_content=file_content,
-            )
-            analysis_futures.append(future)
-
-            storage_futures.append(
-                self.store.submit(
-                    storage=person_storage,
-                    entity=future,
+            with (
+                dask.annotate(resources={"GPU": 1}),
+                dask.config.set({"array.chunk-size": "512 MiB"}),
+            ):
+                future = self.do_analysis.submit(
+                    analyzer=analyzer,
+                    content_id=content_id,
+                    html_content=file_content,
                 )
-            )
+                analysis_futures.append(future)
+
+                storage_futures.append(
+                    self.store.submit(
+                        storage=person_storage,
+                        entity=future,
+                    )
+                )
 
             i += 1
             if i > 2:
