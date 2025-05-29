@@ -141,12 +141,3 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
 
             logger.error(traceback.format_exc())
             raise StorageError(f"Error querying films: {e}") from e
-
-
-# TODO: remove these classes if not needed
-class JSONFilmStorageHandler(JSONEntityStorageHandler[Film]):
-    pass
-
-
-class JSONPersonStorageHandler(JSONEntityStorageHandler[Person]):
-    pass

@@ -11,10 +11,6 @@ from src.repositories.html_parser.html_splitter import HtmlSplitter
 
 
 class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
-    """
-    TODO:
-    - use a data pipeline to process the HTML content
-    """
 
     content_parser: IContentParser
     section_searcher: MLProcessor

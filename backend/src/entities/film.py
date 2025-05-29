@@ -7,7 +7,6 @@ from .woa import WorkOfArt
 class Film(WorkOfArt):
     """
     TODO:
-    - manage genres etc...
     - fix issue with release_date
     """
 

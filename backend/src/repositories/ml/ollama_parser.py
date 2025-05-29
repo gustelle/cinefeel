@@ -52,7 +52,7 @@ class OllamaParser[T: Film | Person](IContentParser[T]):
         Transform the given content into an entity of type T.
 
         TODO:
-        - Ability to complete an entity with multiple questions.
+        - Ability to complete an entity
 
         Args:
             content (str): The content to parse, typically a string containing text.
@@ -115,8 +115,7 @@ class OllamaParser[T: Film | Person](IContentParser[T]):
                             "content": prompt,
                         }
                     ],
-                    format=question.response_format
-                    or self.entity_type.model_json_schema(),
+                    format=question.response_format,
                     options={
                         # Set temperature to 0 for more deterministic responses
                         "temperature": 0

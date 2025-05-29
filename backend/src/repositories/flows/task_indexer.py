@@ -26,10 +26,7 @@ class IndexerFlow(ITaskExecutor):
         indexer: IDocumentIndexer,
     ) -> None:
         """
-        TODO: index persons in a separate index
-
-        Args:
-            wait_for_completion (bool, optional): _description_. Defaults to False.
+        Index a batch of `Storable` using the provided indexer.
         """
         indexer.insert_or_update(
             docs=films,
