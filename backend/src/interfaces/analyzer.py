@@ -1,8 +1,5 @@
 from typing import Protocol
 
-from src.entities.film import Film
-from src.entities.person import Person
-
 
 class ContentAnalysisError(Exception):
     """
@@ -12,7 +9,7 @@ class ContentAnalysisError(Exception):
     pass
 
 
-class IContentAnalyzer[T: Film | Person](Protocol):
+class IContentAnalyzer[T](Protocol):
     """
     Interface for a parser that extracts data from a given HTML content.
     """
@@ -32,8 +29,8 @@ class IContentAnalyzer[T: Film | Person](Protocol):
             html_content (str): The HTML content to parse.
 
         Returns:
-            Film | Person | None: A Film or Person object containing the parsed data.
-            None if the parsing fails or the content is not relevant.
+            T | None: An instance of type T (Film or Person) containing the parsed data, or
+                None if the parsing fails or the content is not relevant.
 
         Raises:
             ContentAnalysisError: If there is an error while parsing the HTML content.

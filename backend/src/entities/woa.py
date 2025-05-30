@@ -1,7 +1,6 @@
 from enum import StrEnum
-from typing import Mapping
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from .person import Person
 from .storable import Storable
@@ -28,9 +27,9 @@ class WOAType(StrEnum):
     OTHER = "other"
 
 
-class WorkOfArt(Storable):
+class WOASpecifications(BaseModel):
     """
-    Represents a work of art
+    Represents the specifications of a work of art.
     """
 
     title: str = Field(
@@ -39,29 +38,41 @@ class WorkOfArt(Storable):
     )
     other_titles: list[str] | None = Field(
         None,
-        description="Other titles of the work of art if any.",
         repr=False,
     )
-    authors: list[Person] | None = Field(
+    release_date: str | None = Field(
         None,
-        description="The authors of the work of art. This can be used to filter the list of works of art.",
+        examples=["2023-10-01", "2023-10-02"],
         repr=False,
     )
-    roles: Mapping[str, list[Person]] | None = Field(
-        None,
-        description="The roles of the persons in the work of art. This can be used to filter the list of works of art.",
-        examples=[
-            {
-                "director": ["Person 1", "Person 2"],
-                "actor": ["Person 3", "Person 4"],
-            },
-        ],
-        repr=False,
-    )
+
+
+class WorkOfArt(Storable):
+    """
+    Represents a work of art
+    """
 
     woa_type: WOAType | None = Field(
         None,
         description="The type of the work of art. ",
         examples=[str(woa_type) for woa_type in WOAType],
+        repr=False,
+    )
+
+
+class WOAInfluence(BaseModel):
+    """
+    Represents the influence of a work of art on another work of art.
+    """
+
+    persons: list[Person] | None = Field(
+        None,
+        description="The persons that influenced the current work of art.",
+        repr=False,
+    )
+
+    work_of_arts: list[str] | None = Field(
+        None,
+        description="The works of art that influenced the current work of art.",
         repr=False,
     )

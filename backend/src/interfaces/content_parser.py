@@ -1,15 +1,16 @@
 from typing import Protocol
 
-from src.entities.film import Film
-from src.entities.person import Person
+from pydantic import BaseModel
 
 
-class IContentExtractor[T: Film | Person](Protocol):
+class IContentExtractor(Protocol):
     """
     Interface for entity resolver classes.
     """
 
-    def resolve(self, *args, **kwargs) -> T:
+    def resolve(
+        self, content: str, entity_type: BaseModel, *args, **kwargs
+    ) -> BaseModel:
         """
         Resolves a content into an entity of type T, meaning that it extracts the relevant information
         from the content and returns an instance of the entity type T.

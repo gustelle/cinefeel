@@ -8,6 +8,20 @@ class IHtmlExtractor(Protocol):
     Interface for a parser that extracts data from a given HTML content.
     """
 
+    def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
+        """
+        Extracts the title from the given HTML content.
+
+        Args:
+            html_content (str): The HTML content to parse.
+            *args: Additional arguments to pass to the parser.
+            **kwargs: Additional keyword arguments to pass to the parser.
+
+        Returns:
+            str: The extracted title from the HTML content.
+        """
+        pass
+
     def retrieve_inner_links(
         self, html_content: str, *args, **kwargs
     ) -> list[PageLink]:

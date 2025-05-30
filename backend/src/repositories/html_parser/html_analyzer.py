@@ -1,7 +1,14 @@
 from loguru import logger
 
 from src.entities.content import Section
-from src.entities.film import Film
+from src.entities.film import (
+    Film,
+    FilmActor,
+    FilmAssembler,
+    FilmMedia,
+    FilmSpecifications,
+    FilmSummary,
+)
 from src.entities.person import Person
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.content_parser import IContentExtractor
@@ -63,6 +70,10 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
         """
         Analyzes the HTML content and resolves it into an entity of type T.
 
+        TODO:
+            - tests
+            - catch exceptions when parsing the content
+
         Args:
             content_id (str): The unique identifier for the content being analyzed.
             html_content (str): The HTML content to analyze.
@@ -101,85 +112,44 @@ class HtmlContentAnalyzer[T: Film | Person](IContentAnalyzer[T]):
         if additional_sections is not None and len(additional_sections) > 0:
             sections.extend(additional_sections)
 
-        # TODO:
-        # - each section should be assigned an entity type
-        # - ex: Distribution --> FilmDistribution
-        # - ex: Filmography --> Filmography
-        # cela va permettre de mieux gérer les sections
-        #
-        # queries = []
+        _entity_to_sections = {
+            FilmMedia: ["Données clés", "Fragments"],
+            FilmSpecifications: ["Fiche technique"],
+            FilmActor: ["Distribution"],
+            FilmSummary: ["Synopsis", "Résumé"],
+        }
 
-        # if self.entity_type is Film:
-        #     queries = ["fiche technique", "synopsis", "résumé"]
-        # elif self.entity_type is Person:
-        #     queries = ["biographie"]
-        # else:
-        #     logger.error(
-        #         f"Unsupported entity type: {self.entity_type}. "
-        #         "Only Film and Person are supported."
-        #     )
-        #     return None
+        parts = []
 
-        # for text_query in queries:
+        for entity_type, titles in _entity_to_sections.items():
+            for title in titles:
+                section: Section = self.section_searcher.process(
+                    title=title,
+                    sections=sections,
+                )
+                if section is not None:
 
-        # tech_spec: Section = self.section_searcher.process(
-        #     title=text_query,
-        #     sections=sections,
-        # )
+                    section_entity = self.content_parser.resolve(
+                        content=section.content,
+                        entity_type=entity_type,
+                    )
 
-        # if tech_spec is not None:
-        #     # summarize the section if it is too long
-        #     tech_spec = self.summarizer.process(tech_spec)
-        #     break
+                    if section_entity is None:
+                        continue
 
-        # if tech_spec is None or tech_spec.content is None:
+                    logger.info(
+                        f"Found a '{section_entity.__class__.__name__}' in '{section.title}' for content '{content_id}'."
+                    )
+                    parts.append(section_entity)
 
-        #     info_table = self.html_extractor.retrieve_infoboxes(html_content)
-
-        #     if info_table is None or len(info_table) == 0:
-        #         logger.warning(
-        #             f"no info table found, skipping analysis of the content '{content_id}'"
-        #         )
-        #         return None
-
-        #     # convert the DataFrame to a string
-        #     ctx = "\n".join([f"{row.title}: {row.content}" for row in info_table])
-
-        #     logger.debug(f"Using info table as context for content '{content_id}'")
-
-        # else:
-        #     logger.debug(
-        #         f"Using section '{tech_spec.title}' as context for content '{content_id}'"
-        #     )
-        #     ctx = tech_spec.content
-
-        final_entity: T | None = None
-        section: Section
-        for section in sections:
-            if section.content is None or len(section.content) == 0:
-                logger.warning(f"Skipping empty section in content '{content_id}'")
-                continue
-
-            logger.debug(f"Resolving '{content_id}' with section '{section.title}'")
-
-            section_entity: T = self.content_parser.resolve(
-                content=section.content,
+        if len(parts) == 0:
+            logger.warning(
+                f"No relevant sections found for content '{content_id}', skipping analysis."
             )
+            return None
 
-            if section_entity is None:
-                continue
-
-            logger.info(
-                f"Entity found in '{content_id}' using section '{section.title}' : '{section_entity.model_dump_json()}'"
-            )
-
-            if final_entity is None:
-                final_entity = section_entity
-            else:
-                # merge the entities
-                # TODO: implement a merge function
-                pass
-
-            # merge the entities
-
-        return final_entity
+        return FilmAssembler().assemble(
+            title=self.html_extractor.retrieve_title(html_content),
+            uid=content_id,
+            parts=parts,
+        )

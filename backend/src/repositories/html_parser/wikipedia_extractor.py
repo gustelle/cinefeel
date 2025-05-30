@@ -23,6 +23,26 @@ class WikipediaExtractor(IHtmlExtractor):
 
     _inner_page_id_prefix = "./"
 
+    def retrieve_title(self, html_content: str) -> str:
+        """
+        Extracts the title from the given HTML content.
+
+        TODO:
+        - testing of the title
+
+        Args:
+            html_content (str): The HTML content to parse.
+
+        Returns:
+            str: The extracted title from the HTML content.
+        """
+        soup = BeautifulSoup(html_content, "html.parser")
+        title_tag = soup.find("title")
+        if title_tag:
+            return title_tag.get_text(strip=True)
+        else:
+            raise WikiDataExtractionError("Title not found in the HTML content.")
+
     def retrieve_inner_links(
         self, html_content: str, config: WikiTOCPageConfig
     ) -> list[PageLink]:
@@ -152,6 +172,9 @@ class WikipediaExtractor(IHtmlExtractor):
         """
         Extracts the information table from the HTML content.
 
+        TODO:
+            - testing of the title
+
         Args:
             html_content (str): The HTML content to parse.
 
@@ -174,7 +197,7 @@ class WikipediaExtractor(IHtmlExtractor):
         # convert the DataFrame to a list of Section objects
         info_table = [
             Section(
-                title=str(row[0]),
+                title="Données clés",
                 content=str(row[1]) if len(row) > 1 else None,
             )
             for row in df.values

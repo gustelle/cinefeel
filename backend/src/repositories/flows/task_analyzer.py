@@ -94,7 +94,7 @@ class AnalysisFlow(ITaskExecutor):
         )
 
         analyzer = HtmlContentAnalyzer[self.entity_type](
-            content_parser=OllamaExtractor[self.entity_type](settings=self.settings),
+            content_parser=OllamaExtractor(settings=self.settings),
             section_searcher=SimilarSectionSearch(settings=self.settings),
             html_splitter=HtmlSplitter(),
             html_extractor=WikipediaExtractor(),
