@@ -75,4 +75,6 @@ Feuillade consacre l’année 1924 tout entière à sa jeune vedette dont René 
     # when
     section = summarize.process(Section(title="Test Section", content=sample_text))
 
-    print("Summary:", section.content)
+    assert section is not None
+    assert section.title == "Test Section"
+    assert len(section.content) <= len(sample_text)

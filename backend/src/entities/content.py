@@ -35,11 +35,6 @@ class PageLink(BaseModel):
     )
 
 
-class InfoBoxElement(BaseModel):
-    title: str
-    content: str | None
-
-
 class Section(BaseModel):
     title: str
     content: str | None

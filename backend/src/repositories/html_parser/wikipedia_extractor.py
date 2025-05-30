@@ -5,7 +5,8 @@ import pandas as pd
 import polars as pl
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
-from src.entities.content import InfoBoxElement, PageLink
+
+from src.entities.content import PageLink, Section
 from src.interfaces.extractor import IHtmlExtractor
 from src.settings import WikiTOCPageConfig
 
@@ -147,12 +148,16 @@ class WikipediaExtractor(IHtmlExtractor):
 
         return [PageLink(**row) for row in df.to_dicts()]
 
-    def retrieve_infoboxes(self, html_content: str) -> list[InfoBoxElement] | None:
+    def retrieve_infoboxes(self, html_content: str) -> list[Section] | None:
         """
         Extracts the information table from the HTML content.
 
-        :param html_content: The HTML content to be processed.
-        :return: The information table as a string.
+        Args:
+            html_content (str): The HTML content to parse.
+
+        Returns:
+            list[Section] | None: A list of `Section` objects representing the infobox elements,
+            or None if no infobox is found or if the table is empty.
         """
         soup = BeautifulSoup(html_content, "html.parser")
         content = soup.find("div", attrs={"class": "infobox"})
@@ -166,9 +171,9 @@ class WikipediaExtractor(IHtmlExtractor):
         if df.empty:
             return None
 
-        # convert the DataFrame to a list of InfoBoxElement
+        # convert the DataFrame to a list of Section objects
         info_table = [
-            InfoBoxElement(
+            Section(
                 title=str(row[0]),
                 content=str(row[1]) if len(row) > 1 else None,
             )

@@ -3,9 +3,9 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from src.entities.film import Film
-from src.entities.person import Person
+from src.entities.storable import Storable
 from src.entities.woa import WOAType
-from src.interfaces.content_parser import IContentParser
+from src.interfaces.content_parser import IContentExtractor
 from src.settings import LLMQuestion, Settings
 
 
@@ -21,7 +21,7 @@ class LLMResponse(BaseModel):
     )
 
 
-class OllamaParser[T: Film | Person](IContentParser[T]):
+class OllamaExtractor[T: Storable](IContentExtractor[T]):
     """
     OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
     """

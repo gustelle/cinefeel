@@ -1,6 +1,6 @@
 from typing import Type
 
-from src.entities.content import InfoBoxElement, PageLink
+from src.entities.content import PageLink, Section
 from src.interfaces.extractor import IHtmlExtractor
 
 
@@ -10,9 +10,9 @@ class StubHtmlExtractor(IHtmlExtractor):
     This class simulates the behavior of an HTML extractor without performing actual parsing.
     """
 
-    infoxbox_elements: list[InfoBoxElement] | None = None
+    infoxbox_elements: list[Section] | None = None
 
-    def __init__(self, infoxbox_elements: list[InfoBoxElement] | None = None):
+    def __init__(self, infoxbox_elements: list[Section] | None = None):
         """
         Initializes the StubHtmlExtractor.
         This constructor does not require any parameters.
@@ -30,7 +30,7 @@ class StubHtmlExtractor(IHtmlExtractor):
             PageLink(page_title="Another Page", page_id="Another_Page"),
         ]
 
-    def retrieve_infoboxes(self, *args, **kwargs) -> list[InfoBoxElement] | None:
+    def retrieve_infoboxes(self, *args, **kwargs) -> list[Section] | None:
         """
         Returns a predefined list of InfoBoxElement objects for testing.
         """

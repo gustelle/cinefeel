@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from src.entities.content import InfoBoxElement, PageLink
+from src.entities.content import PageLink, Section
 
 
 class IHtmlExtractor(Protocol):
@@ -24,8 +24,8 @@ class IHtmlExtractor(Protocol):
         """
         pass
 
-    def retrieve_infoboxes(self, *args, **kwargs) -> list[InfoBoxElement] | None:
+    def retrieve_infoboxes(self, *args, **kwargs) -> list[Section] | None:
         """
-        Retrieves the infobox elements from the sections.
+        Retrieves the infobox elements and returns them as a list of `Section` objects.
         """
         raise NotImplementedError("Subclasses must implement this method.")

@@ -4,7 +4,7 @@ from src.entities.film import Film
 from src.entities.person import Person
 
 
-class IContentParser[T: Film | Person](Protocol):
+class IContentExtractor[T: Film | Person](Protocol):
     """
     Interface for entity resolver classes.
     """

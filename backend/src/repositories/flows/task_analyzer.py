@@ -18,7 +18,7 @@ from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
 from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
-from src.repositories.ml.ollama_parser import OllamaParser
+from src.repositories.ml.ollama_parser import OllamaExtractor
 from src.repositories.storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
@@ -94,7 +94,7 @@ class AnalysisFlow(ITaskExecutor):
         )
 
         analyzer = HtmlContentAnalyzer[self.entity_type](
-            content_parser=OllamaParser[self.entity_type](settings=self.settings),
+            content_parser=OllamaExtractor[self.entity_type](settings=self.settings),
             section_searcher=SimilarSectionSearch(settings=self.settings),
             html_splitter=HtmlSplitter(),
             html_extractor=WikipediaExtractor(),
