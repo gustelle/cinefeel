@@ -1,14 +1,31 @@
 import re
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
-class Storable(BaseModel):
+class BaseInfo(BaseModel):
     """
-    Represents a work of art
+    Base class for generic information.
+    """
 
-    TODO:
-    - testing of the uid field
+    title: str = Field(
+        ...,
+        description="The title of the information entity.",
+        examples=["Stanley Kubrick", "The Shining"],
+    )
+
+    permalink: HttpUrl = Field(
+        ...,
+        description="The permalink to the object, typically a URL.",
+        examples=[
+            "https://fr.wikipedia.org/wiki/Stanley_Kubrick",
+        ],
+    )
+
+
+class Sourcable(BaseModel):
+    """
+    An object that can be stored in a database or a file.
     """
 
     uid: str = Field(

@@ -2,7 +2,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from src.entities.storable import Storable
+from src.entities.source import Sourcable
 
 
 class GenderEnum(StrEnum):
@@ -135,7 +135,7 @@ class PersonCharacteristics(BaseModel):
     )
 
 
-class Person(Storable):
+class Person(Sourcable):
     """
     Represents a person with a name and an optional list of roles.
 

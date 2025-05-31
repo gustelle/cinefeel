@@ -2,11 +2,10 @@ import pytest
 
 from src.entities.content import Section
 from src.entities.film import Film
-from src.repositories.html_parser.html_analyzer import HtmlContentAnalyzer
+from src.repositories.html_parser.html_chopper import HtmlChopper
 
-from .stub.stub_extractor import StubHtmlExtractor
-from .stub.stub_parser import StubContentParser
-from .stub.stub_similarity import StubSimilaritySearch
+from .stub.stub_extractor import StubExtractor
+from .stub.stub_retriever import StubHtmlRetriever
 from .stub.stub_simplifier import StubSimplifier
 from .stub.stub_splitter import StubHtmlSplitter
 from .stub.stub_summarizer import StubSummarizer
@@ -47,24 +46,22 @@ def test_analyze_nominal_case():
         description="Some description about the film.",
     )
 
-    section_found = Section(
-        title="Film Title", content="Some description about the film."
-    )
+    # section_found = Section(
+    #     title="Film Title", content="Some description about the film."
+    # )
 
-    entity_transformer = StubContentParser[Film](returned_entity=returned_entity)
-    similarity_search = StubSimilaritySearch([section_found])
+    entity_transformer = StubExtractor[Film](returned_entity=returned_entity)
+    # similarity_search = StubSimilaritySearch([section_found])
     splitter = StubHtmlSplitter()
-    extractor = StubHtmlExtractor(
+    retriever = StubHtmlRetriever(
         [Section(title="Test Infobox", content="Some content")]
     )
     summarizer = StubSummarizer()
     html_simplifier = StubSimplifier()
 
-    analyzer = HtmlContentAnalyzer[Film](
-        content_parser=entity_transformer,
-        section_searcher=similarity_search,
+    analyzer = HtmlChopper(
         html_splitter=splitter,
-        html_extractor=extractor,
+        html_retriever=retriever,
         html_simplifier=html_simplifier,
         summarizer=summarizer,
     )

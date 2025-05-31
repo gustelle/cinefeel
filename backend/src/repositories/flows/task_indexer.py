@@ -2,7 +2,7 @@ from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 from prefect.futures import PrefectFuture
 
-from src.entities.storable import Storable
+from src.entities.source import Sourcable
 from src.interfaces.indexer import IDocumentIndexer
 from src.interfaces.task import ITaskExecutor
 from src.repositories.search.meili_indexer import MeiliIndexer
@@ -12,17 +12,17 @@ from src.settings import Settings
 
 class IndexerFlow(ITaskExecutor):
 
-    entity_type: type[Storable]
+    entity_type: type[Sourcable]
     settings: Settings
 
-    def __init__(self, settings: Settings, entity_type: type[Storable]):
+    def __init__(self, settings: Settings, entity_type: type[Sourcable]):
         self.settings = settings
         self.entity_type = entity_type
 
     @task(cache_policy=NO_CACHE)
     def index_batch(
         self,
-        films: list[Storable],
+        films: list[Sourcable],
         indexer: IDocumentIndexer,
     ) -> None:
         """

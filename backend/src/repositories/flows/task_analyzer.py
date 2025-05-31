@@ -8,17 +8,18 @@ from prefect_dask import DaskTaskRunner
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.entities.storable import Storable
+from src.entities.source import Sourcable
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
-from src.repositories.html_parser.html_analyzer import HtmlContentAnalyzer
+from src.repositories.html_parser.html_chopper import HtmlChopper
 from src.repositories.html_parser.html_splitter import HtmlSplitter
-from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
 from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.ollama_parser import OllamaExtractor
+from src.repositories.resolver.film_resolver import BasicFilmResolver
 from src.repositories.storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
@@ -26,6 +27,7 @@ from src.settings import Settings
 class AnalysisFlow(ITaskExecutor):
     """
     handles persistence of `Film` or `Person` objects into JSON files.
+
     """
 
     entity_type: type[Film | Person]
@@ -37,10 +39,10 @@ class AnalysisFlow(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
 
-    @task(task_run_name="do_analysis-{content_id}", timeout_seconds=120)
+    @task(task_run_name="do_analysis-{content_id}")
     def do_analysis(
         self, analyzer: IContentAnalyzer, content_id: str, html_content: str
-    ) -> Storable | None:
+    ) -> Sourcable | None:
         """
         Analyze the content and return a storable entity.
 
@@ -52,13 +54,31 @@ class AnalysisFlow(ITaskExecutor):
         Returns:
             Storable | None: _description_
         """
+        logger = get_run_logger()
+        base_info, sections = analyzer.analyze(content_id, html_content)
 
-        return analyzer.analyze(content_id, html_content)
+        if base_info is None or sections is None:
+            logger.warning(f"No sections found for content ID '{content_id}'.")
+            return None
+
+        # assemble the entity from the sections
+        if self.entity_type == Film:
+            return BasicFilmResolver(
+                content_parser=OllamaExtractor(settings=self.settings),
+                section_searcher=SimilarSectionSearch(settings=self.settings),
+            ).resolve(
+                uid=content_id,
+                base_info=base_info,
+                sections=sections,
+            )
+        elif self.entity_type == Person:
+            logger.warning("Person entity type is not yet supported in this flow.")
+            return None
 
     @task(
         task_run_name="store_entity-{entity}",
     )
-    def store(self, storage: IStorageHandler, entity: Storable) -> None:
+    def store(self, storage: IStorageHandler, entity: Sourcable) -> None:
         """
         Store the film entity in the storage.
         """
@@ -93,11 +113,9 @@ class AnalysisFlow(ITaskExecutor):
             settings=self.settings
         )
 
-        analyzer = HtmlContentAnalyzer[self.entity_type](
-            content_parser=OllamaExtractor(settings=self.settings),
-            section_searcher=SimilarSectionSearch(settings=self.settings),
+        analyzer = HtmlChopper(
             html_splitter=HtmlSplitter(),
-            html_extractor=WikipediaExtractor(),
+            html_retriever=WikipediaInfoRetriever(),
             html_simplifier=HTMLSimplifier(),
             summarizer=SectionSummarizer(settings=self.settings),
         )
@@ -147,7 +165,7 @@ class AnalysisFlow(ITaskExecutor):
         future: PrefectFuture
         for future in storage_futures:
             try:
-                future.result(timeout=60, raise_on_failure=True)
+                future.result(raise_on_failure=True, timeout=self.settings.task_timeout)
             except TimeoutError:
                 logger.warning(
                     f"Task timed out for {future.task_run_id}, skipping storage."

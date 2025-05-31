@@ -1,37 +1,34 @@
-from typing import Type
+from src.entities.film import Film
+from src.entities.source import Sourcable
+from src.interfaces.extractor import IContentExtractor
 
-from src.entities.content import PageLink, Section
-from src.interfaces.extractor import IHtmlExtractor
 
-
-class StubHtmlExtractor(IHtmlExtractor):
+class StubExtractor(IContentExtractor):
     """
-    A stub implementation of the IHtmlExtractor interface for testing purposes.
-    This class simulates the behavior of an HTML extractor without performing actual parsing.
+    A stub implementation of the IContentParser interface for testing purposes.
     """
 
-    infoxbox_elements: list[Section] | None = None
+    is_parsed: bool = False
+    returned_entity: Sourcable
 
-    def __init__(self, infoxbox_elements: list[Section] | None = None):
+    def __init__(self, returned_entity: Sourcable):
         """
-        Initializes the StubHtmlExtractor.
-        This constructor does not require any parameters.
-        """
-        self.infoxbox_elements = infoxbox_elements
+        Initialize the stub parser with an optional entity to return.
 
-    def retrieve_inner_links(
-        self, html_content: str, entity_type: Type, *args, **kwargs
-    ) -> list[PageLink]:
+        Args:
+            returned_entity (T, optional): An entity to return when resolve is called.
         """
-        Returns a predefined list of WikiPageLink objects for testing.
-        """
-        return [
-            PageLink(page_title="Test Page", page_id="Test_Page"),
-            PageLink(page_title="Another Page", page_id="Another_Page"),
-        ]
+        self.returned_entity = returned_entity
 
-    def retrieve_infoboxes(self, *args, **kwargs) -> list[Section] | None:
+    def extract_entity(self, content: str) -> Film:
         """
-        Returns a predefined list of InfoBoxElement objects for testing.
+        Parse the given content and return a dictionary representation.
+
+        Args:
+            content (str): The content to parse.
+
+        Returns:
+            dict: A dictionary representation of the parsed content.
         """
-        return self.infoxbox_elements if self.infoxbox_elements is not None else []
+        self.is_parsed = True
+        return self.returned_entity

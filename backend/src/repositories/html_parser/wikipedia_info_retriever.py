@@ -5,9 +5,10 @@ import pandas as pd
 import polars as pl
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
+from pydantic import HttpUrl
 
 from src.entities.content import PageLink, Section
-from src.interfaces.extractor import IHtmlExtractor
+from src.interfaces.info_retriever import IInfoRetriever
 from src.settings import WikiTOCPageConfig
 
 
@@ -15,13 +16,27 @@ class WikiDataExtractionError(Exception):
     pass
 
 
-class WikipediaExtractor(IHtmlExtractor):
+class WikipediaInfoRetriever(IInfoRetriever):
     """
-    This class is responsible for extracting Wikipedia links from a given HTML content.
+    This class is responsible for extracting Wikipedia data from a given HTML content.
 
     """
 
     _inner_page_id_prefix = "./"
+
+    def retrieve_permalink(self, html_content: str) -> HttpUrl:
+        """
+        Extracts the permalink from the given HTML content.
+
+        TODO:
+        - testing of the permalink
+        """
+        soup = BeautifulSoup(html_content, "html.parser")
+        permalink_tag = soup.find("link", rel="canonical")
+        if permalink_tag and permalink_tag.get("href"):
+            return HttpUrl(permalink_tag.get("href"))
+        else:
+            raise WikiDataExtractionError("Permalink not found in the HTML content.")
 
     def retrieve_title(self, html_content: str) -> str:
         """

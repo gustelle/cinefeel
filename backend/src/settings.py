@@ -1,10 +1,9 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.entities.person import GenderEnum
 
 
 class WikiTOCPageConfig(BaseModel):
@@ -157,22 +156,8 @@ class Settings(BaseSettings):
         description="The name of the LLM model to use",
     )
 
-    llm_questions: list[LLMQuestion] = Field(
-        default=[
-            LLMQuestion(
-                question="Donne-moi des informations sur le film. Réponds en français et de manière concise",
-                content_type="film",
-            ),
-            LLMQuestion(
-                question="Quelles sont les informations sur la personne ? Réponds en français et de manière concise",
-                content_type="person",
-            ),
-            LLMQuestion(
-                question="Est-ce que cette personne est un homme, une femme ou non-binaire ? Réponds en français et de manière concise",
-                content_type="person",
-                response_format=TypeAdapter(GenderEnum).json_schema(),
-            ),
-        ],
+    llm_question: str = Field(
+        default="Donne-moi des informations sur le contenu suivant, réponds en français et de façon concise.",
         description="The questions to ask the LLM model to get information",
     )
 
@@ -204,4 +189,9 @@ class Settings(BaseSettings):
             The threshold for the BERT similarity score.
             If the score is below this value, the result will be considered as not found.
         """,
+    )
+
+    task_timeout: int = Field(
+        default=120,  # 2 minutes
+        description="The timeout for tasks in seconds",
     )

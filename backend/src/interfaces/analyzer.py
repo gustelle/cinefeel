@@ -1,4 +1,7 @@
-from typing import Protocol
+from typing import Protocol, Sequence
+
+from src.entities.content import Section
+from src.entities.source import BaseInfo
 
 
 class ContentAnalysisError(Exception):
@@ -9,7 +12,7 @@ class ContentAnalysisError(Exception):
     pass
 
 
-class IContentAnalyzer[T](Protocol):
+class IContentAnalyzer(Protocol):
     """
     Interface for a parser that extracts data from a given HTML content.
     """
@@ -20,20 +23,17 @@ class IContentAnalyzer[T](Protocol):
         html_content: str,
         *args,
         **kwargs,
-    ) -> T | None:
+    ) -> tuple[BaseInfo, Sequence[Section]] | None:
         """
-        Parses the given HTML content and returns an entity from it, either a Film or a Person.
+        Parses the given HTML content and extracts relevant data into a list of `Section` objects.
 
         Args:
             content_id (str): The unique identifier for the content being analyzed.
             html_content (str): The HTML content to parse.
 
         Returns:
-            T | None: An instance of type T (Film or Person) containing the parsed data, or
-                None if the parsing fails or the content is not relevant.
-
-        Raises:
-            ContentAnalysisError: If there is an error while parsing the HTML content.
+            Sequence[Section] | None: A list of `Section` objects representing the relevant data,
+            or None if the parsing fails or the content is not relevant.
 
         """
         pass

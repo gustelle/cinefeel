@@ -1,3 +1,5 @@
+import re
+
 from htmlrag import clean_html
 
 from src.interfaces.similarity import MLProcessor
@@ -6,15 +8,6 @@ from src.interfaces.similarity import MLProcessor
 class HTMLSimplifier(MLProcessor[str]):
     """
     Simplifies the HTML content by removing unnecessary tags and attributes.
-
-    TODO:
-    - remove the notes like [1] or [2] from the content.
-    - remove things like [modifier | modifier le code]
-    - remove also subsections titles from the content, like "Vie privée" or "Filmographie".
-    """
-
-    """
-    Splits a given HTML content into sections based on the specified tags.
     """
 
     def process(
@@ -22,10 +15,7 @@ class HTMLSimplifier(MLProcessor[str]):
         html_content: str,
     ) -> str:
         """
-        Splits the HTML content into sections based on the specified tags.
-
-        the sections rendered are simplified using `htmlrag` to remove unnecessary scripts and styles
-        and to make the text easier for embedding.
+        Processes the given HTML content to simplify it for better embedding.
 
         Args:
             html_content (str): The HTML content to be processed.
@@ -37,5 +27,13 @@ class HTMLSimplifier(MLProcessor[str]):
         # simplify the HTML content
         # for better embedding
         simplified_html = clean_html(html_content)
+
+        # Remove notes like [1] or [2] from the content
+        simplified_html = re.sub(r"\[\d+\]", "", simplified_html)
+
+        # remove things like [modifier | modifier le code]
+        simplified_html = re.sub(
+            r"\[\s*modifier\s*\|\s*modifier\s+le\s+code\s*\]", "", simplified_html
+        )
 
         return simplified_html

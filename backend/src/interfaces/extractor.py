@@ -1,45 +1,26 @@
 from typing import Protocol
 
-from src.entities.content import PageLink, Section
+from pydantic import BaseModel
 
 
-class IHtmlExtractor(Protocol):
+class IContentExtractor(Protocol):
     """
-    Interface for a parser that extracts data from a given HTML content.
+    Interface for entity resolver classes.
     """
 
-    def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
+    def extract_entity(
+        self, content: str, entity_type: BaseModel, *args, **kwargs
+    ) -> BaseModel:
         """
-        Extracts the title from the given HTML content.
+        Extract entity from the provided content.
 
         Args:
-            html_content (str): The HTML content to parse.
-            *args: Additional arguments to pass to the parser.
-            **kwargs: Additional keyword arguments to pass to the parser.
+            content (str): The content from which to extract the entity.
+            entity_type (BaseModel): The type of entity to extract, which should be a subclass of BaseModel.
+            *args: Additional positional arguments for the extraction process.
+            **kwargs: Additional keyword arguments for the extraction process.
 
         Returns:
-            str: The extracted title from the HTML content.
-        """
-        pass
-
-    def retrieve_inner_links(
-        self, html_content: str, *args, **kwargs
-    ) -> list[PageLink]:
-        """
-        Parses the given HTML content and returns a list of `~T` objects.
-
-        Args:
-            html_content (str): The HTML content to parse.
-            *args: Additional arguments to pass to the parser.
-            **kwargs: Additional keyword arguments to pass to the parser.
-
-        Returns:
-            list[PageLink]: A list of `PageLink` objects representing the extracted links.
-        """
-        pass
-
-    def retrieve_infoboxes(self, *args, **kwargs) -> list[Section] | None:
-        """
-        Retrieves the infobox elements and returns them as a list of `Section` objects.
+            BaseModel: An instance of the entity type containing the extracted data.
         """
         raise NotImplementedError("Subclasses must implement this method.")

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from src.interfaces.extractor import PageLink
-from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
+from src.interfaces.info_retriever import PageLink
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
 from src.settings import WikiTOCPageConfig
 
 
@@ -11,7 +11,7 @@ def test_extract_links_from_table():
     """
 
     # given
-    extractor = WikipediaExtractor()
+    extractor = WikipediaInfoRetriever()
 
     # Mock HTML content
     html_content = """
@@ -71,7 +71,7 @@ def test_extract_links_with_css_selector():
     """
 
     # given
-    extractor = WikipediaExtractor()
+    extractor = WikipediaInfoRetriever()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -124,7 +124,7 @@ def test_extract_links_with_css_selector():
 def test_dedup_extract_links():
 
     # given
-    extractor = WikipediaExtractor()
+    extractor = WikipediaInfoRetriever()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -172,7 +172,7 @@ def test_extract_links_with_no_links():
     """
 
     # given
-    extractor = WikipediaExtractor()
+    extractor = WikipediaInfoRetriever()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -214,7 +214,7 @@ def test_extract_links_excludes_external_links():
     """
 
     # given
-    extractor = WikipediaExtractor()
+    extractor = WikipediaInfoRetriever()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -268,7 +268,7 @@ def test_extract_links_excludes_non_existing_pages():
     """
 
     # given
-    extractor = WikipediaExtractor()
+    extractor = WikipediaInfoRetriever()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -323,7 +323,7 @@ def test_parse_info_table():
     html_file = current_dir / "wikipedia_html/Beethoven.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = WikipediaExtractor()
+    semantic = WikipediaInfoRetriever()
 
     # when
     info_box = semantic.retrieve_infoboxes(html_content)

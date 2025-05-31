@@ -1,9 +1,8 @@
 import ollama
-from loguru import logger
 from pydantic import BaseModel, Field
 
-from src.interfaces.content_parser import IContentExtractor
-from src.settings import LLMQuestion, Settings
+from src.interfaces.extractor import IContentExtractor
+from src.settings import Settings
 
 
 class LLMResponse(BaseModel):
@@ -24,14 +23,14 @@ class OllamaExtractor(IContentExtractor):
     """
 
     model: str
-    questions: list[LLMQuestion]
+    question: str
 
     def __init__(self, settings: Settings = None):
 
         self.model = settings.llm_model
-        self.questions = settings.llm_questions
+        self.question = settings.llm_question
 
-    def resolve(self, content: str, entity_type: BaseModel) -> BaseModel:
+    def extract_entity(self, content: str, entity_type: BaseModel) -> BaseModel:
         """
         Transform the given content into an entity of type T.
 
@@ -49,11 +48,7 @@ class OllamaExtractor(IContentExtractor):
 
         result: BaseModel | None = None
 
-        question = self.questions[0]
-
-        logger.debug(f"Processing question: {question.question}")
-
-        prompt = f"Context: {content}\n\nQuestion: {question}\nRéponse:"
+        prompt = f"Context: {content}\n\nQuestion: {self.question}\nRéponse:"
 
         # if result is None:
         # case where the entity needs to be created

@@ -1,10 +1,6 @@
-
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
-from src.entities.person import Person
-from src.interfaces.assembler import IEntityAssembler
-
-from .woa import WOAInfluence, WOASpecifications, WOAType, WorkOfArt
+from .woa import WOAInfluence, WOASpecifications, WorkOfArt
 
 
 class FilmActor(BaseModel):
@@ -61,7 +57,7 @@ class FilmMedia(BaseModel):
 
 
 class FilmSpecifications(WOASpecifications):
-    directed_by: list[Person] | None = Field(
+    directed_by: list[str] | None = Field(
         None,
         repr=False,
     )
@@ -128,51 +124,3 @@ class Film(WorkOfArt):
         None,
         repr=False,
     )
-
-
-class FilmAssembler(IEntityAssembler[Film]):
-    """
-    Assembler for Film entities.
-    """
-
-    def assemble(self, uid: str, title: str, parts: list[BaseModel]) -> Film:
-        """
-        Assemble the Film entity from the provided data.
-
-        TODO:
-        - try / catch to handle cases where the parts do not match the expected types.
-        - testing
-
-        Args:
-            parts (list[BaseModel]): A list of BaseModel instances that represent the content to be assembled.
-                Each part should conform to the structure defined by the Film entity.
-
-        Returns:
-            Film: The assembled Film entity.
-        """
-
-        _film = Film(
-            uid=uid,
-            title=title,
-            woa_type=WOAType.FILM,  # Assuming "film" is a valid WOAType
-        )
-
-        for part in parts:
-            if isinstance(part, FilmSummary):
-                _film.summary = part
-            elif isinstance(part, FilmMedia):
-                _film.media = part
-            elif isinstance(part, FilmSpecifications):
-                _film.specifications = part
-            elif isinstance(part, FilmActor):
-                if _film.actors is None:
-                    _film.actors = []
-                _film.actors.append(part)
-            elif isinstance(part, WOAInfluence):
-                if _film.influences is None:
-                    _film.influences = []
-                _film.influences.append(part)
-            else:
-                raise ValueError(f"Unsupported part type: {type(part)}")
-
-        return _film

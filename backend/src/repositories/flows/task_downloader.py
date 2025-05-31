@@ -7,11 +7,11 @@ from prefect.client.schemas.objects import TaskRun
 from prefect.states import State
 
 from src.entities.content import PageLink
-from src.interfaces.extractor import IHtmlExtractor
 from src.interfaces.http_client import HttpError, IHttpClient
+from src.interfaces.info_retriever import IInfoRetriever
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
-from src.repositories.html_parser.wikipedia_extractor import WikipediaExtractor
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
 from src.repositories.storage.html_storage import LocalTextStorage
 from src.settings import Settings, WikiTOCPageConfig
 
@@ -92,7 +92,7 @@ class DownloaderFlow(ITaskExecutor):
     async def fetch_page_links(
         self,
         config: WikiTOCPageConfig,
-        link_extractor: IHtmlExtractor,
+        link_extractor: IInfoRetriever,
     ) -> list[PageLink]:
         """
         downloads the HTML pages and returns the list of page IDs.
@@ -148,7 +148,7 @@ class DownloaderFlow(ITaskExecutor):
 
         logger = get_run_logger()
 
-        link_extractor = WikipediaExtractor()
+        link_extractor = WikipediaInfoRetriever()
 
         page_links = await self.fetch_page_links(
             config=start_page,
