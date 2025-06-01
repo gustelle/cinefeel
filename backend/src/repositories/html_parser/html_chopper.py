@@ -59,10 +59,17 @@ class HtmlChopper(IContentAnalyzer):
             title = self.html_retriever.retrieve_title(html_content)
 
             # simplify the HTML content
-            html_content = self.html_simplifier.process(html_content)
+            simplified_content = self.html_simplifier.process(html_content)
 
             # split the HTML content into sections
-            sections = self.html_splitter.split(html_content)
+            sections = self.html_splitter.split(simplified_content)
+
+            # add eventually orphaned sections
+            orphaned_section = self.html_retriever.retrieve_orphans(
+                simplified_content, position="start", sections_tag="section"
+            )
+            if orphaned_section is not None:
+                sections.append(orphaned_section)
 
             if sections is None or len(sections) == 0:
                 logger.warning(
@@ -77,7 +84,9 @@ class HtmlChopper(IContentAnalyzer):
                 if section.content
             ]
 
-            additional_sections = self.html_retriever.retrieve_infoboxes(html_content)
+            additional_sections = self.html_retriever.retrieve_infoboxes(
+                simplified_content
+            )
 
             if additional_sections is not None and len(additional_sections) > 0:
                 sections.extend(additional_sections)

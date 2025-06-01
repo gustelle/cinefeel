@@ -172,7 +172,7 @@ class AnalysisFlow(ITaskExecutor):
                 )
 
             i += 1
-            if i > 5:
+            if i > 2:
                 break
 
         # now wait for all tasks to complete

@@ -32,7 +32,11 @@ class BasicFilmResolver(AbstractResolver[Film]):
             FilmMedia: ["Données clés", "Fragments"],
             FilmSpecifications: ["Fiche technique"],
             FilmActor: ["Distribution"],
-            FilmSummary: ["Synopsis", "Résumé"],
+            FilmSummary: [
+                "Synopsis",
+                "Résumé",
+                "Introduction",
+            ],
         }
 
     def assemble(self, base_info: SourcedContentBase, parts: list[BaseModel]) -> Film:

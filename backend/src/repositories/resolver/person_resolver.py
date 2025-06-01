@@ -22,9 +22,9 @@ class BasicPersonResolver(AbstractResolver[Person]):
         self.entity_extractor = entity_extractor
         self.section_searcher = section_searcher
         self.entity_to_sections = entity_to_sections or {
-            Biography: ["Biographie"],
+            Biography: ["Introduction", "Biographie"],
             PersonMedia: ["Données clés", "Biographie"],
-            PersonCharacteristics: ["Biographie"],
+            PersonCharacteristics: ["Introduction", "Biographie"],
         }
 
     def assemble(self, base_info: SourcedContentBase, parts: list[BaseModel]) -> Person:

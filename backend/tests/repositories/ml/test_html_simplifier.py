@@ -11,9 +11,14 @@ def test_html_simplifier():
             <title>Sample Title</title>
         </head>
         <body>
-            <p>This is a sample paragraph with a note [1].</p>
-            <p>Another paragraph with a modifier [modifier | modifier le code].</p>
-            <div class="unnecessary">This should be removed.</div>
+            <section>
+                <h2>Sample Section</h2>
+                <div>
+                    <p>This is a sample paragraph with a note [1].</p>
+                    <p>Another paragraph with a modifier [modifier | modifier le code].</p>
+                    <div class="unnecessary">This should remain.</div>
+                </div>
+            </section>
         </body>
     </html>
     """
@@ -27,6 +32,7 @@ def test_html_simplifier():
     assert soup.find("title").get_text() == "Sample Title"
     assert soup.find("div", class_="unnecessary") is None
     assert "This is a sample paragraph with a note" in simplified_content
+    assert "This should remain." in simplified_content
 
 
 def test_html_simplifier_empty():

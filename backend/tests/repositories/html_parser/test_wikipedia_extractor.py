@@ -411,3 +411,69 @@ def test_retrieve_title_raises():
     # when / then
     with pytest.raises(RetrievalError, match="Title not found"):
         semantic.retrieve_title(html_content)
+
+
+def test_retrieve_orphan_paragraphs():
+    # given
+    html = """
+    <html>
+        <head>
+            <title>Test Page</title>
+        </head>
+        <body>
+            <p>This is an orphan paragraph before the first section.</p>
+            <section>
+                <h2>First Section</h2>
+                <p>This is the first section content.</p>
+                <h2>Second Section</h2>
+                <p>This is the second section content.</p>
+                <p>This is an orphan paragraph after the last section.</p>
+            </section>
+        </body>
+    """
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    orphan_section = semantic.retrieve_orphans(
+        html, position="start", sections_tag="section"
+    )
+
+    # then
+    assert orphan_section is not None
+    assert orphan_section.title == "Introduction"
+    assert (
+        "This is an orphan paragraph before the first section" in orphan_section.content
+    )
+
+
+def test_retrieve_orphan_paragraphs_works_with_divs():
+    # given
+    html = """
+    <html>
+        <head>
+            <title>Test Page</title>
+        </head>
+        <body>
+            <p>This is an orphan paragraph before the first section.</p>
+            <div>
+                <h2>First Section</h2>
+                <p>This is the first section content.</p>
+                <h2>Second Section</h2>
+                <p>This is the second section content.</p>
+                <p>This is an orphan paragraph after the last section.</p>
+            </div>
+        </body>
+    """
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    orphan_section = semantic.retrieve_orphans(
+        html, position="start", sections_tag="div"
+    )
+
+    # then
+    assert orphan_section is not None
+    assert orphan_section.title == "Introduction"
+    assert (
+        "This is an orphan paragraph before the first section" in orphan_section.content
+    )

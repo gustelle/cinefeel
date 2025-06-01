@@ -1,5 +1,5 @@
 from io import StringIO
-from typing import Generator
+from typing import Generator, Literal
 
 import pandas as pd
 import polars as pl
@@ -19,6 +19,55 @@ class WikipediaInfoRetriever(IInfoRetriever):
     """
 
     _inner_page_id_prefix = "./"
+
+    def retrieve_orphans(
+        self,
+        html_content: str,
+        position: Literal["start", "beetwen", "end"] = "start",
+        sections_tag: str = "section",
+    ) -> Section:
+        """
+        Extracts orphan paragraphs from the HTML content based on the specified position.
+
+        Only the "start" position is currently supported, which extracts paragraphs before the first section.
+
+        Args:
+            html_content (str): The HTML content to parse.
+            position (str): The position of the orphan paragraph in the HTML content.
+            sections_tag (str): The HTML tag that contains the sections. Defaults to "section".
+
+        Returns:
+            Section: A `Section` object containing the orphan paragraph.
+
+        Raises:
+            RetrievalError: if the orphan paragraph cannot be found in the HTML content.
+        """
+        soup = BeautifulSoup(html_content, "html.parser")
+
+        section_title = None
+
+        orphans = []
+
+        if position == "start":
+            # extract the first paragraph
+            section_title = "Introduction"
+            for sibling in soup.find(sections_tag).previous_siblings:
+                orphans.append(sibling.get_text(strip=True))
+        else:
+            raise RetrievalError(
+                f"Position '{position}' is not yet supported for orphan paragraphs."
+            )
+
+        if not orphans:
+            return None
+
+        orphans.reverse()  # reverse the order to keep the original order
+
+        logger.debug(
+            f"Found {len(orphans)} orphan paragraphs at the {position} of the HTML content."
+        )
+
+        return Section(title=section_title, content="\n".join(orphans))
 
     def retrieve_permalink(self, html_content: str) -> HttpUrl:
         """

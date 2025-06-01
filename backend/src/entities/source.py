@@ -1,6 +1,7 @@
 import re
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
+from unidecode import unidecode
 
 
 class Sourcable(BaseModel):
@@ -23,8 +24,8 @@ class Sourcable(BaseModel):
         """
         Validate the uid to ensure it contains no special characters.
         """
-        # casefold to lowercase
-        value = value.casefold()
+        # replace accents and casefold to lowercase
+        value = unidecode(value).casefold()
 
         # constraint of meili:
         # only (a-z A-Z 0-9), hyphens (-) and underscores (_) are allowed
