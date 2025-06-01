@@ -8,7 +8,7 @@ from src.entities.film import (
     FilmSpecifications,
     FilmSummary,
 )
-from src.entities.source import BaseInfo
+from src.entities.source import SourcedContentBase
 from src.entities.woa import WOAInfluence, WOAType
 from src.interfaces.extractor import IContentExtractor
 from src.interfaces.resolver import IEntityResolver
@@ -17,7 +17,7 @@ from src.interfaces.similarity import MLProcessor
 
 class BasicFilmResolver(IEntityResolver[Film]):
     """
-    Basic assembler for Film entities.
+    in charge of extracting info from the sections and assembling a Film entity.
     """
 
     entity_extractor: IContentExtractor
@@ -31,24 +31,23 @@ class BasicFilmResolver(IEntityResolver[Film]):
 
     def resolve(
         self,
-        uid: str,
-        base_info: BaseInfo,
+        base_info: SourcedContentBase,
         sections: list[Section],
     ) -> Film:
         """
-        Assembles a Film entity from the provided parts.
+        Assembles a `Film` from the provided html sections.
 
         Args:
-            uid (str): A unique identifier for the film.
+            base_info (SourcedContentBase): The base information of the film, including title, permalink, and uid.
             sections (list[Section]): A list of Section objects containing the content to be resolved.
 
         Returns:
-            Film: The assembled Film entity.
+            Film: The assembled Film.
         """
 
         # retriever title and permalink from the first part
         if not sections or len(sections) == 0:
-            raise ValueError("No parts provided to resolve the Film entity.")
+            raise ValueError("No sections provided to resolve the Film.")
 
         _entity_to_sections = {
             FilmMedia: ["Données clés", "Fragments"],
@@ -61,33 +60,33 @@ class BasicFilmResolver(IEntityResolver[Film]):
 
         for entity_type, titles in _entity_to_sections.items():
             for title in titles:
+
                 section: Section = self.section_searcher.process(
                     title=title,
                     sections=sections,
                 )
+
+                # there is a corresponding section in the content
                 if section is not None:
 
+                    # try to extract the entity from the section content
                     section_entity = self.entity_extractor.extract_entity(
                         content=section.content,
                         entity_type=entity_type,
                     )
-
                     if section_entity is None:
                         continue
 
-                    logger.info(
-                        f"Found a '{section_entity.__class__.__name__}' in '{section.title}' for content '{uid}'."
+                    logger.debug(
+                        f"Found a '{section_entity.__class__.__name__}' in '{section.title}' for content '{base_info.uid}'."
                     )
                     parts.append(section_entity)
 
-        if not parts or len(parts) == 0:
-            raise ValueError("No valid parts found to resolve the Film entity.")
-
         _film = Film(
-            uid=uid,
+            uid=base_info.uid,
             title=base_info.title,
             permalink=base_info.permalink,
-            woa_type=WOAType.FILM,  # Assuming "film" is a valid WOAType
+            woa_type=WOAType.FILM,
         )
 
         for part in parts:
@@ -105,7 +104,5 @@ class BasicFilmResolver(IEntityResolver[Film]):
                 if _film.influences is None:
                     _film.influences = []
                 _film.influences.append(part)
-            else:
-                raise ValueError(f"Unsupported part type: {type(part)}")
 
         return _film

@@ -1,7 +1,7 @@
 from typing import Protocol
 
 from src.entities.content import Section
-from src.entities.source import BaseInfo
+from src.entities.source import SourcedContentBase
 
 
 class IEntityResolver[T](Protocol):
@@ -10,7 +10,12 @@ class IEntityResolver[T](Protocol):
     """
 
     def resolve(
-        self, uid: str, base_info: BaseInfo, sections: list[Section], *args, **kwargs
+        self,
+        uid: str,
+        base_info: SourcedContentBase,
+        sections: list[Section],
+        *args,
+        **kwargs,
     ) -> T:
         """
         Resolves a list of parts into an entity of type T.

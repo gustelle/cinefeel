@@ -3,26 +3,6 @@ import re
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
-class BaseInfo(BaseModel):
-    """
-    Base class for generic information.
-    """
-
-    title: str = Field(
-        ...,
-        description="The title of the information entity.",
-        examples=["Stanley Kubrick", "The Shining"],
-    )
-
-    permalink: HttpUrl = Field(
-        ...,
-        description="The permalink to the object, typically a URL.",
-        examples=[
-            "https://fr.wikipedia.org/wiki/Stanley_Kubrick",
-        ],
-    )
-
-
 class Sourcable(BaseModel):
     """
     An object that can be stored in a database or a file.
@@ -53,3 +33,23 @@ class Sourcable(BaseModel):
         # remove quotes
         value = value.replace('"', "").replace("'", "")
         return value
+
+
+class SourcedContentBase(Sourcable):
+    """
+    Base class for contents
+    """
+
+    title: str = Field(
+        ...,
+        description="The title of the information entity.",
+        examples=["Stanley Kubrick", "The Shining"],
+    )
+
+    permalink: HttpUrl = Field(
+        ...,
+        description="The permalink to the object, typically a URL.",
+        examples=[
+            "https://fr.wikipedia.org/wiki/Stanley_Kubrick",
+        ],
+    )

@@ -2,7 +2,7 @@ from src.entities.film import Film
 from src.interfaces.analyzer import IContentAnalyzer
 
 
-class StubAnalyzer(IContentAnalyzer[Film]):
+class StubAnalyzer(IContentAnalyzer):
 
     is_analyzed: bool = False
 

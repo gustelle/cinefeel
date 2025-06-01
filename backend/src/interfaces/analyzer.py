@@ -1,7 +1,7 @@
 from typing import Protocol, Sequence
 
 from src.entities.content import Section
-from src.entities.source import BaseInfo
+from src.entities.source import SourcedContentBase
 
 
 class ContentAnalysisError(Exception):
@@ -23,7 +23,7 @@ class IContentAnalyzer(Protocol):
         html_content: str,
         *args,
         **kwargs,
-    ) -> tuple[BaseInfo, Sequence[Section]] | None:
+    ) -> tuple[SourcedContentBase, Sequence[Section]] | None:
         """
         Parses the given HTML content and extracts relevant data into a list of `Section` objects.
 

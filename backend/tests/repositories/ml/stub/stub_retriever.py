@@ -1,7 +1,38 @@
 from typing import Type
 
+from pydantic import HttpUrl
+
 from src.entities.content import PageLink, Section
-from src.interfaces.info_retriever import IInfoRetriever
+from src.interfaces.info_retriever import IInfoRetriever, RetrievalError
+
+
+class NoPermakinRetriever(IInfoRetriever):
+    """
+    A stub implementation of the IHtmlExtractor interface that raises an error when trying to retrieve a permalink.
+    This class is used to test error handling in the HTML extraction process.
+    """
+
+    def retrieve_permalink(self, html_content, *args, **kwargs):
+        raise RetrievalError("Permalink retrieval is not supported in this stub.")
+
+    def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
+        """
+        Returns a predefined title for testing.
+        """
+        return "Test Page Title"
+
+
+class NoTitleRetriever(IInfoRetriever):
+    """
+    A stub implementation of the IHtmlExtractor interface that raises an error when trying to retrieve a title.
+    This class is used to test error handling in the HTML extraction process.
+    """
+
+    def retrieve_permalink(self, html_content, *args, **kwargs):
+        return HttpUrl("https://example.com/test-page")
+
+    def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
+        raise RetrievalError("Title retrieval is not supported in this stub.")
 
 
 class StubHtmlRetriever(IInfoRetriever):
@@ -18,6 +49,15 @@ class StubHtmlRetriever(IInfoRetriever):
         This constructor does not require any parameters.
         """
         self.infoxbox_elements = infoxbox_elements
+
+    def retrieve_permalink(self, html_content, *args, **kwargs):
+        return HttpUrl("https://example.com/test-page")
+
+    def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
+        """
+        Returns a predefined title for testing.
+        """
+        return "Test Page Title"
 
     def retrieve_inner_links(
         self, html_content: str, entity_type: Type, *args, **kwargs

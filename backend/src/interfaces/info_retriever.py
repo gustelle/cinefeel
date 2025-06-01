@@ -5,6 +5,10 @@ from pydantic import HttpUrl
 from src.entities.content import PageLink, Section
 
 
+class RetrievalError(Exception):
+    pass
+
+
 class IInfoRetriever(Protocol):
     """
     Interface for a parser that extracts data from a given HTML content.
@@ -21,6 +25,9 @@ class IInfoRetriever(Protocol):
 
         Returns:
             str: The extracted permalink from the HTML content.
+
+        Raises:
+            RetrievalError: if the permalink cannot be found in the HTML content.
         """
         pass
 
@@ -35,6 +42,9 @@ class IInfoRetriever(Protocol):
 
         Returns:
             str: The extracted title from the HTML content.
+
+        Raises:
+            RetrievalError: if the title cannot be found in the HTML content.
         """
         pass
 
@@ -51,6 +61,10 @@ class IInfoRetriever(Protocol):
 
         Returns:
             list[PageLink]: A list of `PageLink` objects representing the extracted links.
+
+
+        Raises:
+            RetrievalError: if inner links cannot be found in the HTML content.
         """
         pass
 

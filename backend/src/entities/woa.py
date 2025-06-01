@@ -3,7 +3,7 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 
 from .person import Person
-from .source import Sourcable
+from .source import SourcedContentBase
 
 
 class WOAType(StrEnum):
@@ -47,7 +47,7 @@ class WOASpecifications(BaseModel):
     )
 
 
-class WorkOfArt(Sourcable):
+class WorkOfArt(SourcedContentBase):
     """
     Represents a work of art
     """

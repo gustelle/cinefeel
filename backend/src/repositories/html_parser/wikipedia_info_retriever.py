@@ -8,12 +8,8 @@ from loguru import logger
 from pydantic import HttpUrl
 
 from src.entities.content import PageLink, Section
-from src.interfaces.info_retriever import IInfoRetriever
+from src.interfaces.info_retriever import IInfoRetriever, RetrievalError
 from src.settings import WikiTOCPageConfig
-
-
-class WikiDataExtractionError(Exception):
-    pass
 
 
 class WikipediaInfoRetriever(IInfoRetriever):
@@ -30,6 +26,9 @@ class WikipediaInfoRetriever(IInfoRetriever):
 
         TODO:
         - testing of the permalink
+
+        Raises:
+            WikiDataExtractionError: if the permalink cannot be found in the HTML content.
         """
 
         soup = BeautifulSoup(html_content, "html.parser")
@@ -47,7 +46,7 @@ class WikipediaInfoRetriever(IInfoRetriever):
                     value = f"https://{value}"
                 return HttpUrl(value)
 
-        raise WikiDataExtractionError("Permalink not found in the HTML content.")
+        raise RetrievalError("Permalink not found in the HTML content.")
 
     def retrieve_title(self, html_content: str) -> str:
         """
@@ -67,7 +66,7 @@ class WikipediaInfoRetriever(IInfoRetriever):
         if title_tag:
             return title_tag.get_text(strip=True)
         else:
-            raise WikiDataExtractionError("Title not found in the HTML content.")
+            raise RetrievalError("Title not found in the HTML content.")
 
     def retrieve_inner_links(
         self, html_content: str, config: WikiTOCPageConfig
