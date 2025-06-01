@@ -24,9 +24,9 @@ class BasicFilmResolver(IEntityResolver[Film]):
     section_searcher: MLProcessor
 
     def __init__(
-        self, entity_extracto: IContentExtractor, section_searcher: MLProcessor
+        self, entity_extractor: IContentExtractor, section_searcher: MLProcessor
     ):
-        self.entity_extractor = entity_extracto
+        self.entity_extractor = entity_extractor
         self.section_searcher = section_searcher
 
     def resolve(

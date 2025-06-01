@@ -38,6 +38,7 @@ class HtmlChopper(IContentAnalyzer):
 
         TODO:
         - test BaseInfo is always present in the sections returned
+        - test error catched when permalink or title is not found
 
         Args:
             content_id (str): The unique identifier for the content being analyzed.
@@ -48,13 +49,18 @@ class HtmlChopper(IContentAnalyzer):
             or None if the parsing fails or the content is not relevant.
         """
 
-        if not hasattr(self, "entity_type"):
-            raise ValueError(
-                "Entity type is not set. Please use the class with a specific entity type."
-            )
-
         if html_content is None or len(html_content) == 0:
             logger.warning(f"no HTML content found for content '{content_id}'")
+            return None
+
+        # retrieve permalink and title before content simplification
+        permakink = self.html_retriever.retrieve_permalink(html_content)
+        title = self.html_retriever.retrieve_title(html_content)
+
+        if title is None or permakink is None:
+            logger.warning(
+                f"Cannot process '{content_id}', title or permalink not found."
+            )
             return None
 
         # simplify the HTML content
@@ -77,10 +83,20 @@ class HtmlChopper(IContentAnalyzer):
         if additional_sections is not None and len(additional_sections) > 0:
             sections.extend(additional_sections)
 
-        # base information
-        base_info = BaseInfo(
-            title=self.html_retriever.retrieve_title(html_content),
-            permalink=self.html_retriever.retrieve_permalink(html_content),
-        )
+        try:
 
-        return base_info, sections
+            # base information
+            base_info = BaseInfo(
+                title=title,
+                permalink=permakink,
+            )
+
+            return base_info, sections
+
+        except Exception as e:
+            logger.error(
+                f"Error while analyzing content '{content_id}': {e}",
+                exc_info=True,
+            )
+
+        return None

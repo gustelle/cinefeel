@@ -46,6 +46,9 @@ class AnalysisFlow(ITaskExecutor):
         """
         Analyze the content and return a storable entity.
 
+        TODO:
+        - test when result is None
+
         Args:
             analyzer (IContentAnalyzer): _description_
             content_id (str): _description_
@@ -55,16 +58,18 @@ class AnalysisFlow(ITaskExecutor):
             Storable | None: _description_
         """
         logger = get_run_logger()
-        base_info, sections = analyzer.analyze(content_id, html_content)
+        result = analyzer.analyze(content_id, html_content)
 
-        if base_info is None or sections is None:
+        if result is None:
             logger.warning(f"No sections found for content ID '{content_id}'.")
             return None
+
+        base_info, sections = result
 
         # assemble the entity from the sections
         if self.entity_type == Film:
             return BasicFilmResolver(
-                content_parser=OllamaExtractor(settings=self.settings),
+                entity_extractor=OllamaExtractor(settings=self.settings),
                 section_searcher=SimilarSectionSearch(settings=self.settings),
             ).resolve(
                 uid=content_id,

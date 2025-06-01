@@ -31,12 +31,23 @@ class WikipediaInfoRetriever(IInfoRetriever):
         TODO:
         - testing of the permalink
         """
+
         soup = BeautifulSoup(html_content, "html.parser")
+
         permalink_tag = soup.find("link", rel="canonical")
         if permalink_tag and permalink_tag.get("href"):
             return HttpUrl(permalink_tag.get("href"))
         else:
-            raise WikiDataExtractionError("Permalink not found in the HTML content.")
+            # try another way
+            permalink_tag = soup.find("link", attrs={"rel": "dc:isVersionOf"})
+            if permalink_tag and permalink_tag.get("href"):
+                value = permalink_tag.get("href")
+                if not value.startswith("https://"):
+                    # if the link is relative, we need to prepend the base URL
+                    value = f"https://{value}"
+                return HttpUrl(value)
+
+        raise WikiDataExtractionError("Permalink not found in the HTML content.")
 
     def retrieve_title(self, html_content: str) -> str:
         """
