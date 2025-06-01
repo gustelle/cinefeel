@@ -2,7 +2,7 @@ from string import ascii_letters, digits, punctuation, whitespace
 
 import pytest
 
-from src.entities.source import Sourcable
+from src.entities.source import Sourcable, SourcedContentBase
 
 
 def test_uid_validation():
@@ -43,7 +43,7 @@ def test_permalink_is_mandatory():
 
     # when
     with pytest.raises(ValueError) as exc_info:
-        Sourcable(uid=uid, permalink=None)
+        SourcedContentBase(uid=uid, title="test", permalink=None)
 
     # then
     assert "permalink" in str(exc_info.value)

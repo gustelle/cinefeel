@@ -1,7 +1,8 @@
-from prefect.testing.utilities import prefect_test_harness
+from pydantic import HttpUrl
 
 from src.entities.film import Film
 from src.repositories.flows.task_analyzer import AnalysisFlow
+from src.settings import Settings
 
 from .stubs.stub_analyzer import StubAnalyzer
 from .stubs.stub_storage import StubStorage
@@ -17,12 +18,12 @@ def test_task_store():
     )
     entity = Film(
         title="Test Film",
+        permalink=HttpUrl("http://example.com/test-film"),
         uid="test_film_id",
     )
 
     # when
-    with prefect_test_harness():
-        flow_runner.store(stub_storage, entity)
+    flow_runner.store(stub_storage, entity)
 
     # then
     assert stub_storage.is_inserted, "Film was not inserted into the storage."
@@ -31,7 +32,7 @@ def test_task_store():
 def test_task_analyze():
     # given
     flow_runner = AnalysisFlow(
-        settings=None,  # Assuming settings are not needed for this test
+        settings=Settings(),  # settings are not really needed for this test
         entity_type=Film,
     )
     analyzer = StubAnalyzer()
@@ -40,12 +41,11 @@ def test_task_analyze():
     html_content = "<html><body>Test Content</body></html>"
 
     # when
-    with prefect_test_harness():
-        result = flow_runner.do_analysis(
-            analyzer=analyzer,
-            content_id=content_id,
-            html_content=html_content,
-        )
+    result = flow_runner.do_analysis(
+        analyzer=analyzer,
+        content_id=content_id,
+        html_content=html_content,
+    )
 
     # then
 

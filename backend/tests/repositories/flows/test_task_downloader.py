@@ -1,5 +1,4 @@
 import pytest
-from prefect.testing.utilities import prefect_test_harness
 
 from src.interfaces.http_client import HttpError
 from src.repositories.flows.task_downloader import DownloaderFlow
@@ -31,12 +30,11 @@ async def test_execute():
     runner = DownloaderFlow(settings=settings, http_client=client)
 
     # when
-    with prefect_test_harness():
-        result = await runner.execute(
-            start_page,
-            storage_handler=storage_handler,
-            return_results=True,
-        )
+    result = await runner.execute(
+        start_page,
+        storage_handler=storage_handler,
+        return_results=True,
+    )
 
     # then
     assert result == [internal_wiki_page]
@@ -51,12 +49,11 @@ async def test_download_page_return_page_id():
     storage_handler = StubStorage()
 
     # when
-    with prefect_test_harness():
-        result = await runner.download_page(
-            "page_id",
-            storage_handler=storage_handler,
-            return_content=False,
-        )
+    result = await runner.download_page(
+        "page_id",
+        storage_handler=storage_handler,
+        return_content=False,
+    )
 
     # then
     assert result == "page_id"
@@ -72,12 +69,11 @@ async def test_download_page_using_storage_return_content():
     runner = DownloaderFlow(settings=settings, http_client=client)
 
     # when
-    with prefect_test_harness():
-        result = await runner.download_page(
-            "page_id",
-            storage_handler=storage_handler,
-            return_content=True,  # return the content
-        )
+    result = await runner.download_page(
+        "page_id",
+        storage_handler=storage_handler,
+        return_content=True,  # return the content
+    )
 
     # then
     assert result == "<html>Test Content</html>"
@@ -93,12 +89,11 @@ async def test_download_page_using_storage_dont_return_content():
     runner = DownloaderFlow(settings=settings, http_client=client)
 
     # when
-    with prefect_test_harness():
-        page_id = await runner.download_page(
-            "page_id",
-            storage_handler=storage_handler,
-            return_content=False,
-        )
+    page_id = await runner.download_page(
+        "page_id",
+        storage_handler=storage_handler,
+        return_content=False,
+    )
 
     # then
     assert page_id == "page_id"
@@ -116,12 +111,11 @@ async def test_download_page_http_error():
     runner = DownloaderFlow(settings=settings, http_client=client)
 
     # when
-    with prefect_test_harness():
-        with pytest.raises(HttpError) as exc_info:
-            await runner.download_page(
-                "page_id",
-                return_content=True,
-            )
+    with pytest.raises(HttpError) as exc_info:
+        await runner.download_page(
+            "page_id",
+            return_content=True,
+        )
     # then
     assert exc_info.value.status_code == 503
     assert "Boom" in str(exc_info.value)

@@ -25,7 +25,7 @@ class OllamaExtractor(IContentExtractor):
     model: str
     question: str
 
-    def __init__(self, settings: Settings = None):
+    def __init__(self, settings: Settings):
 
         self.model = settings.llm_model
         self.question = settings.llm_question

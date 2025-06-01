@@ -2,6 +2,7 @@ from pathlib import Path
 
 import orjson
 import pytest
+from pydantic import HttpUrl
 
 from src.entities.film import Film
 from src.entities.person import Person
@@ -71,6 +72,7 @@ def test_insert_film():
 
     film = Film(
         title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
         uid=content_id,
     )
 
@@ -78,12 +80,9 @@ def test_insert_film():
 
     # then
     assert (storage_handler.persistence_directory / f"{film.uid}.json").exists()
-    assert (
-        orjson.loads(
-            (storage_handler.persistence_directory / f"{film.uid}.json").read_text()
-        )
-        == film.model_dump()
-    )
+    assert orjson.loads(
+        (storage_handler.persistence_directory / f"{film.uid}.json").read_text()
+    ) == film.model_dump(mode="json")
 
     # teardown
     (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
@@ -106,18 +105,17 @@ def test_insert_person():
     person = Person(
         uid=content_id,
         full_name=content["full_name"],
+        title="Test Person Title",
+        permalink=HttpUrl("http://example.com/test-person"),
     )
 
     storage_handler.insert(person.uid, person)
 
     # then
     assert (storage_handler.persistence_directory / f"{person.uid}.json").exists()
-    assert (
-        orjson.loads(
-            (storage_handler.persistence_directory / f"{person.uid}.json").read_text()
-        )
-        == person.model_dump()
-    )
+    assert orjson.loads(
+        (storage_handler.persistence_directory / f"{person.uid}.json").read_text()
+    ) == person.model_dump(mode="json")
 
     # teardown
     (storage_handler.persistence_directory / f"{person.uid}.json").unlink()
@@ -139,6 +137,7 @@ def test_insert_bad_type():
 
     film = Film(
         title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
         uid=content_id,
     )
 
@@ -171,6 +170,7 @@ def test_select_film():
 
     film = Film(
         title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
         uid=content_id,
     )
 
@@ -203,6 +203,7 @@ def test_select_non_existing_film():
 
     film = Film(
         title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
         uid=content_id,
     )
 
@@ -232,6 +233,7 @@ def test_select_corrupt_entity():
 
     film = Film(
         title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
         uid=content_id,
     )
 
@@ -263,6 +265,7 @@ def test_query_film():
 
     film = Film(
         title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
         uid=content_id,
     )
 
@@ -309,6 +312,7 @@ def test_query_corrupt_file():
 
     film = Film(
         title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
         uid=content_id,
     )
 
@@ -344,6 +348,7 @@ def test_query_validation_err():
 
     film = Film(
         title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
         uid=content_id,
     )
 
