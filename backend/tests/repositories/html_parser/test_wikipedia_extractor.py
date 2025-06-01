@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from src.interfaces.info_retriever import PageLink
+import pytest
+
+from src.interfaces.info_retriever import PageLink, RetrievalError
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
 from src.settings import WikiTOCPageConfig
 
@@ -316,18 +318,96 @@ def test_extract_links_excludes_non_existing_pages():
     assert all(item in expected_output for item in result)
 
 
-def test_parse_info_table():
+def test_parse_info_table(read_beethoven_html):
+
+    # given
+
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    info_box = semantic.retrieve_infoboxes(read_beethoven_html)
+
+    # then
+    assert info_box is not None
+    assert len(info_box) > 0
+
+
+def test_retrieve_infoboxes_section_title(read_beethoven_html):
+
+    # given
+
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    info_box = semantic.retrieve_infoboxes(read_beethoven_html)
+
+    # then
+    assert all(section.title == "Données clés" for section in info_box)
+
+
+def test_retrieve_permalink_from_canonical(read_beethoven_html):
+
+    # given
+
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    permalink = semantic.retrieve_permalink(read_beethoven_html)
+
+    # then
+    assert str(permalink) == "https://fr.wikipedia.org/wiki/Ludwig_van_Beethoven"
+
+
+def test_retrieve_permalink_from_isVersionOf():
 
     # given
     current_dir = Path(__file__).parent
-    html_file = current_dir / "wikipedia_html/Beethoven.html"
+    html_file = current_dir / "test_html/permalink_no_canonical.html"
     html_content = html_file.read_text(encoding="utf-8")
 
     semantic = WikipediaInfoRetriever()
 
     # when
-    info_box = semantic.retrieve_infoboxes(html_content)
+    permalink = semantic.retrieve_permalink(html_content)
 
     # then
-    assert info_box is not None
-    assert len(info_box) > 0
+    assert str(permalink) == "https://fr.wikipedia.org/wiki/test"
+
+
+def test_retrieve_permalink_raises():
+
+    # given
+    current_dir = Path(__file__).parent
+    html_file = current_dir / "test_html/no_permalink.html"
+    html_content = html_file.read_text(encoding="utf-8")
+
+    semantic = WikipediaInfoRetriever()
+
+    # when / then
+    with pytest.raises(RetrievalError, match="Permalink not found"):
+        semantic.retrieve_permalink(html_content)
+
+
+def test_retrieve_title(read_beethoven_html):
+    # given
+
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    title = semantic.retrieve_title(read_beethoven_html)
+
+    # then
+    assert title == "Ludwig van Beethoven — Wikipédia"
+
+
+def test_retrieve_title_raises():
+    # given
+    current_dir = Path(__file__).parent
+    html_file = current_dir / "test_html/no_title.html"
+    html_content = html_file.read_text(encoding="utf-8")
+
+    semantic = WikipediaInfoRetriever()
+
+    # when / then
+    with pytest.raises(RetrievalError, match="Title not found"):
+        semantic.retrieve_title(html_content)

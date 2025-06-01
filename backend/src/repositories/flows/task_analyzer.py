@@ -46,9 +46,6 @@ class AnalysisFlow(ITaskExecutor):
         """
         Analyze the content and return a storable entity.
 
-        TODO:
-        - test when result is None
-
         Args:
             analyzer (IContentAnalyzer): _description_
             content_id (str): _description_
@@ -61,14 +58,12 @@ class AnalysisFlow(ITaskExecutor):
         result = analyzer.analyze(content_id, html_content)
 
         if result is None:
-            logger.warning(f"No sections found for content ID '{content_id}'.")
+            logger.warning(
+                f"No Sections or SourcedContentBase found for content ID '{content_id}'."
+            )
             return None
 
         base_info, sections = result
-
-        logger.info(
-            f"Resolving entity {self.entity_type.__name__} for content ID '{content_id}'."
-        )
 
         # assemble the entity from the sections
         if self.entity_type == Film:

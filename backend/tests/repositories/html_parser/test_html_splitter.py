@@ -5,18 +5,15 @@ from src.repositories.html_parser.html_splitter import HtmlSplitter, Section
 current_dir = Path(__file__).parent
 
 
-def test_split_sections():
+def test_split_sections(read_beethoven_html):
     """
     Test the split_sections method of the HtmlSemantic class.
     """
     # given
-    html_file = current_dir / "wikipedia_html/Beethoven.html"
-    html_content = html_file.read_text(encoding="utf-8")
-
     semantic = HtmlSplitter()
 
     # when
-    sections = semantic.split(html_content)
+    sections = semantic.split(read_beethoven_html)
 
     # then
     assert sections is not None

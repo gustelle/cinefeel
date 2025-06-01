@@ -24,9 +24,6 @@ class WikipediaInfoRetriever(IInfoRetriever):
         """
         Extracts the permalink from the given HTML content.
 
-        TODO:
-        - testing of the permalink
-
         Raises:
             WikiDataExtractionError: if the permalink cannot be found in the HTML content.
         """
@@ -51,9 +48,6 @@ class WikipediaInfoRetriever(IInfoRetriever):
     def retrieve_title(self, html_content: str) -> str:
         """
         Extracts the title from the given HTML content.
-
-        TODO:
-        - testing of the title
 
         Args:
             html_content (str): The HTML content to parse.
@@ -196,9 +190,6 @@ class WikipediaInfoRetriever(IInfoRetriever):
     def retrieve_infoboxes(self, html_content: str) -> list[Section] | None:
         """
         Extracts the information table from the HTML content.
-
-        TODO:
-            - testing of the title
 
         Args:
             html_content (str): The HTML content to parse.
