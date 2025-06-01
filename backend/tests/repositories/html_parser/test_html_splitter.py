@@ -23,16 +23,13 @@ def test_split_sections(read_beethoven_html):
     ), "All sections should be of type HtmlSection"
 
 
-def test_split_sections_example():
+def test_split_sections_example(read_example_html):
 
     # given
-    html_file = current_dir / "test_html/example.html"
-    html_content = html_file.read_text(encoding="utf-8")
-
     semantic = HtmlSplitter()
 
     # when
-    sections = semantic.split(html_content)
+    sections = semantic.split(read_example_html)
 
     # then
     assert any("Sommaire" == section.title for section in sections)
