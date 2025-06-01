@@ -37,7 +37,7 @@ class HtmlChopper(IContentAnalyzer):
         Analyzes the HTML content and extracts relevant objects from it.
 
         TODO:
-        - test error catched when permalink or title is not found
+        - test non reg when no additional sections are found
 
         Args:
             content_id (str): The unique identifier for the content being analyzed.
@@ -82,14 +82,18 @@ class HtmlChopper(IContentAnalyzer):
             if additional_sections is not None and len(additional_sections) > 0:
                 sections.extend(additional_sections)
 
-                # base information
-                base_info = SourcedContentBase(
-                    uid=content_id,
-                    title=title,
-                    permalink=permakink,
-                )
+            # base information
+            base_info = SourcedContentBase(
+                uid=content_id,
+                title=title,
+                permalink=permakink,
+            )
 
-                return base_info, sections
+            logger.info(
+                f"Analyzed content '{content_id}' with title '{title}' and permalink '{permakink}'."
+            )
+
+            return base_info, sections
 
         except Exception as e:
             logger.error(

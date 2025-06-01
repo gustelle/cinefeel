@@ -105,4 +105,6 @@ class BasicFilmResolver(IEntityResolver[Film]):
                     _film.influences = []
                 _film.influences.append(part)
 
+        logger.info(f"Resolved Film: '{_film.title}' : {_film.model_dump()}")
+
         return _film

@@ -1,6 +1,7 @@
 import re
 
 from bs4 import BeautifulSoup
+from loguru import logger
 
 from src.interfaces.content_splitter import IContentSplitter, Section
 
@@ -39,7 +40,6 @@ class HtmlSplitter(IContentSplitter):
         <div>Content of section 2 continued</div>
         ```
 
-
         Args:
             html_content (str): The HTML content to be processed.
 
@@ -59,12 +59,12 @@ class HtmlSplitter(IContentSplitter):
         for section_title in simple_soup.find_all("h2"):
 
             if section_title is None or len(section_title.get_text().strip()) == 0:
-                # logger.debug(f"Skipping void section: {section_title.get_text()}")
+                logger.debug(f"VOID SECTION: {section_title.get_text()}")
                 continue
 
             # if it's a note section
             if section_title.get_text().strip().casefold() in self.SKIPPED_SECTIONS:
-                # logger.debug(f"Skipping note section: {section_title.get_text()}")
+                logger.debug(f"SKIPPED SECTION: {section_title.get_text()}")
                 continue
 
             # take all <div> and <p> tags next to the title
@@ -110,7 +110,7 @@ class HtmlSplitter(IContentSplitter):
                 section_contents.append(text)
 
             if len(section_contents) == 0:
-                # logger.debug(f"Skipping void section: {section_title.get_text()}")
+                logger.debug(f"VOID CONTENT: {section_title.get_text()}")
                 continue
 
             section_contents.append("\n")
@@ -120,5 +120,7 @@ class HtmlSplitter(IContentSplitter):
                     content=" ".join(section_contents).strip(),
                 )
             )
+
+        logger.debug(f"Found {len(sections)} sections in the HTML content.")
 
         return sections

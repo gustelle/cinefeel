@@ -66,13 +66,16 @@ class AnalysisFlow(ITaskExecutor):
 
         base_info, sections = result
 
+        logger.info(
+            f"Resolving entity {self.entity_type.__name__} for content ID '{content_id}'."
+        )
+
         # assemble the entity from the sections
         if self.entity_type == Film:
             return BasicFilmResolver(
                 entity_extractor=OllamaExtractor(settings=self.settings),
                 section_searcher=SimilarSectionSearch(settings=self.settings),
             ).resolve(
-                uid=content_id,
                 base_info=base_info,
                 sections=sections,
             )
@@ -163,7 +166,7 @@ class AnalysisFlow(ITaskExecutor):
                 )
 
             i += 1
-            if i > 2:
+            if i > 5:
                 break
 
         # now wait for all tasks to complete
@@ -178,4 +181,4 @@ class AnalysisFlow(ITaskExecutor):
             except Exception as e:
                 logger.error(f"Error in task execution: {e}")
 
-        logger.info("'analyze_persons' flow completed successfully.")
+        logger.info("'analyze' flow completed successfully.")
