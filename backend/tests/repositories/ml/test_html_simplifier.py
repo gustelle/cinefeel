@@ -85,3 +85,31 @@ def test_html_simplifier_with_modifiers():
     assert "[" not in simplified_content
     assert "]" not in simplified_content
     assert "|" not in simplified_content
+
+
+def test_a_tags_are_removed():
+    # Given HTML content with <a> tags
+    html_content = """
+    <html>
+        <head>
+            <title>Sample Title</title>
+        </head>
+        <body>
+            <p>This is a sample paragraph with a link <a href="http://example.com">Example</a>.</p>
+        </body>
+    </html>
+    """
+    simplifier = HTMLSimplifier()
+
+    # When processing the HTML content
+    simplified_content = simplifier.process(html_content)
+
+    # Then the simplified content should not contain <a> tags
+    assert "<a" not in simplified_content
+    assert "</a>" not in simplified_content
+
+    soup = BeautifulSoup(simplified_content, "html.parser")
+    assert soup.find("a") is None, "The <a> tag should be removed from the content."
+    assert (
+        soup.find("p").get_text() == "This is a sample paragraph with a link Example."
+    )
