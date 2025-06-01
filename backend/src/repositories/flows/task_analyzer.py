@@ -20,6 +20,7 @@ from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.ollama_parser import OllamaExtractor
 from src.repositories.resolver.film_resolver import BasicFilmResolver
+from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.repositories.storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
@@ -75,7 +76,17 @@ class AnalysisFlow(ITaskExecutor):
                 sections=sections,
             )
         elif self.entity_type == Person:
-            logger.warning("Person entity type is not yet supported in this flow.")
+            return BasicPersonResolver(
+                entity_extractor=OllamaExtractor(settings=self.settings),
+                section_searcher=SimilarSectionSearch(settings=self.settings),
+            ).resolve(
+                base_info=base_info,
+                sections=sections,
+            )
+        else:
+            logger.error(
+                f"Unsupported entity type '{self.entity_type.__name__}' for analysis."
+            )
             return None
 
     @task(

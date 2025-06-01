@@ -52,6 +52,11 @@ class Biography(BaseModel):
         ...,
         repr=False,
     )
+    nicknames: list[str] | None = Field(
+        None,
+        description="The nicknames of the person. This can be used to filter the list of people.",
+        repr=False,
+    )
     genre: GenderEnum | None = Field(
         None,
         description="The genre of the person. This can be used to filter the list of people.",
@@ -143,12 +148,6 @@ class Person(SourcedContentBase):
 
     biography: Biography = Field(
         None,
-        repr=False,
-    )
-
-    nicknames: list[str] | None = Field(
-        None,
-        description="The nicknames of the person. This can be used to filter the list of people.",
         repr=False,
     )
 
