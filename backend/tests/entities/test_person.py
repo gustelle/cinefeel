@@ -1,6 +1,21 @@
 from jsonschema import validate
 
-from src.entities.person import PersonCharacteristics
+from src.entities.person import Person, PersonCharacteristics
+
+
+def test_biography_may_be_None():
+    # given
+    bio = None
+
+    # when
+    person = Person(
+        uid="123",
+        title="John Doe",
+        permalink="http://example.com/john-doe",
+        biography=bio,
+    )
+    # then
+    assert person.biography is None
 
 
 def test_serialization():

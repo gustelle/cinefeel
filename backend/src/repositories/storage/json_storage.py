@@ -73,7 +73,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
                 path.unlink()
 
             with open(path, "w") as file:
-                file.write(content.model_dump_json())
+                file.write(content.model_dump_json(by_alias=True, exclude_none=True))
 
         except Exception as e:
             logger.exception(f"Error saving content {content_id}: {e}")
@@ -86,7 +86,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
             path = self.persistence_directory / f"{content_id}.json"
 
             with open(path, "r") as file:
-                woa = self.entity_type.model_validate_json(file.read())
+                woa = self.entity_type.model_validate_json(file.read(), by_alias=True)
                 return woa
         except Exception as e:
             logger.exception(f"Error loading film from {path}: {e}")
@@ -134,10 +134,10 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
             import traceback
 
             logger.error(traceback.format_exc())
-            raise StorageError(f"Error validating film data: {e}") from e
+            raise StorageError(f"Error validating data: {e}") from e
 
         except Exception as e:
             import traceback
 
             logger.error(traceback.format_exc())
-            raise StorageError(f"Error querying films: {e}") from e
+            raise StorageError(f"Error querying data: {e}") from e
