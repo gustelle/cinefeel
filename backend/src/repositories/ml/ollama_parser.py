@@ -30,7 +30,7 @@ class OllamaExtractor(IContentExtractor):
         self.model = settings.llm_model
         self.question = settings.llm_question
 
-    def extract_entity(self, content: str, entity_type: BaseModel) -> BaseModel:
+    def extract_entity[T](self, content: str, entity_type: BaseModel) -> T:
         """
         Transform the given content into an entity of type T.
 
@@ -60,7 +60,7 @@ class OllamaExtractor(IContentExtractor):
                     "content": prompt,
                 }
             ],
-            format=entity_type.model_json_schema(),
+            format=entity_type.model_json_schema(by_alias=True),
             options={
                 # Set temperature to 0 for more deterministic responses
                 "temperature": 0
@@ -71,7 +71,7 @@ class OllamaExtractor(IContentExtractor):
 
         try:
 
-            result = entity_type.model_validate_json(msg)
+            result = entity_type.model_validate_json(msg, by_alias=True)
 
         except Exception as e:
             raise ValueError(f"Error parsing response: {e}") from e

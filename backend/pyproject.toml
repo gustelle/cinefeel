@@ -48,6 +48,7 @@ test        = "pytest"
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.5"
 pytest-asyncio = "^0.26.0"
+pytest-mock = "^3.14.1"
 
 [tool.poetry.group.dev.dependencies]
 poethepoet = "^0.34.0"
