@@ -29,21 +29,26 @@ class WOAType(StrEnum):
 
 class WOASpecifications(BaseModel):
     """
-    Represents the specifications of a work of art.
+    Représente les spécifications d'une œuvre d'art.
+    Cette classe contient des informations sur le titre, les autres titres et la date de sortie de l'œuvre d'art.
     """
 
     title: str = Field(
         ...,
-        description="The title of the work of art.",
+        description="Le titre de l'œuvre d'art.",
     )
     other_titles: list[str] | None = Field(
         None,
         repr=False,
+        alias="autres_titres",
+        serialization_alias="autres_titres",
     )
     release_date: str | None = Field(
         None,
         examples=["2023-10-01", "2023-10-02"],
         repr=False,
+        alias="date_sortie",
+        serialization_alias="date_sortie",
     )
 
 
@@ -62,17 +67,21 @@ class WorkOfArt(SourcedContentBase):
 
 class WOAInfluence(BaseModel):
     """
-    Represents the influence of a work of art on another work of art.
+    Représente les influences d'une œuvre d'art.
     """
 
     persons: list[Person] | None = Field(
         None,
-        description="The persons that influenced the current work of art.",
+        description="les personnes qui ont influencé l'œuvre d'art actuelle.",
         repr=False,
+        alias="personnes_influentes",
+        serialization_alias="personnes_influentes",
     )
 
     work_of_arts: list[str] | None = Field(
         None,
-        description="The works of art that influenced the current work of art.",
+        description="les œuvres d'art qui ont influencé l'œuvre d'art actuelle.",
         repr=False,
+        alias="oeuvres_influentes",
+        serialization_alias="oeuvres_influentes",
     )
