@@ -98,10 +98,6 @@ class HtmlChopper(IContentAnalyzer):
                 permalink=permakink,
             )
 
-            logger.info(
-                f"Analyzed content '{content_id}' with title '{title}' and permalink '{permakink}'."
-            )
-
             return base_info, sections
 
         except Exception as e:
