@@ -65,6 +65,8 @@ class HtmlChopper(IContentAnalyzer):
             simplified_content = self.html_simplifier.process(html_content)
 
             # split the HTML content into sections
+            # TODO: here, we could take advantage of the sections hierarchy
+            # and split the content into sections based on the hierarchy
             sections = self.html_splitter.split(simplified_content)
 
             # add eventually orphaned sections
@@ -94,10 +96,10 @@ class HtmlChopper(IContentAnalyzer):
                 permalink=permakink,
             )
 
-            # prune html to remove unnecessary tags
+            # convert to Text / Ascii
             sections = [self.html_pruner.process(section) for section in sections]
 
-            # summarize the sections if they are too long
+            # summarize the sections for better processing
             sections = [
                 self.summarizer.process(section)
                 for section in sections
