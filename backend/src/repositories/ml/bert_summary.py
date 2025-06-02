@@ -32,6 +32,8 @@ class SectionSummarizer(MLProcessor[Section]):
 
         The title of the section is preserved, and the content is summarized using a BERT model
 
+        Children sections are processed as well recursively.
+
         Example:
         ```python
         section = Section(title="Example Section", content="This is a long content that needs summarization.")
@@ -47,7 +49,20 @@ class SectionSummarizer(MLProcessor[Section]):
                      otherwise the original section.
             None: If the section is None or empty.
         """
+        return self._process_section(section)
+
+    def _process_section(self, section: Section) -> Section:
+        """
+        Processes a single section to summarize its content.
+
+        Args:
+            section (Section): The section to process.
+
+        Returns:
+            Section: The processed section with summarized content.
+        """
         new_content = section.content
+        title = section.title
 
         if len(section.content) > self.settings.bert_summary_max_length:
             logger.debug(f"section '{section.title}' is too long, summarizing it")
@@ -55,4 +70,19 @@ class SectionSummarizer(MLProcessor[Section]):
                 section.content, max_length=self.settings.bert_summary_max_length
             )
 
-        return Section(title=section.title, content=new_content)
+        children = None
+        if section.children:
+            children = []
+            for child in section.children:
+                children.append(
+                    Section(
+                        title=child.title,
+                        content=child.content,
+                        children=[
+                            self._process_section(grandchild)
+                            for grandchild in child.children
+                        ],
+                    )
+                )
+
+        return Section(title=title, content=new_content, children=children)
