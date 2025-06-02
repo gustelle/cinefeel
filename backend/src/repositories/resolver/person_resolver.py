@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from src.entities.person import Biography, Person, PersonCharacteristics, PersonMedia
 from src.entities.source import SourcedContentBase
 from src.interfaces.extractor import IContentExtractor
-from src.interfaces.similarity import MLProcessor
+from src.interfaces.nlp_processor import MLProcessor
 from src.repositories.resolver.abstract_resolver import AbstractResolver
 
 

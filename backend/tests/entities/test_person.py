@@ -7,7 +7,7 @@ def test_serialization():
 
     # given
     characteristics = PersonCharacteristics(
-        disabilities=["blind", "deaf"],
+        handicaps=["blind", "deaf"],
     )
 
     # when

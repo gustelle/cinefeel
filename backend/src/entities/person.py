@@ -149,14 +149,12 @@ class PersonCharacteristics(BaseModel):
 
     height: str | None = Field(
         None,
-        description="The height of the person.",
         repr=False,
         alias="taille",
         serialization_alias="taille",
     )
     weight: str | None = Field(
         None,
-        description="The weight of the person.",
         repr=False,
         alias="poids",
         serialization_alias="poids",
@@ -169,7 +167,6 @@ class PersonCharacteristics(BaseModel):
     )
     sexual_orientation: str | None = Field(
         None,
-        description="The sexual orientation of the person.",
         repr=False,
         alias="orientation_sexuelle",
         serialization_alias="orientation_sexuelle",

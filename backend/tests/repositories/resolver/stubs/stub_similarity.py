@@ -1,5 +1,5 @@
 from src.interfaces.content_splitter import Section
-from src.interfaces.similarity import MLProcessor
+from src.interfaces.nlp_processor import MLProcessor
 
 
 class StubSimilaritySearch(MLProcessor):

@@ -1,5 +1,5 @@
 from src.entities.content import Section
-from src.interfaces.similarity import MLProcessor
+from src.interfaces.nlp_processor import MLProcessor
 
 
 class StubSummarizer(MLProcessor):

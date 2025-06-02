@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -38,3 +40,9 @@ class PageLink(BaseModel):
 class Section(BaseModel):
     title: str
     content: str | None
+
+    children: list[Section] | None = Field(
+        default_factory=list,
+        description="A list of child sections, if any. This allows for nested sections.",
+        repr=False,
+    )

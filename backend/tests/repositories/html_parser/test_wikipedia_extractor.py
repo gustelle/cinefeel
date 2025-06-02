@@ -397,7 +397,7 @@ def test_retrieve_title(read_beethoven_html):
     title = semantic.retrieve_title(read_beethoven_html)
 
     # then
-    assert title == "Ludwig van Beethoven — Wikipédia"
+    assert title == "Ludwig van Beethoven"
 
 
 def test_retrieve_title_raises():

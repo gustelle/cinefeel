@@ -1,19 +1,23 @@
 from pathlib import Path
 
-from src.repositories.html_parser.html_splitter import HtmlSplitter, Section
+from src.repositories.html_parser.html_splitter import (
+    Section,
+    WikipediaAPIContentSplitter,
+)
 
 current_dir = Path(__file__).parent
 
 
-def test_split_sections(read_beethoven_html):
+def test_split_complex_page(read_beethoven_html):
     """
     Test the split_sections method of the HtmlSemantic class.
     """
     # given
-    semantic = HtmlSplitter()
+    semantic = WikipediaAPIContentSplitter()
 
     # when
-    sections = semantic.split(read_beethoven_html)
+    # we must flatten here because the root element has no direct section child
+    sections = semantic.split(read_beethoven_html, flatten=True)
 
     # then
     assert sections is not None
@@ -23,27 +27,37 @@ def test_split_sections(read_beethoven_html):
     ), "All sections should be of type HtmlSection"
 
 
-def test_split_sections_example(read_example_html):
+def test_split_with_root_tag(read_beethoven_html):
 
     # given
-    semantic = HtmlSplitter()
+    semantic = WikipediaAPIContentSplitter()
 
     # when
-    sections = semantic.split(read_example_html)
+    # we must flatten here because the root element has no direct section child
+    sections = semantic.split(read_beethoven_html, flatten=False, root_tag="body")
 
     # then
-    assert any("Sommaire" == section.title for section in sections)
-    assert all(section.title != "Notes et références" for section in sections)
-    assert all(section.title != "Voir aussi" for section in sections)
-    assert all(section.title != "Voir aussi" for section in sections)
+    assert sections is not None
+    assert len(sections) > 0
+    assert any(
+        section.title == "Biographie" and len(section.children) > 0
+        for section in sections
+    ), "Should contain 'Biographie' section with children"
 
-    html_content = list(
-        filter(
-            lambda section: section.title == "Sommaire",
-            sections,
-        )
-    )[0]
-    assert "figcaption" not in html_content
+
+def test_split_ignores_non_significant_sections(read_beethoven_html):
+
+    # given
+    semantic = WikipediaAPIContentSplitter()
+
+    # when
+    sections = semantic.split(read_beethoven_html, flatten=True)
+
+    # then
+    assert all(
+        "notes et références" not in section.title.lower() for section in sections
+    )
+    assert all("voir aussi" not in section.title.lower() for section in sections)
 
 
 def test_split_sections_no_title():
@@ -51,13 +65,14 @@ def test_split_sections_no_title():
     html_file = current_dir / "test_html/no_title.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = HtmlSplitter()
+    semantic = WikipediaAPIContentSplitter()
 
     # when
-    sections = semantic.split(html_content)
+    sections = semantic.split(html_content, sections_tag_name="div")
 
     # then
-    assert len(sections) == 0
+    assert len(sections) == 1
+    assert sections[0].title == ""
 
 
 def test_split_sections_void_section():
@@ -66,10 +81,123 @@ def test_split_sections_void_section():
     html_file = current_dir / "test_html/void_section.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = HtmlSplitter()
+    semantic = WikipediaAPIContentSplitter()
 
     # when
-    sections = semantic.split(html_content)
+    sections = semantic.split(html_content, sections_tag_name="div")
 
     # then
     assert len(sections) == 0
+
+
+def test_split_title_is_not_pure_text():
+    # given
+    html_content = """
+    <body>
+    <section>
+        <h2><b>Section Title</b></h2>
+        <p>This is the content of the section.</p>
+    </section>
+    </body>
+    """
+    semantic = WikipediaAPIContentSplitter()
+    # when
+    sections = semantic.split(html_content)
+    # then
+    assert len(sections) == 1
+    assert sections[0].title == "<b>Section Title</b>"
+
+
+def test_split_title_is_removed_from_content():
+    # given
+    html_content = """
+    <body>
+    <section>
+        <h2>Section Title</h2>
+        <p>This is the content of the section.</p>
+    </section>
+    </body>
+    """
+    semantic = WikipediaAPIContentSplitter()
+    # when
+    sections = semantic.split(html_content)
+    # then
+    assert len(sections) == 1
+    assert sections[0].title == "Section Title"
+    assert sections[0].content.strip() == "<p>This is the content of the section.</p>"
+
+
+def test_split_sections_no_title_and_no_content():
+    # given
+    html_content = """
+    <body>
+        <section>
+            <p id="mwBQ"></p>
+        </section>
+    </body>
+    """
+    semantic = WikipediaAPIContentSplitter()
+    # when
+    sections = semantic.split(html_content)
+    # then
+    assert len(sections) == 0
+
+
+def test_split_preserve_hierarchy():
+    # given
+    html_content = """
+    <body>
+    <section>
+        <h2>Section 1</h2>
+        <p>Content of section 1</p>
+        <section>
+            <h3>Nested Section 1.1</h3>
+            <p>Content of nested section 1.1</p>
+        </section>
+        <section>
+            <h3>Nested Section 1.2</h3>
+            <p>Content of nested section 1.2</p>
+        </section>
+    </section>
+    </body>
+    """
+    semantic = WikipediaAPIContentSplitter()
+    # when
+    sections = semantic.split(html_content, flatten=False)
+
+    # then
+    assert len(sections) == 1
+    assert sections[0].title == "Section 1"
+    assert len(sections[0].children) == 2
+    assert sections[0].children[0].title == "Nested Section 1.1"
+    assert sections[0].children[1].title == "Nested Section 1.2"
+
+
+def test_split_nested_sections_with_div():
+    # given
+    html_content = """
+    <body>
+    <div id="...">
+        <h2>Section 1</h2>
+        <p>Content of section 1</p>
+        <div>
+            <h3>Nested Section 1.1</h3>
+            <p>Content of nested section 1.1</p>
+        </div>
+        <div>
+            <h3>Nested Section 1.2</h3>
+            <p>Content of nested section 1.2</p>
+        </div>
+    </div>
+    </body>
+    """
+    semantic = WikipediaAPIContentSplitter()
+    # when
+    sections = semantic.split(html_content, sections_tag_name="div", flatten=False)
+
+    # then
+    assert len(sections) == 1
+    assert sections[0].title == "Section 1"
+    assert len(sections[0].children) == 2
+    assert sections[0].children[0].title == "Nested Section 1.1"
+    assert sections[0].children[1].title == "Nested Section 1.2"

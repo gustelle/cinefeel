@@ -69,11 +69,12 @@ Feuillade consacre l’année 1924 tout entière à sa jeune vedette dont René 
 
 Épuisé par une vie de travail ininterrompu, contraint à un repos complet durant l'été 1924, Louis Feuillade réalise ses deux derniers films avec l'aide de son gendre, Maurice Champreux. Il meurt à 52 ans, le 26 février 1925, à Nice, des suites d'une péritonite, quelques jours à peine après avoir achevé Le Stigmate. Il est inhumé au cimetière Saint-Gérard de Lunel.
     """
+    section = Section(title="Test Section", content=sample_text)
 
     summarize = SectionSummarizer(Settings())
 
     # when
-    section = summarize.process(Section(title="Test Section", content=sample_text))
+    section = summarize.process(section)
 
     assert section is not None
     assert section.title == "Test Section"

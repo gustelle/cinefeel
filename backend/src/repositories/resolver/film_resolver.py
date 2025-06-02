@@ -10,7 +10,7 @@ from src.entities.film import (
 from src.entities.source import SourcedContentBase
 from src.entities.woa import WOAInfluence, WOAType
 from src.interfaces.extractor import IContentExtractor
-from src.interfaces.similarity import MLProcessor
+from src.interfaces.nlp_processor import MLProcessor
 from src.repositories.resolver.abstract_resolver import AbstractResolver
 
 

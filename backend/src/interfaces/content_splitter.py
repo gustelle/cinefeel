@@ -1,15 +1,10 @@
 from typing import Protocol
 
-from pydantic import BaseModel
+from src.entities.content import Section
 
 
 class SplitterError(Exception):
     pass
-
-
-class Section(BaseModel):
-    title: str
-    content: str | None
 
 
 class IContentSplitter(Protocol):

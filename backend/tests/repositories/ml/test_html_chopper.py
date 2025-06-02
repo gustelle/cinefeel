@@ -2,6 +2,7 @@ from src.entities.content import Section
 from src.entities.source import SourcedContentBase
 from src.repositories.html_parser.html_chopper import HtmlChopper
 
+from .stub.stub_pruner import StubPruner
 from .stub.stub_retriever import (
     NoPermakinRetriever,
     NoTitleRetriever,
@@ -47,11 +48,13 @@ def test_analyze_nominal_case():
     )
     summarizer = StubSummarizer()
     html_simplifier = StubSimplifier()
+    pruner = StubPruner()
 
     analyzer = HtmlChopper(
         html_splitter=splitter,
         html_retriever=retriever,
         html_simplifier=html_simplifier,
+        html_pruner=pruner,
         summarizer=summarizer,
     )
 
@@ -74,11 +77,13 @@ def test_analyze_empty_html():
     retriever = StubHtmlRetriever()
     summarizer = StubSummarizer()
     html_simplifier = StubSimplifier()
+    pruner = StubPruner()
 
     analyzer = HtmlChopper(
         html_splitter=splitter,
         html_retriever=retriever,
         html_simplifier=html_simplifier,
+        html_pruner=pruner,
         summarizer=summarizer,
     )
 
@@ -98,11 +103,13 @@ def test_analyze_splitter_is_called():
     retriever = StubHtmlRetriever()
     summarizer = StubSummarizer()
     html_simplifier = StubSimplifier()
+    pruner = StubPruner()
 
     analyzer = HtmlChopper(
         html_splitter=splitter,
         html_retriever=retriever,
         html_simplifier=html_simplifier,
+        html_pruner=pruner,
         summarizer=summarizer,
     )
 
@@ -122,11 +129,13 @@ def test_analyze_summarizer_is_called():
     retriever = StubHtmlRetriever()
     summarizer = StubSummarizer()
     html_simplifier = StubSimplifier()
+    pruner = StubPruner()
 
     analyzer = HtmlChopper(
         html_splitter=splitter,
         html_retriever=retriever,
         html_simplifier=html_simplifier,
+        html_pruner=pruner,
         summarizer=summarizer,
     )
 
@@ -146,11 +155,13 @@ def test_analyze_simplifier_is_called():
     retriever = StubHtmlRetriever()
     summarizer = StubSummarizer()
     html_simplifier = StubSimplifier()
+    pruner = StubPruner()
 
     analyzer = HtmlChopper(
         html_splitter=splitter,
         html_retriever=retriever,
         html_simplifier=html_simplifier,
+        html_pruner=pruner,
         summarizer=summarizer,
     )
 
@@ -170,11 +181,13 @@ def test_analyze_no_permalink_found():
     retriever = NoPermakinRetriever()
     summarizer = StubSummarizer()
     html_simplifier = StubSimplifier()
+    pruner = StubPruner()
 
     analyzer = HtmlChopper(
         html_splitter=splitter,
         html_retriever=retriever,
         html_simplifier=html_simplifier,
+        html_pruner=pruner,
         summarizer=summarizer,
     )
 
@@ -194,11 +207,13 @@ def test_analyze_no_title_found():
     retriever = NoTitleRetriever()
     summarizer = StubSummarizer()
     html_simplifier = StubSimplifier()
+    pruner = StubPruner()
 
     analyzer = HtmlChopper(
         html_splitter=splitter,
         html_retriever=retriever,
         html_simplifier=html_simplifier,
+        html_pruner=pruner,
         summarizer=summarizer,
     )
 

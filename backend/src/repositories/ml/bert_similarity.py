@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 
 from src.interfaces.content_splitter import Section
-from src.interfaces.similarity import MLProcessor
+from src.interfaces.nlp_processor import MLProcessor
 from src.settings import Settings
 
 

@@ -29,15 +29,17 @@ class StubExtractor(IContentExtractor):
 
         if entity_type == FilmActor:
             # Simulate returning a FilmActor with dummy data
-            return FilmActor(full_name="John Doe")
+            return FilmActor(nom_complet="John Doe")
         elif entity_type == FilmMedia:
             # Simulate returning a FilmMedia with dummy data
-            return FilmMedia(trailer="https://example.com/trailer.mp4")
+            return FilmMedia(url_bande_annonce="https://example.com/trailer.mp4")
         elif entity_type == FilmSpecifications:
             # Simulate returning FilmSpecifications with dummy data
             return FilmSpecifications(title="Dummy Film")
         elif entity_type == FilmSummary:
             # Simulate returning a FilmSummary with dummy data
-            return FilmSummary(content="This is a great film about testing stubs.")
+            return FilmSummary(
+                contenu_resume="This is a great film about testing stubs."
+            )
 
         return None

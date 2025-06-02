@@ -5,8 +5,8 @@ from loguru import logger
 from src.entities.content import Section
 from src.entities.source import SourcedContentBase
 from src.interfaces.extractor import IContentExtractor
+from src.interfaces.nlp_processor import MLProcessor
 from src.interfaces.resolver import IEntityResolver
-from src.interfaces.similarity import MLProcessor
 
 
 class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):

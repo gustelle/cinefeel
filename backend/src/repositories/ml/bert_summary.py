@@ -2,7 +2,7 @@ from loguru import logger
 from summarizer.sbert import SBertSummarizer
 
 from src.interfaces.content_splitter import Section
-from src.interfaces.similarity import MLProcessor
+from src.interfaces.nlp_processor import MLProcessor
 from src.settings import Settings
 
 
@@ -27,13 +27,25 @@ class SectionSummarizer(MLProcessor[Section]):
         self.summarizer = SBertSummarizer(settings.bert_summary_model)
 
     def process(self, section: Section) -> Section | None:
-        """_summary_
+        """
+        Process a section to summarize its content if it exceeds the maximum length.
+
+        The title of the section is preserved, and the content is summarized using a BERT model
+
+        Example:
+        ```python
+        section = Section(title="Example Section", content="This is a long content that needs summarization.")
+        summarizer = SectionSummarizer(settings)
+        summarized_section = summarizer.process(section)
+        ```
 
         Args:
-            section (Section): _description_
+            section (Section): The section to process.
 
         Returns:
-            Section | None: _description_
+            Section: A new section with summarized content if the original content is too long,
+                     otherwise the original section.
+            None: If the section is None or empty.
         """
         new_content = section.content
 

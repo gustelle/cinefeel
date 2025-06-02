@@ -3,7 +3,7 @@ import re
 from bs4 import BeautifulSoup
 from htmlrag import clean_html
 
-from src.interfaces.similarity import MLProcessor
+from src.interfaces.nlp_processor import MLProcessor
 
 
 class HTMLSimplifier(MLProcessor[str]):

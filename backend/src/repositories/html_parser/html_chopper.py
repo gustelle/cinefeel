@@ -4,8 +4,8 @@ from src.entities.content import Section
 from src.entities.source import SourcedContentBase
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.info_retriever import IInfoRetriever
-from src.interfaces.similarity import MLProcessor
-from src.repositories.html_parser.html_splitter import HtmlSplitter
+from src.interfaces.nlp_processor import MLProcessor
+from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 
 
 class HtmlChopper(IContentAnalyzer):
@@ -14,21 +14,24 @@ class HtmlChopper(IContentAnalyzer):
     """
 
     summarizer: MLProcessor
-    html_splitter: HtmlSplitter
+    html_splitter: WikipediaAPIContentSplitter
     html_simplifier: MLProcessor
     html_retriever: IInfoRetriever
+    html_pruner: MLProcessor[Section]
 
     def __init__(
         self,
         html_simplifier: MLProcessor,
         summarizer: MLProcessor,
-        html_splitter: HtmlSplitter,
+        html_splitter: WikipediaAPIContentSplitter,
         html_retriever: IInfoRetriever,
+        html_pruner: MLProcessor,
     ):
         self.html_splitter = html_splitter
         self.html_retriever = html_retriever
         self.summarizer = summarizer
         self.html_simplifier = html_simplifier
+        self.html_pruner = html_pruner
 
     def analyze(
         self, content_id: str, html_content: str
@@ -77,13 +80,6 @@ class HtmlChopper(IContentAnalyzer):
                 )
                 return None
 
-            # summarize the sections if they are too long
-            sections = [
-                self.summarizer.process(section)
-                for section in sections
-                if section.content
-            ]
-
             additional_sections = self.html_retriever.retrieve_infoboxes(
                 simplified_content
             )
@@ -97,6 +93,16 @@ class HtmlChopper(IContentAnalyzer):
                 title=title,
                 permalink=permakink,
             )
+
+            # prune html to remove unnecessary tags
+            sections = [self.html_pruner.process(section) for section in sections]
+
+            # summarize the sections if they are too long
+            sections = [
+                self.summarizer.process(section)
+                for section in sections
+                if section.content
+            ]
 
             return base_info, sections
 
