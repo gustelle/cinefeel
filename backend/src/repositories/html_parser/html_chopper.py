@@ -65,11 +65,11 @@ class HtmlChopper(IContentAnalyzer):
             simplified_content = self.html_simplifier.process(html_content)
 
             # split the HTML content into sections
-            # TODO: here, we could take advantage of the sections hierarchy
-            # and split the content into sections based on the hierarchy
+            # preserving the hierarchy of sections
             sections = self.html_splitter.split(simplified_content)
 
             # add eventually orphaned sections
+            # title of the section with orhans is set to "Introduction"
             orphaned_section = self.html_retriever.retrieve_orphans(
                 simplified_content, position="start", sections_tag="section"
             )
@@ -82,6 +82,7 @@ class HtmlChopper(IContentAnalyzer):
                 )
                 return None
 
+            # infobox sections titles are "Données clés"
             additional_sections = self.html_retriever.retrieve_infoboxes(
                 simplified_content
             )

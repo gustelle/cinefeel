@@ -1,6 +1,21 @@
 from typing import Protocol
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class ExtractionResult(BaseModel):
+    """
+    Base class for extracted entities.
+    This class can be extended to define specific types of entities.
+    """
+
+    score: float = Field(
+        default=0.0,
+        description="Confidence score of the extracted entity.",
+        ge=0.0,  # lowest score
+        le=1.0,  # highest score
+    )
+    entity: BaseModel
 
 
 class IContentExtractor(Protocol):
@@ -10,7 +25,7 @@ class IContentExtractor(Protocol):
 
     def extract_entity(
         self, content: str, entity_type: BaseModel, *args, **kwargs
-    ) -> BaseModel:
+    ) -> ExtractionResult:
         """
         Extract entity from the provided content.
 

@@ -1,19 +1,35 @@
 import ollama
-from pydantic import BaseModel, Field
+from loguru import logger
+from pydantic import BaseModel, Field, create_model
 
-from src.interfaces.extractor import IContentExtractor
+from src.interfaces.extractor import ExtractionResult, IContentExtractor
 from src.settings import Settings
 
 
-class LLMResponse(BaseModel):
+def create_response_model(entity_type: BaseModel) -> type[BaseModel]:
     """
-    Represents a response from the LLM (Language Model).
-    Contains the content of the response and the type of content.
-    """
+    Dynamically create a Pydantic model for the response based on the entity type.
 
-    content: str = Field(
-        ...,
-        description="The content of the response from the LLM.",
+    This is motivated by the need to have a score field in the response model, which is not part of the entity type.
+
+    Args:
+        entity_type (BaseModel): The type of entity to create a response model for.
+
+    Returns:
+        type[BaseModel]: A Pydantic model class that matches the structure of the entity type.
+    """
+    return create_model(
+        "LLMResponse",
+        score=(
+            float,
+            Field(
+                default=0.0,
+                ge=0.0,
+                le=1.0,
+                description="Confidence score of the extracted data.",
+            ),
+        ),
+        __base__=entity_type,
     )
 
 
@@ -30,7 +46,7 @@ class OllamaExtractor(IContentExtractor):
         self.model = settings.llm_model
         self.question = settings.llm_question
 
-    def extract_entity[T](self, content: str, entity_type: BaseModel) -> T:
+    def extract_entity(self, content: str, entity_type: BaseModel) -> ExtractionResult:
         """
         Transform the given content into an entity of type T.
 
@@ -40,15 +56,23 @@ class OllamaExtractor(IContentExtractor):
                 This should be a Pydantic model that defines the structure of the entity.
 
         Returns:
-            BaseModel: An instance of the entity type T, populated with data extracted from the content.
+            ExtractionResult: An instance of ExtractionResult containing:
+                - score: A float representing the confidence score of the extraction.
+                - entity: An instance of the entity type T, populated with the extracted data.
 
         Raises:
             ValueError: If the content cannot be parsed into an entity of type T.
         """
 
+        score = 0.0
         result: BaseModel | None = None
 
-        prompt = f"Context: {content}\n\nQuestion: {self.question}\nRéponse:"
+        question_model = create_response_model(entity_type)
+
+        prompt = f"""
+            Context: {content}
+            Question: {self.question}
+            Réponse:"""
 
         # if result is None:
         # case where the entity needs to be created
@@ -60,7 +84,7 @@ class OllamaExtractor(IContentExtractor):
                     "content": prompt,
                 }
             ],
-            format=entity_type.model_json_schema(by_alias=True),
+            format=question_model.model_json_schema(by_alias=True),
             options={
                 # Set temperature to 0 for more deterministic responses
                 "temperature": 0
@@ -71,9 +95,25 @@ class OllamaExtractor(IContentExtractor):
 
         try:
 
-            result = entity_type.model_validate_json(msg, by_alias=True)
+            # isolate the score and the entity from the response
+            dict_resp = question_model.model_validate_json(
+                msg, by_alias=True
+            ).model_dump(
+                mode="json",
+                exclude_none=True,
+                by_alias=True,
+            )
+
+            # pop the score from the values
+            score = dict_resp.pop("score")
+
+            # the entity is the remaining values
+            result = entity_type.model_validate(dict_resp, by_alias=True)
 
         except Exception as e:
+            import traceback
+
+            logger.error(traceback.format_exc())
             raise ValueError(f"Error parsing response: {e}") from e
 
-        return result
+        return ExtractionResult(score=score, entity=result)
