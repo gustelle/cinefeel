@@ -51,7 +51,7 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
             raise ValueError("No sections provided to resolve the Person.")
 
         # Extract entities from sections
-        results = self._extract_entities_from_sections(sections, base_info.uid)
+        results = self.extract_entities(sections, base_info.uid)
 
         # assemble the entity from the base info and extracted parts
         entity = self.assemble(base_info, results)
@@ -59,8 +59,10 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
         logger.info(f"Resolved Entity: '{entity.title}' : {entity.model_dump()}")
         return entity
 
-    def _extract_entities_from_sections(
-        self, sections: list[Section], uid: str
+    def extract_entities(
+        self,
+        sections: list[Section],
+        uid: str = "",  # Unique identifier for logging purposes
     ) -> list[ExtractionResult]:
         """Extract entities from sections based on predefined mappings.
 
@@ -69,6 +71,7 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
         Args:
             sections (list[Section]): List of Section objects containing content.
             uid (str): Unique identifier for the content being processed.
+                just for logging purposes.
 
         Returns:
             list[ExtractionResult]: List of ExtractionResult objects containing extracted entities and their confidence scores.
@@ -78,13 +81,30 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
         extracted_parts: list[ExtractionResult] = []
         for entity_type, titles in self.entity_to_sections.items():
 
+            logger.debug(
+                f"Processing entity type '{entity_type.__name__}' with titles: {titles} for content '{uid}'."
+            )
+
+            section: Section  # for type checking
+
             for title in titles:
 
                 section = self.section_searcher.process(title=title, sections=sections)
                 if section is None:
                     continue
 
-                section: Section
+                # take into account the section children
+                if section.children:
+                    for child in section.children:
+                        result = self.entity_extractor.extract_entity(
+                            content=child.content, entity_type=entity_type
+                        )
+                        if result.entity is not None:
+                            logger.debug(
+                                f"Found '{result.entity.__class__.__name__}' in child section '{child.title}' for content '{uid}' (confidence {result.score})."
+                            )
+                            extracted_parts.append(result)
+
                 result = self.entity_extractor.extract_entity(
                     content=section.content, entity_type=entity_type
                 )

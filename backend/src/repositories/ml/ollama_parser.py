@@ -40,9 +40,10 @@ class OllamaExtractor(IContentExtractor):
                 float,
                 Field(
                     default=0.0,
-                    ge=0.0,
-                    le=1.0,
-                    description="Confidence score of the extracted data.",
+                    # ge=0.0,
+                    # le=1.0, # it can happen that the model return a score like 1.0000000000000002
+                    description="Confidence score of the extracted data, between 0.0 and 1.0.",
+                    examples=[0.95, 0.85, 0.75],
                 ),
             ),
             __base__=entity_type,
@@ -97,7 +98,8 @@ class OllamaExtractor(IContentExtractor):
 
             # isolate the score and the entity from the response
             dict_resp = response_model.model_validate_json(
-                msg, by_alias=True
+                msg,
+                by_alias=True,
             ).model_dump(
                 mode="json",
                 exclude_none=True,
@@ -106,6 +108,10 @@ class OllamaExtractor(IContentExtractor):
 
             # pop the score from the values
             score = dict_resp.pop("score")
+
+            # ensure score is between 0.0 and 1.0
+            # sometimes the model returns a score like 1.0000000000000002
+            score = max(0.0, min(score, 1.0))
 
             # the entity is the remaining values
             result = entity_type.model_validate(dict_resp, by_alias=True)

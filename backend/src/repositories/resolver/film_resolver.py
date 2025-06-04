@@ -1,4 +1,3 @@
-
 from src.entities.film import (
     Film,
     FilmActor,
@@ -17,11 +16,6 @@ class BasicFilmResolver(AbstractResolver[Film]):
     """
     Responsible for extracting information from sections and assembling a Person entity.
 
-    TODO:
-    - prendre en compte les sections enfant
-    - prendre en compte les sections sans titre
-    - prendre en compte les sections orphanes (sans parent)
-
     """
 
     def __init__(
@@ -33,14 +27,10 @@ class BasicFilmResolver(AbstractResolver[Film]):
         self.entity_extractor = entity_extractor
         self.section_searcher = section_searcher
         self.entity_to_sections = entity_to_sections or {
-            FilmMedia: ["Données clés", "Fragments"],
-            FilmSpecifications: ["Fiche technique"],
+            FilmMedia: ["Données clés", "Fragments", ""],
+            FilmSpecifications: ["Fiche technique", ""],
             FilmActor: ["Distribution"],
-            FilmSummary: [
-                "Synopsis",
-                "Résumé",
-                "Introduction",
-            ],
+            FilmSummary: ["Synopsis", "Résumé", "Introduction", ""],
         }
 
     def assemble(
