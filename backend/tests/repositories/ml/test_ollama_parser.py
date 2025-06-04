@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 from src.entities.person import PersonCharacteristics
 from src.interfaces.extractor import ExtractionResult
-from src.repositories.ml.ollama_parser import create_response_model
+from src.repositories.ml.ollama_parser import OllamaExtractor
 
 
 def test_ollama_is_called_correctly(mocker):
@@ -29,7 +29,6 @@ def test_ollama_is_called_correctly(mocker):
         return_value=MockResponse(MockMessage(response)),
     )
 
-    from src.repositories.ml.ollama_parser import OllamaExtractor
     from src.settings import Settings
 
     parser = OllamaExtractor(Settings())
@@ -52,12 +51,13 @@ def test_create_response_model():
     class MyModel(BaseModel):
         height: int = Field(..., description="Height in centimeters")
 
+    from src.settings import Settings
+
+    parser = OllamaExtractor(Settings())
+
     # when
-    response = create_response_model(MyModel)(score=0.9, height=180)
+    response = parser.create_response_model(MyModel)(score=0.9, height=180)
 
     # then
-    print(response.model_dump())
-
-    # Validate the instance
     assert response.score == 0.9
     assert response.height == 180

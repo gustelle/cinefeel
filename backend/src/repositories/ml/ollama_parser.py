@@ -6,36 +6,12 @@ from src.interfaces.extractor import ExtractionResult, IContentExtractor
 from src.settings import Settings
 
 
-def create_response_model(entity_type: BaseModel) -> type[BaseModel]:
-    """
-    Dynamically create a Pydantic model for the response based on the entity type.
-
-    This is motivated by the need to have a score field in the response model, which is not part of the entity type.
-
-    Args:
-        entity_type (BaseModel): The type of entity to create a response model for.
-
-    Returns:
-        type[BaseModel]: A Pydantic model class that matches the structure of the entity type.
-    """
-    return create_model(
-        "LLMResponse",
-        score=(
-            float,
-            Field(
-                default=0.0,
-                ge=0.0,
-                le=1.0,
-                description="Confidence score of the extracted data.",
-            ),
-        ),
-        __base__=entity_type,
-    )
-
-
 class OllamaExtractor(IContentExtractor):
     """
     OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
+
+    TODO:
+    - Create a custom LLM specialized on QA about cinema.
     """
 
     model: str
@@ -45,6 +21,32 @@ class OllamaExtractor(IContentExtractor):
 
         self.model = settings.llm_model
         self.question = settings.llm_question
+
+    def create_response_model(self, entity_type: BaseModel) -> type[BaseModel]:
+        """
+        Dynamically create a Pydantic model for the response based on the entity type.
+
+        This is motivated by the need to have a score field in the response model, which is not part of the entity type.
+
+        Args:
+            entity_type (BaseModel): The type of entity to create a response model for.
+
+        Returns:
+            type[BaseModel]: A Pydantic model class that matches the structure of the entity type.
+        """
+        return create_model(
+            "LLMResponse",
+            score=(
+                float,
+                Field(
+                    default=0.0,
+                    ge=0.0,
+                    le=1.0,
+                    description="Confidence score of the extracted data.",
+                ),
+            ),
+            __base__=entity_type,
+        )
 
     def extract_entity(self, content: str, entity_type: BaseModel) -> ExtractionResult:
         """
@@ -67,15 +69,13 @@ class OllamaExtractor(IContentExtractor):
         score = 0.0
         result: BaseModel | None = None
 
-        question_model = create_response_model(entity_type)
+        response_model = self.create_response_model(entity_type)
 
         prompt = f"""
             Context: {content}
             Question: {self.question}
             Réponse:"""
 
-        # if result is None:
-        # case where the entity needs to be created
         response = ollama.chat(
             model=self.model,
             messages=[
@@ -84,7 +84,7 @@ class OllamaExtractor(IContentExtractor):
                     "content": prompt,
                 }
             ],
-            format=question_model.model_json_schema(by_alias=True),
+            format=response_model.model_json_schema(by_alias=True),
             options={
                 # Set temperature to 0 for more deterministic responses
                 "temperature": 0
@@ -96,7 +96,7 @@ class OllamaExtractor(IContentExtractor):
         try:
 
             # isolate the score and the entity from the response
-            dict_resp = question_model.model_validate_json(
+            dict_resp = response_model.model_validate_json(
                 msg, by_alias=True
             ).model_dump(
                 mode="json",

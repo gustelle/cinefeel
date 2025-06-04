@@ -1,11 +1,5 @@
-from src.entities.film import (
-    Film,
-    FilmActor,
-    FilmMedia,
-    FilmSpecifications,
-    FilmSummary,
-)
-from src.interfaces.extractor import IContentExtractor
+from src.entities.film import FilmActor, FilmMedia, FilmSpecifications, FilmSummary
+from src.interfaces.extractor import ExtractionResult, IContentExtractor
 
 
 class StubExtractor(IContentExtractor):
@@ -15,7 +9,7 @@ class StubExtractor(IContentExtractor):
 
     is_parsed: bool = False
 
-    def extract_entity(self, content: str, entity_type) -> Film:
+    def extract_entity(self, content: str, entity_type) -> ExtractionResult:
         """
         Parse the given content and return a dictionary representation.
 
@@ -29,17 +23,28 @@ class StubExtractor(IContentExtractor):
 
         if entity_type == FilmActor:
             # Simulate returning a FilmActor with dummy data
-            return FilmActor(nom_complet="John Doe")
+            return ExtractionResult(score=1.0, entity=FilmActor(nom_complet="John Doe"))
         elif entity_type == FilmMedia:
             # Simulate returning a FilmMedia with dummy data
-            return FilmMedia(url_bande_annonce="https://example.com/trailer.mp4")
+            return ExtractionResult(
+                score=1.0,
+                entity=FilmMedia(url_bande_annonce="https://example.com/trailer.mp4"),
+            )
         elif entity_type == FilmSpecifications:
             # Simulate returning FilmSpecifications with dummy data
-            return FilmSpecifications(title="Dummy Film")
+            return ExtractionResult(
+                score=1.0,
+                entity=FilmSpecifications(
+                    title="The Great Film",
+                ),
+            )
         elif entity_type == FilmSummary:
             # Simulate returning a FilmSummary with dummy data
-            return FilmSummary(
-                contenu_resume="This is a great film about testing stubs."
+            return ExtractionResult(
+                score=1.0,
+                entity=FilmSummary(
+                    contenu_resume="An epic tale of adventure and discovery.",
+                ),
             )
 
         return None
