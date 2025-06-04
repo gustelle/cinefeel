@@ -13,6 +13,12 @@ def test_extract_entities_with_children():
 
     # given
 
+    base_info = Film(
+        uid="test_uid",
+        title="Test Film",
+        permalink="http://example.com/test-film",
+    )
+
     sections_dict = [
         {
             "title": "Parent Section",
@@ -49,7 +55,7 @@ def test_extract_entities_with_children():
     resolver = TestResolver()
 
     # When extracting entities
-    extracted_entities = resolver.extract_entities(sections)
+    extracted_entities = resolver.extract_entities(sections, base_info)
 
     # Then
     # there should be two entities extracted, one for the parent section and one for the child section

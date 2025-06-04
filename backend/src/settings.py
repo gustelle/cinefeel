@@ -155,11 +155,6 @@ class Settings(BaseSettings):
         description="The name of the LLM model to use",
     )
 
-    llm_question: str = Field(
-        default="Donne-moi des informations sur le contenu suivant, réponds en français et de façon concise. Retourne également un score de confiance entre 0 et 1.",
-        description="The questions to ask the LLM model to get information",
-    )
-
     bert_similarity_model: str = Field(
         default="Lajavaness/sentence-camembert-base",
         description="""

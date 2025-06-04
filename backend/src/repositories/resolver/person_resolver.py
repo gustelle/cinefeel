@@ -37,6 +37,7 @@ class BasicPersonResolver(AbstractResolver[Person]):
 
         TODO:
         - take into account the score of the extraction results
+        - merge parts with the same type
         """
         person = Person(
             uid=base_info.uid,

@@ -51,7 +51,7 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
             raise ValueError("No sections provided to resolve the Person.")
 
         # Extract entities from sections
-        results = self.extract_entities(sections, base_info.uid)
+        results = self.extract_entities(sections, base_info)
 
         # assemble the entity from the base info and extracted parts
         entity = self.assemble(base_info, results)
@@ -60,9 +60,7 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
         return entity
 
     def extract_entities(
-        self,
-        sections: list[Section],
-        uid: str = "",  # Unique identifier for logging purposes
+        self, sections: list[Section], base_info: SourcedContentBase
     ) -> list[ExtractionResult]:
         """Extract entities from sections based on predefined mappings.
 
@@ -82,7 +80,7 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
         for entity_type, titles in self.entity_to_sections.items():
 
             logger.debug(
-                f"Processing entity type '{entity_type.__name__}' with titles: {titles} for content '{uid}'."
+                f"Processing entity type '{entity_type.__name__}' with titles: {titles} for content '{base_info.uid}'."
             )
 
             section: Section  # for type checking
@@ -97,22 +95,28 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
                 if section.children:
                     for child in section.children:
                         result = self.entity_extractor.extract_entity(
-                            content=child.content, entity_type=entity_type
+                            content=child.content,
+                            entity_type=entity_type,
+                            base_info=base_info,
                         )
-                        if result.entity is not None:
-                            logger.debug(
-                                f"Found '{result.entity.__class__.__name__}' in child section '{child.title}' for content '{uid}' (confidence {result.score})."
-                            )
-                            extracted_parts.append(result)
+                        if result.entity is None:
+                            continue
+                        logger.debug(
+                            f"<{base_info.uid}>-[{section.title}]-[{child.title}] {result.entity.model_dump(mode='json')} (confidence {result.score})."
+                        )
+                        extracted_parts.append(result)
 
                 result = self.entity_extractor.extract_entity(
-                    content=section.content, entity_type=entity_type
+                    content=section.content,
+                    entity_type=entity_type,
+                    base_info=base_info,
                 )
-                if result.entity is not None:
-                    logger.debug(
-                        f"Found '{result.entity.__class__.__name__}' in section '{section.title}' for content '{uid}' (confidence {result.score})."
-                    )
-                    extracted_parts.append(result)
+                if result.entity is None:
+                    continue
+                logger.debug(
+                    f"<{base_info.uid}>-[{section.title}] {result.entity.model_dump(mode='json')} (confidence {result.score})."
+                )
+                extracted_parts.append(result)
 
         return extracted_parts
 

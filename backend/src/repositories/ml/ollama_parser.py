@@ -2,6 +2,7 @@ import ollama
 from loguru import logger
 from pydantic import BaseModel, Field, create_model
 
+from src.entities.source import SourcedContentBase
 from src.interfaces.extractor import ExtractionResult, IContentExtractor
 from src.settings import Settings
 
@@ -15,12 +16,10 @@ class OllamaExtractor(IContentExtractor):
     """
 
     model: str
-    question: str
 
     def __init__(self, settings: Settings):
 
         self.model = settings.llm_model
-        self.question = settings.llm_question
 
     def create_response_model(self, entity_type: BaseModel) -> type[BaseModel]:
         """
@@ -49,7 +48,9 @@ class OllamaExtractor(IContentExtractor):
             __base__=entity_type,
         )
 
-    def extract_entity(self, content: str, entity_type: BaseModel) -> ExtractionResult:
+    def extract_entity(
+        self, content: str, entity_type: BaseModel, base_info: SourcedContentBase
+    ) -> ExtractionResult:
         """
         Transform the given content into an entity of type T.
 
@@ -57,6 +58,8 @@ class OllamaExtractor(IContentExtractor):
             content (str): The content to parse, typically a string containing text.
             entity_type (BaseModel): The type of entity to create from the content.
                 This should be a Pydantic model that defines the structure of the entity.
+            base_info (SourcedContentBase): Base information to provide context to the LLM,
+                this avoids hallucinations and helps the model to focus on the right context.
 
         Returns:
             ExtractionResult: An instance of ExtractionResult containing:
@@ -74,7 +77,7 @@ class OllamaExtractor(IContentExtractor):
 
         prompt = f"""
             Context: {content}
-            Question: {self.question}
+            Question: Dans cet extrait, donne-moi des informations sur {base_info.title}, réponds de façon concise, si tu ne sais pas, n'invente pas de données.
             Réponse:"""
 
         response = ollama.chat(
