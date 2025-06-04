@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 from src.entities.person import PersonCharacteristics
+from src.entities.source import SourcedContentBase
 from src.interfaces.extractor import ExtractionResult
 from src.repositories.ml.ollama_parser import OllamaExtractor
 
@@ -8,6 +9,11 @@ from src.repositories.ml.ollama_parser import OllamaExtractor
 def test_ollama_is_called_correctly(mocker):
 
     # given
+    base_info = SourcedContentBase(
+        uid="test_uid",
+        title="Test Title",
+        permalink=HttpUrl("http://example.com/test"),
+    )
 
     class MockMessage:
         content: str
@@ -36,7 +42,11 @@ def test_ollama_is_called_correctly(mocker):
     entity_type = PersonCharacteristics
 
     # when
-    result = parser.extract_entity(content, entity_type)
+    result = parser.extract_entity(
+        content,
+        entity_type,
+        base_info,
+    )
 
     # then
     assert isinstance(result, ExtractionResult)

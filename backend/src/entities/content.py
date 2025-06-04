@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PageLink(BaseModel):
@@ -38,7 +38,11 @@ class PageLink(BaseModel):
 
 
 class Section(BaseModel):
-    title: str
+    title: str = Field(
+        ...,
+        description="The title of the section. This is a required field.",
+        examples=["Introduction", "Biographie"],
+    )
     content: str | None
 
     children: list[Section] | None = Field(
@@ -46,3 +50,8 @@ class Section(BaseModel):
         description="A list of child sections, if any. This allows for nested sections.",
         repr=False,
     )
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        return v.strip()

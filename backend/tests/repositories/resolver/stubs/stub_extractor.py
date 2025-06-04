@@ -9,7 +9,9 @@ class StubExtractor(IContentExtractor):
 
     is_parsed: bool = False
 
-    def extract_entity(self, content: str, entity_type) -> ExtractionResult:
+    def extract_entity(
+        self, content: str, entity_type, *args, **kwargs
+    ) -> ExtractionResult:
         """
         Parse the given content and return a dictionary representation.
 
