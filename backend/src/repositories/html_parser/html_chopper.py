@@ -65,9 +65,11 @@ class HtmlChopper(IContentAnalyzer):
             simplified_content = self.html_simplifier.process(html_content)
 
             # split the HTML content into sections
+            # preserving the hierarchy of sections
             sections = self.html_splitter.split(simplified_content)
 
             # add eventually orphaned sections
+            # title of the section with orhans is set to "Introduction"
             orphaned_section = self.html_retriever.retrieve_orphans(
                 simplified_content, position="start", sections_tag="section"
             )
@@ -80,6 +82,7 @@ class HtmlChopper(IContentAnalyzer):
                 )
                 return None
 
+            # infobox sections titles are "Données clés"
             additional_sections = self.html_retriever.retrieve_infoboxes(
                 simplified_content
             )
@@ -94,10 +97,10 @@ class HtmlChopper(IContentAnalyzer):
                 permalink=permakink,
             )
 
-            # prune html to remove unnecessary tags
+            # convert to Text / Ascii
             sections = [self.html_pruner.process(section) for section in sections]
 
-            # summarize the sections if they are too long
+            # summarize the sections for better processing
             sections = [
                 self.summarizer.process(section)
                 for section in sections

@@ -117,6 +117,19 @@ class SimilarSectionSearch(MLProcessor[Section]):
         Returns:
             str | None: The most similar section title, or None if no similar title is found.
         """
+
+        # special case for empty title
+        if title is None or len(title.strip()) == 0:
+            the_section = next(
+                (
+                    section
+                    for section in sections
+                    if (section.title is None or len(section.title.strip()) == 0)
+                ),
+                None,
+            )
+            return the_section
+
         _section_content = None
 
         most_similar_section_title = self._most_similar_text(

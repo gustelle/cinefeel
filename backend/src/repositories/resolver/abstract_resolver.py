@@ -4,7 +4,7 @@ from loguru import logger
 
 from src.entities.content import Section
 from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import IContentExtractor
+from src.interfaces.extractor import ExtractionResult, IContentExtractor
 from src.interfaces.nlp_processor import MLProcessor
 from src.interfaces.resolver import IEntityResolver
 
@@ -51,38 +51,89 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
             raise ValueError("No sections provided to resolve the Person.")
 
         # Extract entities from sections
-        extracted_parts = self._extract_entities_from_sections(sections, base_info.uid)
+        results = self.extract_entities(sections, base_info.uid)
 
-        # Assemble the Person object
-        entity = self.assemble(base_info, extracted_parts)
+        # assemble the entity from the base info and extracted parts
+        entity = self.assemble(base_info, results)
 
         logger.info(f"Resolved Entity: '{entity.title}' : {entity.model_dump()}")
         return entity
 
-    def _extract_entities_from_sections(
-        self, sections: list[Section], uid: str
-    ) -> list:
-        """Extract entities from sections based on predefined mappings."""
-        extracted_parts = []
+    def extract_entities(
+        self,
+        sections: list[Section],
+        uid: str = "",  # Unique identifier for logging purposes
+    ) -> list[ExtractionResult]:
+        """Extract entities from sections based on predefined mappings.
+
+        Sections may have children, in this case the children are considered to retrieve entities;
+
+        Args:
+            sections (list[Section]): List of Section objects containing content.
+            uid (str): Unique identifier for the content being processed.
+                just for logging purposes.
+
+        Returns:
+            list[ExtractionResult]: List of ExtractionResult objects containing extracted entities and their confidence scores.
+
+        """
+
+        extracted_parts: list[ExtractionResult] = []
         for entity_type, titles in self.entity_to_sections.items():
+
+            logger.debug(
+                f"Processing entity type '{entity_type.__name__}' with titles: {titles} for content '{uid}'."
+            )
+
+            section: Section  # for type checking
+
             for title in titles:
+
                 section = self.section_searcher.process(title=title, sections=sections)
                 if section is None:
                     continue
 
-                section: Section
-                entity = self.entity_extractor.extract_entity(
+                # take into account the section children
+                if section.children:
+                    for child in section.children:
+                        result = self.entity_extractor.extract_entity(
+                            content=child.content, entity_type=entity_type
+                        )
+                        if result.entity is not None:
+                            logger.debug(
+                                f"Found '{result.entity.__class__.__name__}' in child section '{child.title}' for content '{uid}' (confidence {result.score})."
+                            )
+                            extracted_parts.append(result)
+
+                result = self.entity_extractor.extract_entity(
                     content=section.content, entity_type=entity_type
                 )
-                if entity is not None:
+                if result.entity is not None:
                     logger.debug(
-                        f"Found '{entity.__class__.__name__}' in section '{section.title}' for content '{uid}'."
+                        f"Found '{result.entity.__class__.__name__}' in section '{section.title}' for content '{uid}' (confidence {result.score})."
                     )
-                    extracted_parts.append(entity)
+                    extracted_parts.append(result)
+
         return extracted_parts
 
-    def assemble(self, base_info: SourcedContentBase, parts: list) -> T:
-        """Assemble a Person object from base info and extracted parts."""
+    def assemble(
+        self, base_info: SourcedContentBase, parts: list[ExtractionResult]
+    ) -> T:
+        """Assemble an entity of type T from base info and extracted parts.
+
+        It should take into account the confidence scores of the extracted parts in case
+        multiple parts are extracted for the same entity type.
+
+        Example:
+            ```python
+            sections = [
+                Section(title="Person Info", content="John Doe is a software engineer."),
+                Section(title="Career", content="John Doe has worked at several tech companies."),
+            ]
+            # here probably that 2 careers would be found, the one with the highest score of confidence shoul be kept.
+            ```
+
+        """
         raise NotImplementedError(
             "The 'assemble' method must be implemented in subclasses."
         )

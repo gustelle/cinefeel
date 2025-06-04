@@ -95,3 +95,47 @@ def test_most_similar_section_no_match():
 
     # Check that the most similar section is None
     assert most_similar_section is None
+
+
+def test_most_similar_section_with_empty_title():
+    # given
+    bert_similarity_search = SimilarSectionSearch(Settings())
+
+    title = ""
+    sections = [
+        {"title": "", "content": "This is a film."},
+        {"title": "cinema", "content": "This is a cinema."},
+        {"title": "personne", "content": "This is a person."},
+    ]
+
+    sections = [Section(**section) for section in sections]
+
+    # when
+    most_similar_section = bert_similarity_search.process(title, sections)
+
+    # then
+    assert most_similar_section is not None
+    assert most_similar_section.title == ""
+    assert most_similar_section.content == "This is a film."
+
+
+def test_most_similar_section_with_title_none():
+    # given
+    bert_similarity_search = SimilarSectionSearch(Settings())
+
+    title = None
+    sections = [
+        {"title": "", "content": "This is a film."},
+        {"title": "cinema", "content": "This is a cinema."},
+        {"title": "personne", "content": "This is a person."},
+    ]
+
+    sections = [Section(**section) for section in sections]
+
+    # when
+    most_similar_section = bert_similarity_search.process(title, sections)
+
+    # then
+    assert most_similar_section is not None
+    assert most_similar_section.title == ""
+    assert most_similar_section.content == "This is a film."

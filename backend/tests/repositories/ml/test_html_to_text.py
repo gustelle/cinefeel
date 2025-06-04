@@ -65,3 +65,64 @@ def test_images_are_preserved():
 
     # then
     assert "https://example.com/image.jpg" in section.content
+
+
+def test_tables_are_preserved():
+    # given
+    html_content = """
+    <table>
+        <tr>
+            <td>Cell 1</td>
+            <td>Cell 2</td>
+        </tr>
+    </table>
+    """
+    section = Section(title="<span>Test Section</span>", content=html_content)
+    pruner = HTML2TextConverter()
+
+    # when
+    section = pruner.process(section)
+
+    # then
+    assert "Cell 1" in section.content
+    assert "Cell 2" in section.content
+
+
+def test_emphasis_is_ignored():
+    # given
+    html_content = """
+    <p>This is <em>emphasized</em> text.</p>
+    """
+    section = Section(title="<span>Test Section</span>", content=html_content)
+    pruner = HTML2TextConverter()
+
+    # when
+    section = pruner.process(section)
+
+    # then
+    assert section.content.strip() == "This is emphasized text."
+
+
+def test_nested_sections():
+    # given
+    html_content = """
+        <p>Content of parent section.</p>
+    """
+
+    child_html = """
+        <p>Content of child section.</p>
+    """
+
+    section = Section(
+        title="<span>Test Section</span>",
+        content=html_content,
+        children=[Section(title="<span>Child Section</span>", content=child_html)],
+    )
+    pruner = HTML2TextConverter()
+
+    # when
+    new_section = pruner.process(section)
+
+    # then
+    assert new_section.children[0].title.strip() == "Child Section"
+    assert new_section.children[0].content.strip() == "Content of child section."

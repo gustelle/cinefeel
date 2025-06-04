@@ -79,3 +79,29 @@ Feuillade consacre l’année 1924 tout entière à sa jeune vedette dont René 
     assert section is not None
     assert section.title == "Test Section"
     assert len(section.content) <= len(sample_text)
+
+
+def test_children_are_summarized():
+    # given
+    sample_text = """
+    Les débuts
+Issu d’une famille de courtiers en vins du Languedoc, après des études à Brignac, au Petit séminaire de Carcassonne et à Montpellier, le jeune Louis manifeste rapidement son goût pour la littérature. Il écrit de nombreuses pièces, drames ou vaudevilles, et publie des poèmes dans la presse locale où il est aussi revistero pour l'hebdomadaire Le Torero[2]. Il écrit un feuilleton inachevé, Mémoires d'un toréador français, publié posthumément en volume[3].
+    """
+
+    child_text = """
+    En 1898, au décès de ses parents, il laisse l'affaire familiale aux mains de ses frères et il part à Paris où il débute comme journaliste au quotidien La Croix. Amateur de tauromachie, il fonde avec Étienne Arnaud le « Toro-Club parisien » où il fait la connaissance d'André Heuzé, auteur dramatique, scénariste et amateur de tauromachie lui aussi. C'est par ce dernier que Feuillade entre en contact avec le cinéma[4].
+    """
+    section = Section(
+        title="Test Section",
+        content=sample_text,
+        children=[Section(title="Child Section", content=child_text)],
+    )
+
+    summarize = SectionSummarizer(Settings())
+
+    # when
+    section = summarize.process(section)
+
+    assert len(section.children) == 1
+    assert section.children[0].title == "Child Section"
+    assert len(section.children[0].content) <= len(child_text)

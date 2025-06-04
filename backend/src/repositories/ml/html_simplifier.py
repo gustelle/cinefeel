@@ -21,11 +21,6 @@ class HTMLSimplifier(MLProcessor[str]):
         - JavaScript and CSS are removed, and unnecessary notes or modifiers are stripped out.
         - Information wrapped by <a> tags is preserved, but the tags themselves are removed.
 
-        TODO:
-        - remove <b>, <i>, <strong>, <em> tags
-        - remove <time>, <code>, <pre>, <blockquote>, <a>, <span>, <small> tags
-        - remove contents inside <sup> and <sub>
-
         Args:
             html_content (str): The HTML content to be processed.
 

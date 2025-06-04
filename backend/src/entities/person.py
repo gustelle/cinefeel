@@ -185,7 +185,7 @@ class Person(SourcedContentBase):
 
     """
 
-    biography: Biography = Field(
+    biography: Biography | None = Field(
         None,
         repr=False,
     )
