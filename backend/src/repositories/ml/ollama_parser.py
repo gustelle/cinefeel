@@ -2,8 +2,9 @@ import ollama
 from loguru import logger
 from pydantic import BaseModel, Field, create_model
 
+from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import ExtractionResult, IContentExtractor
+from src.interfaces.extractor import IContentExtractor
 from src.settings import Settings
 
 
@@ -125,4 +126,4 @@ class OllamaExtractor(IContentExtractor):
             logger.error(traceback.format_exc())
             raise ValueError(f"Error parsing response: {e}") from e
 
-        return ExtractionResult(score=score, entity=result)
+        return ExtractionResult[entity_type](score=score, entity=result)

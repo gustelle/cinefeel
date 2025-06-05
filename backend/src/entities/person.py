@@ -1,7 +1,10 @@
 from enum import StrEnum
+from typing import Self
 
 from pydantic import BaseModel, Field
 
+from src.entities.composable import Composable
+from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
 
 
@@ -26,28 +29,28 @@ class ChildHoodConditions(BaseModel):
         None,
         description="le statut familial de la personne pendant l'enfance.",
         repr=False,
-        alias="statut_familial",
+        # alias="statut_familial",
         serialization_alias="statut_familial",
     )
     economic_status: str | None = Field(
         None,
         description="le statut économique de la personne pendant l'enfance.",
         repr=False,
-        alias="statut_economique",
+        # alias="statut_economique",
         serialization_alias="statut_economique",
     )
     education_level: str | None = Field(
         None,
         description="le niveau d'éducation de la personne pendant l'enfance.",
         repr=False,
-        alias="niveau_education",
+        # alias="niveau_education",
         serialization_alias="niveau_education",
     )
     social_environment: str | None = Field(
         None,
         description="l'environnement social de la personne pendant l'enfance.",
         repr=False,
-        alias="environnement_social",
+        # alias="environnement_social",
         serialization_alias="environnement_social",
     )
 
@@ -61,21 +64,21 @@ class Biography(BaseModel):
     full_name: str = Field(
         ...,
         repr=False,
-        alias="nom_complet",
+        # alias="nom_complet",
         serialization_alias="nom_complet",
     )
     nicknames: list[str] | None = Field(
         None,
         description="les surnoms de la personne. Cette liste peut être utilisée pour filtrer la liste des personnes.",
         repr=False,
-        alias="surnoms",
+        # alias="surnoms",
         serialization_alias="surnoms",
     )
     genre: GenderEnum | None = Field(
         None,
         description="Le genre de la personne: homme, femme, non-binaire ou inconnu.",
         repr=False,
-        alias="genre",
+        # alias="genre",
         serialization_alias="genre",
     )
     nationalities: list[str] | None = Field(
@@ -91,34 +94,34 @@ class Biography(BaseModel):
         None,
         examples=["2023-10-01", "2023-10-02"],
         repr=False,
-        alias="date_naissance",
+        # alias="date_naissance",
         serialization_alias="date_naissance",
     )
     death_date: str | None = Field(
         None,
         examples=["2023-10-01", "2023-10-02"],
         repr=False,
-        alias="date_deces",
+        # alias="date_deces",
         serialization_alias="date_deces",
     )
     parents_trades: list[str] | None = Field(
         None,
         examples=["charpentier", "banquier"],
         repr=False,
-        alias="metiers_parents",
+        # alias="metiers_parents",
         serialization_alias="metiers_parents",
     )
     education: list[str] | None = Field(
         None,
         examples=["Harvard University", "MIT"],
         repr=False,
-        alias="formations",
+        # alias="formations",
         serialization_alias="formations",
     )
     childhood_conditions: ChildHoodConditions | None = Field(
         None,
         repr=False,
-        alias="conditions_enfance",
+        # alias="conditions_enfance",
         serialization_alias="conditions_enfance",
     )
 
@@ -131,13 +134,13 @@ class PersonMedia(BaseModel):
     poster: str | None = Field(
         None,
         repr=False,
-        alias="url_affiche",
+        # alias="url_affiche",
         serialization_alias="url_affiche",
     )
     other_media: list[str] | None = Field(
         None,
         repr=False,
-        alias="url_autres_contenus",
+        # alias="url_autres_contenus",
         serialization_alias="url_autres_contenus",
     )
 
@@ -150,36 +153,36 @@ class PersonCharacteristics(BaseModel):
     height: str | None = Field(
         None,
         repr=False,
-        alias="taille",
+        # alias="taille",
         serialization_alias="taille",
     )
     weight: str | None = Field(
         None,
         repr=False,
-        alias="poids",
+        # alias="poids",
         serialization_alias="poids",
     )
     skin_color: str | None = Field(
         None,
         repr=False,
-        alias="couleur_peau",
+        # alias="couleur_peau",
         serialization_alias="couleur_peau",
     )
     sexual_orientation: str | None = Field(
         None,
         repr=False,
-        alias="orientation_sexuelle",
+        # alias="orientation_sexuelle",
         serialization_alias="orientation_sexuelle",
     )
     disabilities: list[str] | None = Field(
         None,
         repr=False,
-        alias="handicaps",
+        # alias="handicaps",
         serialization_alias="handicaps",
     )
 
 
-class Person(SourcedContentBase):
+class Person(Composable, SourcedContentBase):
     """
     Represents a person with a name and an optional list of roles.
 
@@ -199,3 +202,30 @@ class Person(SourcedContentBase):
         None,
         repr=False,
     )
+
+    @classmethod
+    def from_parts(
+        cls,
+        base_info: SourcedContentBase,
+        parts: list[ExtractionResult],
+        by_alias: bool = False,
+    ) -> Self:
+        """
+        Compose this entity with other entities or data.
+
+        Args:
+            base_info (SourcedContentBase): Base information including title, permalink, and uid.
+            parts (list[ExtractionResult]): List of ExtractionResult objects containing parts to compose.
+            by_alias (bool): Whether to use field aliases for serialization. Defaults to False.
+
+        Returns:
+            Person: A new instance of the composed Person entity.
+        """
+
+        additional_fields = {
+            "uid": base_info.uid,
+            "title": base_info.title,
+            "permalink": base_info.permalink,
+        }
+
+        return cls.construct(parts, by_alias=by_alias, **additional_fields)

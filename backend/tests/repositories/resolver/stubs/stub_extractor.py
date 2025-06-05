@@ -1,5 +1,6 @@
+from src.entities.extraction import ExtractionResult
 from src.entities.film import FilmActor, FilmMedia, FilmSpecifications, FilmSummary
-from src.interfaces.extractor import ExtractionResult, IContentExtractor
+from src.interfaces.extractor import IContentExtractor
 
 
 class StubExtractor(IContentExtractor):

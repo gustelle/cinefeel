@@ -1,23 +1,9 @@
 from typing import Protocol
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
+from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
-
-
-class ExtractionResult(BaseModel):
-    """
-    Base class for extracted entities.
-    This class can be extended to define specific types of entities.
-    """
-
-    score: float = Field(
-        default=0.0,
-        description="Confidence score of the extracted entity.",
-        ge=0.0,  # lowest score
-        le=1.0,  # highest score
-    )
-    entity: BaseModel
 
 
 class IContentExtractor(Protocol):

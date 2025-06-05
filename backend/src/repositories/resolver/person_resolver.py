@@ -1,6 +1,5 @@
 from src.entities.person import Biography, Person, PersonCharacteristics, PersonMedia
-from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import ExtractionResult, IContentExtractor
+from src.interfaces.extractor import IContentExtractor
 from src.interfaces.nlp_processor import MLProcessor
 from src.repositories.resolver.abstract_resolver import AbstractResolver
 
@@ -29,28 +28,3 @@ class BasicPersonResolver(AbstractResolver[Person]):
             PersonMedia: ["Données clés", "Biographie"],
             PersonCharacteristics: ["Introduction", "Biographie"],
         }
-
-    def assemble(
-        self, base_info: SourcedContentBase, parts: list[ExtractionResult]
-    ) -> Person:
-        """Assemble a Person object from base info and extracted parts.
-
-        TODO:
-        - take into account the score of the extraction results
-        - merge parts with the same type
-        """
-        person = Person(
-            uid=base_info.uid,
-            title=base_info.title,
-            permalink=base_info.permalink,
-        )
-        for part in parts:
-            _ent = part.entity
-            if isinstance(_ent, Biography):
-                person.biography = _ent
-            elif isinstance(_ent, PersonMedia):
-                person.media = _ent
-            elif isinstance(_ent, PersonCharacteristics):
-                person.characteristics = _ent
-
-        return person
