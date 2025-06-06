@@ -122,27 +122,6 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
         return extracted_parts
 
-    # def assemble(
-    #     self, base_info: SourcedContentBase, parts: list[ExtractionResult]
-    # ) -> T:
-    #     """Assemble an entity of type T from base info and extracted parts.
-
-    #     It should take into account the confidence scores of the extracted parts in case
-    #     multiple parts are extracted for the same entity type.
-
-    #     Example:
-    #         ```python
-    #         sections = [
-    #             Section(title="Person Info", content="John Doe is a software engineer."),
-    #             Section(title="Career", content="John Doe has worked at several tech companies."),
-    #         ]
-    #         # here probably that 2 careers would be found, the one with the highest score of confidence shoul be kept.
-    #         ```
-
-    #     """
-    #     raise NotImplementedError(
-    #         "The 'assemble' method must be implemented in subclasses."
-    #     )
     def assemble(
         self, base_info: SourcedContentBase, parts: list[ExtractionResult]
     ) -> T:

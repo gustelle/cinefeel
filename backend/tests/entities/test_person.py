@@ -22,11 +22,11 @@ def test_serialization():
 
     # given
     characteristics = PersonCharacteristics(
-        handicaps=["blind", "deaf"],
+        disabilities=["blind", "deaf"],
     )
 
     # when
-    serialized = characteristics.model_dump_json(by_alias=True, exclude_none=True)
+    serialized = characteristics.model_dump_json(exclude_none=True)
 
     # then
     assert serialized == '{"handicaps":["blind","deaf"]}'
@@ -35,7 +35,7 @@ def test_serialization():
 def test_model_schema():
 
     # given
-    schema = PersonCharacteristics.model_json_schema(by_alias=True)
+    schema = PersonCharacteristics.model_json_schema()
 
     # when
     result = validate(
@@ -51,13 +51,13 @@ def test_model_schema():
     )  # validate does not return anything, it raises an error if validation fails
 
 
-def test_populate_by_alias():
+def test_from_dump_by_alias():
 
     # given
     input = '{"handicaps":["sourd", "aveugle"]}'
 
     # when
-    characs = PersonCharacteristics.model_validate_json(input, by_alias=True)
+    characs = PersonCharacteristics.model_validate_json(input)
 
     # then
     assert characs.disabilities == ["sourd", "aveugle"]

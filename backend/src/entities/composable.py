@@ -2,8 +2,10 @@ from typing import Self
 
 from loguru import logger
 from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic.fields import FieldInfo
 
 from src.entities.extraction import ExtractionResult
+from src.entities.source import Storable
 
 
 class Composable(BaseModel):
@@ -14,9 +16,7 @@ class Composable(BaseModel):
     """
 
     @classmethod
-    def construct(
-        cls, parts: list[ExtractionResult], by_alias: bool = False, **kwargs
-    ) -> Self:
+    def construct(cls, parts: list[ExtractionResult], **kwargs) -> Self:
         """
         inner method to compose this entity with other entities or data.
         should not be called directly, use `from_parts` when calling from outside.
@@ -33,7 +33,6 @@ class Composable(BaseModel):
         Args:
             base_info (SourcedContentBase): Base information including title, permalink, and uid.
             parts (list[ExtractionResult]): List of ExtractionResult objects containing parts to compose.
-            by_alias (bool): Whether to use field aliases for composition.
             kwargs: Additional keyword arguments for the composition.
 
         Returns:
@@ -41,75 +40,41 @@ class Composable(BaseModel):
         """
         _fields = kwargs
 
-        _scored_parts = {}
+        _part_scores: dict[str, float] = {}
 
         for part in parts:
 
             for k, v in cls.model_fields.items():
 
-                try:
+                # try to work with list of entities first
+                _valid = cls._fetch_valid_entities(
+                    extraction_result=part,
+                    field_name=k,
+                    field_info=v,
+                    populated_entities=_fields,
+                    min_score=_part_scores.get(k, 0),
+                )
 
-                    _is_set = False
+                # try to assign a single entity if the field is not a list
+                if _valid is None:
+                    _valid = cls._assign_single_entity(
+                        extraction_result=part,
+                        field_name=k,
+                        field_info=v,
+                        populated_entities=_fields,
+                        min_score=_part_scores.get(k, 0),
+                    )
 
-                    # 1st try to set as a list
-                    try:
-                        valid_entity = TypeAdapter(v.annotation).validate_python(
-                            [part.entity], by_alias=by_alias
-                        )
+                if _valid is not None:
+                    _fields[k] = _valid
+                    _part_scores[k] = part.score
+                    break
 
-                        # check if the field is already set and has better score
-                        if k in _scored_parts:
-                            if _scored_parts[k] >= part.score:
-                                logger.debug(
-                                    f"Skipping part with lower score for field '{k}': {part.score} < {_scored_parts[k]}"
-                                )
-                                continue
+        logger.debug(f"Final fields after processing parts: {_fields}")
 
-                        if _fields.get(k, None) is not None and isinstance(
-                            _fields[k], list
-                        ):
-                            _fields[k].extend(valid_entity)
-                        else:
-                            _fields[k] = valid_entity
-
-                        _is_set = True
-                    except (ValidationError, TypeError, AttributeError):
-
-                        # else try to set as a single entity
-                        valid_entity = TypeAdapter(v.annotation).validate_python(
-                            part.entity, by_alias=by_alias
-                        )
-
-                        # check if the field is already set and has better score
-                        if k in _scored_parts:
-                            if _scored_parts[k] >= part.score:
-                                logger.debug(
-                                    f"Skipping part with lower score for field '{k}': {part.score} < {_scored_parts[k]}"
-                                )
-                                continue
-
-                        _fields[k] = valid_entity
-
-                        _is_set = True
-                    finally:
-                        if _is_set:
-
-                            logger.debug(
-                                f"Set field '{k}' with entity: {valid_entity} and score: {part.score}"
-                            )
-                            _scored_parts[k] = part.score
-                            break
-                except (ValidationError, AttributeError, TypeError):
-                    pass
-
-        logger.debug(
-            f"scored_parts: {[(str(ent), score) for ent, score in _scored_parts.items()]}"
+        return cls.model_validate(
+            _fields,
         )
-
-        logger.debug(f"fields: {_fields}")
-        logger.debug(f"using by_alias={by_alias}")
-
-        return cls.model_validate(_fields, by_alias=by_alias)
 
     @classmethod
     def from_parts(cls, base_info: BaseModel, parts: list[ExtractionResult]) -> Self:
@@ -126,3 +91,133 @@ class Composable(BaseModel):
         raise NotImplementedError(
             f"{cls.__name__}.from_parts() must be implemented in subclasses."
         )
+
+    @staticmethod
+    def _fetch_valid_entities(
+        extraction_result: ExtractionResult,
+        field_name: str,
+        field_info: FieldInfo,
+        populated_entities: dict[str, Storable | list[Storable]],
+        min_score: float,
+    ) -> list[Storable]:
+
+        try:
+
+            entity: Storable = extraction_result.entity
+
+            valid_entity = TypeAdapter(field_info.annotation).validate_python(
+                [entity],
+            )
+
+            # 1. case where a value is already set for the field
+            # we must check if the entity is already in the list
+            # and eventually complete the list with the new entity
+            if populated_entities.get(field_name, None) is not None:
+
+                # case where the entity is a storable, so we can compare by uid
+                # --> search for the entity in the list using uid
+                _entity_uids = [ent.uid for ent in populated_entities[field_name]]
+                if entity.uid in _entity_uids:
+
+                    # if the entity is already in the list, check the score
+                    idx = _entity_uids.index(entity.uid)
+                    if extraction_result.score <= min_score:
+
+                        populated_entities[field_name][idx] = (
+                            Composable._override_or_complete(
+                                storable=populated_entities[field_name][idx],
+                                candidate=extraction_result,
+                            )
+                        )
+
+                    else:
+                        # replace the entity with the new one
+                        populated_entities[field_name][idx] = valid_entity[0]
+                else:
+                    # if the entity is not in the list, extend the list
+                    populated_entities[field_name].append(valid_entity[0])
+            else:
+                # 2. case where the field is not set
+                populated_entities[field_name] = valid_entity
+
+            return populated_entities[field_name]
+
+        except ValidationError:
+
+            return None
+
+    @staticmethod
+    def _assign_single_entity(
+        extraction_result: ExtractionResult,
+        field_name: str,
+        field_info: FieldInfo,
+        populated_entities: dict[str, Storable | list[Storable]],
+        min_score: float,
+    ) -> Storable | None:
+        """
+        Set the field as a single entity.
+        """
+        try:
+            entity: Storable = extraction_result.entity
+
+            valid_entity = TypeAdapter(field_info.annotation).validate_python(
+                entity,
+            )
+
+            valid_entity = Composable._override_or_complete(
+                storable=populated_entities.get(field_name),
+                candidate=extraction_result,
+                min_score=min_score,
+            )
+
+            logger.debug(valid_entity.model_dump_json(exclude_none=True))
+
+            return valid_entity
+        except ValidationError:
+
+            return None
+
+    @staticmethod
+    def _override_or_complete(
+        storable: Storable | None,
+        candidate: ExtractionResult,
+        min_score: float = 0.0,
+    ) -> Storable:
+        """
+        Override or complete the storable with the extraction result,
+        taking into account the score when necessary,
+        and proceeding to a fine grained assembly if needed.
+        """
+
+        if storable is None:
+            logger.debug(
+                f"Storable is None, creating a new one from candidate {candidate.entity.uid}"
+            )
+            return candidate.entity
+
+        # proceed to a json dump to compare the fields
+        storable_json = storable.model_dump(
+            mode="python", exclude_none=True, exclude={"uid"}
+        )
+        candidate_json: dict = candidate.entity.model_dump(
+            mode="python", exclude_none=True, exclude={"uid"}
+        )
+
+        for key, value in candidate_json.items():
+            if key not in storable_json or storable_json[key] is None:
+                storable_json[key] = value
+            elif isinstance(value, list) and candidate.score >= min_score:
+                # merge lists if both are lists
+                current_list = storable_json.get(key, [])
+                current_list.extend(value)
+                storable_json[key] = list(set(current_list))
+            else:
+                # if the key is already set and the score is lower, we keep the current value
+                if candidate.score >= min_score:
+                    storable_json[key] = value
+
+        new_storable = storable.model_construct(
+            **storable_json,
+        )
+
+        return new_storable

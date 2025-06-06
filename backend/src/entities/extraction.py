@@ -1,7 +1,9 @@
 from pydantic import BaseModel, Field
 
+from src.entities.source import Storable
 
-class ExtractionResult[T](BaseModel):
+
+class ExtractionResult[T: Storable](BaseModel):
     """
     Base class for extracted entities.
     This class can be extended to define specific types of entities.

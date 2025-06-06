@@ -2,7 +2,7 @@ from string import ascii_letters, digits, punctuation, whitespace
 
 import pytest
 
-from src.entities.source import Sourcable, SourcedContentBase
+from src.entities.source import SourcedContentBase, Storable
 
 
 def test_uid_validation():
@@ -26,7 +26,7 @@ def test_uid_validation():
     )
 
     # When
-    storable = Sourcable(uid=invalid_chain)
+    storable = Storable(uid=invalid_chain)
 
     # Then
     assert storable.uid is not None and len(storable.uid) > 0

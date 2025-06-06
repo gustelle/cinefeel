@@ -1,15 +1,15 @@
 from typing import Self
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import Field, HttpUrl
 
 from src.entities.composable import Composable
 from src.entities.extraction import ExtractionResult
-from src.entities.source import SourcedContentBase
+from src.entities.source import SourcedContentBase, Storable
 
 from .woa import WOAInfluence, WOASpecifications, WOAType, WorkOfArt
 
 
-class FilmActor(BaseModel):
+class FilmActor(Storable):
     """
     Représente un acteur et ses rôles dans un film.
     """
@@ -34,7 +34,7 @@ class FilmActor(BaseModel):
     )
 
 
-class FilmSummary(BaseModel):
+class FilmSummary(Storable):
     """
     le résumé d'un film.
     """
@@ -57,7 +57,7 @@ class FilmSummary(BaseModel):
     )
 
 
-class FilmMedia(BaseModel):
+class FilmMedia(Storable):
     """
     représente les médias associés à un film, tels que l'affiche, les autres médias et la bande-annonce.
     """

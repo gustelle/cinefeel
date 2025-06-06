@@ -1,11 +1,11 @@
 from enum import StrEnum
 from typing import Self
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from src.entities.composable import Composable
 from src.entities.extraction import ExtractionResult
-from src.entities.source import SourcedContentBase
+from src.entities.source import SourcedContentBase, Storable
 
 
 class GenderEnum(StrEnum):
@@ -19,7 +19,7 @@ class GenderEnum(StrEnum):
     UNKNWON = "unknown"
 
 
-class ChildHoodConditions(BaseModel):
+class ChildHoodConditions(Storable):
     """
     Représente les conditions de l'enfance d'une personne.
     Cette classe contient des informations sur le statut familial, économique, éducatif et l'environnement social de la personne pendant son enfance.
@@ -55,7 +55,7 @@ class ChildHoodConditions(BaseModel):
     )
 
 
-class Biography(BaseModel):
+class Biography(Storable):
     """
     Représente la biographie d'une personne.
     Cette classe contient des informations sur le nom complet, les surnoms, le genre, les nationalités, la religion, les dates de naissance et de décès,
@@ -126,7 +126,7 @@ class Biography(BaseModel):
     )
 
 
-class PersonMedia(BaseModel):
+class PersonMedia(Storable):
     """
     représente les contenus multimédias associés à une personne.
     """
@@ -145,7 +145,7 @@ class PersonMedia(BaseModel):
     )
 
 
-class PersonCharacteristics(BaseModel):
+class PersonCharacteristics(Storable):
     """
     Represente les caractéristiques d'une personne.
     """
