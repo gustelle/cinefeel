@@ -19,8 +19,8 @@ class FilmActor(Storable):
         description="The full name of the actor.",
         examples=["John Doe", "Jane Smith"],
         repr=False,
-        # alias="nom_complet",
         serialization_alias="nom_complet",
+        validation_alias="nom_complet",
     )
     roles: list[str] | None = Field(
         None,
@@ -44,16 +44,16 @@ class FilmSummary(Storable):
         description="The summary of the film.",
         examples=["A thrilling adventure through time and space."],
         repr=False,
-        # alias="contenu_resume",
         serialization_alias="contenu_resume",
+        validation_alias="contenu_resume",
     )
     source: str | None = Field(
         None,
         description="The source URL of the summary.",
         examples=["https://example.com/film-summary"],
         repr=False,
-        # alias="source_resume",
         serialization_alias="source_resume",
+        validation_alias="source_resume",
     )
 
 
@@ -65,20 +65,20 @@ class FilmMedia(Storable):
     poster: str | None = Field(
         None,
         repr=False,
-        # alias="url_affiche",
         serialization_alias="url_affiche",
+        validation_alias="url_affiche",
     )
     other_media: list[str] | None = Field(
         None,
         repr=False,
-        # alias="url_autres_contenus",
         serialization_alias="url_autres_contenus",
+        validation_alias="url_autres_contenus",
     )
     trailer: HttpUrl | None = Field(
         None,
         repr=False,
-        # alias="url_bande_annonce",
         serialization_alias="url_bande_annonce",
+        validation_alias="url_bande_annonce",
     )
 
 
@@ -92,52 +92,52 @@ class FilmSpecifications(WOASpecifications):
     directed_by: list[str] | None = Field(
         None,
         repr=False,
-        # alias="realisateurs",
         serialization_alias="realisateurs",
+        validation_alias="realisateurs",
     )
     produced_by: list[str] | None = Field(
         None,
         repr=False,
-        # alias="producteurs",
         serialization_alias="producteurs",
+        validation_alias="producteurs",
     )
     genres: list[str] | None = Field(
         None,
         repr=False,
-        # alias="genres",
         serialization_alias="genres",
+        validation_alias="genres",
     )
     special_effects_by: list[str] | None = Field(
         None,
         repr=False,
-        # alias="effets_speciaux",
         serialization_alias="effets_speciaux",
+        validation_alias="effets_speciaux",
     )
     scenary_by: list[str] | None = Field(
         None,
         repr=False,
-        # alias="decorateurs",
         serialization_alias="decorateurs",
+        validation_alias="decorateurs",
     )
     written_by: list[str] | None = Field(
         None,
         repr=False,
-        # alias="scenaristes",
         serialization_alias="scenaristes",
+        validation_alias="scenaristes",
     )
     music_by: list[str] | None = Field(
         None,
         repr=False,
-        # alias="compositeurs_musique",
         serialization_alias="compositeurs_musique",
+        validation_alias="compositeurs_musique",
     )
     duration: str | None = Field(
         None,
         description="The duration of the film in HH:MM:SS format.",
         examples=["01:30:00", "02:15:45"],
         repr=False,
-        # alias="duree_film",
         serialization_alias="duree_film",
+        validation_alias="duree_film",
     )
 
 
@@ -147,32 +147,32 @@ class Film(Composable, WorkOfArt):
     summary: FilmSummary | None = Field(
         None,
         repr=False,
-        # alias="resume",
         serialization_alias="resume",
+        validation_alias="resume",
     )
     media: FilmMedia | None = Field(
         None,
         repr=False,
-        # alias="medias",
         serialization_alias="medias",
+        validation_alias="medias",
     )
     influences: list[WOAInfluence] | None = Field(
         None,
         repr=False,
-        # alias="influences",
         serialization_alias="influences",
+        validation_alias="influences",
     )
     specifications: FilmSpecifications | None = Field(
         None,
         repr=False,
-        # alias="fiche_technique",
         serialization_alias="fiche_technique",
+        validation_alias="fiche_technique",
     )
     actors: list[FilmActor] | None = Field(
         None,
         repr=False,
-        # alias="acteurs",
         serialization_alias="acteurs",
+        validation_alias="acteurs",
     )
 
     @classmethod
@@ -180,7 +180,6 @@ class Film(Composable, WorkOfArt):
         cls,
         base_info: SourcedContentBase,
         parts: list[ExtractionResult],
-        by_alias: bool = False,
     ) -> Self:
         """
         Compose this entity with other entities or data.
@@ -188,7 +187,6 @@ class Film(Composable, WorkOfArt):
         Args:
             base_info (SourcedContentBase): Base information including title, permalink, and uid.
             parts (list[ExtractionResult]): List of ExtractionResult objects containing parts to compose.
-            by_alias (bool): Whether to use field aliases for serialization. Defaults to False.
 
         Returns:
             Film: A new instance of the composed Film entity.
@@ -201,4 +199,4 @@ class Film(Composable, WorkOfArt):
             "woa_type": WOAType.FILM,
         }
 
-        return cls.construct(parts, by_alias=by_alias, **additional_fields)
+        return cls.construct(parts, **additional_fields)

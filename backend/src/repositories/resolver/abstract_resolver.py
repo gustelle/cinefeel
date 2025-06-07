@@ -127,4 +127,4 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     ) -> T:
         """Assemble a film object from base info and extracted parts."""
 
-        return self.entity_type.from_parts(base_info, parts, by_alias=True)
+        return self.entity_type.from_parts(base_info, parts)

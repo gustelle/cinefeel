@@ -83,7 +83,7 @@ def test_insert_film():
     assert (storage_handler.persistence_directory / f"{film.uid}.json").exists()
     assert orjson.loads(
         (storage_handler.persistence_directory / f"{film.uid}.json").read_text()
-    ) == film.model_dump(mode="json", by_alias=True, exclude_none=True)
+    ) == film.model_dump(mode="json", exclude_none=True)
 
     # teardown
     (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
@@ -116,7 +116,7 @@ def test_insert_person():
     assert (storage_handler.persistence_directory / f"{person.uid}.json").exists()
     assert orjson.loads(
         (storage_handler.persistence_directory / f"{person.uid}.json").read_text()
-    ) == person.model_dump(mode="json", by_alias=True, exclude_none=True)
+    ) == person.model_dump(mode="json", exclude_none=True)
 
     # teardown
     (storage_handler.persistence_directory / f"{person.uid}.json").unlink()
@@ -300,8 +300,9 @@ def test_query_person():
         full_name=content["full_name"],
         title="Test Person Title",
         permalink=HttpUrl("http://example.com/test-person"),
-        biography=Biography(nom_complet="Test Person Biography"),
+        biography=Biography(uid="1", nom_complet="Test Person Biography"),
         media=PersonMedia(
+            uid="1",
             url_affiche="http://example.com/test-person-poster",
         ),
     )

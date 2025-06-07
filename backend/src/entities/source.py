@@ -1,6 +1,6 @@
 import re
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 from unidecode import unidecode
 
 
@@ -8,6 +8,8 @@ class Storable(BaseModel):
     """
     An object that can be stored in a database or a file.
     """
+
+    model_config = ConfigDict(serialize_by_alias=True, populate_by_name=True)
 
     uid: str = Field(
         ...,

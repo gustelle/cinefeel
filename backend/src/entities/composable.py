@@ -12,7 +12,7 @@ class Composable(BaseModel):
     """
     Represents a composable entity that can be used to build complex structures.
     This class is designed to be extended by other classes that require composability.
-    It provides a base structure for entities that can be composed together.
+
     """
 
     @classmethod
@@ -27,11 +27,10 @@ class Composable(BaseModel):
 
         Example:
             ```python
-            composed_entity = Composable.from_parts(base_info, parts)
+            composed_entity = Composable.construct(base_info, parts)
             ```
 
         Args:
-            base_info (SourcedContentBase): Base information including title, permalink, and uid.
             parts (list[ExtractionResult]): List of ExtractionResult objects containing parts to compose.
             kwargs: Additional keyword arguments for the composition.
 
@@ -99,7 +98,12 @@ class Composable(BaseModel):
         field_info: FieldInfo,
         populated_entities: dict[str, Storable | list[Storable]],
         min_score: float,
-    ) -> list[Storable]:
+    ) -> list[Storable] | None:
+        """
+        Fetch valid entities from the extraction result and assign them to the field.
+
+        May return None if the entity is not valid or cannot be assigned.
+        """
 
         try:
 
@@ -155,7 +159,9 @@ class Composable(BaseModel):
         min_score: float,
     ) -> Storable | None:
         """
-        Set the field as a single entity.
+        Assign a single entity to the field, validating it against the field's type.
+
+        May return None if the entity is not valid
         """
         try:
             entity: Storable = extraction_result.entity
@@ -169,8 +175,6 @@ class Composable(BaseModel):
                 candidate=extraction_result,
                 min_score=min_score,
             )
-
-            logger.debug(valid_entity.model_dump_json(exclude_none=True))
 
             return valid_entity
         except ValidationError:
@@ -187,6 +191,14 @@ class Composable(BaseModel):
         Override or complete the storable with the extraction result,
         taking into account the score when necessary,
         and proceeding to a fine grained assembly if needed.
+
+        Args:
+            storable (Storable | None): The existing storable entity to be updated.
+            candidate (ExtractionResult): The candidate extraction result containing the new entity.
+            min_score (float): The minimum score required to override the existing storable.
+
+        Returns:
+            Storable: The updated or new storable entity.
         """
 
         if storable is None:
@@ -195,15 +207,25 @@ class Composable(BaseModel):
             )
             return candidate.entity
 
+        # exclude case where the candidate and storable do not relate to the same entity
+        if storable.uid != candidate.entity.uid:
+            logger.debug(
+                f"Storable UID {storable.uid} does not match candidate UID {candidate.entity.uid}"
+            )
+            return storable
+
         # proceed to a json dump to compare the fields
         storable_json = storable.model_dump(
-            mode="python", exclude_none=True, exclude={"uid"}
+            mode="python",
+            exclude_none=True,
         )
-        candidate_json: dict = candidate.entity.model_dump(
-            mode="python", exclude_none=True, exclude={"uid"}
+        candidate_json = candidate.entity.model_dump(
+            mode="python",
+            exclude_none=True,
         )
 
         for key, value in candidate_json.items():
+
             if key not in storable_json or storable_json[key] is None:
                 storable_json[key] = value
             elif isinstance(value, list) and candidate.score >= min_score:

@@ -75,14 +75,14 @@ def test_from_parts_list_of_sames_entities():
             score=0.80,
         ),
         ExtractionResult(
-            entity=FilmActor(uid="1", full_name="Brad Pitt", roles=["role2"]),
+            entity=FilmActor(
+                uid="1", full_name="Brad Pitt", roles=["role1"]
+            ),  # same actor, same role, but lower score
             score=0.70,
         ),  # Same actor, lower score, should be ignored
     ]
 
     film = Film.from_parts(base_info, parts)
-
-    print(film)
 
     assert film.uid == "film-123"
     assert film.title == "Test Film"

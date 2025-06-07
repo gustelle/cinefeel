@@ -40,15 +40,15 @@ class WOASpecifications(Storable):
     other_titles: list[str] | None = Field(
         None,
         repr=False,
-        alias="autres_titres",
         serialization_alias="autres_titres",
+        validation_alias="autres_titres",
     )
     release_date: str | None = Field(
         None,
         examples=["2023-10-01", "2023-10-02"],
         repr=False,
-        alias="date_sortie",
         serialization_alias="date_sortie",
+        validation_alias="date_sortie",
     )
 
 
@@ -74,14 +74,14 @@ class WOAInfluence(Storable):
         None,
         description="les personnes qui ont influencé l'œuvre d'art actuelle.",
         repr=False,
-        alias="personnes_influentes",
         serialization_alias="personnes_influentes",
+        validation_alias="personnes_influentes",
     )
 
     work_of_arts: list[str] | None = Field(
         None,
         description="les œuvres d'art qui ont influencé l'œuvre d'art actuelle.",
         repr=False,
-        alias="oeuvres_influentes",
         serialization_alias="oeuvres_influentes",
+        validation_alias="oeuvres_influentes",
     )

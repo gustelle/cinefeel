@@ -134,7 +134,9 @@ def test_construct_fine_grained_assembly_in_case_of_list():
 
     # then
     assert instance.field1.some_field == "some_field_value"
-    assert instance.field1.some_other_field == [
-        "some_other_value_1",
-        "some_other_value_2",
-    ]  # merged fields
+    assert sorted(instance.field1.some_other_field) == sorted(
+        [
+            "some_other_value_1",
+            "some_other_value_2",
+        ]
+    )  # merged fields

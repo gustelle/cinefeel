@@ -28,7 +28,7 @@ def test_ollama_is_called_correctly(mocker):
         def __init__(self, message):
             self.message = message
 
-    response = '{"handicaps":["sourd", "aveugle"], "score": 0.95}'
+    response = '{"handicaps":["sourd", "aveugle"], "uid": "123", "score": 0.95}'
 
     mocker.patch(
         "src.repositories.ml.ollama_parser.ollama.chat",
