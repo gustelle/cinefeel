@@ -155,6 +155,15 @@ class Settings(BaseSettings):
         description="The name of the LLM model to use",
     )
 
+    llm_min_score: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="""
+            The minimum score confidence score for the LLM model to consider a result as valid.
+        """,
+    )
+
     bert_similarity_model: str = Field(
         default="Lajavaness/sentence-camembert-base",
         description="""
