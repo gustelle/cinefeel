@@ -1,9 +1,9 @@
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from .person import Person
-from .source import SourcedContentBase
+from .source import SourcedContentBase, Storable
 
 
 class WOAType(StrEnum):
@@ -27,7 +27,7 @@ class WOAType(StrEnum):
     OTHER = "other"
 
 
-class WOASpecifications(BaseModel):
+class WOASpecifications(Storable):
     """
     Représente les spécifications d'une œuvre d'art.
     Cette classe contient des informations sur le titre, les autres titres et la date de sortie de l'œuvre d'art.
@@ -40,15 +40,15 @@ class WOASpecifications(BaseModel):
     other_titles: list[str] | None = Field(
         None,
         repr=False,
-        alias="autres_titres",
         serialization_alias="autres_titres",
+        validation_alias="autres_titres",
     )
     release_date: str | None = Field(
         None,
         examples=["2023-10-01", "2023-10-02"],
         repr=False,
-        alias="date_sortie",
         serialization_alias="date_sortie",
+        validation_alias="date_sortie",
     )
 
 
@@ -65,7 +65,7 @@ class WorkOfArt(SourcedContentBase):
     )
 
 
-class WOAInfluence(BaseModel):
+class WOAInfluence(Storable):
     """
     Représente les influences d'une œuvre d'art.
     """
@@ -74,14 +74,14 @@ class WOAInfluence(BaseModel):
         None,
         description="les personnes qui ont influencé l'œuvre d'art actuelle.",
         repr=False,
-        alias="personnes_influentes",
         serialization_alias="personnes_influentes",
+        validation_alias="personnes_influentes",
     )
 
     work_of_arts: list[str] | None = Field(
         None,
         description="les œuvres d'art qui ont influencé l'œuvre d'art actuelle.",
         repr=False,
-        alias="oeuvres_influentes",
         serialization_alias="oeuvres_influentes",
+        validation_alias="oeuvres_influentes",
     )

@@ -2,8 +2,9 @@ import ollama
 from loguru import logger
 from pydantic import BaseModel, Field, create_model
 
+from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import ExtractionResult, IContentExtractor
+from src.interfaces.extractor import IContentExtractor
 from src.settings import Settings
 
 
@@ -88,7 +89,7 @@ class OllamaExtractor(IContentExtractor):
                     "content": prompt,
                 }
             ],
-            format=response_model.model_json_schema(by_alias=True),
+            format=response_model.model_json_schema(),
             options={
                 # Set temperature to 0 for more deterministic responses
                 "temperature": 0
@@ -102,11 +103,9 @@ class OllamaExtractor(IContentExtractor):
             # isolate the score and the entity from the response
             dict_resp = response_model.model_validate_json(
                 msg,
-                by_alias=True,
             ).model_dump(
                 mode="json",
                 exclude_none=True,
-                by_alias=True,
             )
 
             # pop the score from the values
@@ -117,7 +116,7 @@ class OllamaExtractor(IContentExtractor):
             score = max(0.0, min(score, 1.0))
 
             # the entity is the remaining values
-            result = entity_type.model_validate(dict_resp, by_alias=True)
+            result = entity_type.model_validate(dict_resp)
 
         except Exception as e:
             import traceback
@@ -125,4 +124,4 @@ class OllamaExtractor(IContentExtractor):
             logger.error(traceback.format_exc())
             raise ValueError(f"Error parsing response: {e}") from e
 
-        return ExtractionResult(score=score, entity=result)
+        return ExtractionResult[entity_type](score=score, entity=result)

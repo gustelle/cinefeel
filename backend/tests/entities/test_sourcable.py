@@ -1,8 +1,9 @@
 from string import ascii_letters, digits, punctuation, whitespace
 
 import pytest
+from pydantic import Field
 
-from src.entities.source import Sourcable, SourcedContentBase
+from src.entities.source import SourcedContentBase, Storable
 
 
 def test_uid_validation():
@@ -26,7 +27,7 @@ def test_uid_validation():
     )
 
     # When
-    storable = Sourcable(uid=invalid_chain)
+    storable = Storable(uid=invalid_chain)
 
     # Then
     assert storable.uid is not None and len(storable.uid) > 0
@@ -47,3 +48,43 @@ def test_permalink_is_mandatory():
 
     # then
     assert "permalink" in str(exc_info.value)
+
+
+def test_serialize_by_alias_is_default_behavior():
+
+    # given
+    uid = "uid-12345"
+
+    class MyStorable(Storable):
+        my_field: str = Field(
+            ...,
+            serialization_alias="coucou",
+        )
+
+    my_instance = MyStorable(uid=uid, my_field="Hello World")
+
+    # when
+    serialized = my_instance.model_dump_json()
+
+    # then
+    assert serialized == '{"uid":"uid-12345","coucou":"Hello World"}'
+
+
+def test_load_model_from_json_with_alias():
+
+    # given
+
+    class MyStorable(Storable):
+        my_field: str = Field(
+            ...,
+            serialization_alias="coucou",
+            validation_alias="coucou",
+        )
+
+    serialized = '{"uid":"uid-12345","coucou":"Hello World"}'
+
+    # when
+    instance = MyStorable.model_validate_json(serialized)
+
+    # then
+    assert instance.my_field == "Hello World"

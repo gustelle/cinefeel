@@ -2,14 +2,16 @@ import abc
 
 from loguru import logger
 
+from src.entities.composable import Composable
 from src.entities.content import Section
+from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import ExtractionResult, IContentExtractor
+from src.interfaces.extractor import IContentExtractor
 from src.interfaces.nlp_processor import MLProcessor
 from src.interfaces.resolver import IEntityResolver
 
 
-class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
+class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     """
     Abstract class for resolvers.
 
@@ -123,21 +125,6 @@ class AbstractResolver[T: SourcedContentBase](abc.ABC, IEntityResolver[T]):
     def assemble(
         self, base_info: SourcedContentBase, parts: list[ExtractionResult]
     ) -> T:
-        """Assemble an entity of type T from base info and extracted parts.
+        """Assemble a film object from base info and extracted parts."""
 
-        It should take into account the confidence scores of the extracted parts in case
-        multiple parts are extracted for the same entity type.
-
-        Example:
-            ```python
-            sections = [
-                Section(title="Person Info", content="John Doe is a software engineer."),
-                Section(title="Career", content="John Doe has worked at several tech companies."),
-            ]
-            # here probably that 2 careers would be found, the one with the highest score of confidence shoul be kept.
-            ```
-
-        """
-        raise NotImplementedError(
-            "The 'assemble' method must be implemented in subclasses."
-        )
+        return self.entity_type.from_parts(base_info, parts)

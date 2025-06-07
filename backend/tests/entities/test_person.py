@@ -18,29 +18,32 @@ def test_biography_may_be_None():
     assert person.biography is None
 
 
-def test_serialization():
+def test_person_serialization():
+    """verify that alias is used for serialization"""
 
     # given
     characteristics = PersonCharacteristics(
-        handicaps=["blind", "deaf"],
+        uid="123",
+        disabilities=["blind", "deaf"],
     )
 
     # when
-    serialized = characteristics.model_dump_json(by_alias=True, exclude_none=True)
+    serialized = characteristics.model_dump_json(exclude_none=True)
 
     # then
-    assert serialized == '{"handicaps":["blind","deaf"]}'
+    assert serialized == '{"uid":"123","handicaps":["blind","deaf"]}'
 
 
 def test_model_schema():
 
     # given
-    schema = PersonCharacteristics.model_json_schema(by_alias=True)
+    schema = PersonCharacteristics.model_json_schema()
 
     # when
     result = validate(
         {
             "handicaps": ["sourd"],
+            "uid": "123",
         },
         schema=schema,
     )
@@ -51,13 +54,13 @@ def test_model_schema():
     )  # validate does not return anything, it raises an error if validation fails
 
 
-def test_populate_by_alias():
+def test_from_dump_by_alias():
 
     # given
-    input = '{"handicaps":["sourd", "aveugle"]}'
+    input = '{"handicaps":["sourd", "aveugle"], "uid":"123"}'
 
     # when
-    characs = PersonCharacteristics.model_validate_json(input, by_alias=True)
+    characs = PersonCharacteristics.model_validate_json(input)
 
     # then
     assert characs.disabilities == ["sourd", "aveugle"]

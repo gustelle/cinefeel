@@ -8,7 +8,7 @@ from prefect_dask import DaskTaskRunner
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.entities.source import Sourcable
+from src.entities.source import Storable
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
@@ -44,7 +44,7 @@ class AnalysisFlow(ITaskExecutor):
     @task(task_run_name="do_analysis-{content_id}")
     def do_analysis(
         self, analyzer: IContentAnalyzer, content_id: str, html_content: str
-    ) -> Sourcable | None:
+    ) -> Storable | None:
         """
         Analyze the content and return a storable entity.
 
@@ -93,7 +93,7 @@ class AnalysisFlow(ITaskExecutor):
     @task(
         task_run_name="store_entity-{entity}",
     )
-    def store(self, storage: IStorageHandler, entity: Sourcable) -> None:
+    def store(self, storage: IStorageHandler, entity: Storable) -> None:
         """
         Store the film entity in the storage.
         """

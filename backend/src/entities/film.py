@@ -1,9 +1,15 @@
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from typing import Self
 
-from .woa import WOAInfluence, WOASpecifications, WorkOfArt
+from pydantic import Field, HttpUrl
+
+from src.entities.composable import Composable
+from src.entities.extraction import ExtractionResult
+from src.entities.source import SourcedContentBase, Storable
+
+from .woa import WOAInfluence, WOASpecifications, WOAType, WorkOfArt
 
 
-class FilmActor(BaseModel):
+class FilmActor(Storable):
     """
     Représente un acteur et ses rôles dans un film.
     """
@@ -13,8 +19,8 @@ class FilmActor(BaseModel):
         description="The full name of the actor.",
         examples=["John Doe", "Jane Smith"],
         repr=False,
-        alias="nom_complet",
         serialization_alias="nom_complet",
+        validation_alias="nom_complet",
     )
     roles: list[str] | None = Field(
         None,
@@ -28,7 +34,7 @@ class FilmActor(BaseModel):
     )
 
 
-class FilmSummary(BaseModel):
+class FilmSummary(Storable):
     """
     le résumé d'un film.
     """
@@ -38,20 +44,20 @@ class FilmSummary(BaseModel):
         description="The summary of the film.",
         examples=["A thrilling adventure through time and space."],
         repr=False,
-        alias="contenu_resume",
         serialization_alias="contenu_resume",
+        validation_alias="contenu_resume",
     )
     source: str | None = Field(
         None,
         description="The source URL of the summary.",
         examples=["https://example.com/film-summary"],
         repr=False,
-        alias="source_resume",
         serialization_alias="source_resume",
+        validation_alias="source_resume",
     )
 
 
-class FilmMedia(BaseModel):
+class FilmMedia(Storable):
     """
     représente les médias associés à un film, tels que l'affiche, les autres médias et la bande-annonce.
     """
@@ -59,20 +65,20 @@ class FilmMedia(BaseModel):
     poster: str | None = Field(
         None,
         repr=False,
-        alias="url_affiche",
         serialization_alias="url_affiche",
+        validation_alias="url_affiche",
     )
     other_media: list[str] | None = Field(
         None,
         repr=False,
-        alias="url_autres_contenus",
         serialization_alias="url_autres_contenus",
+        validation_alias="url_autres_contenus",
     )
     trailer: HttpUrl | None = Field(
         None,
         repr=False,
-        alias="url_bande_annonce",
         serialization_alias="url_bande_annonce",
+        validation_alias="url_bande_annonce",
     )
 
 
@@ -86,87 +92,111 @@ class FilmSpecifications(WOASpecifications):
     directed_by: list[str] | None = Field(
         None,
         repr=False,
-        alias="realisateurs",
         serialization_alias="realisateurs",
+        validation_alias="realisateurs",
     )
     produced_by: list[str] | None = Field(
         None,
         repr=False,
-        alias="producteurs",
         serialization_alias="producteurs",
+        validation_alias="producteurs",
     )
     genres: list[str] | None = Field(
         None,
         repr=False,
-        alias="genres",
         serialization_alias="genres",
+        validation_alias="genres",
     )
     special_effects_by: list[str] | None = Field(
         None,
         repr=False,
-        alias="effets_speciaux",
         serialization_alias="effets_speciaux",
+        validation_alias="effets_speciaux",
     )
     scenary_by: list[str] | None = Field(
         None,
         repr=False,
-        alias="decorateurs",
         serialization_alias="decorateurs",
+        validation_alias="decorateurs",
     )
     written_by: list[str] | None = Field(
         None,
         repr=False,
-        alias="scenaristes",
         serialization_alias="scenaristes",
+        validation_alias="scenaristes",
     )
     music_by: list[str] | None = Field(
         None,
         repr=False,
-        alias="compositeurs_musique",
         serialization_alias="compositeurs_musique",
+        validation_alias="compositeurs_musique",
     )
     duration: str | None = Field(
         None,
         description="The duration of the film in HH:MM:SS format.",
         examples=["01:30:00", "02:15:45"],
         repr=False,
-        alias="duree_film",
         serialization_alias="duree_film",
+        validation_alias="duree_film",
     )
 
 
-class Film(WorkOfArt):
+class Film(Composable, WorkOfArt):
     """ """
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     summary: FilmSummary | None = Field(
         None,
         repr=False,
-        alias="resume",
         serialization_alias="resume",
+        validation_alias="resume",
     )
     media: FilmMedia | None = Field(
         None,
         repr=False,
-        alias="medias",
         serialization_alias="medias",
+        validation_alias="medias",
     )
     influences: list[WOAInfluence] | None = Field(
         None,
         repr=False,
-        alias="influences",
         serialization_alias="influences",
+        validation_alias="influences",
     )
     specifications: FilmSpecifications | None = Field(
         None,
         repr=False,
-        alias="fiche_technique",
         serialization_alias="fiche_technique",
+        validation_alias="fiche_technique",
     )
     actors: list[FilmActor] | None = Field(
         None,
         repr=False,
-        alias="acteurs",
         serialization_alias="acteurs",
+        validation_alias="acteurs",
     )
+
+    @classmethod
+    def from_parts(
+        cls,
+        base_info: SourcedContentBase,
+        parts: list[ExtractionResult],
+    ) -> Self:
+        """
+        Compose this entity with other entities or data.
+
+        Args:
+            base_info (SourcedContentBase): Base information including title, permalink, and uid.
+            parts (list[ExtractionResult]): List of ExtractionResult objects containing parts to compose.
+
+        Returns:
+            Film: A new instance of the composed Film entity.
+        """
+
+        additional_fields = {
+            "uid": base_info.uid,
+            "title": base_info.title,
+            "permalink": base_info.permalink,
+            "woa_type": WOAType.FILM,
+        }
+
+        return cls.construct(parts, **additional_fields)

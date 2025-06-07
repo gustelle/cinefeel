@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field, HttpUrl
 
+from src.entities.extraction import ExtractionResult
 from src.entities.person import PersonCharacteristics
 from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import ExtractionResult
 from src.repositories.ml.ollama_parser import OllamaExtractor
 
 
@@ -28,7 +28,7 @@ def test_ollama_is_called_correctly(mocker):
         def __init__(self, message):
             self.message = message
 
-    response = '{"handicaps":["sourd", "aveugle"], "score": 0.95}'
+    response = '{"handicaps":["sourd", "aveugle"], "uid": "123", "score": 0.95}'
 
     mocker.patch(
         "src.repositories.ml.ollama_parser.ollama.chat",
