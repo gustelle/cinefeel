@@ -117,10 +117,10 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             # skip sections that are None
             if built_section is None:
                 continue
-            else:
-                logger.debug(
-                    f"> '{built_section.title}': {built_section.content[:50]}... ({len(built_section.children)} children)"
-                )
+            # else:
+            #     logger.debug(
+            #         f"> '{built_section.title}': {built_section.content[:50]}... ({len(built_section.children)} children)"
+            #     )
 
             sections.append(built_section)
 
@@ -167,11 +167,11 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             ignored_title in section_title.casefold()
             for ignored_title in self.SKIPPED_SECTIONS
         ):
-            logger.debug(f"SKIPPED SECTION: '{section_title}'")
+            # logger.debug(f"SKIPPED SECTION: '{section_title}'")
             return None
 
         if re.search(rf"{self.VOID_SECTION_MARKER}", tag.get_text(), re.IGNORECASE):
-            logger.debug(f"VOID SECTION: '{section_title}'")
+            # logger.debug(f"VOID SECTION: '{section_title}'")
             return None
 
         # if the section contains children sections

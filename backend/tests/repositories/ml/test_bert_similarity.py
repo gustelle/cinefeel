@@ -139,3 +139,38 @@ def test_most_similar_section_with_title_none():
     assert most_similar_section is not None
     assert most_similar_section.title == ""
     assert most_similar_section.content == "This is a film."
+
+
+def test_most_similar_section_children_are_returned_in_section():
+    """
+    Test that the most similar section returns children sections.
+    """
+
+    # given
+    bert_similarity_search = SimilarSectionSearch(Settings())
+
+    # Define a title and sections with children
+    title = "film"
+    sections = [
+        {
+            "title": "film",
+            "content": "This is a film.",
+            "children": [
+                {"title": "director", "content": "Directed by John Doe."},
+                {"title": "cast", "content": "Starring Jane Doe."},
+            ],
+        },
+        {"title": "cinema", "content": "This is a cinema."},
+        {"title": "personne", "content": "This is a person."},
+    ]
+    sections = [Section(**section) for section in sections]
+
+    # Perform the similarity search
+    most_similar_section = bert_similarity_search.process(title, sections)
+
+    # Check that the most similar section is correct
+    assert most_similar_section.title == "film"
+    assert most_similar_section.content == "This is a film."
+    assert len(most_similar_section.children) == 2
+    assert most_similar_section.children[0].title == "director"
+    assert most_similar_section.children[1].title == "cast"

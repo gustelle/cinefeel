@@ -161,4 +161,5 @@ class SimilarSectionSearch(MLProcessor[Section]):
         return Section(
             title=most_similar_section_title,
             content=_section_content.content,
+            children=_section_content.children,
         )

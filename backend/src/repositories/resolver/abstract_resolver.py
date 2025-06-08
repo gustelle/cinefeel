@@ -78,6 +78,16 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
         """
 
+        logger.debug(
+            f"Content '{base_info.uid}' being processed with {len(sections)} sections."
+        )
+
+        for section in sections:
+            if section.children:
+                logger.debug(
+                    f"  > Section '{section.title}' has {len(section.children)} children."
+                )
+
         extracted_parts: list[ExtractionResult] = []
         for entity_type, titles in self.entity_to_sections.items():
 
@@ -92,9 +102,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                 # take into account the section children
                 if section.children:
                     for child in section.children:
-                        logger.debug(
-                            f"Processing child section '{child.title}' for entity type '{entity_type.__name__}' in content '{base_info.uid}'."
-                        )
+
                         result = self.entity_extractor.extract_entity(
                             content=child.content,
                             entity_type=entity_type,
@@ -103,9 +111,11 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
                         if result.entity is None:
                             continue
-                        # logger.debug(
-                        #     f"<{base_info.uid}>-[{section.title}]-[{child.title}] {result.entity.model_dump(mode='json')} (confidence {result.score})."
-                        # )
+
+                        logger.debug(
+                            f"Entity '{entity_type.__name__}' found in child '{section.title}/{child.title}' for content '{base_info.uid}'."
+                        )
+
                         extracted_parts.append(result)
 
                 result = self.entity_extractor.extract_entity(
@@ -117,15 +127,13 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                 # assign uid to enable later merge of information
                 result.entity.uid = f"{entity_type.__name__.casefold()}_{base_info.uid}"
 
-                # logger.debug(
-                #     f"Assigned UID '{result.entity.uid}' to extracted entity from section '{section.title}'."
-                # )
-
                 if result.entity is None:
                     continue
+
                 logger.debug(
-                    f"<{base_info.uid}>-[{section.title}] {result.entity.model_dump(mode='json')} (confidence {result.score})."
+                    f"Entity '{entity_type.__name__}' found in main section '{section.title}' for content '{base_info.uid}'."
                 )
+
                 extracted_parts.append(result)
 
         return extracted_parts

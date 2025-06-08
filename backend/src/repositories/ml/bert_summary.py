@@ -1,4 +1,3 @@
-from loguru import logger
 from summarizer.sbert import SBertSummarizer
 
 from src.interfaces.content_splitter import Section
@@ -65,7 +64,7 @@ class SectionSummarizer(MLProcessor[Section]):
         title = section.title
 
         if len(section.content) > self.settings.bert_summary_max_length:
-            logger.debug(f"section '{section.title}' is too long, summarizing it")
+            # logger.debug(f"section '{section.title}' is too long, summarizing it")
             new_content = self.summarizer.run(
                 section.content, max_length=self.settings.bert_summary_max_length
             )
