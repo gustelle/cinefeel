@@ -176,6 +176,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
         # if the section contains children sections
         sub_sections = tag.find_all(sections_tag_name, recursive=flatten)
+
         if sub_sections:
 
             content = ""

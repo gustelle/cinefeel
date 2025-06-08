@@ -42,9 +42,12 @@ def test_split_melies_page(read_melies_html):
     assert sections is not None
     assert len(sections) > 0
 
+    for section in sections:
+        print(f"Section title: {section.title}")
+
     # test a children section
     assert any(
-        '<h3 id="Jeunesse">' in section.title for section in sections
+        '<h3 id="Jeunesse">' in section.content for section in sections
     ), "Should contain 'Jeunesse' section with children"
 
 
