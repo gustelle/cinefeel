@@ -6,9 +6,9 @@ from prefect import flow, get_run_logger, task
 from prefect.futures import PrefectFuture
 from prefect_dask import DaskTaskRunner
 
+from src.entities.composable import Composable
 from src.entities.film import Film
 from src.entities.person import Person
-from src.entities.source import Storable
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
@@ -32,19 +32,19 @@ class AnalysisFlow(ITaskExecutor):
 
     """
 
-    entity_type: type[Film | Person]
+    entity_type: type[Composable]
     settings: Settings
     dask_client: distributed.Client
     dask_client_address: str
 
-    def __init__(self, settings: Settings, entity_type: Type[Film | Person]):
+    def __init__(self, settings: Settings, entity_type: Type[Composable]):
         self.settings = settings
         self.entity_type = entity_type
 
     @task(task_run_name="do_analysis-{content_id}")
     def do_analysis(
         self, analyzer: IContentAnalyzer, content_id: str, html_content: str
-    ) -> Storable | None:
+    ) -> Composable | None:
         """
         Analyze the content and return a storable entity.
 
@@ -57,7 +57,7 @@ class AnalysisFlow(ITaskExecutor):
             Storable | None: _description_
         """
         logger = get_run_logger()
-        result = analyzer.analyze(content_id, html_content)
+        result = analyzer.process(content_id, html_content)
 
         if result is None:
             logger.warning(
@@ -93,7 +93,7 @@ class AnalysisFlow(ITaskExecutor):
     @task(
         task_run_name="store_entity-{entity}",
     )
-    def store(self, storage: IStorageHandler, entity: Storable) -> None:
+    def store(self, storage: IStorageHandler, entity: Composable) -> None:
         """
         Store the film entity in the storage.
         """

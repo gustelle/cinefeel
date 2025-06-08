@@ -17,7 +17,7 @@ class IContentAnalyzer(Protocol):
     Interface for a parser that extracts data from a given HTML content.
     """
 
-    def analyze(
+    def process(
         self,
         content_id: str,
         html_content: str,
@@ -25,7 +25,7 @@ class IContentAnalyzer(Protocol):
         **kwargs,
     ) -> tuple[SourcedContentBase, Sequence[Section]] | None:
         """
-        Parses the given HTML content and extracts relevant data into a list of `Section` objects.
+        Extracts data from the provided HTML content and returns a structured representation.
 
         Args:
             content_id (str): The unique identifier for the content being analyzed.

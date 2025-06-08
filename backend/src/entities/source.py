@@ -35,6 +35,7 @@ class Storable(BaseModel):
 
         # remove quotes
         value = value.replace('"', "").replace("'", "")
+
         return value
 
 

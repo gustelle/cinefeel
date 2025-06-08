@@ -11,7 +11,7 @@ class StubAnalyzer(IContentAnalyzer):
 
     is_analyzed: bool = False
 
-    def analyze(
+    def process(
         self, *args, **kwargs
     ) -> tuple[SourcedContentBase, Sequence[Section]] | None:
         # This is a stub method that simulates analysis

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 
 from src.interfaces.info_retriever import PageLink, RetrievalError
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
@@ -318,31 +319,61 @@ def test_extract_links_excludes_non_existing_pages():
     assert all(item in expected_output for item in result)
 
 
-def test_parse_info_table(read_beethoven_html):
+def test_retrieve_infobox(read_beethoven_html):
 
     # given
 
     semantic = WikipediaInfoRetriever()
 
     # when
-    info_box = semantic.retrieve_infoboxes(read_beethoven_html)
+    info_box = semantic.retrieve_infobox(read_beethoven_html)
 
     # then
     assert info_box is not None
-    assert len(info_box) > 0
+    assert len(info_box.content) > 0
 
 
-def test_retrieve_infoboxes_section_title(read_beethoven_html):
+def test_retrieve_infobox_return_table(read_beethoven_html):
 
     # given
 
     semantic = WikipediaInfoRetriever()
 
     # when
-    info_box = semantic.retrieve_infoboxes(read_beethoven_html)
+    info_box = semantic.retrieve_infobox(read_beethoven_html, format_as="table")
 
     # then
-    assert all(section.title == "Données clés" for section in info_box)
+    assert info_box is not None
+    soup = BeautifulSoup(info_box.content, "html.parser")
+    assert soup.table is not None, "Content is not in table format"
+
+
+def test_retrieve_infobox_return_list(read_beethoven_html):
+
+    # given
+
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    info_box = semantic.retrieve_infobox(read_beethoven_html)
+
+    # then
+    assert info_box is not None
+    soup = BeautifulSoup(info_box.content, "html.parser")
+    assert soup.ul is not None, "Content is not in list format"
+
+
+def test_retrieve_infobox_section_title(read_beethoven_html):
+
+    # given
+
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    info_box = semantic.retrieve_infobox(read_beethoven_html)
+
+    # then
+    assert info_box.title == "Données clés"
 
 
 def test_retrieve_permalink_from_canonical(read_beethoven_html):
