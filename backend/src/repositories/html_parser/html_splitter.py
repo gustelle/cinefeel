@@ -47,18 +47,41 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
         Example:
             ```python
-            html_content = "<section><h2>Section Title</h2><p>Content of the section.</p></section>"
+            # example with nested sections:
+            html_content = "<section><h2>Main Section</h2><p>Content of the main section.</p><section><h3>Subsection</h3><p>Content of the subsection.</p></section></section>"
             splitter = WikipediaAPIContentSplitter()
-            sections = splitter.split(html_content)
-
+            sections = splitter.split(html_content, flatten=False)
             # would return:
             [
                 Section(
-                    title="Section Title",
-                    content="Content of the section.",
+                    title="Main Section",
+                    content="Content of the main section.",
+                    children=[
+                        Section(
+                            title="Subsection",
+                            content="Content of the subsection.",
+                            children=[]
+                        )
+                    ]
+                )
+            ]
+
+            # but when flatten is set to True, the hierarchy is flattened:
+            sections = splitter.split(html_content, flatten=True)
+            # would return:
+            [
+                Section(
+                    title="Main Section",
+                    content="Content of the main section.",
+                    children=[]
+                ),
+                Section(
+                    title="Subsection",
+                    content="Content of the subsection.",
                     children=[]
                 )
             ]
+
             ```
         Raises:
 
@@ -94,6 +117,10 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             # skip sections that are None
             if built_section is None:
                 continue
+            else:
+                logger.debug(
+                    f"> '{built_section.title}': {built_section.content[:50]}... ({len(built_section.children)} children)"
+                )
 
             sections.append(built_section)
 

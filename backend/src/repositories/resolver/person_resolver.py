@@ -8,10 +8,6 @@ class BasicPersonResolver(AbstractResolver[Person]):
     """
     Responsible for extracting information from sections and assembling a Person entity.
 
-    TODO:
-    - prendre en compte les sections enfant
-    - prendre en compte les sections sans titre
-    - prendre en compte les sections orphanes (sans parent)
 
     """
 
@@ -24,7 +20,7 @@ class BasicPersonResolver(AbstractResolver[Person]):
         self.entity_extractor = entity_extractor
         self.section_searcher = section_searcher
         self.entity_to_sections = entity_to_sections or {
-            Biography: ["Introduction", "Biographie"],
-            PersonMedia: ["Données clés", "Biographie"],
-            PersonCharacteristics: ["Introduction", "Biographie"],
+            Biography: ["Données clés", "Introduction", "Biographie", ""],
+            PersonMedia: ["Données clés", "Biographie", ""],
+            PersonCharacteristics: ["Données clés", "Introduction", "Biographie", ""],
         }

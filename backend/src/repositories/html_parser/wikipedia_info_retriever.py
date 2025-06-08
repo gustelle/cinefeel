@@ -236,12 +236,16 @@ class WikipediaInfoRetriever(IInfoRetriever):
 
         return [PageLink(**row) for row in df.to_dicts()]
 
-    def retrieve_infoboxes(self, html_content: str) -> list[Section] | None:
+    def retrieve_infobox(
+        self, html_content: str, format_as: Literal["table", "list"] = "list"
+    ) -> Section | None:
         """
         Extracts the information table from the HTML content.
 
         Args:
             html_content (str): The HTML content to parse.
+            format_as (Literal["table", "list"]): The format in which to return the infobox data.
+                Defaults to "list". If "table", returns a the raw HTML table, otherwise returns an HTML list.
 
         Returns:
             list[Section] | None: A list of `Section` objects representing the infobox elements,
@@ -259,13 +263,27 @@ class WikipediaInfoRetriever(IInfoRetriever):
         if df.empty:
             return None
 
+        if format_as == "table":
+            # return the raw HTML table
+            content = content.find("table").prettify()
+
+        else:
+            # format the DataFrame as a list of values
+            # split by a colon (:) and return as a Section object
+            content = f"""
+            <ul>
+                {'\n'.join(f'<li>{row[0]}: {row[1]}</li>' for row in df.values)}
+            </ul>
+            """
+
         # convert the DataFrame to a list of Section objects
-        info_table = [
-            Section(
-                title="Données clés",
-                content=str(row[1]) if len(row) > 1 else None,
-            )
-            for row in df.values
-        ]
+        info_table = Section(
+            title="Données clés",
+            content=content,
+        )
+
+        logger.debug(
+            f"Info table found: {info_table.title} with content: {info_table.content}"
+        )
 
         return info_table

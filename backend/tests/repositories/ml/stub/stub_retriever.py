@@ -70,7 +70,7 @@ class StubHtmlRetriever(IInfoRetriever):
             PageLink(page_title="Another Page", page_id="Another_Page"),
         ]
 
-    def retrieve_infoboxes(self, *args, **kwargs) -> list[Section] | None:
+    def retrieve_infobox(self, *args, **kwargs) -> list[Section] | None:
         """
         Returns a predefined list of InfoBoxElement objects for testing.
         """

@@ -27,6 +27,27 @@ def test_split_complex_page(read_beethoven_html):
     ), "All sections should be of type HtmlSection"
 
 
+def test_split_melies_page(read_melies_html):
+    """
+    Test the split_sections method of the HtmlSemantic class.
+    """
+    # given
+    semantic = WikipediaAPIContentSplitter()
+
+    # when
+    # we must flatten here because the root element has no direct section child
+    sections = semantic.split(read_melies_html, flatten=True)
+
+    # then
+    assert sections is not None
+    assert len(sections) > 0
+
+    # test a children section
+    assert any(
+        '<h3 id="Jeunesse">' in section.title for section in sections
+    ), "Should contain 'Jeunesse' section with children"
+
+
 def test_split_with_root_tag(read_beethoven_html):
 
     # given
@@ -201,3 +222,24 @@ def test_split_nested_sections_with_div():
     assert len(sections[0].children) == 2
     assert sections[0].children[0].title == "Nested Section 1.1"
     assert sections[0].children[1].title == "Nested Section 1.2"
+
+
+def test_split_complex_simplified_page(read_simplified_melies):
+    """
+    For example, this simplified page has a complex structure with nested sections.
+    and also a section with a void title (no h2 tag)
+    """
+    # given
+    semantic = WikipediaAPIContentSplitter()
+
+    # when
+    sections = semantic.split(read_simplified_melies)
+
+    # then
+    assert sections is not None
+    assert len(sections) > 0
+    assert "Pour les articles homonymes" in sections[0].content
+    assert any(
+        section.title == "Biographie" and len(section.children) > 0
+        for section in sections
+    ), "Should contain 'Jeunesse' section"

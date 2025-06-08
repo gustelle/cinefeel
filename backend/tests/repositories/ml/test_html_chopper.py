@@ -59,7 +59,7 @@ def test_analyze_nominal_case():
     )
 
     # when
-    base_info, sections = analyzer.analyze(content_id, html_content)
+    base_info, sections = analyzer.process(content_id, html_content)
 
     # then
     assert isinstance(base_info, SourcedContentBase)
@@ -88,7 +88,7 @@ def test_analyze_empty_html():
     )
 
     # when
-    result = analyzer.analyze(content_id, html_content)
+    result = analyzer.process(content_id, html_content)
 
     # then
     assert result is None
@@ -114,7 +114,7 @@ def test_analyze_splitter_is_called():
     )
 
     # when
-    analyzer.analyze(content_id, html_content)
+    analyzer.process(content_id, html_content)
 
     # then
     assert splitter.is_called
@@ -140,7 +140,7 @@ def test_analyze_summarizer_is_called():
     )
 
     # when
-    analyzer.analyze(content_id, html_content)
+    analyzer.process(content_id, html_content)
 
     # then
     assert summarizer.is_called
@@ -166,7 +166,7 @@ def test_analyze_simplifier_is_called():
     )
 
     # when
-    analyzer.analyze(content_id, html_content)
+    analyzer.process(content_id, html_content)
 
     # then
     assert html_simplifier.is_called
@@ -192,7 +192,7 @@ def test_analyze_no_permalink_found():
     )
 
     # when
-    result = analyzer.analyze(content_id, html_content)
+    result = analyzer.process(content_id, html_content)
 
     # then
     assert result is None
@@ -218,7 +218,7 @@ def test_analyze_no_title_found():
     )
 
     # when
-    result = analyzer.analyze(content_id, html_content)
+    result = analyzer.process(content_id, html_content)
 
     # then
     assert result is None

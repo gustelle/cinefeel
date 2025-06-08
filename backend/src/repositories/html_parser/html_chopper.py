@@ -33,14 +33,10 @@ class HtmlChopper(IContentAnalyzer):
         self.html_simplifier = html_simplifier
         self.html_pruner = html_pruner
 
-    def analyze(
+    def process(
         self, content_id: str, html_content: str
     ) -> tuple[SourcedContentBase, list[Section]] | None:
         """
-        Analyzes the HTML content and extracts relevant objects from it.
-
-        TODO:
-        - test non reg when no additional sections are found
 
         Args:
             content_id (str): The unique identifier for the content being analyzed.
@@ -61,6 +57,11 @@ class HtmlChopper(IContentAnalyzer):
             permakink = self.html_retriever.retrieve_permalink(html_content)
             title = self.html_retriever.retrieve_title(html_content)
 
+            # infobox sections titles are "Données clés"
+            infobox = self.html_retriever.retrieve_infobox(
+                html_content, format_as="list"
+            )
+
             # simplify the HTML content
             simplified_content = self.html_simplifier.process(html_content)
 
@@ -75,20 +76,19 @@ class HtmlChopper(IContentAnalyzer):
             )
             if orphaned_section is not None:
                 sections.append(orphaned_section)
+                logger.debug(
+                    f"Added orphaned section to content '{content_id}': {orphaned_section.title}."
+                )
+
+            if infobox is not None:
+                sections.append(infobox)
+                logger.debug(f"Added infobox sections to content '{content_id}'.")
 
             if sections is None or len(sections) == 0:
                 logger.warning(
                     f"no sections found, skipping the content '{content_id}'"
                 )
                 return None
-
-            # infobox sections titles are "Données clés"
-            additional_sections = self.html_retriever.retrieve_infoboxes(
-                simplified_content
-            )
-
-            if additional_sections is not None and len(additional_sections) > 0:
-                sections.extend(additional_sections)
 
             # base information
             base_info = SourcedContentBase(
@@ -99,6 +99,10 @@ class HtmlChopper(IContentAnalyzer):
 
             # convert to Text / Ascii
             sections = [self.html_pruner.process(section) for section in sections]
+
+            for section in sections:
+                if section is None:
+                    continue
 
             # summarize the sections for better processing
             sections = [

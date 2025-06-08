@@ -102,8 +102,8 @@ class IInfoRetriever(Protocol):
         """
         pass
 
-    def retrieve_infoboxes(self, *args, **kwargs) -> list[Section] | None:
+    def retrieve_infobox(self, *args, **kwargs) -> Section | None:
         """
-        Retrieves the infobox elements and returns them as a list of `Section` objects.
+        Retrieves the infobox and transforms it into a `Section` object
         """
         raise NotImplementedError("Subclasses must implement this method.")
