@@ -83,7 +83,8 @@ class Biography(Storable):
     )
     nationalities: list[str] | None = Field(
         None,
-        description="The nationalities of the person. This can be used to filter the list of people.",
+        description="les nationalités de la personne",
+        examples=["français", "américain", "canadien"],
         repr=False,
         serialization_alias="nationalites",
         validation_alias="nationalites",
@@ -163,6 +164,8 @@ class PersonCharacteristics(Storable):
         repr=False,
         serialization_alias="poids",
         validation_alias="poids",
+        examples=["70 kg", "80 kg"],
+        description="Le poids de la personne, par exemple '70 kg' ou '80 kg'.",
     )
     skin_color: str | None = Field(
         None,

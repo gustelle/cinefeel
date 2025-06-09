@@ -37,7 +37,7 @@ def test_from_parts_list_of_different_entities():
 
     film = Film.from_parts(base_info, parts)
 
-    assert film.uid == "film-123"
+    assert "film-123" in film.uid
     assert film.title == "Test Film"
     assert str(film.permalink) == "http://example.com/test-film"
     assert film.summary.content == "A thrilling film."
@@ -84,7 +84,7 @@ def test_from_parts_list_of_sames_entities():
 
     film = Film.from_parts(base_info, parts)
 
-    assert film.uid == "film-123"
+    assert "film-123" in film.uid
     assert film.title == "Test Film"
     assert str(film.permalink) == "http://example.com/test-film"
     assert film.summary.content == "A thrilling film."

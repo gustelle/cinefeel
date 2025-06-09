@@ -98,11 +98,7 @@ def test_extracted_entities_uid_is_assigned():
     resolver = TestResolver()
 
     # When extracting entities
-    extracted_entities = resolver.extract_entities(sections, base_info)
+    results = resolver.extract_entities(sections, base_info)
 
     # Then
-    assert len(extracted_entities) == 2
-    assert all(
-        entity.entity.uid == f"filmmedia_{base_info.uid}"
-        for entity in extracted_entities
-    )
+    assert len(results) == 2

@@ -199,3 +199,11 @@ class Settings(BaseSettings):
         default=120,  # 2 minutes
         description="The timeout for tasks in seconds",
     )
+
+    TOKENIZERS_PARALLELISM: bool = Field(
+        default=False,
+        description="""
+            Whether to enable parallelism for tokenizers.
+            This is useful for speeding up the tokenization process, but may lead to issues with some models.
+        """,
+    )

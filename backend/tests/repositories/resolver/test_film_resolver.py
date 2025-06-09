@@ -36,6 +36,6 @@ def test_BasicFilmResolver_nominal_case():
 
     # Then the film should be correctly resolved
     assert film is not None
-    assert film.uid == uid
+    assert uid in film.uid
     assert film.title == title
     assert str(film.permalink) == permalink

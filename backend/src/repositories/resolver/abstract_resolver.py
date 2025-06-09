@@ -113,7 +113,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                             continue
 
                         logger.debug(
-                            f"Entity '{entity_type.__name__}' found in child '{section.title}/{child.title}' for content '{base_info.uid}'."
+                            f"'{section.title}/{child.title}' > found entity: {result.entity.model_dump_json()} ({result.score:.2f})"
                         )
 
                         extracted_parts.append(result)
@@ -124,14 +124,11 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                     base_info=base_info,
                 )
 
-                # assign uid to enable later merge of information
-                result.entity.uid = f"{entity_type.__name__.casefold()}_{base_info.uid}"
-
                 if result.entity is None:
                     continue
 
                 logger.debug(
-                    f"Entity '{entity_type.__name__}' found in main section '{section.title}' for content '{base_info.uid}'."
+                    f"'{section.title}' > found entity: {result.entity.model_dump_json()} ({result.score:.2f})"
                 )
 
                 extracted_parts.append(result)

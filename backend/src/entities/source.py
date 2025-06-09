@@ -7,6 +7,7 @@ from unidecode import unidecode
 class Storable(BaseModel):
     """
     An object that can be stored in a database or a file.
+
     """
 
     model_config = ConfigDict(serialize_by_alias=True, populate_by_name=True)
@@ -35,6 +36,8 @@ class Storable(BaseModel):
 
         # remove quotes
         value = value.replace('"', "").replace("'", "")
+
+        value = f"{cls.__name__.casefold()}_{value}"
 
         return value
 
