@@ -2,7 +2,7 @@ from typing import Literal, Protocol
 
 from pydantic import HttpUrl
 
-from src.entities.content import PageLink, Section
+from src.entities.content import Media, PageLink, Section
 
 
 class RetrievalError(Exception):
@@ -102,8 +102,25 @@ class IInfoRetriever(Protocol):
         """
         pass
 
-    def retrieve_infobox(self, *args, **kwargs) -> Section | None:
+    def retrieve_infobox(self, html_content: str, *args, **kwargs) -> Section | None:
         """
         Retrieves the infobox and transforms it into a `Section` object
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def retrieve_media(self, html_content: str, *args, **kwargs) -> list[Media]:
+        """
+        Retrieves media links from the HTML content.
+
+        Args:
+            html_content (str): The HTML content to parse.
+            *args: Additional arguments to pass to the parser.
+            **kwargs: Additional keyword arguments to pass to the parser.
+
+        Returns:
+            list[str]: A list of media links extracted from the HTML content.
+
+        Raises:
+            RetrievalError: if media links cannot be found in the HTML content.
         """
         raise NotImplementedError("Subclasses must implement this method.")

@@ -508,3 +508,22 @@ def test_retrieve_orphan_paragraphs_works_with_divs():
     assert (
         "This is an orphan paragraph before the first section" in orphan_section.content
     )
+
+
+def test_retrieve_media(read_beethoven_html):
+    # given
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    media = semantic.retrieve_media(read_beethoven_html)
+
+    # then
+
+    assert media is not None
+    assert len(media) > 0
+    assert (
+        len(list(filter(lambda m: m.media_type == "image", media))) > 0
+    ), "No image media found"
+    assert (
+        len(list(filter(lambda m: m.media_type == "audio", media))) > 0
+    ), "No video media found"

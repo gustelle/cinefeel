@@ -1,3 +1,4 @@
+import re
 from io import StringIO
 from typing import Generator, Literal
 
@@ -5,9 +6,9 @@ import pandas as pd
 import polars as pl
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
-from pydantic import HttpUrl
+from pydantic import HttpUrl, ValidationError
 
-from src.entities.content import PageLink, Section
+from src.entities.content import Media, PageLink, Section
 from src.interfaces.info_retriever import IInfoRetriever, RetrievalError
 from src.settings import WikiTOCPageConfig
 
@@ -287,3 +288,111 @@ class WikipediaInfoRetriever(IInfoRetriever):
         )
 
         return info_table
+
+    def retrieve_media(self, html_content) -> list[Media]:
+        """
+        Extracts media links from the HTML content.
+
+        TODO:
+        - testing
+
+        Args:
+            html_content (str): The HTML content to parse.
+        Returns:
+            list[HttpUrl]: A list of media links (images, videos, etc.) found in the HTML content.
+        """
+        soup = BeautifulSoup(html_content, "html.parser")
+        media_ = []
+
+        # Find all image tags
+        for media_tag in soup.find_all(["video", "audio", "img"]):
+
+            # case where the caption is in the sibling <figcaption> tag of the <img> tag
+            caption = self._get_media_caption(media_tag)
+            src = self._get_media_src(media_tag)
+
+            if not src:
+                logger.debug(
+                    f"Skipping media tag {media_tag.name} with no valid src: {media_tag}"
+                )
+                continue
+
+            try:
+                media_type = (
+                    "image"
+                    if media_tag.name == "img"
+                    else ("video" if media_tag.name == "video" else "audio")
+                )
+                media_.append(
+                    Media(
+                        uid=media_tag.get("id", src),
+                        src=HttpUrl(src),
+                        media_type=media_type,
+                        caption=caption,
+                    )
+                )
+            except ValidationError as e:
+                logger.warning(f"Error creating Media object: {e} for tag: {media_tag}")
+
+        return media_
+
+    def _get_media_caption(self, tag: Tag) -> str:
+        """
+        Extracts the caption from a given HTML tag.
+
+        Args:
+            tag (Tag): The HTML tag to extract the caption from.
+
+        Returns:
+            str: The extracted caption text.
+        """
+        figcaption = tag.parent.find_next_sibling("figcaption")
+        if figcaption:
+            return figcaption.get_text(strip=True)
+        return tag.get("alt", "")
+
+    def _get_media_src(self, tag: Tag) -> str:
+        """
+        Extracts the media source URL from a given HTML tag.
+
+        Args:
+            tag (Tag): The HTML tag to extract the media source from.
+
+        Returns:
+            str: The extracted media source URL.
+        """
+        # case of images
+        if tag.name == "img":
+            src = tag.get("srcset", tag.get("src"))
+            if isinstance(src, str):
+                # srcset can be a string or a list of strings, we need to take the first one
+                src = src.split(",")[0].strip().split(" ")[0]
+
+            # ignore relative URLs
+            if not src or re.match(r"^(\.\/|data:).+", src):
+                return None
+
+            # enventually, the src can be a relative URL, so we need to convert it to an absolute URL
+            if src and src.startswith("//"):
+                src = f"https:{src}"
+            return src
+
+        # case of videos and audios
+        if tag.name in ["video", "audio"]:
+            src = tag.get("src")
+            if not src:
+                # try to get the source from the source tag
+                source_tag = tag.find("source")
+                if source_tag:
+                    src = source_tag.get("src")
+
+            # ignore relative URLs
+            if not src or re.match(r"^(\.\/|data:).+", src):
+                return None
+
+            if src and src.startswith("//"):
+                src = f"https:{src}"
+            return src
+
+        # if the tag is not an image, video or audio, return an empty string
+        return None
