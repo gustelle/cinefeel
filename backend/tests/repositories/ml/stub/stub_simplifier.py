@@ -1,7 +1,7 @@
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 
 
-class StubSimplifier(MLProcessor):
+class StubSimplifier(Processor):
     """
     A stub implementation of the ISimilaritySearch interface for testing purposes.
     """

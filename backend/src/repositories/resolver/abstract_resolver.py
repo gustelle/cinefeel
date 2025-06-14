@@ -7,7 +7,7 @@ from src.entities.content import Section
 from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
 from src.interfaces.extractor import IContentExtractor
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import IEntityResolver
 
 
@@ -21,7 +21,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     entity_type: T
     entity_to_sections: dict[type, list[str]]
     entity_extractor: IContentExtractor
-    section_searcher: MLProcessor
+    section_searcher: Processor
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -67,9 +67,6 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         """Extract entities from sections based on predefined mappings.
 
         Sections may have children, in this case the children are considered to retrieve entities;
-
-        TODO:
-        - handle media in sections and children
 
         Args:
             sections (list[Section]): List of Section objects containing content.

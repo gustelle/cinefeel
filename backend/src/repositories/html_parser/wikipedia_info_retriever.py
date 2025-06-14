@@ -32,9 +32,6 @@ class WikipediaInfoRetriever(IInfoRetriever):
         Extracts orphan paragraphs from the HTML content based on the specified position.
         Ophan paragraphs are paragraphs that are not attached to any section.
 
-        TODO:
-        - test media are correctly extracted from the orphan paragraphs
-
         Args:
             html_content (str): The HTML content to parse.
 
@@ -244,9 +241,6 @@ class WikipediaInfoRetriever(IInfoRetriever):
     ) -> Section | None:
         """
         Extracts the information table from the HTML content.
-
-        TODO:
-        - Verify media are correctly extracted from the infobox table.
 
         Args:
             html_content (str): The HTML content to parse.

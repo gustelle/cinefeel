@@ -1,10 +1,10 @@
 import html2text
 
 from src.entities.content import Section
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 
 
-class HTML2TextConverter(MLProcessor[Section]):
+class HTML2TextConverter(Processor[Section]):
 
     html_to_text_transformer: html2text.HTML2Text
 
@@ -20,9 +20,6 @@ class HTML2TextConverter(MLProcessor[Section]):
         proceeds to a text conversion of the HTML content of a section, as well as the title.
 
         CHildren sections are processed as well recursively.
-
-        TODO:
-        - test that media are preserved in the section
 
         Returns:
             Section: A new section with the HTML content and title converted to text.

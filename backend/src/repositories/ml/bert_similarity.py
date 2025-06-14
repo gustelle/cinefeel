@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 
 from src.interfaces.content_splitter import Section
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 from src.settings import Settings
 
 
@@ -17,7 +17,7 @@ class SimilaritySearchError(Exception):
     pass
 
 
-class SimilarSectionSearch(MLProcessor[Section]):
+class SimilarSectionSearch(Processor[Section]):
     """
     Class to handle BERT similarity calculations.
     """
@@ -109,9 +109,6 @@ class SimilarSectionSearch(MLProcessor[Section]):
     def process(self, title: str, sections: list[Section]) -> Section | None:
         """
         Find the most similar `Section` to the given title within the list of sections.
-
-        TODO:
-        - test that media are preserved in the section
 
         Args:
             title (str): The title to find the most similar section for.

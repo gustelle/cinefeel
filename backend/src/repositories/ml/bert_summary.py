@@ -1,11 +1,11 @@
 from summarizer.sbert import SBertSummarizer
 
 from src.interfaces.content_splitter import Section
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 from src.settings import Settings
 
 
-class SectionSummarizer(MLProcessor[Section]):
+class SectionSummarizer(Processor[Section]):
     """
     summarize the content of a section.
 
@@ -53,9 +53,6 @@ class SectionSummarizer(MLProcessor[Section]):
     def _process_section(self, section: Section) -> Section:
         """
         Processes a single section to summarize its content.
-
-        TODO:
-        - test that media are preserved in the section
 
         Args:
             section (Section): The section to process.

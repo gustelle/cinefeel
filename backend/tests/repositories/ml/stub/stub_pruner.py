@@ -1,8 +1,8 @@
 from src.entities.content import Section
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 
 
-class StubPruner(MLProcessor):
+class StubPruner(Processor):
     """
     A stub implementation of the ISimilaritySearch interface for testing purposes.
     """

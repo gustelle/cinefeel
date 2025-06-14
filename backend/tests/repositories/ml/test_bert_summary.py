@@ -1,3 +1,5 @@
+import pytest
+
 from src.interfaces.content_splitter import Section
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.settings import Settings
@@ -105,3 +107,21 @@ Issu d’une famille de courtiers en vins du Languedoc, après des études à Br
     assert len(section.children) == 1
     assert section.children[0].title == "Child Section"
     assert len(section.children[0].content) <= len(child_text)
+
+
+@pytest.mark.todo
+def test_media_are_preserved():
+    # given
+    sample_text = "This is a sample text with media."
+    media = [{"type": "image", "url": "http://example.com/image.jpg"}]
+    section = Section(title="Test Section", content=sample_text, media=media)
+
+    summarize = SectionSummarizer(Settings())
+
+    # when
+    section = summarize.process(section)
+
+    assert section is not None
+    assert section.title == "Test Section"
+    assert len(section.content) <= len(sample_text)
+    assert section.media == media  # Check if media is preserved

@@ -3,7 +3,7 @@ from typing import Protocol
 from src.entities.content import Section
 from src.entities.source import SourcedContentBase
 from src.interfaces.info_retriever import IInfoRetriever
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 
 
 class SplitterError(Exception):
@@ -16,7 +16,7 @@ class IContentSplitter(Protocol):
     """
 
     info_retriever: IInfoRetriever
-    html_simplifier: MLProcessor
+    html_simplifier: Processor
 
     def split(self, *args, **kwargs) -> tuple[SourcedContentBase, list[Section]] | None:
         """

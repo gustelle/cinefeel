@@ -3,10 +3,10 @@ import re
 from bs4 import BeautifulSoup
 from htmlrag import clean_html
 
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 
 
-class HTMLSimplifier(MLProcessor[str]):
+class HTMLSimplifier(Processor[str]):
     """
     Simplifies the HTML content by removing unnecessary tags and attributes.
 

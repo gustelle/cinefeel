@@ -523,3 +523,24 @@ def test_retrieve_media(read_beethoven_html):
     assert (
         len(list(filter(lambda m: m.media_type == "audio", media))) > 0
     ), "No video media found"
+
+
+@pytest.mark.todo
+def test_orphan_paragraphs_having_media():
+    pass
+
+
+@pytest.mark.todo
+def test_infobox_with_media(read_beethoven_html):
+    # given
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    info_box = semantic.retrieve_infobox(read_beethoven_html)
+
+    # then
+    assert info_box is not None
+    assert len(info_box.media) > 0, "No media found in the infobox"
+    assert all(
+        media.media_type == "image" for media in info_box.media
+    ), "Not all media are images"

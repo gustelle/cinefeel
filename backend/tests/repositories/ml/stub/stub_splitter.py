@@ -2,7 +2,7 @@ from src.entities.content import Section
 from src.entities.source import SourcedContentBase
 from src.interfaces.content_splitter import IContentSplitter
 from src.interfaces.info_retriever import IInfoRetriever
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 
 
 class StubHtmlSplitter(IContentSplitter):
@@ -13,7 +13,7 @@ class StubHtmlSplitter(IContentSplitter):
     is_called = False
 
     def __init__(
-        self, content_parser: IInfoRetriever = None, html_simplifier: MLProcessor = None
+        self, content_parser: IInfoRetriever = None, html_simplifier: Processor = None
     ):
         """
         Initializes the StubHtmlSplitter.

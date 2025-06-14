@@ -1,4 +1,3 @@
-
 from src.entities.film import (
     Film,
     FilmActor,
@@ -7,7 +6,7 @@ from src.entities.film import (
     FilmSummary,
 )
 from src.interfaces.extractor import IContentExtractor
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 from src.repositories.resolver.abstract_resolver import AbstractResolver
 
 
@@ -20,7 +19,7 @@ class BasicFilmResolver(AbstractResolver[Film]):
     def __init__(
         self,
         entity_extractor: IContentExtractor,
-        section_searcher: MLProcessor,
+        section_searcher: Processor,
         entity_to_sections: dict[type, list[str]] = None,
     ):
         self.entity_extractor = entity_extractor

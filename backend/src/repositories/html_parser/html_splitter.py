@@ -6,7 +6,7 @@ from loguru import logger
 from src.entities.source import SourcedContentBase
 from src.interfaces.content_splitter import IContentSplitter, Section
 from src.interfaces.info_retriever import IInfoRetriever
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 
 
 class WikipediaAPIContentSplitter(IContentSplitter):
@@ -31,7 +31,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
     ]
 
     def __init__(
-        self, info_retriever: IInfoRetriever, html_simplifier: MLProcessor = None
+        self, info_retriever: IInfoRetriever, html_simplifier: Processor = None
     ):
         """
         Initializes the WikipediaAPIContentSplitter.

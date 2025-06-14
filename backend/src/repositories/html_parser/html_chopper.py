@@ -3,7 +3,7 @@ from loguru import logger
 from src.entities.content import Section
 from src.entities.source import SourcedContentBase
 from src.interfaces.analyzer import IContentAnalyzer
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 
 
@@ -11,17 +11,15 @@ class Html2TextSectionsChopper(IContentAnalyzer):
     """
     Chops HTML content into textual parts
 
-    TODO:
-    - inject a list of `MLProcessor` to process the sections (post_processors)
     """
 
     content_splitter: WikipediaAPIContentSplitter
-    post_processors: list[MLProcessor]
+    post_processors: list[Processor]
 
     def __init__(
         self,
         content_splitter: WikipediaAPIContentSplitter,
-        post_processors: list[MLProcessor] = None,
+        post_processors: list[Processor] = None,
     ):
         self.content_splitter = content_splitter
         self.post_processors = post_processors
