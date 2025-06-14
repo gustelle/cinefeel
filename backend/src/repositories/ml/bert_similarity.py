@@ -110,6 +110,9 @@ class SimilarSectionSearch(MLProcessor[Section]):
         """
         Find the most similar `Section` to the given title within the list of sections.
 
+        TODO:
+        - test that media are preserved in the section
+
         Args:
             title (str): The title to find the most similar section for.
             sections (list[Section]): The list of sections to search within.
@@ -162,4 +165,5 @@ class SimilarSectionSearch(MLProcessor[Section]):
             title=most_similar_section_title,
             content=_section_content.content,
             children=_section_content.children,
+            media=_section_content.media,
         )

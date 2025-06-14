@@ -13,7 +13,7 @@ class NoPermakinRetriever(IInfoRetriever):
     """
 
     def retrieve_permalink(self, html_content, *args, **kwargs):
-        raise RetrievalError("Permalink retrieval is not supported in this stub.")
+        raise RetrievalError("Failed to retrieve permalink")
 
     def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
         """
@@ -32,7 +32,7 @@ class NoTitleRetriever(IInfoRetriever):
         return HttpUrl("https://example.com/test-page")
 
     def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
-        raise RetrievalError("Title retrieval is not supported in this stub.")
+        raise RetrievalError("Failed to retrieve title")
 
 
 class StubHtmlRetriever(IInfoRetriever):

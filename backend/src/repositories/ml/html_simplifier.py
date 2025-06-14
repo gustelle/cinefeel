@@ -9,6 +9,10 @@ from src.interfaces.nlp_processor import MLProcessor
 class HTMLSimplifier(MLProcessor[str]):
     """
     Simplifies the HTML content by removing unnecessary tags and attributes.
+
+    TODO:
+    - should embed the HTML pruner
+    - test: <div class="legend"> are removed
     """
 
     def process(

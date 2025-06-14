@@ -1,6 +1,6 @@
 import pytest
 
-from src.repositories.html_parser.html_chopper import HtmlChopper
+from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
 from src.repositories.ml.bert_similarity import SimilarSectionSearch
@@ -24,12 +24,12 @@ def test_e2e_BasicPersonResolver(read_melies_html):
 
     settings = Settings()
 
-    analyzer = HtmlChopper(
-        html_splitter=WikipediaAPIContentSplitter(),
+    analyzer = Html2TextSectionsChopper(
+        content_splitter=WikipediaAPIContentSplitter(),
         html_retriever=WikipediaInfoRetriever(),
         html_simplifier=HTMLSimplifier(),
-        html_pruner=HTML2TextConverter(),
-        summarizer=SectionSummarizer(settings=settings),
+        html_cleaner=HTML2TextConverter(),
+        section_summarizer=SectionSummarizer(settings=settings),
     )
 
     base_info, section = analyzer.process("1", read_melies_html)

@@ -434,7 +434,7 @@ def test_retrieve_title(read_beethoven_html):
 def test_retrieve_title_raises():
     # given
     current_dir = Path(__file__).parent
-    html_file = current_dir / "test_html/no_title.html"
+    html_file = current_dir / "test_html/no_page_title.html"
     html_content = html_file.read_text(encoding="utf-8")
 
     semantic = WikipediaInfoRetriever()
@@ -465,9 +465,7 @@ def test_retrieve_orphan_paragraphs():
     semantic = WikipediaInfoRetriever()
 
     # when
-    orphan_section = semantic.retrieve_orphans(
-        html, position="start", sections_tag="section"
-    )
+    orphan_section = semantic.retrieve_orphan_paragraphs(html)
 
     # then
     assert orphan_section is not None
@@ -498,9 +496,7 @@ def test_retrieve_orphan_paragraphs_works_with_divs():
     semantic = WikipediaInfoRetriever()
 
     # when
-    orphan_section = semantic.retrieve_orphans(
-        html, position="start", sections_tag="div"
-    )
+    orphan_section = semantic.retrieve_orphan_paragraphs(html)
 
     # then
     assert orphan_section is not None

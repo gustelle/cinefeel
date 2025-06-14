@@ -21,6 +21,9 @@ class HTML2TextConverter(MLProcessor[Section]):
 
         CHildren sections are processed as well recursively.
 
+        TODO:
+        - test that media are preserved in the section
+
         Returns:
             Section: A new section with the HTML content and title converted to text.
         """
@@ -42,7 +45,7 @@ class HTML2TextConverter(MLProcessor[Section]):
         title = self.html_to_text_transformer.handle(section.title)
 
         if not content:
-            return Section(title=title, content="")
+            return Section(title=title, content="", children=[], media=[])
 
         children = None
         if section.children:
@@ -55,7 +58,10 @@ class HTML2TextConverter(MLProcessor[Section]):
                         children=[
                             self._process_section(child) for child in child.children
                         ],
+                        media=child.media,
                     )
                 )
 
-        return Section(title=title, content=content, children=children)
+        return Section(
+            title=title, content=content, children=children, media=section.media
+        )

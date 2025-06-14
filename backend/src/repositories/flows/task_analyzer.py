@@ -12,12 +12,11 @@ from src.entities.person import Person
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
-from src.repositories.html_parser.html_chopper import HtmlChopper
+from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
 from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
-from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import HTML2TextConverter
 from src.repositories.ml.ollama_parser import OllamaExtractor
 from src.repositories.resolver.film_resolver import BasicFilmResolver
@@ -128,12 +127,12 @@ class AnalysisFlow(ITaskExecutor):
             settings=self.settings
         )
 
-        analyzer = HtmlChopper(
-            html_splitter=WikipediaAPIContentSplitter(),
-            html_retriever=WikipediaInfoRetriever(),
-            html_simplifier=HTMLSimplifier(),
-            html_pruner=HTML2TextConverter(),
-            summarizer=SectionSummarizer(settings=self.settings),
+        analyzer = Html2TextSectionsChopper(
+            content_splitter=WikipediaAPIContentSplitter(
+                info_retriever=WikipediaInfoRetriever(),
+            ),
+            html_cleaner=HTML2TextConverter(),
+            section_summarizer=SectionSummarizer(settings=self.settings),
         )
 
         i = 0

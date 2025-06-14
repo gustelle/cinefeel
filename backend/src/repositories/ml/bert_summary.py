@@ -54,6 +54,9 @@ class SectionSummarizer(MLProcessor[Section]):
         """
         Processes a single section to summarize its content.
 
+        TODO:
+        - test that media are preserved in the section
+
         Args:
             section (Section): The section to process.
 
@@ -81,7 +84,10 @@ class SectionSummarizer(MLProcessor[Section]):
                             self._process_section(grandchild)
                             for grandchild in child.children
                         ],
+                        media=child.media,
                     )
                 )
 
-        return Section(title=title, content=new_content, children=children)
+        return Section(
+            title=title, content=new_content, children=children, media=section.media
+        )

@@ -2,6 +2,20 @@ from src.entities.content import Section
 from src.repositories.ml.html_to_text import HTML2TextConverter
 
 
+def test_simple_html_conversion():
+    # given
+    title = """<span id="Pi.C3.A8ces_.C2.AB_mineures_.C2.BB" typeof="mw:FallbackId"></span>Pièces «<span id="mwCGA" typeof="mw:DisplaySpace"> </span>mineures<span id="mwCGE" typeof="mw:DisplaySpace"> </span>»"""
+    pruner = HTML2TextConverter()
+    section = Section(title=title, content=title)
+
+    # when
+    new_section = pruner.process(section)
+
+    # then
+    assert new_section.title.strip() == "Pièces « mineures »"
+    assert new_section.content.strip() == "Pièces « mineures »"
+
+
 def test_html_is_removed():
     # given
     html_content = """

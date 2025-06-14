@@ -19,23 +19,24 @@ class WikipediaInfoRetriever(IInfoRetriever):
 
     """
 
+    ORPHAN_SECTION_TITLE = "Introduction"
+    INFOBOX_SECTION_TITLE = "Données clés"
+
     _inner_page_id_prefix = "./"
 
-    def retrieve_orphans(
+    def retrieve_orphan_paragraphs(
         self,
         html_content: str,
-        position: Literal["start", "beetwen", "end"] = "start",
-        sections_tag: str = "section",
     ) -> Section:
         """
         Extracts orphan paragraphs from the HTML content based on the specified position.
+        Ophan paragraphs are paragraphs that are not attached to any section.
 
-        Only the "start" position is currently supported, which extracts paragraphs before the first section.
+        TODO:
+        - test media are correctly extracted from the orphan paragraphs
 
         Args:
             html_content (str): The HTML content to parse.
-            position (str): The position of the orphan paragraph in the HTML content.
-            sections_tag (str): The HTML tag that contains the sections. Defaults to "section".
 
         Returns:
             Section: A `Section` object containing the orphan paragraph.
@@ -45,30 +46,31 @@ class WikipediaInfoRetriever(IInfoRetriever):
         """
         soup = BeautifulSoup(html_content, "html.parser")
 
-        section_title = None
-
         orphans = []
 
-        if position == "start":
-            # extract the first paragraph
-            section_title = "Introduction"
-            for sibling in soup.find(sections_tag).previous_siblings:
-                orphans.append(sibling.get_text(strip=True))
-        else:
-            raise RetrievalError(
-                f"Position '{position}' is not yet supported for orphan paragraphs."
-            )
+        for node in soup.body.find_all(
+            "p",
+            # only direct children of the body tag
+            recursive=False,
+            # ignore empty paragraphs
+            string=True,
+        ):
+
+            # don't strip the text, as it may contain important formatting
+            orphans.append(node.get_text())
 
         if not orphans:
             return None
 
         orphans.reverse()  # reverse the order to keep the original order
 
-        logger.debug(
-            f"Found {len(orphans)} orphan paragraphs at the {position} of the HTML content."
-        )
+        content = "\n".join(orphans)
 
-        return Section(title=section_title, content="\n".join(orphans))
+        return Section(
+            title=self.ORPHAN_SECTION_TITLE,
+            content=content,
+            media=self.retrieve_media(content),
+        )
 
     def retrieve_permalink(self, html_content: str) -> HttpUrl:
         """
@@ -243,6 +245,9 @@ class WikipediaInfoRetriever(IInfoRetriever):
         """
         Extracts the information table from the HTML content.
 
+        TODO:
+        - Verify media are correctly extracted from the infobox table.
+
         Args:
             html_content (str): The HTML content to parse.
             format_as (Literal["table", "list"]): The format in which to return the infobox data.
@@ -279,8 +284,9 @@ class WikipediaInfoRetriever(IInfoRetriever):
 
         # convert the DataFrame to a list of Section objects
         info_table = Section(
-            title="Données clés",
+            title=self.INFOBOX_SECTION_TITLE,
             content=content,
+            media=self.retrieve_media(content),
         )
 
         logger.debug(
@@ -289,12 +295,9 @@ class WikipediaInfoRetriever(IInfoRetriever):
 
         return info_table
 
-    def retrieve_media(self, html_content) -> list[Media]:
+    def retrieve_media(self, html_content: str) -> list[Media]:
         """
         Extracts media links from the HTML content.
-
-        TODO:
-        - testing
 
         Args:
             html_content (str): The HTML content to parse.

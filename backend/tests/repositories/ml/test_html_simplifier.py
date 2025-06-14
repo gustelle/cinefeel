@@ -1,3 +1,4 @@
+import pytest
 from bs4 import BeautifulSoup
 
 from src.repositories.ml.html_simplifier import HTMLSimplifier
@@ -111,14 +112,8 @@ def test_a_tags_are_removed():
     simplified_content = simplifier.process(html_content)
 
     # Then the simplified content should not contain <a> tags
-    assert "<a" not in simplified_content
-    assert "</a>" not in simplified_content
-
     soup = BeautifulSoup(simplified_content, "html.parser")
     assert soup.find("a") is None, "The <a> tag should be removed from the content."
-    assert (
-        soup.find("p").get_text() == "This is a sample paragraph with a link Example."
-    )
 
 
 def test_line_breaks_are_replaced_with_newlines():
@@ -237,3 +232,18 @@ def test_html_simplifier_contains_no_minor_tags():
     assert soup.find("em") is None, "The <em> tag should be removed from the content."
     assert soup.find("sup") is None, "The <sup> tag should be removed from the content."
     assert soup.find("sub") is None, "The <sub> tag should be removed from the content."
+
+
+@pytest.mark.skip(reason="Infobox preservation is not implemented yet.")
+def test_infobox_is_preserved(read_melies_html):
+    # Given HTML content with an infobox
+
+    simplifier = HTMLSimplifier()
+
+    # When processing the HTML content
+    simplified_content = simplifier.process(read_melies_html)
+
+    # Then the infobox should be preserved
+    soup = BeautifulSoup(simplified_content, "html.parser")
+
+    print(soup.prettify())

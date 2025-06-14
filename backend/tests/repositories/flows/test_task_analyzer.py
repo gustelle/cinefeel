@@ -60,23 +60,22 @@ def test_e2e_do_analysis(read_melies_html):
     """verify with a real case that the analysis flow works as expected."""
     # given
 
-    from src.repositories.html_parser.html_chopper import HtmlChopper
+    from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
     from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
     from src.repositories.html_parser.wikipedia_info_retriever import (
         WikipediaInfoRetriever,
     )
     from src.repositories.ml.bert_summary import SectionSummarizer
-    from src.repositories.ml.html_simplifier import HTMLSimplifier
     from src.repositories.ml.html_to_text import HTML2TextConverter
 
     settings = Settings()
 
-    analyzer = HtmlChopper(
-        html_splitter=WikipediaAPIContentSplitter(),
-        html_retriever=WikipediaInfoRetriever(),
-        html_simplifier=HTMLSimplifier(),
-        html_pruner=HTML2TextConverter(),
-        summarizer=SectionSummarizer(settings=settings),
+    analyzer = Html2TextSectionsChopper(
+        content_splitter=WikipediaAPIContentSplitter(
+            info_retriever=WikipediaInfoRetriever(),
+        ),
+        html_cleaner=HTML2TextConverter(),
+        section_summarizer=SectionSummarizer(settings=settings),
     )
 
     content_id = "test_content_id"

@@ -68,6 +68,9 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
         Sections may have children, in this case the children are considered to retrieve entities;
 
+        TODO:
+        - handle media in sections and children
+
         Args:
             sections (list[Section]): List of Section objects containing content.
             uid (str): Unique identifier for the content being processed.

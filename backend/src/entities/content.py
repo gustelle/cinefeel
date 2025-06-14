@@ -51,6 +51,12 @@ class Section(BaseModel):
         repr=False,
     )
 
+    media: list[Media | None] | None = Field(
+        default_factory=list,
+        description="A list of media associated with the section, if any.",
+        repr=False,
+    )
+
     @field_validator("title")
     @classmethod
     def validate_title(cls, v: str) -> str:
