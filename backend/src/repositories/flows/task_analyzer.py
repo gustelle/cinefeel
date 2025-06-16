@@ -131,7 +131,13 @@ class AnalysisFlow(ITaskExecutor):
             content_splitter=WikipediaAPIContentSplitter(
                 info_retriever=WikipediaInfoRetriever(),
             ),
-            html_cleaner=HTML2TextConverter(),
+            html_cleaner=HTML2TextConverter(
+                # TODO
+                # injkect HTMLSimplifier here if needed or in the summarizer
+                # html_simplifier=HTMLSimplifier(
+                #     settings=self.settings,
+                #     )
+            ),
             section_summarizer=SectionSummarizer(settings=self.settings),
         )
 

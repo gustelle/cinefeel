@@ -44,6 +44,7 @@ class WikipediaInfoRetriever(IInfoRetriever):
         soup = BeautifulSoup(html_content, "html.parser")
 
         orphans = []
+        media = []
 
         for node in soup.body.find_all(
             "p",
@@ -56,8 +57,13 @@ class WikipediaInfoRetriever(IInfoRetriever):
             # don't strip the text, as it may contain important formatting
             orphans.append(node.get_text())
 
+            media.extend(self.retrieve_media(str(node)))
+
         if not orphans:
             return None
+
+        # media may be siblings of the paragraphs
+        media.extend(self.retrieve_media(str(soup.body.find_all(recursive=False))))
 
         orphans.reverse()  # reverse the order to keep the original order
 
@@ -66,7 +72,7 @@ class WikipediaInfoRetriever(IInfoRetriever):
         return Section(
             title=self.ORPHAN_SECTION_TITLE,
             content=content,
-            media=self.retrieve_media(content),
+            media=media,
         )
 
     def retrieve_permalink(self, html_content: str) -> HttpUrl:
@@ -254,6 +260,9 @@ class WikipediaInfoRetriever(IInfoRetriever):
         soup = BeautifulSoup(html_content, "html.parser")
         content = soup.find("div", attrs={"class": "infobox"})
 
+        # get the media from the original HTML content
+        media = self.retrieve_media(str(content), exclude_pattern=r".+pencil\.svg.+")
+
         if not content:
             return None
 
@@ -280,7 +289,7 @@ class WikipediaInfoRetriever(IInfoRetriever):
         info_table = Section(
             title=self.INFOBOX_SECTION_TITLE,
             content=content,
-            media=self.retrieve_media(content),
+            media=media,
         )
 
         logger.debug(
@@ -289,9 +298,15 @@ class WikipediaInfoRetriever(IInfoRetriever):
 
         return info_table
 
-    def retrieve_media(self, html_content: str) -> list[Media]:
+    def retrieve_media(
+        self, html_content: str, exclude_pattern: str = None
+    ) -> list[Media]:
         """
         Extracts media links from the HTML content.
+
+        Args:
+            html_content (str): The HTML content to parse.
+            exclude_pattern (str, optional): A regex pattern to exclude certain media links. Defaults to None.
 
         Args:
             html_content (str): The HTML content to parse.
@@ -309,9 +324,8 @@ class WikipediaInfoRetriever(IInfoRetriever):
             src = self._get_media_src(media_tag)
 
             if not src:
-                logger.debug(
-                    f"Skipping media tag {media_tag.name} with no valid src: {media_tag}"
-                )
+                continue
+            elif exclude_pattern and re.search(exclude_pattern, src, re.IGNORECASE):
                 continue
 
             try:

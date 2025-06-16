@@ -49,12 +49,6 @@ class WikipediaAPIContentSplitter(IContentSplitter):
         """
         Splits the HTML content into sections based on the specified tags.
 
-        TODO:
-        - test that sections are enriched with media
-        - test orphans sections are retrieved correctly
-        - test that infobox is retrieved correctly
-        - test base information is retrieved correctly
-        - test extract section titles
 
         Args:
             uid (str): The unique identifier for the content.

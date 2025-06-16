@@ -193,7 +193,14 @@ def test_media_are_preserved_in_section():
         {
             "title": "film",
             "content": "This is a film.",
-            "media": ["image1.jpg", "video1.mp4"],
+            "media": [
+                {
+                    "uid": "media:1234",
+                    "src": "https://example.com/image.jpg",
+                    "media_type": "image",
+                    "caption": "Test Image",
+                }
+            ],
         },
         {"title": "cinema", "content": "This is a cinema."},
         {"title": "personne", "content": "This is a person."},
@@ -206,4 +213,4 @@ def test_media_are_preserved_in_section():
     # Check that the most similar section is correct
     assert most_similar_section.title == "film"
     assert most_similar_section.content == "This is a film."
-    assert most_similar_section.media == ["image1.jpg", "video1.mp4"]
+    assert len(most_similar_section.media) == 1

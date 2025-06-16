@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -525,18 +526,62 @@ def test_retrieve_media(read_beethoven_html):
     ), "No video media found"
 
 
-@pytest.mark.todo
-def test_orphan_paragraphs_having_media():
-    pass
-
-
-@pytest.mark.todo
-def test_infobox_with_media(read_beethoven_html):
+def test_retrieve_media_exclude_pattern(sample_infobox):
     # given
     semantic = WikipediaInfoRetriever()
 
     # when
-    info_box = semantic.retrieve_infobox(read_beethoven_html)
+    pattern = r".+pencil\.svg.+"
+    media = semantic.retrieve_media(sample_infobox, exclude_pattern=pattern)
+
+    # then
+
+    assert media is not None
+    assert len(media) > 0
+    assert (
+        len(list(filter(lambda m: m.media_type == "image", media))) > 0
+    ), "No image media found"
+
+    assert not any(
+        re.match(pattern, str(m.src), re.I) for m in media  # type: ignore
+    ), "Excluded media found in the result"
+
+
+def test_orphan_paragraphs_having_media():
+    # given
+    html = """
+    <html>
+        <head>
+            <title>Test Page</title>
+        </head>
+        <body>
+            <p>This is an orphan paragraph with media.</p>
+            <img src="https://example.com/image.jpg" alt="Test Image">
+            <audio src="https://example.com/audio.mp3" controls></audio>
+        </body>
+    </html>
+    """
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    orphan_section = semantic.retrieve_orphan_paragraphs(html)
+
+    # then
+    assert orphan_section is not None
+    assert orphan_section.title == "Introduction"
+    assert "This is an orphan paragraph with media" in orphan_section.content
+    assert (
+        len(orphan_section.media) == 2
+    ), "Expected 2 media items in the orphan section"
+
+
+def test_infobox_with_media(sample_infobox):
+    # given
+    exclude_pattern = r".+pencil\.svg.+"
+    semantic = WikipediaInfoRetriever()
+
+    # when
+    info_box = semantic.retrieve_infobox(sample_infobox)
 
     # then
     assert info_box is not None
@@ -544,3 +589,7 @@ def test_infobox_with_media(read_beethoven_html):
     assert all(
         media.media_type == "image" for media in info_box.media
     ), "Not all media are images"
+
+    assert not any(
+        re.match(exclude_pattern, str(m.src), re.I) for m in info_box.media
+    ), "Excluded media found in the result"
