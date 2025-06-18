@@ -2,9 +2,9 @@ from src.entities.content import Section
 from src.entities.source import SourcedContentBase
 from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
-from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.repositories.ml.bert_summary import SectionSummarizer
-from src.repositories.ml.html_to_text import HTML2TextConverter
+from src.repositories.ml.html_to_text import TextSectionConverter
 from src.settings import Settings
 
 
@@ -19,15 +19,15 @@ def test_retrieve_infobox_is_processed_correctly(
 
     # given
     settings = Settings()
-    retriever = WikipediaInfoRetriever()
+    retriever = WikipediaParser()
 
-    html_cleaner = HTML2TextConverter()
+    text_converter = TextSectionConverter()
     section_summarizer = SectionSummarizer(settings=settings)
 
     analyzer = Html2TextSectionsChopper(
-        content_splitter=WikipediaAPIContentSplitter(info_retriever=retriever),
+        content_splitter=WikipediaAPIContentSplitter(parser=retriever),
         post_processors=[
-            html_cleaner,
+            text_converter,
             section_summarizer,
         ],
     )
@@ -38,9 +38,6 @@ def test_retrieve_infobox_is_processed_correctly(
     _, sections = analyzer.process(
         content_id=content_id, html_content=read_beethoven_html
     )
-
-    for section in sections:
-        print(f"Section title: {section.title}")
 
     # then
     assert sections is not None, "Result should not be None."
@@ -54,12 +51,12 @@ def test_process_complex_page(read_melies_html):
 
     # given
     settings = Settings()
-    retriever = WikipediaInfoRetriever()
-    html_cleaner = HTML2TextConverter()
+    retriever = WikipediaParser()
+    html_cleaner = TextSectionConverter()
     section_summarizer = SectionSummarizer(settings=settings)
 
     analyzer = Html2TextSectionsChopper(
-        content_splitter=WikipediaAPIContentSplitter(info_retriever=retriever),
+        content_splitter=WikipediaAPIContentSplitter(parser=retriever),
         post_processors=[
             html_cleaner,
             section_summarizer,

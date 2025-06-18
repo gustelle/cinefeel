@@ -5,7 +5,7 @@ import pytest
 from bs4 import BeautifulSoup
 
 from src.interfaces.info_retriever import PageLink, RetrievalError
-from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.settings import WikiTOCPageConfig
 
 
@@ -15,7 +15,7 @@ def test_extract_links_from_table():
     """
 
     # given
-    extractor = WikipediaInfoRetriever()
+    extractor = WikipediaParser()
 
     # Mock HTML content
     html_content = """
@@ -75,7 +75,7 @@ def test_extract_links_with_css_selector():
     """
 
     # given
-    extractor = WikipediaInfoRetriever()
+    extractor = WikipediaParser()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -128,7 +128,7 @@ def test_extract_links_with_css_selector():
 def test_dedup_extract_links():
 
     # given
-    extractor = WikipediaInfoRetriever()
+    extractor = WikipediaParser()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -176,7 +176,7 @@ def test_extract_links_with_no_links():
     """
 
     # given
-    extractor = WikipediaInfoRetriever()
+    extractor = WikipediaParser()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -218,7 +218,7 @@ def test_extract_links_excludes_external_links():
     """
 
     # given
-    extractor = WikipediaInfoRetriever()
+    extractor = WikipediaParser()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -272,7 +272,7 @@ def test_extract_links_excludes_non_existing_pages():
     """
 
     # given
-    extractor = WikipediaInfoRetriever()
+    extractor = WikipediaParser()
 
     config = WikiTOCPageConfig(
         page_id="My TOC Page",
@@ -324,7 +324,7 @@ def test_retrieve_infobox(read_beethoven_html):
 
     # given
 
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     info_box = semantic.retrieve_infobox(read_beethoven_html)
@@ -338,7 +338,7 @@ def test_retrieve_infobox_return_table(read_beethoven_html):
 
     # given
 
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     info_box = semantic.retrieve_infobox(read_beethoven_html, format_as="table")
@@ -353,7 +353,7 @@ def test_retrieve_infobox_return_list(read_beethoven_html):
 
     # given
 
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     info_box = semantic.retrieve_infobox(read_beethoven_html)
@@ -368,7 +368,7 @@ def test_retrieve_infobox_section_title(read_beethoven_html):
 
     # given
 
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     info_box = semantic.retrieve_infobox(read_beethoven_html)
@@ -381,7 +381,7 @@ def test_retrieve_permalink_from_canonical(read_beethoven_html):
 
     # given
 
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     permalink = semantic.retrieve_permalink(read_beethoven_html)
@@ -397,7 +397,7 @@ def test_retrieve_permalink_from_isVersionOf():
     html_file = current_dir / "test_html/permalink_no_canonical.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     permalink = semantic.retrieve_permalink(html_content)
@@ -413,7 +413,7 @@ def test_retrieve_permalink_raises():
     html_file = current_dir / "test_html/no_permalink.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when / then
     with pytest.raises(RetrievalError, match="Permalink not found"):
@@ -423,7 +423,7 @@ def test_retrieve_permalink_raises():
 def test_retrieve_title(read_beethoven_html):
     # given
 
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     title = semantic.retrieve_title(read_beethoven_html)
@@ -438,7 +438,7 @@ def test_retrieve_title_raises():
     html_file = current_dir / "test_html/no_page_title.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when / then
     with pytest.raises(RetrievalError, match="Title not found"):
@@ -463,7 +463,7 @@ def test_retrieve_orphan_paragraphs():
             </section>
         </body>
     """
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     orphan_section = semantic.retrieve_orphan_paragraphs(html)
@@ -494,7 +494,7 @@ def test_retrieve_orphan_paragraphs_works_with_divs():
             </div>
         </body>
     """
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     orphan_section = semantic.retrieve_orphan_paragraphs(html)
@@ -509,7 +509,7 @@ def test_retrieve_orphan_paragraphs_works_with_divs():
 
 def test_retrieve_media(read_beethoven_html):
     # given
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     media = semantic.retrieve_media(read_beethoven_html)
@@ -528,7 +528,7 @@ def test_retrieve_media(read_beethoven_html):
 
 def test_retrieve_media_exclude_pattern(sample_infobox):
     # given
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     pattern = r".+pencil\.svg.+"
@@ -561,7 +561,7 @@ def test_orphan_paragraphs_having_media():
         </body>
     </html>
     """
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     orphan_section = semantic.retrieve_orphan_paragraphs(html)
@@ -578,7 +578,7 @@ def test_orphan_paragraphs_having_media():
 def test_infobox_with_media(sample_infobox):
     # given
     exclude_pattern = r".+pencil\.svg.+"
-    semantic = WikipediaInfoRetriever()
+    semantic = WikipediaParser()
 
     # when
     info_box = semantic.retrieve_infobox(sample_infobox)

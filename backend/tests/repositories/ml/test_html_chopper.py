@@ -140,8 +140,8 @@ def test_analyze_simplifier_is_called():
 
     retriever = StubHtmlRetriever()
     splitter = WikipediaAPIContentSplitter(
-        info_retriever=retriever,
-        html_simplifier=StubSimplifier(),
+        parser=retriever,
+        pruner=StubSimplifier(),
     )
     summarizer = StubSummarizer()
     pruner = StubPruner()
@@ -155,7 +155,7 @@ def test_analyze_simplifier_is_called():
     analyzer.process(content_id, html_content)
 
     # then
-    assert splitter.html_simplifier.is_called
+    assert splitter.pruner.is_called
 
 
 def test_analyze_no_permalink_found():
@@ -164,8 +164,8 @@ def test_analyze_no_permalink_found():
     html_content = "<html><body>No permalink here.</body></html>"
 
     splitter = WikipediaAPIContentSplitter(
-        info_retriever=NoPermakinRetriever(),
-        html_simplifier=StubSimplifier(),
+        parser=NoPermakinRetriever(),
+        pruner=StubSimplifier(),
     )
     summarizer = StubSummarizer()
     pruner = StubPruner()
@@ -188,8 +188,8 @@ def test_analyze_no_title_found():
     html_content = "<html><body>No title here.</body></html>"
 
     splitter = WikipediaAPIContentSplitter(
-        info_retriever=NoTitleRetriever(),
-        html_simplifier=StubSimplifier(),
+        parser=NoTitleRetriever(),
+        pruner=StubSimplifier(),
     )
     summarizer = StubSummarizer()
     pruner = StubPruner()

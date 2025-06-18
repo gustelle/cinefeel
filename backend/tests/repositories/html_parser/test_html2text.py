@@ -1,5 +1,5 @@
 from src.entities.content import Media, Section
-from src.repositories.ml.html_to_text import HTML2TextConverter
+from src.repositories.ml.html_to_text import TextSectionConverter
 
 
 def test_media_are_preserved_in_section():
@@ -8,7 +8,7 @@ def test_media_are_preserved_in_section():
     """
 
     # given
-    converter = HTML2TextConverter()
+    converter = TextSectionConverter()
     section = Section(
         title="Test Section",
         content="<p>This is a test section with media.</p>",
@@ -32,7 +32,7 @@ def test_media_are_preserved_in_section():
 
 def test_children_are_preserved_in_section():
     # given
-    converter = HTML2TextConverter()
+    converter = TextSectionConverter()
     section = Section(
         title="Test Section",
         content="<p>This is a test section with children.</p>",

@@ -1,4 +1,3 @@
-import pytest
 
 from src.interfaces.content_splitter import Section
 from src.repositories.ml.bert_similarity import SimilarSectionSearch
@@ -178,8 +177,7 @@ def test_most_similar_section_children_are_returned_in_section():
     assert most_similar_section.children[1].title == "cast"
 
 
-@pytest.mark.todo
-def test_media_are_preserved_in_section():
+def test_media_are_provided_in_similar_section():
     """
     Test that media are preserved in the section.
     """

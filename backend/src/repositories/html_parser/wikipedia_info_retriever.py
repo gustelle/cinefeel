@@ -9,11 +9,11 @@ from loguru import logger
 from pydantic import HttpUrl, ValidationError
 
 from src.entities.content import Media, PageLink, Section
-from src.interfaces.info_retriever import IInfoRetriever, RetrievalError
+from src.interfaces.info_retriever import IParser, RetrievalError
 from src.settings import WikiTOCPageConfig
 
 
-class WikipediaInfoRetriever(IInfoRetriever):
+class WikipediaParser(IParser):
     """
     This class is responsible for extracting Wikipedia data from a given HTML content.
 

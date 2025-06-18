@@ -2,11 +2,11 @@ import pytest
 
 from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
-from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
-from src.repositories.ml.html_to_text import HTML2TextConverter
+from src.repositories.ml.html_to_text import TextSectionConverter
 from src.repositories.ml.ollama_parser import OllamaExtractor
 from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.settings import Settings
@@ -26,9 +26,9 @@ def test_e2e_BasicPersonResolver(read_melies_html):
 
     analyzer = Html2TextSectionsChopper(
         content_splitter=WikipediaAPIContentSplitter(),
-        html_retriever=WikipediaInfoRetriever(),
+        html_retriever=WikipediaParser(),
         html_simplifier=HTMLSimplifier(),
-        html_cleaner=HTML2TextConverter(),
+        html_cleaner=TextSectionConverter(),
         section_summarizer=SectionSummarizer(settings=settings),
     )
 

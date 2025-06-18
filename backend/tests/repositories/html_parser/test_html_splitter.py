@@ -7,7 +7,7 @@ from src.repositories.html_parser.html_splitter import (
     Section,
     WikipediaAPIContentSplitter,
 )
-from src.repositories.html_parser.wikipedia_info_retriever import WikipediaInfoRetriever
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 
 current_dir = Path(__file__).parent
 
@@ -18,7 +18,7 @@ def test_split_subsections():
     html_file = current_dir / "test_html/nested_sections.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
     # when
     base_info, sections = semantic.split("1", html_content)
     # then
@@ -35,7 +35,7 @@ def test_split_complex_page(read_beethoven_html):
     Test the split_sections method of the HtmlSemantic class.
     """
     # given
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
 
     # when
     base_info, sections = semantic.split("1", read_beethoven_html)
@@ -55,7 +55,7 @@ def test_split_melies_page(read_melies_html):
     Test the split_sections method of the HtmlSemantic class.
     """
     # given
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
 
     # when
     # we must flatten here because the root element has no direct section child
@@ -81,7 +81,7 @@ def test_split_melies_page(read_melies_html):
 def test_split_with_root_tag(read_beethoven_html):
 
     # given
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
 
     # when
     # we must flatten here because the root element has no direct section child
@@ -101,7 +101,7 @@ def test_split_with_root_tag(read_beethoven_html):
 def test_split_ignores_non_significant_sections(read_beethoven_html):
 
     # given
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
 
     # when
     base_info, sections = semantic.split("1", read_beethoven_html)
@@ -122,9 +122,9 @@ def test_split_sections_no_title():
     # an valid html file with a section that has no title
     html_file = current_dir / "test_html/no_section_title.html"
     html_content = html_file.read_text(encoding="utf-8")
-    info_retriever = WikipediaInfoRetriever()
+    info_retriever = WikipediaParser()
 
-    semantic = WikipediaAPIContentSplitter(info_retriever=info_retriever)
+    semantic = WikipediaAPIContentSplitter(parser=info_retriever)
 
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -142,7 +142,7 @@ def test_split_sections_void_section():
     html_file = current_dir / "test_html/void_section.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
 
     # when
     base_info, sections = semantic.split("1", html_content, section_tag_name="div")
@@ -171,7 +171,7 @@ def test_split_title_is_not_pure_text():
     </body>
     </html>
     """
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
 
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -199,7 +199,7 @@ def test_split_title_is_removed_from_content():
     </body>
     <html>
     """
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
 
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -227,8 +227,8 @@ def test_split_sections_no_title_and_no_content():
         </body>
     </html>
     """
-    retriever = WikipediaInfoRetriever()
-    semantic = WikipediaAPIContentSplitter(info_retriever=retriever)
+    retriever = WikipediaParser()
+    semantic = WikipediaAPIContentSplitter(parser=retriever)
 
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -264,7 +264,7 @@ def test_split_preserve_hierarchy():
     </body>
     </html>
     """
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
     # when
     base_info, sections = semantic.split("1", html_content)
 
@@ -303,7 +303,7 @@ def test_split_nested_sections_with_div():
     </body>
     </html>
     """
-    semantic = WikipediaAPIContentSplitter(info_retriever=WikipediaInfoRetriever())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
 
     # when
     base_info, sections = semantic.split(

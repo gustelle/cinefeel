@@ -1,7 +1,7 @@
 from src.entities.content import Section
 from src.entities.source import SourcedContentBase
 from src.interfaces.content_splitter import IContentSplitter
-from src.interfaces.info_retriever import IInfoRetriever
+from src.interfaces.info_retriever import IParser
 from src.interfaces.nlp_processor import Processor
 
 
@@ -13,14 +13,14 @@ class StubHtmlSplitter(IContentSplitter):
     is_called = False
 
     def __init__(
-        self, content_parser: IInfoRetriever = None, html_simplifier: Processor = None
+        self, content_parser: IParser = None, html_simplifier: Processor = None
     ):
         """
         Initializes the StubHtmlSplitter.
         This constructor does not require any parameters.
         """
         self.content_parser = content_parser
-        self.html_simplifier = html_simplifier
+        self.pruner = html_simplifier
 
     def split(self, *args, **kwargs) -> tuple[SourcedContentBase, list[Section]] | None:
         """

@@ -5,7 +5,7 @@ from loguru import logger
 
 from src.entities.source import SourcedContentBase
 from src.interfaces.content_splitter import IContentSplitter, Section
-from src.interfaces.info_retriever import IInfoRetriever
+from src.interfaces.info_retriever import IParser
 from src.interfaces.nlp_processor import Processor
 
 
@@ -21,6 +21,9 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
     """
 
+    parser: IParser
+    pruner: Processor[str]
+
     VOID_SECTION_MARKER = "cette section est vide"
 
     SKIPPED_SECTIONS = [
@@ -30,14 +33,16 @@ class WikipediaAPIContentSplitter(IContentSplitter):
         "publications",
     ]
 
-    def __init__(
-        self, info_retriever: IInfoRetriever, html_simplifier: Processor = None
-    ):
+    def __init__(self, parser: IParser, pruner: Processor[str]):
         """
         Initializes the WikipediaAPIContentSplitter.
+
+        Args:
+            parser (IParser): An instance of a parser that retrieves information from the HTML content.
+            pruner (Processor[str]): An instance of a processor that simplifies the HTML content.
         """
-        self.info_retriever = info_retriever
-        self.html_simplifier = html_simplifier
+        self.parser = parser
+        self.pruner = pruner
 
     def split(
         self,
@@ -84,8 +89,8 @@ class WikipediaAPIContentSplitter(IContentSplitter):
         """
 
         # retrieve permalink and title before content simplification
-        permakink = self.info_retriever.retrieve_permalink(html_content)
-        title = self.info_retriever.retrieve_title(html_content)
+        permakink = self.parser.retrieve_permalink(html_content)
+        title = self.parser.retrieve_title(html_content)
 
         base_content = SourcedContentBase(
             uid=uid,
@@ -97,7 +102,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
         # add eventually orphaned sections
         # title of the section with orhans is set to "Introduction"
-        orphaned_section = self.info_retriever.retrieve_orphan_paragraphs(
+        orphaned_section = self.parser.retrieve_orphan_paragraphs(
             html_content,
         )
 
@@ -105,12 +110,12 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             sections.append(orphaned_section)
 
         # infobox
-        infobox = self.info_retriever.retrieve_infobox(html_content)
+        infobox = self.parser.retrieve_infobox(html_content)
         if infobox is not None:
             sections.append(infobox)
 
-        if self.html_simplifier is not None:
-            html_content = self.html_simplifier.process(html_content)
+        if self.pruner is not None:
+            html_content = self.pruner.process(html_content)
 
         # cut simplified_html into sections
         simple_soup = BeautifulSoup(html_content, "html.parser")
@@ -253,5 +258,5 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             title=section_title,
             content=content,
             children=children,
-            media=self.info_retriever.retrieve_media(html_content=content),
+            media=self.parser.retrieve_media(html_content=content),
         )

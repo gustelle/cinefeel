@@ -9,7 +9,7 @@ class RetrievalError(Exception):
     pass
 
 
-class IInfoRetriever(Protocol):
+class IParser(Protocol):
     """
     Interface for a parser that extracts data from a given HTML content.
     """
