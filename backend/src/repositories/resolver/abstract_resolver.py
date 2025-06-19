@@ -63,6 +63,9 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         # assemble the entity from the base info and extracted parts
         entity = self.assemble(base_info, results)
 
+        # TODO:
+        # inject media from sections into the entity
+
         logger.info(f"Resolved Entity: '{entity.title}' : {entity.model_dump()}")
         return entity
 

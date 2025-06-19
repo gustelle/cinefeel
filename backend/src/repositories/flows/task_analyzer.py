@@ -133,8 +133,10 @@ class AnalysisFlow(ITaskExecutor):
                 parser=WikipediaParser(),
                 pruner=HTMLSimplifier(),
             ),
-            html_cleaner=TextSectionConverter(),
-            section_summarizer=SectionSummarizer(settings=self.settings),
+            post_processors=[
+                TextSectionConverter(),
+                SectionSummarizer(settings=self.settings),
+            ],
         )
 
         i = 0
