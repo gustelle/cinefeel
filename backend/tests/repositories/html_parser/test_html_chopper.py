@@ -10,6 +10,8 @@ from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_to_text import TextSectionConverter
 from src.settings import Settings
 
+from .stubs.stub_pruner import DoNothingPruner
+
 
 def test_retrieve_infobox_is_processed_correctly(
     # given
@@ -28,7 +30,9 @@ def test_retrieve_infobox_is_processed_correctly(
     section_summarizer = SectionSummarizer(settings=settings)
 
     analyzer = Html2TextSectionsChopper(
-        content_splitter=WikipediaAPIContentSplitter(parser=retriever),
+        content_splitter=WikipediaAPIContentSplitter(
+            parser=retriever, pruner=DoNothingPruner()
+        ),
         post_processors=[
             text_converter,
             section_summarizer,
@@ -59,7 +63,9 @@ def test_process_complex_page(read_melies_html):
     section_summarizer = SectionSummarizer(settings=settings)
 
     analyzer = Html2TextSectionsChopper(
-        content_splitter=WikipediaAPIContentSplitter(parser=retriever),
+        content_splitter=WikipediaAPIContentSplitter(
+            parser=retriever, pruner=DoNothingPruner()
+        ),
         post_processors=[
             html_cleaner,
             section_summarizer,

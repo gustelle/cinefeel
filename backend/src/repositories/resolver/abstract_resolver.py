@@ -80,7 +80,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         """
 
         # choose the longest sections if there are more than `sections_max_per_page`
-        if len(sections) > self.settings.sections_max_per_page:
+        if sections and len(sections) > self.settings.sections_max_per_page:
             sections = sorted(
                 sections,
                 key=lambda section: len(section.content),
@@ -91,7 +91,10 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         # by choosing the longest children
         # recursively
         for section in sections:
-            if len(section.children) > self.settings.sections_max_children:
+            if (
+                section.children
+                and len(section.children) > self.settings.sections_max_children
+            ):
                 section.children = sorted(
                     section.children,
                     key=lambda child: len(child.content),

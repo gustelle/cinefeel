@@ -11,6 +11,7 @@ from src.repositories.html_parser.wikipedia_info_retriever import (
     ORPHAN_SECTION_TITLE,
     WikipediaParser,
 )
+from src.settings import Settings
 
 from .stubs.stub_pruner import DoNothingPruner
 
@@ -23,8 +24,13 @@ def test_split_subsections():
     html_file = current_dir / "test_html/nested_sections.html"
     html_content = html_file.read_text(encoding="utf-8")
     pruner = DoNothingPruner()
+    settings = Settings(
+        sections_min_length=1,  # Set to 1 to ensure all sections are processed
+    )
 
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser(), pruner=pruner)
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=pruner, settings=settings
+    )
     # when
     base_info, sections = semantic.split("1", html_content)
     # then
@@ -64,7 +70,11 @@ def test_split_melies_page(read_melies_html):
     """
     # given
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(),
+        pruner=DoNothingPruner(),
+        settings=Settings(
+            sections_min_length=1  # Set to 1 to ensure all sections are processed
+        ),
     )
 
     # when
@@ -92,7 +102,11 @@ def test_split_with_root_tag(read_beethoven_html):
 
     # given
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(),
+        pruner=DoNothingPruner(),
+        settings=Settings(
+            sections_min_length=1  # Set to 1 to ensure all sections are processed
+        ),
     )
 
     # when
@@ -287,7 +301,9 @@ def test_split_preserve_hierarchy():
     </html>
     """
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(),
+        pruner=DoNothingPruner(),
+        settings=Settings(sections_min_length=1),
     )
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -328,7 +344,9 @@ def test_split_nested_sections_with_div():
     </html>
     """
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(),
+        pruner=DoNothingPruner(),
+        settings=Settings(sections_min_length=1),
     )
 
     # when
@@ -369,7 +387,11 @@ def test_sections_are_enriched_with_media():
     html_file = current_dir / "test_html/sections_with_media.html"
     html_content = html_file.read_text(encoding="utf-8")
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(),
+        pruner=DoNothingPruner(),
+        settings=Settings(
+            sections_min_length=1  # Set to 1 to ensure all sections are processed
+        ),
     )
 
     # when
