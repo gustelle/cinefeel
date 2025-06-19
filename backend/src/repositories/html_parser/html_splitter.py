@@ -7,6 +7,7 @@ from src.entities.source import SourcedContentBase
 from src.interfaces.content_splitter import IContentSplitter, Section
 from src.interfaces.info_retriever import IParser
 from src.interfaces.nlp_processor import Processor
+from src.settings import Settings
 
 
 class WikipediaAPIContentSplitter(IContentSplitter):
@@ -23,6 +24,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
     parser: IParser
     pruner: Processor[str]
+    settings: Settings
 
     VOID_SECTION_MARKER = "cette section est vide"
 
@@ -33,7 +35,9 @@ class WikipediaAPIContentSplitter(IContentSplitter):
         "publications",
     ]
 
-    def __init__(self, parser: IParser, pruner: Processor[str]):
+    def __init__(
+        self, parser: IParser, pruner: Processor[str], settings: Settings = None
+    ):
         """
         Initializes the WikipediaAPIContentSplitter.
 
@@ -43,6 +47,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
         """
         self.parser = parser
         self.pruner = pruner
+        self.settings = settings or Settings()
 
     def split(
         self,
@@ -147,6 +152,8 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
                 sections.append(built_section)
 
+        sections = self._merge_sections(sections)
+
         return base_content, sections
 
     def _build_section(
@@ -194,12 +201,6 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             )
             return None
 
-        if re.search(rf"{self.VOID_SECTION_MARKER}", tag.get_text(), re.IGNORECASE):
-            logger.debug(
-                f"Skipping section with title '{section_title}' as it is marked as empty."
-            )
-            return None
-
         # if the section contains children sections
         sub_sections = tag.find_all(section_tag_name, recursive=False)
 
@@ -244,7 +245,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
         # check the text content of the section is not empty
         # to avoid empty sections like <section><p id="mwBQ"></p></section>
-        if content is None or not content.strip() or not tag.get_text(strip=True):
+        if self._is_empty(content):
             logger.debug(
                 f"Skipping section with title '{section_title}' as it has no content."
             )
@@ -260,3 +261,75 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             children=children,
             media=self.parser.retrieve_media(html_content=content),
         )
+
+    def _merge_sections(
+        self,
+        sections: list[Section],
+    ) -> list[Section]:
+        """
+        Merges small sections into larger ones.
+        Children sections are merged into their parent section if they are too small
+
+        Args:
+            sections (list[Section]): The list of sections to merge.
+
+        Returns:
+            list[Section]: The merged list of sections.
+        """
+
+        # iterate over sections and merge small sections into larger ones
+        sec: Section
+        for i, sec in enumerate(sections):
+
+            # if the section has children,
+            if sec.children:
+
+                # if the child section is too small, merge it with the parent section
+                for child in sec.children:
+                    if len(child.content) < self.settings.sections_min_length:
+                        sec.content += "<br>" + child.content
+                        sec.title += " - " + child.title
+                        sec.children.remove(child)
+
+            if sec.children:
+                # recursively merge children sections
+                sec.children = self._merge_sections(sec.children)
+
+            # if the section is too small, merge it with the previous one
+            if i > 0 and len(sec.content) < self.settings.sections_min_length:
+                sections[i - 1].content += "<br>" + sec.content
+                sections[i - 1].title += " - " + sec.title
+                sections.pop(i)
+
+        return sections
+
+    def _is_empty(self, content: str) -> bool:
+        """
+        Checks if the given tag is an empty section.
+
+        Args:
+            tag (Tag): The tag to check.
+
+        Returns:
+            bool: True if the section is empty, False otherwise.
+        """
+
+        is_void = (
+            content is None
+            or content.strip() == ""
+            or re.search(
+                rf"{self.VOID_SECTION_MARKER}",
+                content,
+                re.IGNORECASE,
+            )
+        )
+
+        if not is_void:
+            # parse with BeautifulSoup to check for empty tags
+            soup = BeautifulSoup(content, "html.parser")
+            is_void = not any(
+                tag.name != "br" and tag.name != "hr" and tag.get_text(strip=True)
+                for tag in soup.find_all(True)
+            )
+
+        return is_void

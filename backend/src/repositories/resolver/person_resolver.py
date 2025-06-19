@@ -1,7 +1,12 @@
 from src.entities.person import Biography, Person, PersonCharacteristics, PersonMedia
 from src.interfaces.extractor import IContentExtractor
 from src.interfaces.nlp_processor import Processor
+from src.repositories.html_parser.wikipedia_info_retriever import (
+    INFOBOX_SECTION_TITLE,
+    ORPHAN_SECTION_TITLE,
+)
 from src.repositories.resolver.abstract_resolver import AbstractResolver
+from src.settings import Settings
 
 
 class BasicPersonResolver(AbstractResolver[Person]):
@@ -20,7 +25,14 @@ class BasicPersonResolver(AbstractResolver[Person]):
         self.entity_extractor = entity_extractor
         self.section_searcher = section_searcher
         self.entity_to_sections = entity_to_sections or {
-            Biography: ["Données clés", "Introduction", "Biographie", ""],
-            PersonMedia: ["Données clés", "Biographie", ""],
-            PersonCharacteristics: ["Données clés", "Introduction", "Biographie", ""],
+            Biography: [INFOBOX_SECTION_TITLE, ORPHAN_SECTION_TITLE, "Biographie", ""],
+            PersonMedia: [INFOBOX_SECTION_TITLE, "Biographie", ""],
+            PersonCharacteristics: [
+                INFOBOX_SECTION_TITLE,
+                ORPHAN_SECTION_TITLE,
+                "Biographie",
+                "",
+            ],
         }
+
+        self.settings = Settings()

@@ -7,7 +7,12 @@ from src.repositories.html_parser.html_splitter import (
     Section,
     WikipediaAPIContentSplitter,
 )
-from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
+from src.repositories.html_parser.wikipedia_info_retriever import (
+    ORPHAN_SECTION_TITLE,
+    WikipediaParser,
+)
+
+from .stubs.stub_pruner import DoNothingPruner
 
 current_dir = Path(__file__).parent
 
@@ -17,8 +22,9 @@ def test_split_subsections():
     # given
     html_file = current_dir / "test_html/nested_sections.html"
     html_content = html_file.read_text(encoding="utf-8")
+    pruner = DoNothingPruner()
 
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser(), pruner=pruner)
     # when
     base_info, sections = semantic.split("1", html_content)
     # then
@@ -35,7 +41,9 @@ def test_split_complex_page(read_beethoven_html):
     Test the split_sections method of the HtmlSemantic class.
     """
     # given
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
 
     # when
     base_info, sections = semantic.split("1", read_beethoven_html)
@@ -55,7 +63,9 @@ def test_split_melies_page(read_melies_html):
     Test the split_sections method of the HtmlSemantic class.
     """
     # given
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
 
     # when
     # we must flatten here because the root element has no direct section child
@@ -81,7 +91,9 @@ def test_split_melies_page(read_melies_html):
 def test_split_with_root_tag(read_beethoven_html):
 
     # given
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
 
     # when
     # we must flatten here because the root element has no direct section child
@@ -101,7 +113,9 @@ def test_split_with_root_tag(read_beethoven_html):
 def test_split_ignores_non_significant_sections(read_beethoven_html):
 
     # given
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
 
     # when
     base_info, sections = semantic.split("1", read_beethoven_html)
@@ -124,7 +138,9 @@ def test_split_sections_no_title():
     html_content = html_file.read_text(encoding="utf-8")
     info_retriever = WikipediaParser()
 
-    semantic = WikipediaAPIContentSplitter(parser=info_retriever)
+    semantic = WikipediaAPIContentSplitter(
+        parser=info_retriever, pruner=DoNothingPruner()
+    )
 
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -133,7 +149,7 @@ def test_split_sections_no_title():
     assert base_info is not None
     assert isinstance(base_info, SourcedContentBase)
     assert len(sections) > 0
-    assert sections[0].title == info_retriever.ORPHAN_SECTION_TITLE
+    assert sections[0].title == ORPHAN_SECTION_TITLE
 
 
 def test_split_sections_void_section():
@@ -142,7 +158,9 @@ def test_split_sections_void_section():
     html_file = current_dir / "test_html/void_section.html"
     html_content = html_file.read_text(encoding="utf-8")
 
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
 
     # when
     base_info, sections = semantic.split("1", html_content, section_tag_name="div")
@@ -171,7 +189,9 @@ def test_split_title_is_not_pure_text():
     </body>
     </html>
     """
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
 
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -199,7 +219,9 @@ def test_split_title_is_removed_from_content():
     </body>
     <html>
     """
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
 
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -228,7 +250,7 @@ def test_split_sections_no_title_and_no_content():
     </html>
     """
     retriever = WikipediaParser()
-    semantic = WikipediaAPIContentSplitter(parser=retriever)
+    semantic = WikipediaAPIContentSplitter(parser=retriever, pruner=DoNothingPruner())
 
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -264,7 +286,9 @@ def test_split_preserve_hierarchy():
     </body>
     </html>
     """
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
     # when
     base_info, sections = semantic.split("1", html_content)
 
@@ -303,7 +327,9 @@ def test_split_nested_sections_with_div():
     </body>
     </html>
     """
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser())
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
 
     # when
     base_info, sections = semantic.split(
@@ -322,13 +348,163 @@ def test_split_nested_sections_with_div():
     assert sections[0].children[1].title == "Nested Section 1.2"
 
 
-@pytest.mark.skip
-def test_me():
+def test_pruner_is_called():
+    # given
+    html_file = current_dir / "test_html/nested_sections.html"
+    html_content = html_file.read_text(encoding="utf-8")
+    pruner = DoNothingPruner()
+
+    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser(), pruner=pruner)
+
+    # when
+    semantic.split("1", html_content)
+
+    # then
+    assert pruner.is_called, "Pruner should be called during the split process"
+
+
+def test_sections_are_enriched_with_media():
+    # given
+    # a valid HTML file with sections that should be enriched with media
+    html_file = current_dir / "test_html/sections_with_media.html"
+    html_content = html_file.read_text(encoding="utf-8")
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
+
+    # when
+    _, sections = semantic.split("1", html_content)
+    # then
+    assert all(
+        len(section.media) > 0 for section in sections
+    ), "All sections should bhave media"
+    assert len(sections[0].children[0].media) > 0
+    assert (
+        len(sections[0].children[0].children[0].media) > 0
+    ), "Grand Children sections should have media"
+
+
+@pytest.mark.todo
+def test_missing_tests():
+    """
+    This is a placeholder for tests that are not yet implemented.
+    The following tests should be implemented:
+
+    - test orphans sections are retrieved correctly
+    - test that infobox is retrieved correctly
+    - test base information is retrieved correctly
+    - test extract section titles
+    """
     pass
 
 
-# - test that sections are enriched with media
-#         - test orphans sections are retrieved correctly
-#         - test that infobox is retrieved correctly
-#         - test base information is retrieved correctly
-#         - test extract section titles
+def test_empty_sections_are_filtered():
+    """
+    Test that empty sections are filtered out.
+    """
+    # given
+    html_content = """
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Test HTML with empty sections</title>
+        <link rel="dc:isVersionOf" href="//fr.wikipedia.org/wiki/test"/>
+    </head>
+    <body>
+    <section>
+        <h2>Empty Section</h2>
+        <p></p>
+    </section>
+    </body>
+    </html>
+    """
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
+
+    # when
+    _, sections = semantic.split("1", html_content)
+
+    # then
+    assert len(sections) == 0, "No sections should be returned for empty sections"
+
+
+def test_small_sections_are_merged():
+    """
+    Test that small sections are merged correctly,
+    for instance small sections are merged into their parent section
+
+    """
+    # given
+    html_content = """
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Test HTML with small sections</title>
+        <link rel="dc:isVersionOf" href="//fr.wikipedia.org/wiki/test"/>
+    </head>
+    <body>
+    <section>
+        <h2>Small Section</h2>
+        <p>This is a small section with some content.</p>
+    </section>
+    <section>
+        <h2>Small Section 2</h2>
+        <p>This is a small section with some content.</p>
+    </section>
+    </body>
+    </html>
+    """
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
+
+    # when
+    _, sections = semantic.split("1", html_content)
+
+    # then
+    assert len(sections) == 1, "Only one section should be returned for small sections"
+    assert (
+        sections[0].title == "Small Section - Small Section 2"
+    ), "Section titles should be merged"
+
+
+def test_small_children_sections_are_merged_into_their_parent():
+    """
+    Test that small sections are merged correctly,
+    for instance children sections are merged into their parent section
+    """
+    # given
+    html_content = """
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Test HTML with medium sections</title>
+        <link rel="dc:isVersionOf" href="//fr.wikipedia.org/wiki/test"/>
+    </head>
+    <body>
+    <section>
+        <h2>Small Section</h2>
+        <p>This is a small section with some content.</p>
+        <section>
+            <h3>Subsection</h3>
+            <p>This is a subsection with some content.</p>
+        </section>
+    </section>
+    </body>
+    </html>
+    """
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
+
+    # when
+    _, sections = semantic.split("1", html_content)
+
+    # then
+
+    assert len(sections) > 0, "Sections should be returned for medium sections"
+    assert len(sections[0].children) == 0, "No children sections should remain"
+    assert (
+        "<p>This is a subsection with some content.</p>" in sections[0].content
+    ), "Content of subsection should be merged into parent section"

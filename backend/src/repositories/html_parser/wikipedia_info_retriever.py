@@ -12,15 +12,15 @@ from src.entities.content import Media, PageLink, Section
 from src.interfaces.info_retriever import IParser, RetrievalError
 from src.settings import WikiTOCPageConfig
 
+ORPHAN_SECTION_TITLE = "Introduction"
+INFOBOX_SECTION_TITLE = "Données clés"
+
 
 class WikipediaParser(IParser):
     """
     This class is responsible for extracting Wikipedia data from a given HTML content.
 
     """
-
-    ORPHAN_SECTION_TITLE = "Introduction"
-    INFOBOX_SECTION_TITLE = "Données clés"
 
     _inner_page_id_prefix = "./"
 
@@ -70,7 +70,7 @@ class WikipediaParser(IParser):
         content = "\n".join(orphans)
 
         return Section(
-            title=self.ORPHAN_SECTION_TITLE,
+            title=ORPHAN_SECTION_TITLE,
             content=content,
             media=media,
         )
@@ -287,7 +287,7 @@ class WikipediaParser(IParser):
 
         # convert the DataFrame to a list of Section objects
         info_table = Section(
-            title=self.INFOBOX_SECTION_TITLE,
+            title=INFOBOX_SECTION_TITLE,
             content=content,
             media=media,
         )

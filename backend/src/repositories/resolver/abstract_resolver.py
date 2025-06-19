@@ -9,6 +9,7 @@ from src.entities.source import SourcedContentBase
 from src.interfaces.extractor import IContentExtractor
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import IEntityResolver
+from src.settings import Settings
 
 
 class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
@@ -22,6 +23,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     entity_to_sections: dict[type, list[str]]
     entity_extractor: IContentExtractor
     section_searcher: Processor
+    settings: Settings
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -52,6 +54,9 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         if not sections:
             raise ValueError("No sections provided to resolve the Person.")
 
+        # don't process all sections, but only the ones that are relevant
+        sections = self.filter_sections(sections)
+
         # Extract entities from sections
         results = self.extract_entities(sections, base_info)
 
@@ -60,6 +65,40 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
         logger.info(f"Resolved Entity: '{entity.title}' : {entity.model_dump()}")
         return entity
+
+    def filter_sections(self, sections: list[Section]) -> list[Section]:
+        """Filter sections based on predefined criteria.
+
+        - use `sections_max_children` to limit the number of children per section.
+        - use `sections_max_per_page` to limit the number of sections per page.
+
+        Args:
+            sections (list[Section]): List of Section objects to filter.
+
+        Returns:
+            list[Section]: Filtered list of Section objects.
+        """
+
+        # choose the longest sections if there are more than `sections_max_per_page`
+        if len(sections) > self.settings.sections_max_per_page:
+            sections = sorted(
+                sections,
+                key=lambda section: len(section.content),
+                reverse=True,
+            )[: self.settings.sections_max_per_page]
+
+        # limit the number of children per section
+        # by choosing the longest children
+        # recursively
+        for section in sections:
+            if len(section.children) > self.settings.sections_max_children:
+                section.children = sorted(
+                    section.children,
+                    key=lambda child: len(child.content),
+                    reverse=True,
+                )[: self.settings.sections_max_children]
+
+        return sections
 
     def extract_entities(
         self, sections: list[Section], base_info: SourcedContentBase

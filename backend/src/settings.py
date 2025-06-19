@@ -210,28 +210,21 @@ class Settings(BaseSettings):
 
     # section params
     sections_max_children: int = Field(
-        default=2,
+        default=3,
         description="""
             The maximum number of children sections per section.
             If a section has more children than this value, the children will be truncated.
         """,
     )
     sections_max_per_page: int = Field(
-        default=100,
+        default=5,
         description="""
             The maximum number of sections to extract from a page.
             If a page has more sections than this value, the sections will be truncated.
         """,
     )
-    sections_max_length: int = Field(
-        default=1000,
-        description="""
-            The maximum length of a section.
-            If a section is longer than this value, it will be truncated.
-        """,
-    )
     sections_min_length: int = Field(
-        default=50,
+        default=500,
         description="""
             The minimum length of a section.
             If a section is shorter than this value, it will be ignored.
