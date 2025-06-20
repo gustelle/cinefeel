@@ -3,6 +3,7 @@ import re
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
+from torch import Tensor
 
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
@@ -164,3 +165,66 @@ class SimilarSectionSearch(Processor[Section]):
             children=_section_content.children,
             media=_section_content.media,
         )
+
+
+class SimilarValueSearch(Processor[str]):
+    """
+    Class to handle BERT similarity calculations for string values.
+    """
+
+    settings: Settings
+    embedder: SentenceTransformer
+    corpus: list[str]
+    corpus_embeddings: Tensor
+
+    def __init__(self, settings: Settings, corpus: list[str]):
+        """
+        Initialize the BERT similarity model.
+
+        It's important to compute the embeddings for the corpus once during initialization
+        to avoid recomputing them for each query, which can be computationally expensive.
+
+        Args:
+            settings (Settings): The settings object containing the model name.
+            corpus (list[str]): The list of values to search within.
+        """
+        self.settings = settings
+        self.embedder = SentenceTransformer(settings.bert_similarity_model)
+        self.corpus = corpus
+        self.corpus_embeddings = self.embedder.encode(corpus, convert_to_tensor=True)
+
+    def process(self, query: str) -> str | None:
+        """
+        Find the most similar value to the given query within the corpus.
+
+        Args:
+            query (str): The query string to find the most similar value for.
+            corpus (list[str]): The list of values to search within.
+
+        Returns:
+            str | None: The most similar value from the corpus, or None if no similar value is found.
+        """
+
+        try:
+
+            query_embedding = self.embedder.encode(query, convert_to_tensor=True)
+
+            hits = semantic_search(
+                query_embedding,
+                self.corpus_embeddings,
+                top_k=1,
+            )
+
+            most_similar_value = self.corpus[hits[0][0]["corpus_id"]]
+            score = hits[0][0]["score"]
+
+            if score < self.settings.bert_similarity_threshold:
+                return None
+
+            return most_similar_value
+
+        except Exception as e:
+            import traceback
+
+            logger.error(traceback.format_exc())
+            raise SimilaritySearchError(f"Error in BERT similarity search: {e}") from e
