@@ -63,8 +63,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         # assemble the entity from the base info and extracted parts
         entity = self.assemble(base_info, results)
 
-        # TODO:
-        # inject media from sections into the entity
+        entity = self.patch_media(entity, sections)
 
         logger.info(f"Resolved Entity: '{entity.title}' : {entity.model_dump()}")
         return entity
@@ -186,3 +185,8 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         """Assemble a film object from base info and extracted parts."""
 
         return self.entity_type.from_parts(base_info, parts)
+
+    @abc.abstractmethod
+    def patch_media(self, entity: T, sections: list[Section]) -> T:
+        """Patch media into the entity from the sections."""
+        raise NotImplementedError("This method should be implemented by subclasses.")

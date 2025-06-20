@@ -53,6 +53,9 @@ def test_extract_entities_with_children():
         def assemble(self, *args, **kwargs):
             return None
 
+        def patch_media(self, entity, sections):
+            return entity
+
     resolver = TestResolver()
 
     # When extracting entities
@@ -96,6 +99,9 @@ def test_extracted_entities_uid_is_assigned():
         def assemble(self, *args, **kwargs):
             return None
 
+        def patch_media(self, entity, sections):
+            return entity
+
     resolver = TestResolver()
 
     # When extracting entities
@@ -137,6 +143,9 @@ def test_sections_max_children():
         def assemble(self, *args, **kwargs):
             return None
 
+        def patch_media(self, entity, sections):
+            return entity
+
     resolver = TestResolver()
 
     # When filtering sections
@@ -170,6 +179,9 @@ def test_sections_max_per_page():
 
         def assemble(self, *args, **kwargs):
             return None
+
+        def patch_media(self, entity, sections):
+            return entity
 
     resolver = TestResolver()
 

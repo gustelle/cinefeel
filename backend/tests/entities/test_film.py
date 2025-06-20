@@ -22,7 +22,7 @@ def test_from_parts_list_of_different_entities():
             entity=FilmSummary(uid="1", content="A thrilling film."), score=0.95
         ),
         ExtractionResult(
-            entity=FilmMedia(uid="1", trailer="http://example.com/trailer"),
+            entity=FilmMedia(uid="1", trailers=["http://example.com/trailer"]),
             score=0.90,
         ),
         ExtractionResult(
@@ -41,7 +41,7 @@ def test_from_parts_list_of_different_entities():
     assert film.title == "Test Film"
     assert str(film.permalink) == "http://example.com/test-film"
     assert film.summary.content == "A thrilling film."
-    assert str(film.media.trailer) == "http://example.com/trailer"
+    assert len(film.media.trailers) == 1
     assert len(film.actors) == 2
     assert film.actors[0].full_name == "Brad Pitt"
     assert film.actors[1].full_name == "Linda"
@@ -63,7 +63,7 @@ def test_from_parts_list_of_sames_entities():
             entity=FilmSummary(uid="1", content="A thrilling film."), score=0.95
         ),
         ExtractionResult(
-            entity=FilmMedia(uid="1", trailer="http://example.com/trailer"),
+            entity=FilmMedia(uid="1", trailers=["http://example.com/trailer"]),
             score=0.90,
         ),
         ExtractionResult(
@@ -88,7 +88,7 @@ def test_from_parts_list_of_sames_entities():
     assert film.title == "Test Film"
     assert str(film.permalink) == "http://example.com/test-film"
     assert film.summary.content == "A thrilling film."
-    assert str(film.media.trailer) == "http://example.com/trailer"
+    assert len(film.media.trailers) == 1
     assert len(film.actors) == 1
     assert film.actors[0].full_name == "Brad Pitt"
     assert film.actors[0].roles == [

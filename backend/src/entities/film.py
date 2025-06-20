@@ -62,23 +62,23 @@ class FilmMedia(Storable):
     représente les médias associés à un film, tels que l'affiche, les autres médias et la bande-annonce.
     """
 
-    poster: str | None = Field(
+    posters: list[HttpUrl] | None = Field(
         None,
         repr=False,
-        serialization_alias="url_affiche",
-        validation_alias="url_affiche",
+        serialization_alias="affiches",
+        validation_alias="affiches",
     )
-    other_media: list[str] | None = Field(
+    other_medias: list[HttpUrl] | None = Field(
         None,
         repr=False,
-        serialization_alias="url_autres_contenus",
-        validation_alias="url_autres_contenus",
+        serialization_alias="autres_contenus",
+        validation_alias="autres_contenus",
     )
-    trailer: HttpUrl | None = Field(
+    trailers: list[HttpUrl] | None = Field(
         None,
         repr=False,
-        serialization_alias="url_bande_annonce",
-        validation_alias="url_bande_annonce",
+        serialization_alias="bandes_annonces",
+        validation_alias="bandes_annonces",
     )
 
 
