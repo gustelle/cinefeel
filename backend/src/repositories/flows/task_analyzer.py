@@ -19,7 +19,7 @@ from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
-from src.repositories.ml.ollama_parser import OllamaExtractor
+from src.repositories.ml.mistral_data_miner import MistralDataMiner
 from src.repositories.resolver.film_resolver import BasicFilmResolver
 from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.repositories.storage.json_storage import JSONEntityStorageHandler
@@ -70,7 +70,7 @@ class AnalysisFlow(ITaskExecutor):
         # assemble the entity from the sections
         if self.entity_type == Film:
             return BasicFilmResolver(
-                entity_extractor=OllamaExtractor(settings=self.settings),
+                entity_extractor=MistralDataMiner(settings=self.settings),
                 section_searcher=SimilarSectionSearch(settings=self.settings),
             ).resolve(
                 base_info=base_info,
@@ -78,7 +78,7 @@ class AnalysisFlow(ITaskExecutor):
             )
         elif self.entity_type == Person:
             return BasicPersonResolver(
-                entity_extractor=OllamaExtractor(settings=self.settings),
+                entity_extractor=MistralDataMiner(settings=self.settings),
                 section_searcher=SimilarSectionSearch(settings=self.settings),
             ).resolve(
                 base_info=base_info,

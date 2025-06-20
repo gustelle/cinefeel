@@ -60,38 +60,6 @@ _default_person_tocs = [
 _default_tocs = _default_film_tocs + _default_person_tocs
 
 
-class LLMQuestion(BaseModel):
-    """Configuration for a question to ask the LLM model."""
-
-    question: str = Field(
-        ...,
-        description="The question to ask the LLM model",
-        examples=[
-            "Donne-moi des informations sur le film",
-            "Quelles sont les informations sur le film ?",
-            "Peux-tu me parler du film ?",
-        ],
-    )
-
-    response_format: dict | None = Field(
-        None,
-        description="""
-            The expected response format from the LLM model.
-            This is used to validate the response from the LLM model.
-            When not provided, the response will not be validated against a schema.
-        """,
-    )
-
-    content_type: Literal["film", "person"] = Field(
-        ...,
-        description="""
-            The type of content to ask the question about.
-            Can be either "film" or "person".
-        """,
-        examples=["film", "person"],
-    )
-
-
 class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
@@ -153,6 +121,11 @@ class Settings(BaseSettings):
     llm_model: str = Field(
         default="mistral:latest",
         description="The name of the LLM model to use",
+    )
+
+    mistral_api_key: str = Field(
+        default="",
+        description="The API key for the Mistral API",
     )
 
     llm_min_score: float = Field(

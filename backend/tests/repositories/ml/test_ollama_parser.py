@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, HttpUrl
 from src.entities.extraction import ExtractionResult
 from src.entities.person import PersonCharacteristics
 from src.entities.source import SourcedContentBase
-from src.repositories.ml.ollama_parser import OllamaExtractor
+from src.repositories.ml.ollama_data_miner import OllamaDataMiner
 from src.settings import Settings
 
 
@@ -38,7 +38,7 @@ def test_ollama_is_called_correctly(mocker):
         return_value=MockResponse(MockMessage(mock_llm_response)),
     )
 
-    parser = OllamaExtractor(Settings())
+    parser = OllamaDataMiner(Settings())
     content = "This is a test content for Ollama."
     entity_type = PersonCharacteristics
 
@@ -64,7 +64,7 @@ def test_create_response_model():
 
     from src.settings import Settings
 
-    parser = OllamaExtractor(Settings())
+    parser = OllamaDataMiner(Settings())
 
     # when
     response = parser.create_response_model(MyModel)(score=0.9, height=180)
@@ -89,7 +89,7 @@ def test_create_response_model_excludes_http_fields():
 
     from src.settings import Settings
 
-    parser = OllamaExtractor(Settings())
+    parser = OllamaDataMiner(Settings())
 
     # when
     model = parser.create_response_model(MyModel)

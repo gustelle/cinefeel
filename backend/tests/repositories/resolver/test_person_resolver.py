@@ -9,7 +9,7 @@ from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
-from src.repositories.ml.ollama_parser import OllamaExtractor
+from src.repositories.ml.ollama_data_miner import OllamaDataMiner
 from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.settings import Settings
 from tests.repositories.resolver.stubs.stub_extractor import StubExtractor
@@ -40,7 +40,7 @@ def test_e2e_BasicPersonResolver(read_melies_html):
 
     # when
     p = BasicPersonResolver(
-        entity_extractor=OllamaExtractor(settings=settings),
+        entity_extractor=OllamaDataMiner(settings=settings),
         section_searcher=SimilarSectionSearch(settings=settings),
     ).resolve(
         base_info=base_info,

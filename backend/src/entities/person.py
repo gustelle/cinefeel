@@ -118,8 +118,9 @@ class Biography(Storable):
         None,
         examples=["Harvard University", "MIT"],
         repr=False,
-        serialization_alias="formations",
-        validation_alias="formations",
+        serialization_alias="formation",
+        validation_alias="formation",
+        description="Liste des formations de la personne, par exemple 'Harvard University', 'MIT'.",
     )
     childhood_conditions: ChildHoodConditions | None = Field(
         None,

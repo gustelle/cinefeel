@@ -1,6 +1,6 @@
 from src.entities.content import Section
 from src.entities.person import Biography, Person, PersonCharacteristics, PersonMedia
-from src.interfaces.extractor import IContentExtractor
+from src.interfaces.extractor import IDataMiner
 from src.interfaces.nlp_processor import Processor
 from src.repositories.html_parser.wikipedia_info_retriever import (
     INFOBOX_SECTION_TITLE,
@@ -19,7 +19,7 @@ class BasicPersonResolver(AbstractResolver[Person]):
 
     def __init__(
         self,
-        entity_extractor: IContentExtractor,
+        entity_extractor: IDataMiner,
         section_searcher: Processor,
         entity_to_sections: dict[type, list[str]] = None,
     ):

@@ -1,7 +1,7 @@
 from typing import get_args, get_origin
 
-import ollama
 from loguru import logger
+from mistralai import Mistral
 from pydantic import BaseModel, Field, HttpUrl, create_model
 from typing_inspection.introspection import (
     AnnotationSource,
@@ -11,23 +11,25 @@ from typing_inspection.introspection import (
 
 from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import IContentExtractor
+from src.interfaces.extractor import IDataMiner
 from src.settings import Settings
 
+#
 
-class OllamaExtractor(IContentExtractor):
+
+class MistralDataMiner(IDataMiner):
     """
-    OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
-
-    TODO:
-    - Create a custom LLM specialized on QA about cinema.
+    Mistral Data Miner is a wrapper around the Mistral API for data extraction.
     """
-
-    model: str
 
     def __init__(self, settings: Settings):
+        """
+        Initializes the MistralDataMiner with the provided settings.
 
-        self.model = settings.llm_model
+        Args:
+            settings: The settings object containing configuration for the data miner.
+        """
+        self.settings = settings
 
     def _is_expected_in_response(self, k: str, annotation: AnnotationSource) -> bool:
         """
@@ -133,22 +135,42 @@ class OllamaExtractor(IContentExtractor):
             Question: Dans cet extrait, donne-moi des informations sur {base_info.title}, réponds de façon concise, si tu ne sais pas, n'invente pas de données.
             Réponse:"""
 
-        response = ollama.chat(
-            model=self.model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-            format=response_model.model_json_schema(),
-            options={
-                # Set temperature to 0 for more deterministic responses
-                "temperature": 0
-            },
+        logger.debug("-" * 80)
+        logger.debug(f"Prompt for {entity_type}: ")
+        logger.debug(prompt)
+        logger.debug("-" * 80)
+        logger.debug(response_model.model_json_schema())
+        logger.debug("-" * 80)
+
+        client = Mistral(api_key=self.settings.mistral_api_key)
+
+        messages = [{"role": "user", "content": prompt}]
+        chat_response = client.chat.complete(
+            model="mimistral-medium-latest",
+            messages=messages,
+            temperature=0.0,
+            response_format=response_model.model_json_schema(),
         )
 
-        msg = response.message.content
+        logger.debug(f"Response from Mistral: {chat_response}")
+
+        # response = ollama.chat(
+        #     model=self.model,
+        #     messages=[
+        #         {
+        #             "role": "user",
+        #             "content": prompt,
+        #         }
+        #     ],
+        #     format=response_model.model_json_schema(),
+        #     options={
+        #         # Set temperature to 0 for more deterministic responses
+        #         "temperature": 0
+        #     },
+        # )
+
+        # msg = response.message.content
+        msg = chat_response.message.content
 
         try:
 

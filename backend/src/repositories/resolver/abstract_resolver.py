@@ -6,7 +6,7 @@ from src.entities.composable import Composable
 from src.entities.content import Section
 from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import IContentExtractor
+from src.interfaces.extractor import IDataMiner
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import IEntityResolver
 from src.settings import Settings
@@ -21,7 +21,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
     entity_type: T
     entity_to_sections: dict[type, list[str]]
-    entity_extractor: IContentExtractor
+    entity_extractor: IDataMiner
     section_searcher: Processor
     settings: Settings
 

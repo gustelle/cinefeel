@@ -6,7 +6,7 @@ from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
 
 
-class IContentExtractor(Protocol):
+class IDataMiner(Protocol):
     """
     Interface for entity resolver classes.
     """
