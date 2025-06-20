@@ -172,6 +172,8 @@ class PersonCharacteristics(Storable):
         repr=False,
         serialization_alias="couleur_peau",
         validation_alias="couleur_peau",
+        examples=["blanc", "noir", "métis"],
+        description="La couleur de peau de la personne",
     )
     sexual_orientation: str | None = Field(
         None,
@@ -184,6 +186,8 @@ class PersonCharacteristics(Storable):
         repr=False,
         serialization_alias="handicaps",
         validation_alias="handicaps",
+        examples=["sourd", "aveugle"],
+        description="Liste des handicaps de la personne, par exemple 'sourd', 'aveugle', 'moteur', 'cognitif'.",
     )
 
 
