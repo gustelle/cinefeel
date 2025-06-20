@@ -21,7 +21,7 @@ class GenderEnum(StrEnum):
 
 class ChildHoodConditions(Storable):
     """
-    Représente les conditions de l'enfance d'une personne.
+    Représente les conditions dans lesquelles une personne a grandi pendant son enfance.
     Cette classe contient des informations sur le statut familial, économique, éducatif et l'environnement social de la personne pendant son enfance.
     """
 
