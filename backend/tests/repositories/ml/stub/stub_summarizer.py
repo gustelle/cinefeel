@@ -1,8 +1,8 @@
 from src.entities.content import Section
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 
 
-class StubSummarizer(MLProcessor):
+class StubSummarizer(Processor):
 
     is_called: bool = False
 

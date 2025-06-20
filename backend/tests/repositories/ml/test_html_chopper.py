@@ -1,6 +1,7 @@
 from src.entities.content import Section
 from src.entities.source import SourcedContentBase
-from src.repositories.html_parser.html_chopper import HtmlChopper
+from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
+from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 
 from .stub.stub_pruner import StubPruner
 from .stub.stub_retriever import (
@@ -42,20 +43,15 @@ def test_analyze_nominal_case():
     </html>
     """
 
-    splitter = StubHtmlSplitter()
-    retriever = StubHtmlRetriever(
-        [Section(title="Test Infobox", content="Some content")]
+    splitter = StubHtmlSplitter(
+        html_simplifier=StubSimplifier(),
     )
     summarizer = StubSummarizer()
-    html_simplifier = StubSimplifier()
     pruner = StubPruner()
 
-    analyzer = HtmlChopper(
-        html_splitter=splitter,
-        html_retriever=retriever,
-        html_simplifier=html_simplifier,
-        html_pruner=pruner,
-        summarizer=summarizer,
+    analyzer = Html2TextSectionsChopper(
+        content_splitter=splitter,
+        post_processors=[pruner, summarizer],
     )
 
     # when
@@ -73,18 +69,15 @@ def test_analyze_empty_html():
     content_id = "test_empty_html"
     html_content = ""
 
-    splitter = StubHtmlSplitter()
-    retriever = StubHtmlRetriever()
+    splitter = StubHtmlSplitter(
+        html_simplifier=StubSimplifier(),
+    )
     summarizer = StubSummarizer()
-    html_simplifier = StubSimplifier()
     pruner = StubPruner()
 
-    analyzer = HtmlChopper(
-        html_splitter=splitter,
-        html_retriever=retriever,
-        html_simplifier=html_simplifier,
-        html_pruner=pruner,
-        summarizer=summarizer,
+    analyzer = Html2TextSectionsChopper(
+        content_splitter=splitter,
+        post_processors=[pruner, summarizer],
     )
 
     # when
@@ -99,18 +92,15 @@ def test_analyze_splitter_is_called():
     content_id = "test_no_sections"
     html_content = "<html><body>No sections here.</body></html>"
 
-    splitter = StubHtmlSplitter()
-    retriever = StubHtmlRetriever()
+    splitter = StubHtmlSplitter(
+        html_simplifier=StubSimplifier(),
+    )
     summarizer = StubSummarizer()
-    html_simplifier = StubSimplifier()
     pruner = StubPruner()
 
-    analyzer = HtmlChopper(
-        html_splitter=splitter,
-        html_retriever=retriever,
-        html_simplifier=html_simplifier,
-        html_pruner=pruner,
-        summarizer=summarizer,
+    analyzer = Html2TextSectionsChopper(
+        content_splitter=splitter,
+        post_processors=[pruner, summarizer],
     )
 
     # when
@@ -125,18 +115,15 @@ def test_analyze_summarizer_is_called():
     content_id = "test_retriever_called"
     html_content = "<html><body>Content with infobox.</body></html>"
 
-    splitter = StubHtmlSplitter()
-    retriever = StubHtmlRetriever()
+    splitter = StubHtmlSplitter(
+        html_simplifier=StubSimplifier(),
+    )
     summarizer = StubSummarizer()
-    html_simplifier = StubSimplifier()
     pruner = StubPruner()
 
-    analyzer = HtmlChopper(
-        html_splitter=splitter,
-        html_retriever=retriever,
-        html_simplifier=html_simplifier,
-        html_pruner=pruner,
-        summarizer=summarizer,
+    analyzer = Html2TextSectionsChopper(
+        content_splitter=splitter,
+        post_processors=[pruner, summarizer],
     )
 
     # when
@@ -151,25 +138,24 @@ def test_analyze_simplifier_is_called():
     content_id = "test_simplifier_called"
     html_content = "<html><body>Content to be simplified.</body></html>"
 
-    splitter = StubHtmlSplitter()
     retriever = StubHtmlRetriever()
+    splitter = WikipediaAPIContentSplitter(
+        parser=retriever,
+        pruner=StubSimplifier(),
+    )
     summarizer = StubSummarizer()
-    html_simplifier = StubSimplifier()
     pruner = StubPruner()
 
-    analyzer = HtmlChopper(
-        html_splitter=splitter,
-        html_retriever=retriever,
-        html_simplifier=html_simplifier,
-        html_pruner=pruner,
-        summarizer=summarizer,
+    analyzer = Html2TextSectionsChopper(
+        content_splitter=splitter,
+        post_processors=[pruner, summarizer],
     )
 
     # when
     analyzer.process(content_id, html_content)
 
     # then
-    assert html_simplifier.is_called
+    assert splitter.pruner.is_called
 
 
 def test_analyze_no_permalink_found():
@@ -177,18 +163,16 @@ def test_analyze_no_permalink_found():
     content_id = "test_no_permalink"
     html_content = "<html><body>No permalink here.</body></html>"
 
-    splitter = StubHtmlSplitter()
-    retriever = NoPermakinRetriever()
+    splitter = WikipediaAPIContentSplitter(
+        parser=NoPermakinRetriever(),
+        pruner=StubSimplifier(),
+    )
     summarizer = StubSummarizer()
-    html_simplifier = StubSimplifier()
     pruner = StubPruner()
 
-    analyzer = HtmlChopper(
-        html_splitter=splitter,
-        html_retriever=retriever,
-        html_simplifier=html_simplifier,
-        html_pruner=pruner,
-        summarizer=summarizer,
+    analyzer = Html2TextSectionsChopper(
+        content_splitter=splitter,
+        post_processors=[pruner, summarizer],
     )
 
     # when
@@ -203,18 +187,16 @@ def test_analyze_no_title_found():
     content_id = "test_no_title"
     html_content = "<html><body>No title here.</body></html>"
 
-    splitter = StubHtmlSplitter()
-    retriever = NoTitleRetriever()
+    splitter = WikipediaAPIContentSplitter(
+        parser=NoTitleRetriever(),
+        pruner=StubSimplifier(),
+    )
     summarizer = StubSummarizer()
-    html_simplifier = StubSimplifier()
     pruner = StubPruner()
 
-    analyzer = HtmlChopper(
-        html_splitter=splitter,
-        html_retriever=retriever,
-        html_simplifier=html_simplifier,
-        html_pruner=pruner,
-        summarizer=summarizer,
+    analyzer = Html2TextSectionsChopper(
+        content_splitter=splitter,
+        post_processors=[pruner, summarizer],
     )
 
     # when

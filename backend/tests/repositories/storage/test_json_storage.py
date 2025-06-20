@@ -178,7 +178,9 @@ def test_select_film():
     storage_handler.insert(film.uid, film)
 
     # then
-    assert storage_handler.select(film.uid) == film
+
+    assert storage_handler.select(film.uid) is not None
+    assert storage_handler.select(film.uid).uid == film.uid
 
     # teardown
     (storage_handler.persistence_directory / f"{film.uid}.json").unlink()

@@ -38,6 +38,20 @@ def test_uid_validation():
     )
 
 
+def test_uid_contains_cls_name():
+    # given
+    uid = "uid-12345"
+
+    class MyStorable(Storable):
+        pass
+
+    # when
+    storable = MyStorable(uid=uid)
+
+    # then
+    assert storable.uid.startswith("mystorable_")  # Class name in lowercase
+
+
 def test_permalink_is_mandatory():
     # given
     uid = "uid-12345"
@@ -67,7 +81,7 @@ def test_serialize_by_alias_is_default_behavior():
     serialized = my_instance.model_dump_json()
 
     # then
-    assert serialized == '{"uid":"uid-12345","coucou":"Hello World"}'
+    assert serialized == '{"uid":"mystorable_uid-12345","coucou":"Hello World"}'
 
 
 def test_load_model_from_json_with_alias():

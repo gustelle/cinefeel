@@ -1,12 +1,11 @@
-from loguru import logger
 from summarizer.sbert import SBertSummarizer
 
 from src.interfaces.content_splitter import Section
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 from src.settings import Settings
 
 
-class SectionSummarizer(MLProcessor[Section]):
+class SectionSummarizer(Processor[Section]):
     """
     summarize the content of a section.
 
@@ -65,7 +64,7 @@ class SectionSummarizer(MLProcessor[Section]):
         title = section.title
 
         if len(section.content) > self.settings.bert_summary_max_length:
-            logger.debug(f"section '{section.title}' is too long, summarizing it")
+            # logger.debug(f"section '{section.title}' is too long, summarizing it")
             new_content = self.summarizer.run(
                 section.content, max_length=self.settings.bert_summary_max_length
             )
@@ -82,7 +81,10 @@ class SectionSummarizer(MLProcessor[Section]):
                             self._process_section(grandchild)
                             for grandchild in child.children
                         ],
+                        media=child.media,
                     )
                 )
 
-        return Section(title=title, content=new_content, children=children)
+        return Section(
+            title=title, content=new_content, children=children, media=section.media
+        )

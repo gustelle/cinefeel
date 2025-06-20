@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 
 from src.interfaces.content_splitter import Section
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 from src.settings import Settings
 
 
@@ -17,7 +17,7 @@ class SimilaritySearchError(Exception):
     pass
 
 
-class SimilarSectionSearch(MLProcessor[Section]):
+class SimilarSectionSearch(Processor[Section]):
     """
     Class to handle BERT similarity calculations.
     """
@@ -161,4 +161,6 @@ class SimilarSectionSearch(MLProcessor[Section]):
         return Section(
             title=most_similar_section_title,
             content=_section_content.content,
+            children=_section_content.children,
+            media=_section_content.media,
         )

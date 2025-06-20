@@ -3,17 +3,17 @@ from typing import Type
 from pydantic import HttpUrl
 
 from src.entities.content import PageLink, Section
-from src.interfaces.info_retriever import IInfoRetriever, RetrievalError
+from src.interfaces.info_retriever import IParser, RetrievalError
 
 
-class NoPermakinRetriever(IInfoRetriever):
+class NoPermakinRetriever(IParser):
     """
     A stub implementation of the IHtmlExtractor interface that raises an error when trying to retrieve a permalink.
     This class is used to test error handling in the HTML extraction process.
     """
 
     def retrieve_permalink(self, html_content, *args, **kwargs):
-        raise RetrievalError("Permalink retrieval is not supported in this stub.")
+        raise RetrievalError("Failed to retrieve permalink")
 
     def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
         """
@@ -22,7 +22,7 @@ class NoPermakinRetriever(IInfoRetriever):
         return "Test Page Title"
 
 
-class NoTitleRetriever(IInfoRetriever):
+class NoTitleRetriever(IParser):
     """
     A stub implementation of the IHtmlExtractor interface that raises an error when trying to retrieve a title.
     This class is used to test error handling in the HTML extraction process.
@@ -32,10 +32,10 @@ class NoTitleRetriever(IInfoRetriever):
         return HttpUrl("https://example.com/test-page")
 
     def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
-        raise RetrievalError("Title retrieval is not supported in this stub.")
+        raise RetrievalError("Failed to retrieve title")
 
 
-class StubHtmlRetriever(IInfoRetriever):
+class StubHtmlRetriever(IParser):
     """
     A stub implementation of the IHtmlExtractor interface for testing purposes.
     This class simulates the behavior of an HTML extractor without performing actual parsing.
@@ -70,8 +70,8 @@ class StubHtmlRetriever(IInfoRetriever):
             PageLink(page_title="Another Page", page_id="Another_Page"),
         ]
 
-    def retrieve_infobox(self, *args, **kwargs) -> list[Section] | None:
+    def retrieve_infobox(self, *args, **kwargs) -> Section | None:
         """
         Returns a predefined list of InfoBoxElement objects for testing.
         """
-        return self.infoxbox_elements if self.infoxbox_elements is not None else []
+        return self.infoxbox_elements[0] if self.infoxbox_elements is not None else None

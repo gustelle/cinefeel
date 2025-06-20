@@ -1,3 +1,4 @@
+
 from src.interfaces.content_splitter import Section
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.settings import Settings
@@ -105,3 +106,47 @@ Issu d’une famille de courtiers en vins du Languedoc, après des études à Br
     assert len(section.children) == 1
     assert section.children[0].title == "Child Section"
     assert len(section.children[0].content) <= len(child_text)
+
+
+def test_media_are_preserved_in_summarized_section():
+    # given
+    sample_text = "This is a sample text with media."
+    media = [
+        {"media_type": "image", "src": "http://example.com/image.jpg", "uid": "media1"}
+    ]
+    section = Section(title="Test Section", content=sample_text, media=media)
+
+    summarize = SectionSummarizer(Settings())
+
+    # when
+    summarized = summarize.process(section)
+
+    assert summarized.media == section.media  # Check if media is preserved
+
+
+def test_media_in_children_are_preserved_in_summarized_section():
+    # given
+    sample_text = "This is a sample text with media."
+    media = [
+        {"media_type": "image", "src": "http://example.com/image.jpg", "uid": "media1"}
+    ]
+    media_child = [
+        {"media_type": "video", "src": "http://example.com/video.mp4", "uid": "media2"}
+    ]
+    section = Section(
+        title="Test Section",
+        content=sample_text,
+        media=media,
+        children=[
+            Section(title="Child Section", content="Child content", media=media_child)
+        ],
+    )
+
+    summarize = SectionSummarizer(Settings())
+
+    # when
+    summarized = summarize.process(section)
+
+    assert (
+        summarized.children[0].media == section.children[0].media
+    )  # Check if media in children is preserved

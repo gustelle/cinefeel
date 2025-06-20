@@ -1,8 +1,8 @@
 from src.interfaces.content_splitter import Section
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 
 
-class StubSimilaritySearch(MLProcessor):
+class StubSimilaritySearch(Processor):
     """
     A stub implementation of the ISimilaritySearch interface for testing purposes.
     """

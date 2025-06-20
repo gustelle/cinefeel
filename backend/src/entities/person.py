@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Self
 
-from pydantic import Field
+from pydantic import Field, HttpUrl
 
 from src.entities.composable import Composable
 from src.entities.extraction import ExtractionResult
@@ -83,7 +83,8 @@ class Biography(Storable):
     )
     nationalities: list[str] | None = Field(
         None,
-        description="The nationalities of the person. This can be used to filter the list of people.",
+        description="les nationalités de la personne",
+        examples=["français", "américain", "canadien"],
         repr=False,
         serialization_alias="nationalites",
         validation_alias="nationalites",
@@ -133,17 +134,17 @@ class PersonMedia(Storable):
     représente les contenus multimédias associés à une personne.
     """
 
-    poster: str | None = Field(
+    photos: list[HttpUrl] | None = Field(
         None,
         repr=False,
-        serialization_alias="url_affiche",
-        validation_alias="url_affiche",
+        serialization_alias="photos",
+        validation_alias="photos",
     )
-    other_media: list[str] | None = Field(
+    other_medias: list[HttpUrl] | None = Field(
         None,
         repr=False,
-        serialization_alias="url_autres_contenus",
-        validation_alias="url_autres_contenus",
+        serialization_alias="autres_contenus",
+        validation_alias="autres_contenus",
     )
 
 
@@ -163,6 +164,8 @@ class PersonCharacteristics(Storable):
         repr=False,
         serialization_alias="poids",
         validation_alias="poids",
+        examples=["70 kg", "80 kg"],
+        description="Le poids de la personne, par exemple '70 kg' ou '80 kg'.",
     )
     skin_color: str | None = Field(
         None,

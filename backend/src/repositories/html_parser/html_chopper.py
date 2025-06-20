@@ -3,35 +3,26 @@ from loguru import logger
 from src.entities.content import Section
 from src.entities.source import SourcedContentBase
 from src.interfaces.analyzer import IContentAnalyzer
-from src.interfaces.info_retriever import IInfoRetriever
-from src.interfaces.nlp_processor import MLProcessor
+from src.interfaces.nlp_processor import Processor
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 
 
-class HtmlChopper(IContentAnalyzer):
+class Html2TextSectionsChopper(IContentAnalyzer):
     """
-    Chops HTML content into parts and resolves it into an entity of type T.
+    Chops HTML content into textual parts
+
     """
 
-    summarizer: MLProcessor
-    html_splitter: WikipediaAPIContentSplitter
-    html_simplifier: MLProcessor
-    html_retriever: IInfoRetriever
-    html_pruner: MLProcessor[Section]
+    content_splitter: WikipediaAPIContentSplitter
+    post_processors: list[Processor]
 
     def __init__(
         self,
-        html_simplifier: MLProcessor,
-        summarizer: MLProcessor,
-        html_splitter: WikipediaAPIContentSplitter,
-        html_retriever: IInfoRetriever,
-        html_pruner: MLProcessor,
+        content_splitter: WikipediaAPIContentSplitter,
+        post_processors: list[Processor] = None,
     ):
-        self.html_splitter = html_splitter
-        self.html_retriever = html_retriever
-        self.summarizer = summarizer
-        self.html_simplifier = html_simplifier
-        self.html_pruner = html_pruner
+        self.content_splitter = content_splitter
+        self.post_processors = post_processors
 
     def process(
         self, content_id: str, html_content: str
@@ -53,36 +44,8 @@ class HtmlChopper(IContentAnalyzer):
 
         try:
 
-            # retrieve permalink and title before content simplification
-            permakink = self.html_retriever.retrieve_permalink(html_content)
-            title = self.html_retriever.retrieve_title(html_content)
-
-            # infobox sections titles are "Données clés"
-            infobox = self.html_retriever.retrieve_infobox(
-                html_content, format_as="list"
-            )
-
-            # simplify the HTML content
-            simplified_content = self.html_simplifier.process(html_content)
-
             # split the HTML content into sections
-            # preserving the hierarchy of sections
-            sections = self.html_splitter.split(simplified_content)
-
-            # add eventually orphaned sections
-            # title of the section with orhans is set to "Introduction"
-            orphaned_section = self.html_retriever.retrieve_orphans(
-                simplified_content, position="start", sections_tag="section"
-            )
-            if orphaned_section is not None:
-                sections.append(orphaned_section)
-                logger.debug(
-                    f"Added orphaned section to content '{content_id}': {orphaned_section.title}."
-                )
-
-            if infobox is not None:
-                sections.append(infobox)
-                logger.debug(f"Added infobox sections to content '{content_id}'.")
+            base_info, sections = self.content_splitter.split(content_id, html_content)
 
             if sections is None or len(sections) == 0:
                 logger.warning(
@@ -90,32 +53,18 @@ class HtmlChopper(IContentAnalyzer):
                 )
                 return None
 
-            # base information
-            base_info = SourcedContentBase(
-                uid=content_id,
-                title=title,
-                permalink=permakink,
-            )
-
-            # convert to Text / Ascii
-            sections = [self.html_pruner.process(section) for section in sections]
-
-            for section in sections:
-                if section is None:
-                    continue
-
-            # summarize the sections for better processing
-            sections = [
-                self.summarizer.process(section)
-                for section in sections
-                if section.content
-            ]
+            # post processing of sections
+            if self.post_processors:
+                for processor in self.post_processors:
+                    sections = [processor.process(section) for section in sections]
 
             return base_info, sections
 
-        except Exception as e:
+        except Exception:
+            import traceback
+
             logger.error(
-                f"Error while analyzing content '{content_id}': {e}",
+                f"Error while processing content '{content_id}': {traceback.format_exc()}"
             )
 
         return None

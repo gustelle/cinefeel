@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import duckdb
+import orjson
 from loguru import logger
 from pydantic import ValidationError
 
@@ -80,13 +81,19 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
             raise StorageError(f"Error saving {self.entity_type} to {path}") from e
 
     def select(self, content_id: str) -> T | None:
-        """Loads data from a file."""
+        """Loads data from a file.
+
+        Uses orjson to deserialize the content, to avoid goind through the uid field_validation,
+        because if we'd use `model_validate` with a uid serialized as `film_1234`, the uid validation would lead to
+        creating a new uid like `film_film_1234`, which is not what we want.
+        """
 
         try:
             path = self.persistence_directory / f"{content_id}.json"
 
             with open(path, "r") as file:
-                woa = self.entity_type.model_validate_json(file.read())
+                # load through orjson to avoid uid validation issues
+                woa = self.entity_type.model_construct(**orjson.loads(file.read()))
                 return woa
         except Exception as e:
             logger.exception(f"Error loading film from {path}: {e}")
@@ -98,7 +105,10 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
         after: T | None = None,
         limit: int = 100,
     ) -> list[T]:
-        """Lists entities in the persistent storage corresponding to the given criteria."""
+        """Lists entities in the persistent storage corresponding to the given criteria.
+
+        Fixed: same as `select`, we go through `model_construct` to avoid uid validation issues.
+        """
 
         try:
 
@@ -122,7 +132,11 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
                 )
                 return []
 
-            return [self.entity_type(**dict(row)) for row in results.to_dict("records")]
+            return [
+                # use model_construct to avoid uid validation issues
+                self.entity_type.model_construct(**dict(row))
+                for row in results.to_dict("records")
+            ]
 
         except duckdb.IOException:
             logger.warning(

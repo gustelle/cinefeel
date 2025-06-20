@@ -26,10 +26,10 @@ def test_construct_basic_case():
     instance = MyComposable.construct(parts=parts)
 
     # then
-    assert instance.field1.uid == "1"
+    assert instance.field1.uid == "mystorable_1"
     assert len(instance.field2) == 2
-    assert instance.field2[0].uid == "2"
-    assert instance.field2[1].uid == "3"
+    assert instance.field2[0].uid == "myotherstorable_2"
+    assert instance.field2[1].uid == "myotherstorable_3"
 
 
 def test_construct_takes_best_score():

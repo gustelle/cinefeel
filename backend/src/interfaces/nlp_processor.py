@@ -1,7 +1,7 @@
 from typing import Protocol
 
 
-class MLProcessor[T](Protocol):
+class Processor[T](Protocol):
     """
     Class to process ML operations
     """

@@ -31,7 +31,9 @@ def test_person_serialization():
     serialized = characteristics.model_dump_json(exclude_none=True)
 
     # then
-    assert serialized == '{"uid":"123","handicaps":["blind","deaf"]}'
+    assert (
+        serialized == '{"uid":"personcharacteristics_123","handicaps":["blind","deaf"]}'
+    )
 
 
 def test_model_schema():
