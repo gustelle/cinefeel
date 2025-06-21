@@ -38,6 +38,9 @@ dependencies = [
     "unidecode (>=1.4.0,<2.0.0)",
     "html2text (>=2025.4.15,<2026.0.0)",
     "mistralai (>=1.8.2,<2.0.0)",
+    "pyphonetics (>=0.5.3,<0.6.0)",
+    "dateparser (>=1.2.1,<2.0.0)",
+    "timefhuman (>=0.1.4,<0.2.0)",
 ]
 
 [tool.poetry]

@@ -392,6 +392,21 @@ tests = ["cloudpickle ; platform_python_implementation == \"CPython\"", "hypothe
 tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" and python_version >= \"3.10\"", "pytest-mypy-plugins ; platform_python_implementation == \"CPython\" and python_version >= \"3.10\""]
 
 [[package]]
+name = "babel"
+version = "2.16.0"
+description = "Internationalization utilities"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "babel-2.16.0-py3-none-any.whl", hash = "sha256:368b5b98b37c06b7daf6696391c3240c938b37767d4584413e8438c5c435fa8b"},
+    {file = "babel-2.16.0.tar.gz", hash = "sha256:d1f3554ca26605fe173f3de0c65f750f5a42f924499bf134de6423582298e316"},
+]
+
+[package.extras]
+dev = ["freezegun (>=1.0,<2.0)", "pytest (>=6.0)", "pytest-cov"]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.13.4"
 description = "Screen-scraping library"
@@ -2396,6 +2411,24 @@ marisa-trie = ">=1.1.0"
 [package.extras]
 build = ["build", "twine"]
 test = ["pytest", "pytest-cov"]
+
+[[package]]
+name = "lark"
+version = "1.2.2"
+description = "a modern parsing library"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "lark-1.2.2-py3-none-any.whl", hash = "sha256:c2276486b02f0f1b90be155f2c8ba4a8e194d42775786db622faccd652d8e80c"},
+    {file = "lark-1.2.2.tar.gz", hash = "sha256:ca807d0162cd16cef15a8feecb862d7319e7a09bdb13aef927968e45040fed80"},
+]
+
+[package.extras]
+atomic-cache = ["atomicwrites"]
+interegular = ["interegular (>=0.3.1,<0.4.0)"]
+nearley = ["js2py"]
+regex = ["regex"]
 
 [[package]]
 name = "locket"
@@ -4665,6 +4698,21 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "pyphonetics"
+version = "0.5.3"
+description = "A Python 3 phonetics library."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "pyphonetics-0.5.3-py2.py3-none-any.whl", hash = "sha256:e6b29671d0d624dda1cac59c0c5a8a7216d8db504bae4941bfc482e04a0621d1"},
+    {file = "pyphonetics-0.5.3.tar.gz", hash = "sha256:2d3c2e359fde91a3c57914f0b5468bba7a5daf38e7927fd999992ea68990fbe4"},
+]
+
+[package.dependencies]
+unidecode = ">=1,<2"
+
+[[package]]
 name = "pytest"
 version = "8.3.5"
 description = "pytest: simple powerful testing with Python"
@@ -4790,14 +4838,14 @@ trio = ["trio (>=0.24)"]
 
 [[package]]
 name = "pytz"
-version = "2025.2"
+version = "2024.2"
 description = "World timezone definitions, modern and historical"
 optional = false
 python-versions = "*"
 groups = ["main", "dev"]
 files = [
-    {file = "pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00"},
-    {file = "pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3"},
+    {file = "pytz-2024.2-py2.py3-none-any.whl", hash = "sha256:31c7c1817eb7fae7ca4b8c7ee50c72f93aa2dd863de768e1ef4245d426aa0725"},
+    {file = "pytz-2024.2.tar.gz", hash = "sha256:2aa355083c50a0f93fa581709deac0c9ad65cca8a9e9beac660adcbd493c798a"},
 ]
 
 [[package]]
@@ -6044,6 +6092,27 @@ files = [
 ]
 
 [[package]]
+name = "timefhuman"
+version = "0.1.4"
+description = "Extract datetimes, datetime ranges, and datetime lists from natural language text"
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "timefhuman-0.1.4-py3-none-any.whl", hash = "sha256:8667d5568b918fa53e34501f954b4d98e5180aece65c9761ffa71e440323d2ef"},
+    {file = "timefhuman-0.1.4.tar.gz", hash = "sha256:9ffb9401274abcc24af3ab5bba1ae8b77b6ac6bb0b89f6dfe23941710534529d"},
+]
+
+[package.dependencies]
+babel = "2.16.0"
+lark = "1.2.2"
+python-dateutil = "2.9.0.post0"
+pytz = "2024.2"
+
+[package.extras]
+test = ["coverage (==7.6.10)", "coveralls (==4.0.1)", "pytest (==8.3.4)", "pytest-cov (==6.0.0)"]
+
+[[package]]
 name = "tokenizers"
 version = "0.21.1"
 description = ""
@@ -7141,4 +7210,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "c78d03dce321be22fc4870342921919ffb406c797abd527fde741347d7bd9a27"
+content-hash = "a006848a57aba4e3dc5a7832d2dd6230fd16f568850c3a5fd78cb63aaa3e34aa"

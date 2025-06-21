@@ -95,17 +95,19 @@ class Biography(Storable):
     )
     birth_date: str | None = Field(
         None,
-        examples=["2023-10-01", "2023-10-02"],
+        examples=["01/01/2020"],
         repr=False,
         serialization_alias="date_naissance",
         validation_alias="date_naissance",
+        description="La date de naissance de la personne au format ISO 8601 (YYYY-MM-DD).",
     )
     death_date: str | None = Field(
         None,
-        examples=["2023-10-01", "2023-10-02"],
+        examples=["2023-10-01"],
         repr=False,
         serialization_alias="date_deces",
         validation_alias="date_deces",
+        description="La date de décès de la personne au format ISO 8601 (YYYY-MM-DD).",
     )
     parents_trades: list[str] | None = Field(
         None,

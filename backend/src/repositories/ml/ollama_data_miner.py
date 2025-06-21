@@ -133,12 +133,12 @@ class OllamaDataMiner(IDataMiner):
             Question: Dans cet extrait, donne-moi des informations sur {base_info.title}, réponds de façon concise, si tu ne sais pas, n'invente pas de données.
             Réponse:"""
 
-        logger.debug("-" * 80)
-        logger.debug(f"Prompt for {entity_type}: ")
-        logger.debug(prompt)
-        logger.debug("-" * 80)
-        logger.debug(response_model.model_json_schema())
-        logger.debug("-" * 80)
+        # logger.debug("-" * 80)
+        # logger.debug(f"Prompt for {entity_type}: ")
+        # logger.debug(prompt)
+        # logger.debug("-" * 80)
+        # logger.debug(response_model.model_json_schema())
+        # logger.debug("-" * 80)
 
         response = ollama.chat(
             model=self.model,

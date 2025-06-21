@@ -9,13 +9,7 @@ from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
 from src.settings import Settings
 
-
-class SimilaritySearchError(Exception):
-    """
-    Custom exception for similarity search errors.
-    """
-
-    pass
+from .exceptions import SimilaritySearchError
 
 
 class SimilarSectionSearch(Processor[Section]):

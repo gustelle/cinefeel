@@ -84,3 +84,7 @@ class BasicFilmResolver(AbstractResolver[Film]):
             )
 
         return entity
+
+    def validate_entity(self, entity: Film) -> Film:
+
+        return entity

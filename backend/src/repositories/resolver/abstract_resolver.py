@@ -65,6 +65,8 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
         entity = self.patch_media(entity, sections)
 
+        entity = self.validate_entity(entity)
+
         logger.info(f"Resolved Entity: '{entity.title}' : {entity.model_dump()}")
         return entity
 
@@ -160,6 +162,10 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                             f"'{section.title}/{child.title}' > found entity: {result.entity.model_dump_json()} ({result.score:.2f})"
                         )
 
+                        # TODO:
+                        # validate the values extracted by the LLM
+                        # - inject a validator which bases on SimlaritySearch
+
                         extracted_parts.append(result)
 
                 result = self.entity_extractor.extract_entity(
@@ -189,4 +195,9 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     @abc.abstractmethod
     def patch_media(self, entity: T, sections: list[Section]) -> T:
         """Patch media into the entity from the sections."""
+        raise NotImplementedError("This method should be implemented by subclasses.")
+
+    @abc.abstractmethod
+    def validate_entity(self, entity: T) -> T:
+        """Validate the entity after it has been assembled."""
         raise NotImplementedError("This method should be implemented by subclasses.")
