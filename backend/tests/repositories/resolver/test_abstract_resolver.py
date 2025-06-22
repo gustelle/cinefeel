@@ -56,6 +56,10 @@ def test_extract_entities_with_children():
         def patch_media(self, entity, sections):
             return entity
 
+        def validate_entity(self, entity):
+            # For testing purposes, we assume the entity is always valid
+            return entity
+
     resolver = TestResolver()
 
     # When extracting entities
@@ -102,6 +106,10 @@ def test_extracted_entities_uid_is_assigned():
         def patch_media(self, entity, sections):
             return entity
 
+        def validate_entity(self, entity):
+            # For testing purposes, we assume the entity is always valid
+            return entity
+
     resolver = TestResolver()
 
     # When extracting entities
@@ -146,6 +154,10 @@ def test_sections_max_children():
         def patch_media(self, entity, sections):
             return entity
 
+        def validate_entity(self, entity):
+            # For testing purposes, we assume the entity is always valid
+            return entity
+
     resolver = TestResolver()
 
     # When filtering sections
@@ -181,6 +193,10 @@ def test_sections_max_per_page():
             return None
 
         def patch_media(self, entity, sections):
+            return entity
+
+        def validate_entity(self, entity):
+            # For testing purposes, we assume the entity is always valid
             return entity
 
     resolver = TestResolver()

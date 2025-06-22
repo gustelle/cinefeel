@@ -12,8 +12,8 @@ def test_simple_html_conversion():
     new_section = pruner.process(section)
 
     # then
-    assert new_section.title.strip() == "Pièces « mineures »"
-    assert new_section.content.strip() == "Pièces « mineures »"
+    assert " ".join(new_section.title.split()) == "Pièces « mineures »"
+    assert " ".join(new_section.content.split()) == "Pièces « mineures »"
 
 
 def test_html_is_removed():

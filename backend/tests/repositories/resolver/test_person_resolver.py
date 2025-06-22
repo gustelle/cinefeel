@@ -9,7 +9,7 @@ from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
-from src.repositories.ml.ollama_data_miner import OllamaDataMiner
+from src.repositories.ml.ollama_rag import OllamaRAG
 from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.settings import Settings
 from tests.repositories.resolver.stubs.stub_extractor import StubExtractor
@@ -40,7 +40,7 @@ def test_e2e_BasicPersonResolver(read_melies_html):
 
     # when
     p = BasicPersonResolver(
-        entity_extractor=OllamaDataMiner(settings=settings),
+        entity_extractor=OllamaRAG(settings=settings),
         section_searcher=SimilarSectionSearch(settings=settings),
     ).resolve(
         base_info=base_info,
@@ -176,7 +176,7 @@ def test_resolve_person_validate_birth_date():
         biography=Biography(
             uid="bio_12345",
             full_name="John Doe",
-            birth_date="1861-12-08",  # Valid date
+            birth_date="28 décembre 1861 à Paris 10ème",  # Valid date
         ),
     )
     resolver = BasicPersonResolver(
@@ -190,4 +190,4 @@ def test_resolve_person_validate_birth_date():
 
     # Then the person should be valid
     assert resolver.validate_entity(p) is not None
-    assert p.biography.birth_date == "1861-12-08T00:00:00"
+    assert p.biography.birth_date == "1861-12-28"

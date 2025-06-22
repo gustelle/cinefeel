@@ -1,3 +1,5 @@
+from dateparser.date import DateDataParser
+from loguru import logger
 
 from src.entities.content import Section
 from src.entities.nationality import NATIONALITIES
@@ -8,6 +10,7 @@ from src.repositories.html_parser.wikipedia_info_retriever import (
     INFOBOX_SECTION_TITLE,
     ORPHAN_SECTION_TITLE,
 )
+from src.repositories.ml.ollama_date_parser import OllamaDateFormatter
 from src.repositories.ml.phonetics import PhoneticSearch
 from src.repositories.resolver.abstract_resolver import AbstractResolver
 from src.settings import Settings
@@ -104,33 +107,58 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 )
             )
 
-        # parse date_naissance
-        # ddp = DateDataParser(languages=["fr"])
-        # birth_date = entity.biography.birth_date
+        birth_date = entity.biography.birth_date
+        if birth_date:
+            # parse date_naissance
+            ddp = DateDataParser(languages=["fr"])
+            birth_date = entity.biography.birth_date
+            parsed_date = ddp.get_date_data(birth_date)
 
-        # logger.debug(
-        #     f"Validating entity '{entity.title}' with birth date '{birth_date}' and nationalities {valid_nationalities}."
-        # )
+            if (
+                parsed_date
+                and parsed_date["date_obj"]
+                and parsed_date["date_obj"] is not None
+            ):
+                birth_date = parsed_date["date_obj"].isoformat()
+            else:
+                logger.warning(
+                    f"Could not parse birth date '{birth_date}' for person '{entity.title}', trying with Ollama"
+                )
+                chat = OllamaDateFormatter(settings=self.settings)
+                birth_date = chat.format(birth_date)
+                logger.debug(
+                    f"Formatted birth date '{birth_date}' for person '{entity.title}' using Ollama."
+                )
 
-        # if birth_date:
-        #     parsed_date = ddp.get_date_data(birth_date)
-        #     logger.debug(
-        #         f"Parsed birth date '{birth_date}' for person '{entity.title}': {parsed_date}"
-        #     )
-        #     if parsed_date and parsed_date["date_obj"]:
-        #         birth_date = parsed_date["date_obj"].isoformat()
-        #     else:
-        #         logger.warning(
-        #             f"Could not parse birth date '{birth_date}' for person '{entity.title}'."
-        #         )
-        #         birth_date = None
+        death_date = entity.biography.death_date
+        if death_date:
+            # parse date_deces
+            ddp = DateDataParser(languages=["fr"])
+            parsed_date = ddp.get_date_data(death_date)
+
+            if (
+                parsed_date
+                and parsed_date["date_obj"]
+                and parsed_date["date_obj"] is not None
+            ):
+                death_date = parsed_date["date_obj"].isoformat()
+            else:
+                logger.warning(
+                    f"Could not parse death date '{death_date}' for person '{entity.title}', trying with Ollama."
+                )
+                chat = OllamaDateFormatter(settings=self.settings)
+                death_date = chat.format(death_date)
+                logger.debug(
+                    f"Formatted death date '{death_date}' for person '{entity.title}' using Ollama."
+                )
 
         return entity.model_copy(
             update={
                 "biography": entity.biography.model_copy(
                     update={
                         "nationalities": valid_nationalities,
-                        # "birth_date": birth_date,
+                        "birth_date": birth_date,
+                        "death_date": death_date,
                     }
                 )
             }

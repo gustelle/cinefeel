@@ -133,7 +133,7 @@ class FilmSpecifications(WOASpecifications):
     )
     duration: str | None = Field(
         None,
-        description="The duration of the film in HH:MM:SS format.",
+        description="Durée du film au format HH:MM:SS.",
         examples=["01:30:00", "02:15:45"],
         repr=False,
         serialization_alias="duree_film",

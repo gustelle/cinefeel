@@ -10,24 +10,17 @@ from typing_inspection.introspection import (
 )
 
 from src.entities.extraction import ExtractionResult
-from src.entities.source import SourcedContentBase
+from src.entities.source import Storable
 from src.interfaces.extractor import IDataMiner
-from src.settings import Settings
 
 
 class OllamaDataMiner(IDataMiner):
     """
-    OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
-
-    TODO:
-    - Create a custom LLM specialized on QA about cinema.
+    Abstract class for LLM data miners.
     """
 
     model: str
-
-    def __init__(self, settings: Settings):
-
-        self.model = settings.llm_model
+    prompt: str
 
     def _is_expected_in_response(self, k: str, annotation: AnnotationSource) -> bool:
         """
@@ -35,6 +28,7 @@ class OllamaDataMiner(IDataMiner):
         because the LLM usually provides crappy URLs that are not valid, which invalidates the model.
 
         Args:
+            k (str): The name of the field to inspect, may be used for logging or debugging.
             annotation (AnnotationSource): The type annotation to inspect.
 
         Returns:
@@ -58,7 +52,7 @@ class OllamaDataMiner(IDataMiner):
 
         return _is_expected
 
-    def create_response_model(self, entity_type: BaseModel) -> type[BaseModel]:
+    def create_response_model(self, entity_type: Storable) -> type[BaseModel]:
         """
         Dynamically create a Pydantic model for the response based on the entity type.
 
@@ -67,7 +61,7 @@ class OllamaDataMiner(IDataMiner):
         - to exclude fields expected as HttpUrl, which will be patched later, because the LLM does not know the URLs of the sources.
 
         Args:
-            entity_type (BaseModel): The type of entity to create a response model for.
+            entity_type (Storable): The type of entity to create a response model for.
 
         Returns:
             type[BaseModel]: A Pydantic model class that matches the structure of the entity type.
@@ -101,44 +95,14 @@ class OllamaDataMiner(IDataMiner):
             },
         )
 
-    def extract_entity(
-        self, content: str, entity_type: BaseModel, base_info: SourcedContentBase
+    def parse_entity_from_prompt(
+        self, prompt: str, entity_type: Storable
     ) -> ExtractionResult:
-        """
-        Transform the given content into an entity of type T.
-
-        Args:
-            content (str): The content to parse, typically a string containing text.
-            entity_type (BaseModel): The type of entity to create from the content.
-                This should be a Pydantic model that defines the structure of the entity.
-            base_info (SourcedContentBase): Base information to provide context to the LLM,
-                this avoids hallucinations and helps the model to focus on the right context.
-
-        Returns:
-            ExtractionResult: An instance of ExtractionResult containing:
-                - score: A float representing the confidence score of the extraction.
-                - entity: An instance of the entity type T, populated with the extracted data.
-
-        Raises:
-            ValueError: If the content cannot be parsed into an entity of type T.
-        """
 
         score = 0.0
         result: BaseModel | None = None
 
         response_model = self.create_response_model(entity_type)
-
-        prompt = f"""
-            Context: {content}
-            Question: Dans cet extrait, donne-moi des informations sur {base_info.title}, réponds de façon concise, si tu ne sais pas, n'invente pas de données.
-            Réponse:"""
-
-        # logger.debug("-" * 80)
-        # logger.debug(f"Prompt for {entity_type}: ")
-        # logger.debug(prompt)
-        # logger.debug("-" * 80)
-        # logger.debug(response_model.model_json_schema())
-        # logger.debug("-" * 80)
 
         response = ollama.chat(
             model=self.model,

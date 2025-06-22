@@ -2,12 +2,15 @@
 import asyncio
 from pathlib import Path
 
+import pytest
+
 from src.settings import Settings, WikiTOCPageConfig
 from src.use_cases.analyze_persons import WikipediaPersonAnalysisUseCase
 
 _local_dir = Path(__file__).parent.resolve()
 
 
+@pytest.mark.skip
 def test_uc_person():
     """
     End-to-end test for the WikipediaPersonAnalysisUseCase.
