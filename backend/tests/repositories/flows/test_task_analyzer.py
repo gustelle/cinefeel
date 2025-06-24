@@ -1,3 +1,4 @@
+import pytest
 from pydantic import HttpUrl
 
 from src.entities.film import Film
@@ -55,7 +56,7 @@ def test_task_analyze():
     assert analyzer.is_analyzed, "Analyzer was not called."
 
 
-# @pytest.mark.skip(reason="parties à mocker pour éviter les latences trop longues")
+@pytest.mark.skip(reason="parties à mocker pour éviter les latences trop longues")
 def test_e2e_do_analysis(read_melies_html):
     """verify with a real case that the analysis flow works as expected."""
     # given

@@ -118,12 +118,14 @@ class BasicFilmResolver(AbstractResolver[Film]):
                         f"Could not parse duration '{entity.specifications.duration}' for film '{entity.title}', setting to None"
                     )
 
-        return entity.model_copy(
-            update={
-                "specifications": entity.specifications.model_copy(
-                    update={
-                        "duration": duration,
-                    }
-                )
-            }
-        )
+            return entity.model_copy(
+                update={
+                    "specifications": entity.specifications.model_copy(
+                        update={
+                            "duration": duration,
+                        }
+                    )
+                }
+            )
+
+        return entity
