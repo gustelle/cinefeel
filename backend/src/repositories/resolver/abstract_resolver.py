@@ -124,16 +124,6 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
         """
 
-        logger.debug(
-            f"Content '{base_info.uid}' being processed with {len(sections)} sections."
-        )
-
-        for section in sections:
-            if section.children:
-                logger.debug(
-                    f"  > Section '{section.title}' has {len(section.children)} children."
-                )
-
         extracted_parts: list[ExtractionResult] = []
         for entity_type, titles in self.entity_to_sections.items():
 

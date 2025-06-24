@@ -19,8 +19,6 @@ from src.settings import Settings
 class BasicPersonResolver(AbstractResolver[Person]):
     """
     Responsible for extracting information from sections and assembling a Person entity.
-
-
     """
 
     def __init__(
