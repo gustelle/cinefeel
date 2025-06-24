@@ -185,7 +185,6 @@ def test_resolve_person_validate_birth_date():
     )
 
     # When validating the person
-
     p = resolver.validate_entity(p)
 
     # Then the person should be valid

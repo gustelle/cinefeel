@@ -1,5 +1,5 @@
 from src.entities.content import Section
-from src.entities.film import Film
+from src.entities.film import Film, FilmSpecifications
 from src.entities.source import SourcedContentBase
 from src.repositories.resolver.film_resolver import BasicFilmResolver
 
@@ -124,3 +124,83 @@ def test_resolve_film_patch_media():
     assert (
         str(patched_film.media.other_medias[0]) == "https://example.com/Soundtrack.mp3"
     )
+
+
+def test_validate_iso_duration():
+    # Given a film with a valid duration
+    film = Film(
+        uid="12345",
+        title="The Great Film",
+        permalink="https://example.com/the-great-film",
+        specifications=FilmSpecifications(
+            uid="spec_12345",
+            title="Specifications for The Great Film",
+            duration="01:30:02",  # ISO 8601 duration format
+        ),
+    )
+
+    resolver = BasicFilmResolver(
+        entity_extractor=StubExtractor(),
+        section_searcher=StubSimilaritySearch(sections=[]),
+    )
+
+    # When validating the duration
+    film = resolver.validate_entity(film)
+
+    # Then the duration should be valid
+
+    assert film.specifications.duration == "01:30:02"
+
+
+def test_validate_duration_by_regex_no_hour():
+    # Given a film with an invalid duration
+    film = Film(
+        uid="12345",
+        title="The Great Film",
+        permalink="https://example.com/the-great-film",
+        specifications=FilmSpecifications(
+            uid="spec_12345",
+            title="Specifications for The Great Film",
+            duration="1 minute 20 secondes",  # Non-ISO duration format
+        ),
+    )
+
+    resolver = BasicFilmResolver(
+        entity_extractor=StubExtractor(),
+        section_searcher=StubSimilaritySearch(sections=[]),
+    )
+
+    # When validating the duration
+    film = resolver.validate_entity(film)
+
+    # Then the duration should be None or invalid
+    assert (
+        film.specifications.duration == "00:01:20"
+    )  # Assuming the resolver converts it to a valid format
+
+
+def test_validate_duration_by_regex_with_hour():
+    # Given a film with an invalid duration
+    film = Film(
+        uid="12345",
+        title="The Great Film",
+        permalink="https://example.com/the-great-film",
+        specifications=FilmSpecifications(
+            uid="spec_12345",
+            title="Specifications for The Great Film",
+            duration="1 heure 20 minutes 30 secondes",  # Non-ISO duration format
+        ),
+    )
+
+    resolver = BasicFilmResolver(
+        entity_extractor=StubExtractor(),
+        section_searcher=StubSimilaritySearch(sections=[]),
+    )
+
+    # When validating the duration
+    film = resolver.validate_entity(film)
+
+    # Then the duration should be None or invalid
+    assert (
+        film.specifications.duration == "01:20:30"
+    )  # Assuming the resolver converts it to a valid format
