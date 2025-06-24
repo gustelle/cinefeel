@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, HttpUrl
 from src.entities.extraction import ExtractionResult
 from src.entities.person import PersonCharacteristics
 from src.entities.source import SourcedContentBase
-from src.repositories.ml.ollama_parser import OllamaExtractor
+from src.repositories.ml.ollama_rag import OllamaRAG
 from src.settings import Settings
 
 
@@ -29,16 +29,15 @@ def test_ollama_is_called_correctly(mocker):
         def __init__(self, message):
             self.message = message
 
-    mock_llm_response = (
-        '{"handicaps":["sourd", "aveugle"], "uid": "123", "score": 0.95}'
-    )
+    mock_llm_response = '{"handicaps":["auditif"], "uid": "123", "score": 0.95}'
 
+    # suppose Ollama chat responds with a JSON string
     mocker.patch(
-        "src.repositories.ml.ollama_parser.ollama.chat",
+        "src.repositories.ml.ollama_dataminer.ollama.chat",
         return_value=MockResponse(MockMessage(mock_llm_response)),
     )
 
-    parser = OllamaExtractor(Settings())
+    parser = OllamaRAG(Settings())
     content = "This is a test content for Ollama."
     entity_type = PersonCharacteristics
 
@@ -52,7 +51,7 @@ def test_ollama_is_called_correctly(mocker):
     # then
     assert isinstance(result, ExtractionResult)
     assert isinstance(result.entity, PersonCharacteristics)
-    assert result.entity.disabilities == ["sourd", "aveugle"]
+    assert result.entity.disabilities == ["auditif"]
     assert result.score == 0.95
 
 
@@ -64,7 +63,7 @@ def test_create_response_model():
 
     from src.settings import Settings
 
-    parser = OllamaExtractor(Settings())
+    parser = OllamaRAG(Settings())
 
     # when
     response = parser.create_response_model(MyModel)(score=0.9, height=180)
@@ -89,7 +88,7 @@ def test_create_response_model_excludes_http_fields():
 
     from src.settings import Settings
 
-    parser = OllamaExtractor(Settings())
+    parser = OllamaRAG(Settings())
 
     # when
     model = parser.create_response_model(MyModel)

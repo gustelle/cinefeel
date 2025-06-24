@@ -292,10 +292,6 @@ class WikipediaParser(IParser):
             media=media,
         )
 
-        logger.debug(
-            f"Info table found: {info_table.title} with content: {info_table.content}"
-        )
-
         return info_table
 
     def retrieve_media(

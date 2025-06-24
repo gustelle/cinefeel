@@ -6,7 +6,7 @@ from src.entities.composable import Composable
 from src.entities.content import Section
 from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import IContentExtractor
+from src.interfaces.extractor import IDataMiner
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import IEntityResolver
 from src.settings import Settings
@@ -21,7 +21,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
     entity_type: T
     entity_to_sections: dict[type, list[str]]
-    entity_extractor: IContentExtractor
+    entity_extractor: IDataMiner
     section_searcher: Processor
     settings: Settings
 
@@ -64,6 +64,8 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         entity = self.assemble(base_info, results)
 
         entity = self.patch_media(entity, sections)
+
+        entity = self.validate_entity(entity)
 
         logger.info(f"Resolved Entity: '{entity.title}' : {entity.model_dump()}")
         return entity
@@ -160,6 +162,10 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                             f"'{section.title}/{child.title}' > found entity: {result.entity.model_dump_json()} ({result.score:.2f})"
                         )
 
+                        # TODO:
+                        # validate the values extracted by the LLM
+                        # - inject a validator which bases on SimlaritySearch
+
                         extracted_parts.append(result)
 
                 result = self.entity_extractor.extract_entity(
@@ -189,4 +195,9 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     @abc.abstractmethod
     def patch_media(self, entity: T, sections: list[Section]) -> T:
         """Patch media into the entity from the sections."""
+        raise NotImplementedError("This method should be implemented by subclasses.")
+
+    @abc.abstractmethod
+    def validate_entity(self, entity: T) -> T:
+        """Validate the entity after it has been assembled."""
         raise NotImplementedError("This method should be implemented by subclasses.")

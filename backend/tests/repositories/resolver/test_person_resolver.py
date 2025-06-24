@@ -1,7 +1,7 @@
 import pytest
 
 from src.entities.content import Section
-from src.entities.person import Person
+from src.entities.person import Biography, Person
 from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
@@ -9,7 +9,7 @@ from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
-from src.repositories.ml.ollama_parser import OllamaExtractor
+from src.repositories.ml.ollama_rag import OllamaRAG
 from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.settings import Settings
 from tests.repositories.resolver.stubs.stub_extractor import StubExtractor
@@ -40,7 +40,7 @@ def test_e2e_BasicPersonResolver(read_melies_html):
 
     # when
     p = BasicPersonResolver(
-        entity_extractor=OllamaExtractor(settings=settings),
+        entity_extractor=OllamaRAG(settings=settings),
         section_searcher=SimilarSectionSearch(settings=settings),
     ).resolve(
         base_info=base_info,
@@ -140,3 +140,53 @@ def test_resolve_person_patch_media():
     # assert (
     #     str(patched_film.media.other_media[2]) == "https://example.com/Soundtrack.mp3"
     # )
+
+
+def test_resolve_person_validate_nationalities():
+    # Given a person with valid nationalities
+    p = Person(
+        uid="12345",
+        title="The Great Person",
+        permalink="https://example.com/the-great-person",
+        biography=Biography(
+            uid="bio_12345",
+            full_name="John Doe",
+            nationalities=["Française", "Francais"],  # Valid nationalities
+        ),
+    )
+    resolver = BasicPersonResolver(
+        entity_extractor=StubExtractor(),
+        section_searcher=StubSimilaritySearch(sections=[]),
+    )
+
+    # When validating the person
+    p = resolver.validate_entity(p)
+
+    # Then the person should be valid
+    assert resolver.validate_entity(p) is not None
+    assert p.biography.nationalities == ["français"]
+
+
+def test_resolve_person_validate_birth_date():
+    # Given a person with a valid birth date
+    p = Person(
+        uid="12345",
+        title="The Great Person",
+        permalink="https://example.com/the-great-person",
+        biography=Biography(
+            uid="bio_12345",
+            full_name="John Doe",
+            birth_date="28 décembre 1861 à Paris 10ème",  # Valid date
+        ),
+    )
+    resolver = BasicPersonResolver(
+        entity_extractor=StubExtractor(),
+        section_searcher=StubSimilaritySearch(sections=[]),
+    )
+
+    # When validating the person
+    p = resolver.validate_entity(p)
+
+    # Then the person should be valid
+    assert resolver.validate_entity(p) is not None
+    assert p.biography.birth_date == "1861-12-28"

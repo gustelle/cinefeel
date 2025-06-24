@@ -34,15 +34,18 @@ class PipelineRunner:
 
         http_client = AsyncHttpClient(settings=self.settings)
 
-        # film pages
+        # pages
         entity_pages = [
             p
             for p in self.settings.mediawiki_start_pages
             if p.toc_content_type == self.entity_type.__name__.lower()
         ]
 
+        # make them unique by page_id
+        entity_pages = {p.page_id: p for p in entity_pages}.values()
+
         logger.info(
-            f"Starting analysis for {len(entity_pages)} pages of type {self.entity_type.__name__}."
+            f"Found {len(entity_pages)} pages of type {self.entity_type.__name__} in the settings."
         )
 
         downloader_flow = DownloaderFlow(

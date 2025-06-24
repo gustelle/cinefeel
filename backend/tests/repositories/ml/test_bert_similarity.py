@@ -1,6 +1,5 @@
-
 from src.interfaces.content_splitter import Section
-from src.repositories.ml.bert_similarity import SimilarSectionSearch
+from src.repositories.ml.bert_similarity import SimilarSectionSearch, SimilarValueSearch
 from src.settings import Settings
 
 
@@ -212,3 +211,27 @@ def test_media_are_provided_in_similar_section():
     assert most_similar_section.title == "film"
     assert most_similar_section.content == "This is a film."
     assert len(most_similar_section.media) == 1
+
+
+def test_similar_value_search():
+    """
+    Test the SimilarValueSearch class.
+    """
+
+    # given
+    settings = Settings()
+
+    # Define a query and a corpus
+    query = "française"
+    corpus = [
+        "français",
+        "allemand",
+        "anglais",
+    ]
+    similar_value_search = SimilarValueSearch(settings, corpus=corpus)
+
+    # Perform the similarity search
+    most_similar_value = similar_value_search.process(query)
+
+    # Check that the most similar value is correct
+    assert most_similar_value == "français"

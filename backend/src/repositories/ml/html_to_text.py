@@ -22,7 +22,8 @@ class TextSectionConverter(Processor[Section]):
 
         val = html_to_text_transformer.handle(content)
 
-        return " ".join([c.strip() for c in val.split() if len(c.strip()) > 0])
+        return val.strip()
+        # return " ".join([c.strip() for c in val.split() if len(c.strip()) > 0])
 
     def process(self, section: Section) -> Section:
         """

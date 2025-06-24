@@ -24,7 +24,7 @@ def test_person_serialization():
     # given
     characteristics = PersonCharacteristics(
         uid="123",
-        disabilities=["blind", "deaf"],
+        disabilities=["auditif", "visuel"],
     )
 
     # when
@@ -32,7 +32,8 @@ def test_person_serialization():
 
     # then
     assert (
-        serialized == '{"uid":"personcharacteristics_123","handicaps":["blind","deaf"]}'
+        serialized
+        == '{"uid":"personcharacteristics_123","handicaps":["auditif","visuel"]}'
     )
 
 
@@ -44,7 +45,7 @@ def test_model_schema():
     # when
     result = validate(
         {
-            "handicaps": ["sourd"],
+            "handicaps": ["auditif", "visuel"],
             "uid": "123",
         },
         schema=schema,
@@ -59,10 +60,10 @@ def test_model_schema():
 def test_from_dump_by_alias():
 
     # given
-    input = '{"handicaps":["sourd", "aveugle"], "uid":"123"}'
+    input = '{"handicaps":["auditif", "visuel"], "uid":"123"}'
 
     # when
     characs = PersonCharacteristics.model_validate_json(input)
 
     # then
-    assert characs.disabilities == ["sourd", "aveugle"]
+    assert characs.disabilities == ["auditif", "visuel"]
