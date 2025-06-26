@@ -1,8 +1,23 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    StringConstraints,
+    field_validator,
+)
+
+SectionTitle = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=0,
+    ),
+]  # may be empty for some sections
 
 
 class PageLink(BaseModel):
@@ -38,7 +53,7 @@ class PageLink(BaseModel):
 
 
 class Section(BaseModel):
-    title: str = Field(
+    title: SectionTitle = Field(
         ...,
         description="The title of the section. This is a required field.",
         examples=["Introduction", "Biographie"],

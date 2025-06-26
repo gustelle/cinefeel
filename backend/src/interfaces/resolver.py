@@ -1,13 +1,43 @@
-from typing import Protocol
+from typing import Protocol, Sequence, Type
 
-from src.entities.content import Section
-from src.entities.source import SourcedContentBase
+from src.entities.content import Section, SectionTitle
+from src.entities.source import SourcedContentBase, Storable
+from src.interfaces.extractor import IDataMiner
+
+
+class ResolutionConfiguration:
+    """
+    Associates an extractor to a set of sections, and an expected type of entity to extract.
+    """
+
+    extractor: IDataMiner
+    section_titles: Sequence[SectionTitle]
+    extracted_type: Type[Storable]
+
+    def __init__(
+        self,
+        extractor: IDataMiner,
+        section_titles: Sequence[SectionTitle],
+        extracted_type: Type[Storable],
+    ):
+        """Initializes the resolution configuration.
+
+        Args:
+            extractor (IDataMiner): The data extractor to use for extracting information from the sections.
+            section_titles (list[SectionTitle]): The titles of the sections to extract.
+            extracted_type (Type[Storable]): The type of the entity to extract in the sections having the given titles.
+        """
+        self.extractor = extractor
+        self.section_titles = section_titles
+        self.extracted_type = extracted_type
 
 
 class IEntityResolver[T](Protocol):
     """
     Interface for an entity assembler that transforms content into a specific entity type.
     """
+
+    config: ResolutionConfiguration
 
     def resolve(
         self,

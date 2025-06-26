@@ -23,8 +23,6 @@ class OllamaDateFormatter(OllamaDataMiner):
             Question: Le texte suivant contient une date: '{content}', mets la au format ISO 8601.
             Réponse:"""
 
-        logger.debug(f"Prompt: {prompt}")
-
         # generate a dynamic model for the date entity
         entity_type = create_model(
             "DateEntity",
@@ -67,8 +65,6 @@ class OllamaDurationFormatter(OllamaDataMiner):
         prompt = f"""
             Question: Le texte suivant contient une durée: '{content}', mets la au format ISO 8601.
             Réponse:"""
-
-        logger.debug(f"Prompt: {prompt}")
 
         # generate a dynamic model for the duration entity
         entity_type = create_model(

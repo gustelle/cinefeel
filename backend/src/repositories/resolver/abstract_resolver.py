@@ -6,9 +6,8 @@ from src.entities.composable import Composable
 from src.entities.content import Section
 from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
-from src.interfaces.extractor import IDataMiner
 from src.interfaces.nlp_processor import Processor
-from src.interfaces.resolver import IEntityResolver
+from src.interfaces.resolver import IEntityResolver, ResolutionConfiguration
 from src.settings import Settings
 
 
@@ -20,8 +19,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     """
 
     entity_type: T
-    entity_to_sections: dict[type, list[str]]
-    entity_extractor: IDataMiner
+    configurations: list[ResolutionConfiguration]
     section_searcher: Processor
     settings: Settings
 
@@ -125,13 +123,14 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         """
 
         extracted_parts: list[ExtractionResult] = []
-        for entity_type, titles in self.entity_to_sections.items():
+        for config in self.configurations:
 
             section: Section  # for type checking
 
-            for title in titles:
+            for title in config.section_titles:
 
                 section = self.section_searcher.process(title=title, sections=sections)
+
                 if section is None:
                     continue
 
@@ -139,9 +138,9 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                 if section.children:
                     for child in section.children:
 
-                        result = self.entity_extractor.extract_entity(
+                        result = config.extractor.extract_entity(
                             content=child.content,
-                            entity_type=entity_type,
+                            entity_type=config.extracted_type,
                             base_info=base_info,
                         )
 
@@ -152,15 +151,11 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                             f"'{section.title}/{child.title}' > found entity: {result.entity.model_dump_json()} ({result.score:.2f})"
                         )
 
-                        # TODO:
-                        # validate the values extracted by the LLM
-                        # - inject a validator which bases on SimlaritySearch
-
                         extracted_parts.append(result)
 
-                result = self.entity_extractor.extract_entity(
+                result = config.extractor.extract_entity(
                     content=section.content,
-                    entity_type=entity_type,
+                    entity_type=config.extracted_type,
                     base_info=base_info,
                 )
 
@@ -184,10 +179,14 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
     @abc.abstractmethod
     def patch_media(self, entity: T, sections: list[Section]) -> T:
-        """Patch media into the entity from the sections."""
+        """Patch media into the entity from the sections,
+        because media extraction is not reliable enough to be done during extraction.
+
+        it should directly be taken from the sections and patched into the entity.
+        """
         raise NotImplementedError("This method should be implemented by subclasses.")
 
     @abc.abstractmethod
     def validate_entity(self, entity: T) -> T:
-        """Validate the entity after it has been assembled."""
+        """Validate the entity after it has been extracted and assembled."""
         raise NotImplementedError("This method should be implemented by subclasses.")

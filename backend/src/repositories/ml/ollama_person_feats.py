@@ -3,9 +3,9 @@ from src.repositories.ml.ollama_dataminer import OllamaDataMiner
 from src.settings import Settings
 
 
-class OllamaRAG(OllamaDataMiner):
+class PersonFeaturesExtractor(OllamaDataMiner):
     """
-    OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
+    extracts features of a Person entity using Ollama
     """
 
     def __init__(self, settings: Settings):
@@ -21,7 +21,7 @@ class OllamaRAG(OllamaDataMiner):
 
         prompt = f"""
             Context: {content}
-            Question: Dans cet extrait, donne-moi des informations sur {base_info.title}, réponds de façon concise, si tu ne sais pas, n'invente pas de données.
+            Question: Dans cet extrait, retrouve les caractéristiques de '{base_info.title}' : poids en Kg, taille en cm, couleur de peau, orientation sexuelle et handicaps. Réponds de façon concise, si tu ne sais pas, n'invente pas de données.
             Réponse:"""
 
         return self.parse_entity_from_prompt(

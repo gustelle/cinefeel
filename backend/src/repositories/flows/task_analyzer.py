@@ -7,19 +7,25 @@ from prefect.futures import PrefectFuture
 from prefect_dask import DaskTaskRunner
 
 from src.entities.composable import Composable
-from src.entities.film import Film
-from src.entities.person import Person
+from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
+from src.entities.person import Biography, Person, PersonCharacteristics
 from src.interfaces.analyzer import IContentAnalyzer
+from src.interfaces.resolver import ResolutionConfiguration
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
-from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
+from src.repositories.html_parser.wikipedia_info_retriever import (
+    INFOBOX_SECTION_TITLE,
+    ORPHAN_SECTION_TITLE,
+    WikipediaParser,
+)
 from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
-from src.repositories.ml.ollama_rag import OllamaRAG
+from src.repositories.ml.ollama_generic import GenericInfoExtractor
+from src.repositories.ml.ollama_person_feats import PersonFeaturesExtractor
 from src.repositories.resolver.film_resolver import BasicFilmResolver
 from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.repositories.storage.json_storage import JSONEntityStorageHandler
@@ -70,16 +76,53 @@ class AnalysisFlow(ITaskExecutor):
         # assemble the entity from the sections
         if self.entity_type == Film:
             return BasicFilmResolver(
-                entity_extractor=OllamaRAG(settings=self.settings),
                 section_searcher=SimilarSectionSearch(settings=self.settings),
+                configurations=[
+                    ResolutionConfiguration(
+                        extractor=GenericInfoExtractor(settings=self.settings),
+                        section_titles=[INFOBOX_SECTION_TITLE, "Fiche technique"],
+                        extracted_type=FilmSpecifications,
+                    ),
+                    ResolutionConfiguration(
+                        extractor=GenericInfoExtractor(settings=self.settings),
+                        section_titles=["Distribution"],
+                        extracted_type=FilmActor,
+                    ),
+                    ResolutionConfiguration(
+                        extractor=GenericInfoExtractor(settings=self.settings),
+                        section_titles=[
+                            "Synopsis",
+                            "Résumé",
+                            ORPHAN_SECTION_TITLE,
+                        ],
+                        extracted_type=FilmSummary,
+                    ),
+                ],
             ).resolve(
                 base_info=base_info,
                 sections=sections,
             )
         elif self.entity_type == Person:
             return BasicPersonResolver(
-                entity_extractor=OllamaRAG(settings=self.settings),
                 section_searcher=SimilarSectionSearch(settings=self.settings),
+                configurations=[
+                    ResolutionConfiguration(
+                        extractor=GenericInfoExtractor(settings=self.settings),
+                        section_titles=[
+                            INFOBOX_SECTION_TITLE,
+                            "Biographie",
+                        ],
+                        extracted_type=Biography,
+                    ),
+                    ResolutionConfiguration(
+                        extractor=PersonFeaturesExtractor(settings=self.settings),
+                        section_titles=[
+                            ORPHAN_SECTION_TITLE,
+                            "Biographie",
+                        ],
+                        extracted_type=PersonCharacteristics,
+                    ),
+                ],
             ).resolve(
                 base_info=base_info,
                 sections=sections,

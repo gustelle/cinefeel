@@ -28,7 +28,7 @@ def test_BasicFilmResolver_nominal_case():
     stub_similarity = StubSimilaritySearch(sections=sections)
 
     resolver = BasicFilmResolver(
-        entity_extractor=stub_extractor,
+        extractor=stub_extractor,
         section_searcher=stub_similarity,
     )
 
@@ -107,7 +107,7 @@ def test_resolve_film_patch_media():
     stub_similarity = StubSimilaritySearch(sections=sections)
 
     resolver = BasicFilmResolver(
-        entity_extractor=stub_extractor,
+        extractor=stub_extractor,
         section_searcher=stub_similarity,
     )
 
@@ -140,7 +140,7 @@ def test_validate_iso_duration():
     )
 
     resolver = BasicFilmResolver(
-        entity_extractor=StubExtractor(),
+        extractor=StubExtractor(),
         section_searcher=StubSimilaritySearch(sections=[]),
     )
 
@@ -166,7 +166,7 @@ def test_validate_duration_by_regex_no_hour():
     )
 
     resolver = BasicFilmResolver(
-        entity_extractor=StubExtractor(),
+        extractor=StubExtractor(),
         section_searcher=StubSimilaritySearch(sections=[]),
     )
 
@@ -193,7 +193,7 @@ def test_validate_duration_by_regex_with_hour():
     )
 
     resolver = BasicFilmResolver(
-        entity_extractor=StubExtractor(),
+        extractor=StubExtractor(),
         section_searcher=StubSimilaritySearch(sections=[]),
     )
 
