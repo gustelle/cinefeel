@@ -1,10 +1,11 @@
 from src.entities.content import Section
 from src.entities.film import Film, FilmSpecifications
 from src.entities.source import SourcedContentBase
+from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.film_resolver import BasicFilmResolver
 
 from .stubs.stub_extractor import StubExtractor
-from .stubs.stub_similarity import StubSimilaritySearch
+from .stubs.stub_similarity import ExactTitleSimilaritySearch, StubSimilaritySearch
 
 
 def test_BasicFilmResolver_nominal_case():
@@ -25,11 +26,18 @@ def test_BasicFilmResolver_nominal_case():
     stub_extractor = StubExtractor()
 
     # this stub will return the first section
-    stub_similarity = StubSimilaritySearch(sections=sections)
+    stub_similarity = ExactTitleSimilaritySearch()
 
     resolver = BasicFilmResolver(
-        extractor=stub_extractor,
         section_searcher=stub_similarity,
+        configurations=[
+            # Extracting film specifications
+            ResolutionConfiguration(
+                extractor=stub_extractor,
+                section_titles=["Données clés", "Fiche technique"],
+                extracted_type=FilmSpecifications,
+            ),
+        ],
     )
 
     # When resolving the film
@@ -104,11 +112,18 @@ def test_resolve_film_patch_media():
     stub_extractor = StubExtractor()
 
     # this stub will return the first section
-    stub_similarity = StubSimilaritySearch(sections=sections)
+    stub_similarity = ExactTitleSimilaritySearch()
 
     resolver = BasicFilmResolver(
-        extractor=stub_extractor,
         section_searcher=stub_similarity,
+        configurations=[
+            # Extracting film specifications
+            ResolutionConfiguration(
+                extractor=stub_extractor,
+                section_titles=["Données clés", "Fiche technique"],
+                extracted_type=FilmSpecifications,
+            ),
+        ],
     )
 
     # When patching media
@@ -140,8 +155,16 @@ def test_validate_iso_duration():
     )
 
     resolver = BasicFilmResolver(
-        extractor=StubExtractor(),
-        section_searcher=StubSimilaritySearch(sections=[]),
+        section_searcher=StubSimilaritySearch(
+            return_value=Section(title="Fiche technique", content="Some content")
+        ),
+        configurations=[
+            ResolutionConfiguration(
+                extractor=StubExtractor(),
+                section_titles=["Fiche technique"],
+                extracted_type=FilmSpecifications,
+            ),
+        ],
     )
 
     # When validating the duration
@@ -166,8 +189,16 @@ def test_validate_duration_by_regex_no_hour():
     )
 
     resolver = BasicFilmResolver(
-        extractor=StubExtractor(),
-        section_searcher=StubSimilaritySearch(sections=[]),
+        section_searcher=StubSimilaritySearch(
+            return_value=Section(title="Fiche technique", content="Some content")
+        ),
+        configurations=[
+            ResolutionConfiguration(
+                extractor=StubExtractor(),
+                section_titles=["Données clés", "Fiche technique"],
+                extracted_type=FilmSpecifications,
+            ),
+        ],
     )
 
     # When validating the duration
@@ -193,8 +224,16 @@ def test_validate_duration_by_regex_with_hour():
     )
 
     resolver = BasicFilmResolver(
-        extractor=StubExtractor(),
-        section_searcher=StubSimilaritySearch(sections=[]),
+        section_searcher=StubSimilaritySearch(
+            return_value=Section(title="Fiche technique", content="Some content")
+        ),
+        configurations=[
+            ResolutionConfiguration(
+                extractor=StubExtractor(),
+                section_titles=["Données clés", "Fiche technique"],
+                extracted_type=FilmSpecifications,
+            ),
+        ],
     )
 
     # When validating the duration

@@ -108,9 +108,11 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     def extract_entities(
         self, sections: list[Section], base_info: SourcedContentBase
     ) -> list[ExtractionResult]:
-        """Extract entities from sections based on predefined mappings.
-
-        Sections may have children, in this case the children are considered to retrieve entities;
+        """
+        Searches for entities in the provided sections and extracts them,
+        according to the configurations defined in the resolver:
+        - 1st, it searches for sections with titles matching the configuration.
+        - 2nd, it extracts entities from the content of those sections.
 
         Args:
             sections (list[Section]): List of Section objects containing content.
@@ -127,14 +129,14 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
             section: Section  # for type checking
 
-            for title in config.section_titles:
+            for i, title in enumerate(config.section_titles):
 
                 section = self.section_searcher.process(title=title, sections=sections)
 
                 if section is None:
                     continue
 
-                # take into account the section children
+                # process children
                 if section.children:
                     for child in section.children:
 
@@ -147,12 +149,10 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                         if result.entity is None:
                             continue
 
-                        logger.debug(
-                            f"'{section.title}/{child.title}' > found entity: {result.entity.model_dump_json()} ({result.score:.2f})"
-                        )
-
                         extracted_parts.append(result)
 
+                # process main section removing children
+                # because we already processed them
                 result = config.extractor.extract_entity(
                     content=section.content,
                     entity_type=config.extracted_type,
@@ -161,10 +161,6 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
                 if result.entity is None:
                     continue
-
-                logger.debug(
-                    f"'{section.title}' > found entity: {result.entity.model_dump_json()} ({result.score:.2f})"
-                )
 
                 extracted_parts.append(result)
 

@@ -1,5 +1,6 @@
 from src.entities.content import Section
 from src.entities.person import Biography, Person
+from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.person_resolver import BasicPersonResolver
 from tests.repositories.resolver.stubs.stub_extractor import StubExtractor
 from tests.repositories.resolver.stubs.stub_similarity import StubSimilaritySearch
@@ -67,11 +68,17 @@ def test_resolve_person_patch_media():
     stub_extractor = StubExtractor()
 
     # this stub will return the first section
-    stub_similarity = StubSimilaritySearch(sections=sections)
+    stub_similarity = StubSimilaritySearch(return_value=sections[0])
 
     resolver = BasicPersonResolver(
-        extractor=stub_extractor,
         section_searcher=stub_similarity,
+        configurations=[
+            ResolutionConfiguration(
+                extractor=stub_extractor,
+                section_titles=["Posters", "Videos", "Audio", "Miscellaneous"],
+                extracted_type=Person,
+            ),
+        ],
     )
 
     # When patching media
@@ -107,8 +114,16 @@ def test_resolve_person_validate_nationalities():
         ),
     )
     resolver = BasicPersonResolver(
-        extractor=StubExtractor(),
-        section_searcher=StubSimilaritySearch(sections=[]),
+        section_searcher=StubSimilaritySearch(
+            return_value=Section(title="Biography", content="")
+        ),
+        configurations=[
+            ResolutionConfiguration(
+                extractor=StubExtractor(),
+                section_titles=["Biography"],
+                extracted_type=Biography,
+            ),
+        ],
     )
 
     # When validating the person
@@ -132,8 +147,16 @@ def test_resolve_person_validate_birth_date():
         ),
     )
     resolver = BasicPersonResolver(
-        extractor=StubExtractor(),
-        section_searcher=StubSimilaritySearch(sections=[]),
+        section_searcher=StubSimilaritySearch(
+            return_value=Section(title="Biography", content="")
+        ),
+        configurations=[
+            ResolutionConfiguration(
+                extractor=StubExtractor(),
+                section_titles=["Biography"],
+                extracted_type=Biography,
+            ),
+        ],
     )
 
     # When validating the person

@@ -199,4 +199,13 @@ class Film(Composable, WorkOfArt):
             "woa_type": WOAType.FILM,
         }
 
-        return cls.construct(parts, **additional_fields)
+        super_model = cls.construct(parts, **additional_fields)
+
+        # add specific fields for Film
+        for part in parts:
+            if isinstance(part, WOAInfluence):
+                if super_model.influences is None:
+                    super_model.influences = []
+                super_model.influences.append(part)
+
+        return super_model

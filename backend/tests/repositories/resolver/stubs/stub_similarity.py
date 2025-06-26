@@ -7,10 +7,23 @@ class StubSimilaritySearch(Processor):
     A stub implementation of the ISimilaritySearch interface for testing purposes.
     """
 
-    sections: list[Section]
+    return_value: Section
 
-    def __init__(self, sections: list[Section]):
-        self.sections = sections
+    def __init__(self, return_value: Section):
+        self.return_value = return_value
 
     def process(self, title, sections):
-        return self.sections[0] if self.sections else None
+        return self.return_value
+
+
+class ExactTitleSimilaritySearch(Processor):
+    """
+    A stub implementation of the ISimilaritySearch interface that returns a section
+    with an exact title match.
+    """
+
+    def process(self, title, sections: list[Section]) -> Section | None:
+        for section in sections:
+            if section.title == title:
+                return section
+        return None

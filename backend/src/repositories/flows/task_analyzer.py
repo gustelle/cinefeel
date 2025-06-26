@@ -97,6 +97,17 @@ class AnalysisFlow(ITaskExecutor):
                         ],
                         extracted_type=FilmSummary,
                     ),
+                    # search for influences
+                    # ResolutionConfiguration(
+                    #     extractor=InfluenceExtractor(settings=self.settings),
+                    #     section_titles=[
+                    #         "Contexte",
+                    #         "Analyse",
+                    #         "Influences",
+                    #         ORPHAN_SECTION_TITLE,
+                    #     ],
+                    #     extracted_type=WOAInfluence,
+                    # ),
                 ],
             ).resolve(
                 base_info=base_info,
