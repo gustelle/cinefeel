@@ -3,9 +3,9 @@ from src.repositories.ml.ollama_dataminer import OllamaDataMiner
 from src.settings import Settings
 
 
-class GenericInfoExtractor(OllamaDataMiner):
+class InfluenceExtractor(OllamaDataMiner):
     """
-    OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
+    specialized extractor for WOAInfluence
     """
 
     def __init__(self, settings: Settings):
@@ -21,7 +21,7 @@ class GenericInfoExtractor(OllamaDataMiner):
 
         prompt = f"""
             Context: {content}
-            Question: Extrait les informations de façon structurée. Réponds de façon concise, si tu ne sais pas, n'invente pas de données.
+            Question: Quelles oeuvres d'art et quels artistes ont eu une influence. Réponds de façon concise, si tu ne sais pas, n'invente pas de données.
             Réponse:"""
 
         return self.parse_entity_from_prompt(

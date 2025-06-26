@@ -1,6 +1,7 @@
-from typing import Self
+from typing import Any, Self
 
-from pydantic import Field, HttpUrl
+from numpy import ndarray
+from pydantic import Field, HttpUrl, field_serializer
 
 from src.entities.composable import Composable
 from src.entities.extraction import ExtractionResult
@@ -175,6 +176,13 @@ class Film(Composable, WorkOfArt):
         validation_alias="acteurs",
     )
 
+    @field_serializer("actors")
+    def serialize_dt(self, value: Any):
+        if isinstance(value, ndarray):
+            value = value.tolist()
+
+        return value
+
     @classmethod
     def from_parts(
         cls,
@@ -199,13 +207,4 @@ class Film(Composable, WorkOfArt):
             "woa_type": WOAType.FILM,
         }
 
-        super_model = cls.construct(parts, **additional_fields)
-
-        # add specific fields for Film
-        for part in parts:
-            if isinstance(part, WOAInfluence):
-                if super_model.influences is None:
-                    super_model.influences = []
-                super_model.influences.append(part)
-
-        return super_model
+        return cls.construct(parts, **additional_fields)

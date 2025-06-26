@@ -9,6 +9,7 @@ from prefect_dask import DaskTaskRunner
 from src.entities.composable import Composable
 from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
 from src.entities.person import Biography, Person, PersonCharacteristics
+from src.entities.woa import WOAInfluence
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.resolver import ResolutionConfiguration
 from src.interfaces.storage import IStorageHandler
@@ -25,6 +26,7 @@ from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
 from src.repositories.ml.ollama_generic import GenericInfoExtractor
+from src.repositories.ml.ollama_influences import InfluenceExtractor
 from src.repositories.ml.ollama_person_feats import PersonFeaturesExtractor
 from src.repositories.resolver.film_resolver import BasicFilmResolver
 from src.repositories.resolver.person_resolver import BasicPersonResolver
@@ -98,16 +100,16 @@ class AnalysisFlow(ITaskExecutor):
                         extracted_type=FilmSummary,
                     ),
                     # search for influences
-                    # ResolutionConfiguration(
-                    #     extractor=InfluenceExtractor(settings=self.settings),
-                    #     section_titles=[
-                    #         "Contexte",
-                    #         "Analyse",
-                    #         "Influences",
-                    #         ORPHAN_SECTION_TITLE,
-                    #     ],
-                    #     extracted_type=WOAInfluence,
-                    # ),
+                    ResolutionConfiguration(
+                        extractor=InfluenceExtractor(settings=self.settings),
+                        section_titles=[
+                            "Contexte",
+                            "Analyse",
+                            "Influences",
+                            ORPHAN_SECTION_TITLE,
+                        ],
+                        extracted_type=WOAInfluence,
+                    ),
                 ],
             ).resolve(
                 base_info=base_info,
