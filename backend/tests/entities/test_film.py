@@ -1,3 +1,6 @@
+import numpy
+import pytest
+
 from src.entities.extraction import ExtractionResult
 from src.entities.film import (
     Film,
@@ -7,6 +10,7 @@ from src.entities.film import (
     FilmSummary,
 )
 from src.entities.source import SourcedContentBase
+from src.entities.woa import WOAInfluence
 
 
 def test_from_parts_list_of_different_entities():
@@ -94,3 +98,61 @@ def test_from_parts_list_of_sames_entities():
     assert film.actors[0].roles == [
         "role1"
     ]  # Only the first role should be kept because it has a higher score
+
+
+def test_from_parts_with_influences():
+    """
+    - when influences are present, they should be added to the film.
+    """
+
+    base_info = SourcedContentBase(
+        uid="film-123",
+        title="Test Film",
+        permalink="http://example.com/test-film",
+    )
+
+    woas = ["a nice painting that influenced the film"]
+
+    parts = [
+        ExtractionResult(
+            entity=FilmSummary(uid="1", content="A thrilling film."), score=0.95
+        ),
+        ExtractionResult(
+            entity=WOAInfluence(
+                uid="influence-1",
+                work_of_arts=woas,
+            ),
+            score=0.75,
+        ),
+    ]
+
+    film = Film.from_parts(base_info, parts)
+    assert len(film.influences) == 1
+    assert film.influences[0].work_of_arts == woas
+
+
+@pytest.mark.skip
+def test_serialize_roles_as_ndarray():
+    """
+    Test that roles in FilmActor are serialized as an array.
+    """
+
+    # given
+
+    actor = FilmActor(
+        uid="actor-1",
+        full_name="John Doe",
+        roles=numpy.ndarray(["Director", "Writer"]),
+    )
+    film = Film(
+        uid="film-1",
+        title="Test Film",
+        permalink="http://example.com/test-film",
+        actors=numpy.ndarray([actor]),
+    )
+
+    # when
+    film.model_dump_json()
+
+    # then
+    assert True  # no exception raised

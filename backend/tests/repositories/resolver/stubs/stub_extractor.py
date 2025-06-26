@@ -1,3 +1,4 @@
+
 from src.entities.extraction import ExtractionResult
 from src.entities.film import FilmActor, FilmMedia, FilmSpecifications, FilmSummary
 from src.interfaces.extractor import IDataMiner
@@ -27,15 +28,13 @@ class StubExtractor(IDataMiner):
         if entity_type == FilmActor:
             # Simulate returning a FilmActor with dummy data
             return ExtractionResult(
-                score=1.0, entity=FilmActor(uid="1", nom_complet="John Doe")
+                score=1.0, entity=FilmActor(uid="1", full_name=content)
             )
         elif entity_type == FilmMedia:
             # Simulate returning a FilmMedia with dummy data
             return ExtractionResult(
                 score=1.0,
-                entity=FilmMedia(
-                    uid="1", url_bande_annonce="https://example.com/trailer.mp4"
-                ),
+                entity=FilmMedia(uid="1", posters=["https://example.com/trailer.mp4"]),
             )
         elif entity_type == FilmSpecifications:
             # Simulate returning FilmSpecifications with dummy data
@@ -43,7 +42,7 @@ class StubExtractor(IDataMiner):
                 score=1.0,
                 entity=FilmSpecifications(
                     uid="1",
-                    title="The Great Film",
+                    title=content,
                 ),
             )
         elif entity_type == FilmSummary:
@@ -52,7 +51,7 @@ class StubExtractor(IDataMiner):
                 score=1.0,
                 entity=FilmSummary(
                     uid="1",
-                    contenu_resume="An epic tale of adventure and discovery.",
+                    content=content,
                 ),
             )
 

@@ -102,6 +102,8 @@ class OllamaDataMiner(IDataMiner):
         score = 0.0
         result: BaseModel | None = None
 
+        logger.debug(prompt)
+
         response_model = self.create_response_model(entity_type)
 
         response = ollama.chat(

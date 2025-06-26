@@ -67,12 +67,12 @@ class WorkOfArt(SourcedContentBase):
 
 class WOAInfluence(Storable):
     """
-    Représente les influences d'une œuvre d'art.
+    Représente les influences d'une oeuvre d'art.
     """
 
     persons: list[Person] | None = Field(
         None,
-        description="les personnes qui ont influencé l'œuvre d'art actuelle.",
+        description="les personnes qui ont influencé l'oeuvre d'art actuelle.",
         repr=False,
         serialization_alias="personnes_influentes",
         validation_alias="personnes_influentes",
@@ -80,7 +80,7 @@ class WOAInfluence(Storable):
 
     work_of_arts: list[str] | None = Field(
         None,
-        description="les œuvres d'art qui ont influencé l'œuvre d'art actuelle.",
+        description="les autres oeuvres d'art qui ont influencé l'oeuvre d'art actuelle.",
         repr=False,
         serialization_alias="oeuvres_influentes",
         validation_alias="oeuvres_influentes",

@@ -1,15 +1,16 @@
 from src.entities.content import Section
 from src.entities.film import Film, FilmMedia
+from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.abstract_resolver import AbstractResolver
 from src.settings import Settings
 
 from .stubs.stub_extractor import StubExtractor
-from .stubs.stub_similarity import StubSimilaritySearch
+from .stubs.stub_similarity import ExactTitleSimilaritySearch, StubSimilaritySearch
 
 
 def test_extract_entities_with_children():
     """
-    Test the extract_entities method with sections that have children.
+    children sections should be processed as well.
     """
 
     # given
@@ -20,13 +21,15 @@ def test_extract_entities_with_children():
         permalink="http://example.com/test-film",
     )
 
+    parent_title = "Parent title"
+    child_title = "Child title"
+
     sections_dict = [
         {
-            "title": "Parent Section",
-            "content": "test parent",
-            "children": [{"title": "Child Section", "content": "test parent"}],
+            "title": parent_title,
+            "content": "parent content",
+            "children": [{"title": child_title, "content": "child content"}],
         },
-        {"title": "Standalone Section", "content": "test standalone"},
     ]
     sections = [Section(**section) for section in sections_dict]
 
@@ -37,18 +40,18 @@ def test_extract_entities_with_children():
             self,
         ):
 
-            # this will generate dummy data for testing
-            self.entity_extractor = StubExtractor()
-
-            # this stub will return the first section from the given list
-            self.section_searcher = StubSimilaritySearch(sections)
+            self.section_searcher = ExactTitleSimilaritySearch()
 
             # we only want to extract FilmMedia entities
             # nevermind the title, it's just for testing
             # the similarity search will return the first section from the provided list
-            self.entity_to_sections = {
-                FilmMedia: ["nevermind the bollocks"],
-            }
+            self.configurations = [
+                ResolutionConfiguration(
+                    extractor=StubExtractor(),
+                    section_titles=[parent_title, child_title],
+                    extracted_type=FilmMedia,
+                ),
+            ]
 
         def assemble(self, *args, **kwargs):
             return None
@@ -94,11 +97,15 @@ def test_extracted_entities_uid_is_assigned():
     class TestResolver(AbstractResolver[Film]):
 
         def __init__(self):
-            self.entity_extractor = StubExtractor()
-            self.section_searcher = StubSimilaritySearch(sections)
-            self.entity_to_sections = {
-                FilmMedia: ["Section 1", "Section 2"],
-            }
+
+            self.section_searcher = ExactTitleSimilaritySearch()
+            self.configurations = [
+                ResolutionConfiguration(
+                    extractor=StubExtractor(),
+                    section_titles=["Section 1", "Section 2"],
+                    extracted_type=FilmMedia,
+                ),
+            ]
 
         def assemble(self, *args, **kwargs):
             return None
@@ -141,7 +148,7 @@ def test_sections_max_children():
         def __init__(self):
             self.entity_extractor = StubExtractor()
             self.section_searcher = StubSimilaritySearch(sections)
-            self.entity_to_sections = {
+            self.configurations = {
                 FilmMedia: ["Section 1", "Section 2"],
             }
             self.settings = Settings(
@@ -182,7 +189,7 @@ def test_sections_max_per_page():
         def __init__(self):
             self.entity_extractor = StubExtractor()
             self.section_searcher = StubSimilaritySearch(sections)
-            self.entity_to_sections = {
+            self.configurations = {
                 FilmMedia: ["Section 1", "Section 2"],
             }
             self.settings = Settings(

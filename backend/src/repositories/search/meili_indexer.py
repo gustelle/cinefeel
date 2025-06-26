@@ -86,13 +86,13 @@ class MeiliIndexer[T: Film | Person](IDocumentIndexer[T]):
             json_docs = []
             for doc in docs:
                 try:
-                    logger.debug(f"Processing {type(doc).__name__}: '{doc.uid}'")
+                    # logger.debug(f"Processing {type(doc).__name__}: '{doc.uid}'")
                     json_docs.append(doc.model_dump(mode="json"))
                 except Exception as e:
-                    import traceback
 
-                    logger.error(traceback.format_exc())
-                    logger.error(f"Error serializing document {doc.model_dump()}: {e}")
+                    logger.error(
+                        f"Error serializing {doc.model_dump(mode='python')}: {e}"
+                    )
                     continue
 
             if not json_docs:

@@ -1,6 +1,7 @@
-from typing import Self
+from typing import Any, Self
 
-from pydantic import Field, HttpUrl
+from numpy import ndarray
+from pydantic import Field, HttpUrl, field_serializer
 
 from src.entities.composable import Composable
 from src.entities.extraction import ExtractionResult
@@ -174,6 +175,13 @@ class Film(Composable, WorkOfArt):
         serialization_alias="acteurs",
         validation_alias="acteurs",
     )
+
+    @field_serializer("actors")
+    def serialize_dt(self, value: Any):
+        if isinstance(value, ndarray):
+            value = value.tolist()
+
+        return value
 
     @classmethod
     def from_parts(
