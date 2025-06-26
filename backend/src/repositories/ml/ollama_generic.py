@@ -19,12 +19,7 @@ class GenericInfoExtractor(OllamaDataMiner):
         base_info: SourcedContentBase,
     ) -> Storable:
 
-        prompt = f"""
-            Context: {content}
-            Question: Extrait les informations de façon structurée. Réponds de façon concise, si tu ne sais pas, n'invente pas de données.
-            Réponse:"""
-
         return self.parse_entity_from_prompt(
-            prompt=prompt,
+            prompt=content,
             entity_type=entity_type,
         )
