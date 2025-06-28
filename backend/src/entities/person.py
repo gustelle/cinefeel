@@ -1,11 +1,10 @@
 from enum import StrEnum
-from typing import Self
+from typing import Annotated, Self
 
-from pydantic import Field, HttpUrl
+from pydantic import Field, HttpUrl, StringConstraints
 
 from src.entities.color import SkinColor
 from src.entities.composable import Composable
-from src.entities.disability import Disability
 from src.entities.extraction import ExtractionResult
 from src.entities.religion import Religion
 from src.entities.sexual_orientation import SexualOrientation
@@ -23,39 +22,36 @@ class GenderEnum(StrEnum):
     UNKNWON = "unknown"
 
 
+ParentTrade = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=0,
+    ),
+]  # may be empty for some sections
+
+
+PersonInfluence = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=0,
+    ),
+]  # may be empty for some sections
+
+
 class ChildHoodConditions(Storable):
     """
     Représente les conditions dans lesquelles une personne a grandi pendant son enfance.
     Cette classe contient des informations sur le statut familial, économique, éducatif et l'environnement social de la personne pendant son enfance.
     """
 
-    family_status: str | None = Field(
+    parents_trades: list[ParentTrade] | None = Field(
         None,
-        description="le statut familial de la personne pendant l'enfance.",
+        examples=["charpentier", "banquier"],
         repr=False,
-        serialization_alias="statut_familial",
-        validation_alias="statut_familial",
-    )
-    economic_status: str | None = Field(
-        None,
-        description="le statut économique de la personne pendant l'enfance.",
-        repr=False,
-        serialization_alias="statut_economique",
-        validation_alias="statut_economique",
-    )
-    education_level: str | None = Field(
-        None,
-        description="le niveau d'éducation de la personne pendant l'enfance.",
-        repr=False,
-        serialization_alias="niveau_education",
-        validation_alias="niveau_education",
-    )
-    social_environment: str | None = Field(
-        None,
-        description="l'environnement social de la personne pendant l'enfance.",
-        repr=False,
-        serialization_alias="environnement_social",
-        validation_alias="environnement_social",
+        serialization_alias="metiers_parents",
+        validation_alias="metiers_parents",
     )
 
 
@@ -122,13 +118,7 @@ class Biography(Storable):
         validation_alias="date_deces",
         description="La date de décès de la personne au format ISO 8601 (YYYY-MM-DD).",
     )
-    parents_trades: list[str] | None = Field(
-        None,
-        examples=["charpentier", "banquier"],
-        repr=False,
-        serialization_alias="metiers_parents",
-        validation_alias="metiers_parents",
-    )
+
     education: list[str] | None = Field(
         None,
         examples=["Harvard University", "MIT"],
@@ -164,33 +154,57 @@ class PersonMedia(Storable):
     )
 
 
-class PersonCharacteristics(Storable):
+class PersonVisibleFeatures(Storable):
+    """
+    les caractéristiques visibles d'une personne, telles que la taille, le poids, la couleur de peau, l'obésité, la naine, le handicap et le genre.
+    """
+
+    skin_color: SkinColor | None = Field(
+        None,
+        description="La couleur de peau de la personne, par exemple 'claire', 'mate', 'foncée'.",
+        repr=False,
+        serialization_alias="couleur_peau",
+        validation_alias="couleur_peau",
+        examples=["claire", "mate", "foncée"],
+    )
+    is_obese: bool | None = Field(
+        None,
+        description="Indique si la personne est obèse.",
+        repr=False,
+        serialization_alias="est_obese",
+        validation_alias="est_obese",
+        examples=[True, False],
+    )
+    is_dwarf: bool | None = Field(
+        None,
+        description="Indique si la personne est naine.",
+        repr=False,
+        serialization_alias="est_naine",
+        validation_alias="est_naine",
+        examples=[True, False],
+    )
+    is_disabled: bool | None = Field(
+        None,
+        description="Indique si la personne est handicapée.",
+        repr=False,
+        serialization_alias="est_handicapee",
+        validation_alias="est_handicapee",
+        examples=[True, False],
+    )
+    genre: GenderEnum | None = Field(
+        None,
+        description="Le genre de la personne: homme, femme, non-binaire ou inconnu.",
+        repr=False,
+        serialization_alias="genre",
+        validation_alias="genre",
+    )
+
+
+class PersonCharacteristics(PersonVisibleFeatures):
     """
     Represente les caractéristiques d'une personne.
     """
 
-    height: str | None = Field(
-        None,
-        repr=False,
-        serialization_alias="taille",
-        validation_alias="taille",
-    )
-    weight: str | None = Field(
-        None,
-        repr=False,
-        serialization_alias="poids",
-        validation_alias="poids",
-        examples=["70 kg", "80 kg"],
-        description="Le poids de la personne, par exemple '70 kg' ou '80 kg'.",
-    )
-    skin_color: SkinColor | None = Field(
-        None,
-        repr=False,
-        serialization_alias="couleur_peau",
-        validation_alias="couleur_peau",
-        examples=["claire", "noire", "mate", "foncée"],
-        description="La couleur de peau de la personne",
-    )
     sexual_orientation: SexualOrientation | None = Field(
         None,
         repr=False,
@@ -198,14 +212,6 @@ class PersonCharacteristics(Storable):
         validation_alias="orientation_sexuelle",
         examples=["hétérosexuel", "homosexuel", "bisexuel", "autre"],
         description="L'orientation sexuelle de la personne, par exemple 'hétérosexuel', 'homosexuel', 'bisexuel', 'autre'.",
-    )
-    disabilities: list[Disability] | None = Field(
-        None,
-        repr=False,
-        serialization_alias="handicaps",
-        validation_alias="handicaps",
-        examples=[["visuel", "auditif"], ["mental", "psychique"]],
-        description="Liste des handicaps de la personne, par exemple 'sourd', 'aveugle', 'moteur', 'cognitif'.",
     )
 
 
@@ -228,6 +234,14 @@ class Person(Composable, SourcedContentBase):
     characteristics: PersonCharacteristics | None = Field(
         None,
         repr=False,
+    )
+
+    influences: list[PersonInfluence] | None = Field(
+        None,
+        description="List of influences on the person, such as mentors or significant figures in their life.",
+        repr=False,
+        serialization_alias="influences",
+        validation_alias="influences",
     )
 
     @classmethod

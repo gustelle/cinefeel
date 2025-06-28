@@ -9,6 +9,7 @@ from typing_inspection.introspection import (
     is_union_origin,
 )
 
+from src.entities.content import Media
 from src.entities.extraction import ExtractionResult
 from src.entities.source import SourcedContentBase
 from src.interfaces.extractor import IDataMiner
@@ -104,13 +105,18 @@ class MistralDataMiner(IDataMiner):
         )
 
     def extract_entity(
-        self, content: str, entity_type: BaseModel, base_info: SourcedContentBase
+        self,
+        content: str,
+        _: list[Media],
+        entity_type: BaseModel,
+        base_info: SourcedContentBase,
     ) -> ExtractionResult:
         """
         Transform the given content into an entity of type T.
 
         Args:
             content (str): The content to parse, typically a string containing text.
+            media (list[Media]): A list of Media objects associated with the content.
             entity_type (BaseModel): The type of entity to create from the content.
                 This should be a Pydantic model that defines the structure of the entity.
             base_info (SourcedContentBase): Base information to provide context to the LLM,
@@ -135,13 +141,6 @@ class MistralDataMiner(IDataMiner):
             Question: Dans cet extrait, donne-moi des informations sur {base_info.title}, réponds de façon concise, si tu ne sais pas, n'invente pas de données.
             Réponse:"""
 
-        logger.debug("-" * 80)
-        logger.debug(f"Prompt for {entity_type}: ")
-        logger.debug(prompt)
-        logger.debug("-" * 80)
-        logger.debug(response_model.model_json_schema())
-        logger.debug("-" * 80)
-
         client = Mistral(api_key=self.settings.mistral_api_key)
 
         messages = [{"role": "user", "content": prompt}]
@@ -154,22 +153,6 @@ class MistralDataMiner(IDataMiner):
 
         logger.debug(f"Response from Mistral: {chat_response}")
 
-        # response = ollama.chat(
-        #     model=self.model,
-        #     messages=[
-        #         {
-        #             "role": "user",
-        #             "content": prompt,
-        #         }
-        #     ],
-        #     format=response_model.model_json_schema(),
-        #     options={
-        #         # Set temperature to 0 for more deterministic responses
-        #         "temperature": 0
-        #     },
-        # )
-
-        # msg = response.message.content
         msg = chat_response.message.content
 
         try:

@@ -9,41 +9,35 @@ from src.interfaces.extractor import IDataMiner
 from .response_formater import create_response_model
 
 
-class OllamaDataMiner(IDataMiner):
-    """
-    Abstract class for LLM data miners.
-    """
+class OllamaVisioner(IDataMiner):
 
     model: str
     prompt: str
 
-    def parse_entity_from_prompt(
-        self, prompt: str, entity_type: Storable
+    def analyze_image_using_prompt(
+        self, prompt: str, entity_type: Storable, image_path: str
     ) -> ExtractionResult:
 
+        score = 0.0
+        result: BaseModel | None = None
+
+        logger.debug(prompt)
+
+        response_model = create_response_model(entity_type)
+
+        response = ollama.chat(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt, "images": [image_path]}],
+            format=response_model.model_json_schema(),
+            options={
+                # Set temperature to 0 for more deterministic responses
+                "temperature": 0
+            },
+        )
+
+        msg = response.message.content
+
         try:
-
-            score = 0.0
-            result: BaseModel | None = None
-
-            response_model = create_response_model(entity_type)
-
-            response = ollama.chat(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
-                format=response_model.model_json_schema(),
-                options={
-                    # Set temperature to 0 for more deterministic responses
-                    "temperature": 0
-                },
-            )
-
-            msg = response.message.content
 
             # isolate the score and the entity from the response
             dict_resp = response_model.model_validate_json(
@@ -62,6 +56,8 @@ class OllamaDataMiner(IDataMiner):
 
             # the entity is the remaining values
             result = entity_type.model_validate(dict_resp)
+
+            logger.debug(f"Parsed result: {result}")
 
         except Exception as e:
             import traceback

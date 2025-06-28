@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import HttpUrl
 
 from src.entities.extraction import ExtractionResult
-from src.entities.person import PersonCharacteristics
+from src.entities.person import Biography
 from src.entities.source import SourcedContentBase
 from src.repositories.ml.ollama_generic import GenericInfoExtractor
 from src.settings import Settings
@@ -29,7 +29,9 @@ def test_ollama_is_called_correctly(mocker):
         def __init__(self, message):
             self.message = message
 
-    mock_llm_response = '{"handicaps":["auditif"], "uid": "123", "score": 0.95}'
+    mock_llm_response = (
+        '{"nom_complet": "Quentin Jerome Tarantino", "uid": "123", "score": 0.95}'
+    )
 
     # suppose Ollama chat responds with a JSON string
     mocker.patch(
@@ -39,67 +41,18 @@ def test_ollama_is_called_correctly(mocker):
 
     parser = GenericInfoExtractor(Settings())
     content = "This is a test content for Ollama."
-    entity_type = PersonCharacteristics
+    entity_type = Biography
 
     # when
     result = parser.extract_entity(
         content,
+        None,  # No media for this test
         entity_type,
         base_info,
     )
 
     # then
     assert isinstance(result, ExtractionResult)
-    assert isinstance(result.entity, PersonCharacteristics)
-    assert result.entity.disabilities == ["auditif"]
+    assert isinstance(result.entity, Biography)
+    assert result.entity.full_name == "Quentin Jerome Tarantino"
     assert result.score == 0.95
-
-
-def test_create_response_model():
-
-    # given
-    class MyModel(BaseModel):
-        height: int = Field(..., description="Height in centimeters")
-
-    from src.settings import Settings
-
-    parser = GenericInfoExtractor(Settings())
-
-    # when
-    response = parser.create_response_model(MyModel)(score=0.9, height=180)
-
-    # then
-    assert response.score == 0.9
-    assert response.height == 180
-
-
-def test_create_response_model_excludes_http_fields():
-
-    # given
-    class MyModel(BaseModel):
-        name: str = Field(..., description="Name of the person")
-        profile_url: HttpUrl = Field(..., description="Profile URL")
-        list_of_urls: list[HttpUrl] = Field(
-            default_factory=list, description="List of URLs"
-        )
-        list_of_urls_or_none: list[HttpUrl] | None = Field(
-            default=None, description="List of URLs or None"
-        )
-
-    from src.settings import Settings
-
-    parser = GenericInfoExtractor(Settings())
-
-    # when
-    model = parser.create_response_model(MyModel)
-    response = model(
-        score=0.9,
-        name="John Doe",
-        profile_url="http://example.com/johndoe",
-        list_of_urls=["http://example.com/url1", "http://example.com/url2"],
-    )
-
-    # then
-    assert "profile_url" not in response.model_dump()
-    assert "list_of_urls" not in response.model_dump()
-    assert "list_of_urls_or_none" not in response.model_dump()

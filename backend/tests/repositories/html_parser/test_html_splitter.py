@@ -530,3 +530,36 @@ def test_small_children_sections_are_merged_into_their_parent():
     assert (
         "<p>This is a subsection with some content.</p>" in sections[0].content
     ), "Content of subsection should be merged into parent section"
+
+
+def test_flags_and_icons_are_excluded_from_media():
+    """
+    Test that flags and icons are excluded from media.
+    """
+    # given
+    html_content = """
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Test HTML with flags and icons</title>
+        <link rel="dc:isVersionOf" href="//fr.wikipedia.org/wiki/test"/>
+    </head>
+    <body>
+    <section>
+        <h2>Section with Flag</h2>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Nuvola_France_flag.svg/70px-Nuvola_France_flag.svg.png" alt="Flag" />
+        <p>Content of section with flag.</p>
+    </section>
+    </body>
+    </html>
+    """
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=DoNothingPruner()
+    )
+
+    # when
+    _, sections = semantic.split("1", html_content)
+
+    # then
+    assert len(sections) == 1, "One section should be returned"
+    assert len(sections[0].media) == 0

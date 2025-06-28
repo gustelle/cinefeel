@@ -575,6 +575,29 @@ def test_orphan_paragraphs_having_media():
     ), "Expected 2 media items in the orphan section"
 
 
+def test_orphan_paragraphs_exclude_flag_media():
+    # given
+    html = """
+    <html>
+        <head>
+            <title>Test Page</title>
+        </head>
+        <body>
+            <p>This is an orphan paragraph with media.</p>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Flag_of_France_%281976%E2%80%932020%29.svg/40px-Flag_of_France_%281976%E2%80%932020%29.svg.png" alt="Test Image">
+            <audio src="https://example.com/audio.mp3" controls></audio>
+        </body>
+    </html>
+    """
+    semantic = WikipediaParser()
+
+    # when
+    orphan_section = semantic.retrieve_orphan_paragraphs(html)
+
+    # then
+    assert not any(media.media_type == "image" for media in orphan_section.media)
+
+
 def test_infobox_with_media(sample_infobox):
     # given
     exclude_pattern = r".+pencil\.svg.+"
@@ -590,6 +613,22 @@ def test_infobox_with_media(sample_infobox):
         media.media_type == "image" for media in info_box.media
     ), "Not all media are images"
 
+    assert not any(
+        re.match(exclude_pattern, str(m.src), re.I) for m in info_box.media
+    ), "Excluded media found in the result"
+
+
+def test_infobox_info_icon_excluded(sample_infobox):
+    # given
+    exclude_pattern = r"40px-Info_Simple\.svg\.png"
+    semantic = WikipediaParser()
+
+    # when
+    info_box = semantic.retrieve_infobox(sample_infobox, format_as="simple")
+
+    # then
+    assert info_box is not None
+    assert len(info_box.content) > 0, "No content found in the infobox"
     assert not any(
         re.match(exclude_pattern, str(m.src), re.I) for m in info_box.media
     ), "Excluded media found in the result"

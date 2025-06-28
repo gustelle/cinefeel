@@ -137,6 +137,13 @@ class Settings(BaseSettings):
         """,
     )
 
+    vision_model: str = Field(
+        default="llava:7b",
+        description="""
+            The name of the vision model to use for image processing.
+            """,
+    )
+
     bert_similarity_model: str = Field(
         default="Lajavaness/sentence-camembert-base",
         description="""

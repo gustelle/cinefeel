@@ -90,7 +90,7 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 )
             )
 
-        birth_date = entity.biography.birth_date
+        birth_date = entity.biography.birth_date if entity.biography else None
         if birth_date:
             # parse date_naissance
             ddp = DateDataParser(languages=["fr"])
@@ -109,11 +109,8 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 )
                 chat = OllamaDateFormatter(settings=self.settings)
                 birth_date = chat.format(birth_date)
-                logger.debug(
-                    f"Formatted birth date '{birth_date}' for person '{entity.title}' using Ollama."
-                )
 
-        death_date = entity.biography.death_date
+        death_date = entity.biography.death_date if entity.biography else None
         if death_date:
             # parse date_deces
             ddp = DateDataParser(languages=["fr"])
@@ -131,9 +128,6 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 )
                 chat = OllamaDateFormatter(settings=self.settings)
                 death_date = chat.format(death_date)
-                logger.debug(
-                    f"Formatted death date '{death_date}' for person '{entity.title}' using Ollama."
-                )
 
         return entity.model_copy(
             update={
