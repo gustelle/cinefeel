@@ -593,3 +593,19 @@ def test_infobox_with_media(sample_infobox):
     assert not any(
         re.match(exclude_pattern, str(m.src), re.I) for m in info_box.media
     ), "Excluded media found in the result"
+
+
+def test_infobox_info_icon_excluded(sample_infobox):
+    # given
+    exclude_pattern = r"40px-Info_Simple\.svg\.png"
+    semantic = WikipediaParser()
+
+    # when
+    info_box = semantic.retrieve_infobox(sample_infobox, format_as="simple")
+
+    # then
+    assert info_box is not None
+    assert len(info_box.content) > 0, "No content found in the infobox"
+    assert not any(
+        re.match(exclude_pattern, str(m.src), re.I) for m in info_box.media
+    ), "Excluded media found in the result"

@@ -21,7 +21,7 @@ class InfluenceExtractor(OllamaDataMiner):
 
         prompt = f"""
             Context: {content}
-            Question: D'après l'extrait fourni, quelles oeuvres d'art et quels artistes ont eu une influence ?
+            Question: Quelles sont les influences de '{base_info.title}' ? Réponds de façon concise, si tu ne sais pas, n'invente pas de données.
             Réponse:"""
 
         return self.parse_entity_from_prompt(

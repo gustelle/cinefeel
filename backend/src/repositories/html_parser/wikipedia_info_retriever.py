@@ -261,7 +261,9 @@ class WikipediaParser(IParser):
         content = soup.find("div", attrs={"class": "infobox"})
 
         # get the media from the original HTML content
-        media = self.retrieve_media(str(content), exclude_pattern=r".+pencil\.svg.+")
+        media = self.retrieve_media(
+            str(content), exclude_pattern=r".+pencil\.svg.*|.+info.*\.svg.*"
+        )
 
         if not content:
             return None
@@ -295,7 +297,7 @@ class WikipediaParser(IParser):
         return info_table
 
     def retrieve_media(
-        self, html_content: str, exclude_pattern: str = None
+        self, html_content: str, exclude_pattern: str = r""
     ) -> list[Media]:
         """
         Extracts media links from the HTML content.
