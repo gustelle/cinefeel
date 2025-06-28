@@ -56,37 +56,38 @@ def create_response_model(entity_type: Storable) -> type[BaseModel]:
         type[BaseModel]: A Pydantic model class that matches the structure of the entity type.
     """
 
-    try:
-
-        return create_model(
-            "LLMResponse",
-            score=(
-                float,
-                Field(
-                    default=0.0,
-                    # ge=0.0,
-                    # le=1.0, # it can happen that the model return a score like 1.0000000000000002
-                    description="Confidence score of the extracted data, between 0.0 and 1.0.",
-                    examples=[0.95, 0.85, 0.75],
-                ),
-            ),
-            **{
-                k: (
-                    v.annotation,
-                    Field(
-                        default=v.default,
-                        alias=v.validation_alias,
-                        serialization_alias=v.serialization_alias,
-                        description=v.description,
-                        default_factory=v.default_factory,
-                    ),
-                )
-                for k, v in entity_type.__pydantic_fields__.items()
-                if _is_expected_in_response(k, v.annotation)
-            },
+    # if the entity_type is not a Pydantic model,
+    # assign the type to a BaseModel with a single field for the score
+    if not hasattr(entity_type, "__pydantic_fields__"):
+        raise TypeError(
+            f"Expected a Pydantic model, but got {entity_type.__name__}. "
+            "Please ensure the entity_type is a subclass of Pydantic's BaseModel."
         )
 
-    except Exception as e:
-        raise RuntimeError(
-            f"Failed to create response model for '{entity_type}': {e}"
-        ) from e
+    return create_model(
+        "LLMResponse",
+        score=(
+            float,
+            Field(
+                default=0.0,
+                # ge=0.0,
+                # le=1.0, # it can happen that the model return a score like 1.0000000000000002
+                description="Confidence score of the extracted data, between 0.0 and 1.0.",
+                examples=[0.95, 0.85, 0.75],
+            ),
+        ),
+        **{
+            k: (
+                v.annotation,
+                Field(
+                    default=v.default,
+                    alias=v.validation_alias,
+                    serialization_alias=v.serialization_alias,
+                    description=v.description,
+                    default_factory=v.default_factory,
+                ),
+            )
+            for k, v in entity_type.__pydantic_fields__.items()
+            if _is_expected_in_response(k, v.annotation)
+        },
+    )

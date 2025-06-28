@@ -46,33 +46,12 @@ class ChildHoodConditions(Storable):
     Cette classe contient des informations sur le statut familial, économique, éducatif et l'environnement social de la personne pendant son enfance.
     """
 
-    family_status: str | None = Field(
+    parents_trades: list[ParentTrade] | None = Field(
         None,
-        description="le statut familial de la personne pendant l'enfance.",
+        examples=["charpentier", "banquier"],
         repr=False,
-        serialization_alias="statut_familial",
-        validation_alias="statut_familial",
-    )
-    economic_status: str | None = Field(
-        None,
-        description="le statut économique de la personne pendant l'enfance.",
-        repr=False,
-        serialization_alias="statut_economique",
-        validation_alias="statut_economique",
-    )
-    education_level: str | None = Field(
-        None,
-        description="le niveau d'éducation de la personne pendant l'enfance.",
-        repr=False,
-        serialization_alias="niveau_education",
-        validation_alias="niveau_education",
-    )
-    social_environment: str | None = Field(
-        None,
-        description="l'environnement social de la personne pendant l'enfance.",
-        repr=False,
-        serialization_alias="environnement_social",
-        validation_alias="environnement_social",
+        serialization_alias="metiers_parents",
+        validation_alias="metiers_parents",
     )
 
 
@@ -139,13 +118,7 @@ class Biography(Storable):
         validation_alias="date_deces",
         description="La date de décès de la personne au format ISO 8601 (YYYY-MM-DD).",
     )
-    parents_trades: list[ParentTrade] | None = Field(
-        None,
-        examples=["charpentier", "banquier"],
-        repr=False,
-        serialization_alias="metiers_parents",
-        validation_alias="metiers_parents",
-    )
+
     education: list[str] | None = Field(
         None,
         examples=["Harvard University", "MIT"],

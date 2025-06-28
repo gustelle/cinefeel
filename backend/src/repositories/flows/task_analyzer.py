@@ -10,10 +10,9 @@ from src.entities.composable import Composable
 from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
 from src.entities.person import (
     Biography,
-    ParentTrade,
+    ChildHoodConditions,
     Person,
     PersonCharacteristics,
-    PersonInfluence,
     PersonVisibleFeatures,
 )
 from src.entities.woa import WOAInfluence
@@ -139,17 +138,17 @@ class AnalysisFlow(ITaskExecutor):
                         section_titles=[
                             "Biographie",
                         ],
-                        extracted_type=ParentTrade,
+                        extracted_type=ChildHoodConditions,
                     ),
                     # search for influences
-                    ResolutionConfiguration(
-                        extractor=InfluenceExtractor(settings=self.settings),
-                        section_titles=[
-                            "Biographie",
-                            "Influences",
-                        ],
-                        extracted_type=PersonInfluence,
-                    ),
+                    # ResolutionConfiguration(
+                    #     extractor=InfluenceExtractor(settings=self.settings),
+                    #     section_titles=[
+                    #         "Biographie",
+                    #         "Influences",
+                    #     ],
+                    #     extracted_type=PersonInfluence,
+                    # ),
                     ResolutionConfiguration(
                         extractor=PersonFeaturesExtractor(settings=self.settings),
                         section_titles=[
