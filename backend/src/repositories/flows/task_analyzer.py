@@ -13,8 +13,8 @@ from src.entities.person import (
     ParentTrade,
     Person,
     PersonCharacteristics,
-    PersonFeaturesFromPicture,
     PersonInfluence,
+    PersonVisibleFeatures,
 )
 from src.entities.woa import WOAInfluence
 from src.interfaces.analyzer import IContentAnalyzer
@@ -162,7 +162,7 @@ class AnalysisFlow(ITaskExecutor):
                     ResolutionConfiguration(
                         extractor=PersonVisualAnalysis(settings=self.settings),
                         section_titles=[INFOBOX_SECTION_TITLE],
-                        extracted_type=PersonFeaturesFromPicture,
+                        extracted_type=PersonVisibleFeatures,
                     ),
                 ],
             ).resolve(

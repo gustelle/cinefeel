@@ -5,7 +5,6 @@ from pydantic import Field, HttpUrl, StringConstraints
 
 from src.entities.color import SkinColor
 from src.entities.composable import Composable
-from src.entities.disability import Disability
 from src.entities.extraction import ExtractionResult
 from src.entities.religion import Religion
 from src.entities.sexual_orientation import SexualOrientation
@@ -182,10 +181,9 @@ class PersonMedia(Storable):
     )
 
 
-class PersonFeaturesFromPicture(Storable):
+class PersonVisibleFeatures(Storable):
     """
-    Représente la description d'une photo d'une personne.
-    Cette classe contient des informations sur la couleur de peau, l'obésité, la taille, le handicap et la présence d'enfants.
+    les caractéristiques visibles d'une personne, telles que la taille, le poids, la couleur de peau, l'obésité, la naine, le handicap et le genre.
     """
 
     skin_color: SkinColor | None = Field(
@@ -220,35 +218,20 @@ class PersonFeaturesFromPicture(Storable):
         validation_alias="est_handicapee",
         examples=[True, False],
     )
+    genre: GenderEnum | None = Field(
+        None,
+        description="Le genre de la personne: homme, femme, non-binaire ou inconnu.",
+        repr=False,
+        serialization_alias="genre",
+        validation_alias="genre",
+    )
 
 
-class PersonCharacteristics(Storable):
+class PersonCharacteristics(PersonVisibleFeatures):
     """
     Represente les caractéristiques d'une personne.
     """
 
-    height: str | None = Field(
-        None,
-        repr=False,
-        serialization_alias="taille",
-        validation_alias="taille",
-    )
-    weight: str | None = Field(
-        None,
-        repr=False,
-        serialization_alias="poids",
-        validation_alias="poids",
-        examples=["70 kg", "80 kg"],
-        description="Le poids de la personne, par exemple '70 kg' ou '80 kg'.",
-    )
-    skin_color: SkinColor | None = Field(
-        None,
-        repr=False,
-        serialization_alias="couleur_peau",
-        validation_alias="couleur_peau",
-        examples=["claire", "noire", "mate", "foncée"],
-        description="La couleur de peau de la personne",
-    )
     sexual_orientation: SexualOrientation | None = Field(
         None,
         repr=False,
@@ -256,14 +239,6 @@ class PersonCharacteristics(Storable):
         validation_alias="orientation_sexuelle",
         examples=["hétérosexuel", "homosexuel", "bisexuel", "autre"],
         description="L'orientation sexuelle de la personne, par exemple 'hétérosexuel', 'homosexuel', 'bisexuel', 'autre'.",
-    )
-    disabilities: list[Disability] | None = Field(
-        None,
-        repr=False,
-        serialization_alias="handicaps",
-        validation_alias="handicaps",
-        examples=[["visuel", "auditif"], ["mental", "psychique"]],
-        description="Liste des handicaps de la personne, par exemple 'sourd', 'aveugle', 'moteur', 'cognitif'.",
     )
 
 

@@ -1,4 +1,4 @@
-
+from src.entities.content import Media
 from src.entities.extraction import ExtractionResult
 from src.entities.film import FilmActor, FilmMedia, FilmSpecifications, FilmSummary
 from src.interfaces.extractor import IDataMiner
@@ -12,7 +12,7 @@ class StubExtractor(IDataMiner):
     is_parsed: bool = False
 
     def extract_entity(
-        self, content: str, entity_type, *args, **kwargs
+        self, content: str, media: list[Media], entity_type, *args, **kwargs
     ) -> ExtractionResult:
         """
         Parse the given content and return a dictionary representation.

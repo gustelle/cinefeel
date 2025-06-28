@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, HttpUrl
 
 from src.entities.extraction import ExtractionResult
-from src.entities.person import PersonCharacteristics
+from src.entities.person import Biography
 from src.entities.source import SourcedContentBase
 from src.repositories.ml.ollama_generic import GenericInfoExtractor
 from src.repositories.ml.response_formater import create_response_model
@@ -30,7 +30,9 @@ def test_ollama_is_called_correctly(mocker):
         def __init__(self, message):
             self.message = message
 
-    mock_llm_response = '{"handicaps":["auditif"], "uid": "123", "score": 0.95}'
+    mock_llm_response = (
+        '{"nom_complet": "Quentin Jerome Tarantino", "uid": "123", "score": 0.95}'
+    )
 
     # suppose Ollama chat responds with a JSON string
     mocker.patch(
@@ -40,19 +42,20 @@ def test_ollama_is_called_correctly(mocker):
 
     parser = GenericInfoExtractor(Settings())
     content = "This is a test content for Ollama."
-    entity_type = PersonCharacteristics
+    entity_type = Biography
 
     # when
     result = parser.extract_entity(
         content,
+        None,  # No media for this test
         entity_type,
         base_info,
     )
 
     # then
     assert isinstance(result, ExtractionResult)
-    assert isinstance(result.entity, PersonCharacteristics)
-    assert result.entity.disabilities == ["auditif"]
+    assert isinstance(result.entity, Biography)
+    assert result.entity.full_name == "Quentin Jerome Tarantino"
     assert result.score == 0.95
 
 

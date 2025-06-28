@@ -142,6 +142,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
                         result = config.extractor.extract_entity(
                             content=child.content,
+                            media=child.media,
                             entity_type=config.extracted_type,
                             base_info=base_info,
                         )
@@ -155,6 +156,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                 # because we already processed them
                 result = config.extractor.extract_entity(
                     content=section.content,
+                    media=section.media,
                     entity_type=config.extracted_type,
                     base_info=base_info,
                 )

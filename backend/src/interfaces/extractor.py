@@ -1,5 +1,6 @@
-from typing import Protocol
+from typing import Protocol, Sequence
 
+from src.entities.content import Media
 from src.entities.extraction import ExtractionResult
 from src.entities.source import Storable
 
@@ -10,13 +11,19 @@ class IDataMiner(Protocol):
     """
 
     def extract_entity(
-        self, content: str, entity_type: Storable, *args, **kwargs
+        self,
+        content: str,
+        media: Sequence[Media],
+        entity_type: Storable,
+        *args,
+        **kwargs
     ) -> ExtractionResult:
         """
         Extract entity from the provided content.
 
         Args:
             content (str): The content from which to extract the entity.
+            media (Sequence[Media]): A sequence of Media objects associated with the content.
             entity_type (Storable): The type of entity to extract, which should be a subclass of `Storable`.
             *args: Additional positional arguments for the extraction process.
             **kwargs: Additional keyword arguments for the extraction process.

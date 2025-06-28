@@ -109,9 +109,6 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 )
                 chat = OllamaDateFormatter(settings=self.settings)
                 birth_date = chat.format(birth_date)
-                logger.debug(
-                    f"Formatted birth date '{birth_date}' for person '{entity.title}' using Ollama."
-                )
 
         death_date = entity.biography.death_date
         if death_date:
@@ -131,9 +128,6 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 )
                 chat = OllamaDateFormatter(settings=self.settings)
                 death_date = chat.format(death_date)
-                logger.debug(
-                    f"Formatted death date '{death_date}' for person '{entity.title}' using Ollama."
-                )
 
         return entity.model_copy(
             update={
