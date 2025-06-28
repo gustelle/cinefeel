@@ -16,7 +16,7 @@ class GenericInfoExtractor(OllamaDataMiner):
     def extract_entity(
         self,
         content: str,
-        _: list[Media],
+        media: list[Media],
         entity_type: Storable,
         base_info: SourcedContentBase,
     ) -> Storable:

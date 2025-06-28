@@ -1,5 +1,6 @@
 from loguru import logger
 
+from src.entities.content import Media
 from src.entities.source import SourcedContentBase, Storable
 from src.repositories.ml.ollama_dataminer import OllamaDataMiner
 from src.settings import Settings
@@ -14,6 +15,7 @@ class ParentsTradesExctractor(OllamaDataMiner):
     def extract_entity(
         self,
         content: str,
+        media: list[Media],
         entity_type: Storable,
         base_info: SourcedContentBase,
     ) -> Storable:

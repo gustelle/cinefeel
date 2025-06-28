@@ -42,8 +42,6 @@ class PersonVisualAnalysis(OllamaVisioner):
             temp.write(response.content)
             temp.flush()
 
-            logger.debug(f"Temporary image stored at '{temp.name}'")
-
             prompt = """
                 S'agit-il d'une personne ? 
                 si oui, quelle est la couleur de sa peau ?
@@ -54,10 +52,12 @@ class PersonVisualAnalysis(OllamaVisioner):
                 S'il ne s'agit pas d'une personne, ne pas répondre à ces questions.
             """
 
-            logger.debug(f"Extracting info from : {content[:100]}...")
-
-            return self.analyze_image_using_prompt(
+            r = self.analyze_image_using_prompt(
                 prompt=prompt,
                 entity_type=entity_type,
                 image_path=temp.name,
             )
+
+            logger.debug(f"Visual analysis result: {r.model_dump_json(indent=2)}")
+
+            return r

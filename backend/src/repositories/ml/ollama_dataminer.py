@@ -21,29 +21,29 @@ class OllamaDataMiner(IDataMiner):
         self, prompt: str, entity_type: Storable
     ) -> ExtractionResult:
 
-        score = 0.0
-        result: BaseModel | None = None
-
-        response_model = create_response_model(entity_type)
-
-        response = ollama.chat(
-            model=self.model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-            format=response_model.model_json_schema(),
-            options={
-                # Set temperature to 0 for more deterministic responses
-                "temperature": 0
-            },
-        )
-
-        msg = response.message.content
-
         try:
+
+            score = 0.0
+            result: BaseModel | None = None
+
+            response_model = create_response_model(entity_type)
+
+            response = ollama.chat(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                format=response_model.model_json_schema(),
+                options={
+                    # Set temperature to 0 for more deterministic responses
+                    "temperature": 0
+                },
+            )
+
+            msg = response.message.content
 
             # isolate the score and the entity from the response
             dict_resp = response_model.model_validate_json(
