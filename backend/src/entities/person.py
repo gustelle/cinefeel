@@ -1,7 +1,7 @@
 from enum import StrEnum
-from typing import Self
+from typing import Annotated, Self
 
-from pydantic import Field, HttpUrl
+from pydantic import Field, HttpUrl, StringConstraints
 
 from src.entities.color import SkinColor
 from src.entities.composable import Composable
@@ -21,6 +21,24 @@ class GenderEnum(StrEnum):
     FEMALE = "female"
     NON_BINARY = "non-binary"
     UNKNWON = "unknown"
+
+
+ParentTrade = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=0,
+    ),
+]  # may be empty for some sections
+
+
+PersonInfluence = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=0,
+    ),
+]  # may be empty for some sections
 
 
 class ChildHoodConditions(Storable):
@@ -122,7 +140,7 @@ class Biography(Storable):
         validation_alias="date_deces",
         description="La date de décès de la personne au format ISO 8601 (YYYY-MM-DD).",
     )
-    parents_trades: list[str] | None = Field(
+    parents_trades: list[ParentTrade] | None = Field(
         None,
         examples=["charpentier", "banquier"],
         repr=False,
@@ -161,6 +179,46 @@ class PersonMedia(Storable):
         repr=False,
         serialization_alias="autres_contenus",
         validation_alias="autres_contenus",
+    )
+
+
+class PersonFeaturesFromPicture(Storable):
+    """
+    Représente la description d'une photo d'une personne.
+    Cette classe contient des informations sur la couleur de peau, l'obésité, la taille, le handicap et la présence d'enfants.
+    """
+
+    skin_color: SkinColor | None = Field(
+        None,
+        description="La couleur de peau de la personne, par exemple 'claire', 'mate', 'foncée'.",
+        repr=False,
+        serialization_alias="couleur_peau",
+        validation_alias="couleur_peau",
+        examples=["claire", "mate", "foncée"],
+    )
+    is_obese: bool | None = Field(
+        None,
+        description="Indique si la personne est obèse.",
+        repr=False,
+        serialization_alias="est_obese",
+        validation_alias="est_obese",
+        examples=[True, False],
+    )
+    is_dwarf: bool | None = Field(
+        None,
+        description="Indique si la personne est naine.",
+        repr=False,
+        serialization_alias="est_naine",
+        validation_alias="est_naine",
+        examples=[True, False],
+    )
+    is_disabled: bool | None = Field(
+        None,
+        description="Indique si la personne est handicapée.",
+        repr=False,
+        serialization_alias="est_handicapee",
+        validation_alias="est_handicapee",
+        examples=[True, False],
     )
 
 
@@ -228,6 +286,14 @@ class Person(Composable, SourcedContentBase):
     characteristics: PersonCharacteristics | None = Field(
         None,
         repr=False,
+    )
+
+    influences: list[PersonInfluence] | None = Field(
+        None,
+        description="List of influences on the person, such as mentors or significant figures in their life.",
+        repr=False,
+        serialization_alias="influences",
+        validation_alias="influences",
     )
 
     @classmethod

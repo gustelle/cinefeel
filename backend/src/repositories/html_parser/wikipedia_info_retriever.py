@@ -24,6 +24,9 @@ class WikipediaParser(IParser):
 
     _inner_page_id_prefix = "./"
 
+    # 70px-Nuvola_France_flag.svg.png
+    _EXCLUDE_MEDIA_PATTERN = r".+flag(_.+)?\.svg.*|.+pencil\.svg.*|.+info.*\.svg.*"
+
     def retrieve_orphan_paragraphs(
         self,
         html_content: str,
@@ -63,7 +66,13 @@ class WikipediaParser(IParser):
             return None
 
         # media may be siblings of the paragraphs
-        media.extend(self.retrieve_media(str(soup.body.find_all(recursive=False))))
+        media.extend(
+            self.retrieve_media(
+                str(
+                    soup.body.find_all(recursive=False),
+                )
+            )
+        )
 
         orphans.reverse()  # reverse the order to keep the original order
 
@@ -261,9 +270,7 @@ class WikipediaParser(IParser):
         content = soup.find("div", attrs={"class": "infobox"})
 
         # get the media from the original HTML content
-        media = self.retrieve_media(
-            str(content), exclude_pattern=r".+pencil\.svg.*|.+info.*\.svg.*"
-        )
+        media = self.retrieve_media(str(content))
 
         if not content:
             return None
@@ -297,14 +304,15 @@ class WikipediaParser(IParser):
         return info_table
 
     def retrieve_media(
-        self, html_content: str, exclude_pattern: str = r""
+        self, html_content: str, exclude_pattern: str = _EXCLUDE_MEDIA_PATTERN
     ) -> list[Media]:
         """
         Extracts media links from the HTML content.
 
         Args:
             html_content (str): The HTML content to parse.
-            exclude_pattern (str, optional): A regex pattern to exclude certain media links. Defaults to None.
+            exclude_pattern (str, optional): A regex pattern to exclude certain media links.
+                Defaults : excludes flags and certain icons.
 
         Args:
             html_content (str): The HTML content to parse.

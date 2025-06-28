@@ -4,6 +4,7 @@ from src.entities.extraction import ExtractionResult
 from src.entities.person import PersonCharacteristics
 from src.entities.source import SourcedContentBase
 from src.repositories.ml.ollama_generic import GenericInfoExtractor
+from src.repositories.ml.response_formater import create_response_model
 from src.settings import Settings
 
 
@@ -61,12 +62,8 @@ def test_create_response_model():
     class MyModel(BaseModel):
         height: int = Field(..., description="Height in centimeters")
 
-    from src.settings import Settings
-
-    parser = GenericInfoExtractor(Settings())
-
     # when
-    response = parser.create_response_model(MyModel)(score=0.9, height=180)
+    response = create_response_model(MyModel)(score=0.9, height=180)
 
     # then
     assert response.score == 0.9
@@ -86,12 +83,8 @@ def test_create_response_model_excludes_http_fields():
             default=None, description="List of URLs or None"
         )
 
-    from src.settings import Settings
-
-    parser = GenericInfoExtractor(Settings())
-
     # when
-    model = parser.create_response_model(MyModel)
+    model = create_response_model(MyModel)
     response = model(
         score=0.9,
         name="John Doe",

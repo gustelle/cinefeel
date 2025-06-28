@@ -575,6 +575,29 @@ def test_orphan_paragraphs_having_media():
     ), "Expected 2 media items in the orphan section"
 
 
+def test_orphan_paragraphs_exclude_flag_media():
+    # given
+    html = """
+    <html>
+        <head>
+            <title>Test Page</title>
+        </head>
+        <body>
+            <p>This is an orphan paragraph with media.</p>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Flag_of_France_%281976%E2%80%932020%29.svg/40px-Flag_of_France_%281976%E2%80%932020%29.svg.png" alt="Test Image">
+            <audio src="https://example.com/audio.mp3" controls></audio>
+        </body>
+    </html>
+    """
+    semantic = WikipediaParser()
+
+    # when
+    orphan_section = semantic.retrieve_orphan_paragraphs(html)
+
+    # then
+    assert not any(media.media_type == "image" for media in orphan_section.media)
+
+
 def test_infobox_with_media(sample_infobox):
     # given
     exclude_pattern = r".+pencil\.svg.+"
