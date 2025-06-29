@@ -19,15 +19,43 @@ class Composable(BaseModel):
     def construct(cls, parts: list[ExtractionResult], **kwargs) -> Self:
         """
         inner method to compose this entity with other entities or data.
-        should not be called directly, use `from_parts` when calling from outside.
+        ** should not be called directly, use `from_parts` when calling from outside **
 
         in case several parts for the same entity are provided:
         - if the inner fields are complementary, we merge them
         - if the inner fields are conflicting, we keep the one with the highest score
 
+        Only parts that are located at the root of the target entity
+        are considered for composition. This means that the entity must be
+        directly assignable to the field in the model.
+
         Example:
             ```python
-            composed_entity = Composable.construct(base_info, parts)
+
+            parts = [
+                ExtractionResult(score=0.9, entity=PersonVisibleFeatures(...)),
+            ]
+            base_info = Person(
+                uid="123",
+                title="John Doe",
+                permalink="http://example.com/john-doe",
+            )
+
+            composed_entity = Person.construct(base_info, parts)
+            # will work
+
+            # however:
+            parts = [
+                ExtractionResult(score=0.9, entity=PersonVisibleFeatures(...)),
+            ]
+
+            base_info = Person(
+                uid="123",
+                title="John Doe",
+                permalink="http://example.com/john-doe",
+            )
+            # will not work, as `PersonVisibleFeatures` is not a root field of Person
+
             ```
 
         Args:
@@ -37,42 +65,32 @@ class Composable(BaseModel):
         Returns:
             Composable: A new instance of the composed entity.
         """
-        _fields = kwargs
+        _dict_values = kwargs
 
         _part_scores: dict[str, float] = {}
 
         for part in parts:
 
-            for k, v in cls.model_fields.items():
+            for root_field_name, root_field_definition in cls.model_fields.items():
 
                 # try to work with list of entities first
-                _valid = cls._fetch_valid_entities(
+                _valid = cls._get_storable_for_field(
                     extraction_result=part,
-                    field_name=k,
-                    field_info=v,
-                    populated_entities=_fields,
-                    min_score=_part_scores.get(k, 0),
+                    field_name=root_field_name,
+                    field_info=root_field_definition,
+                    populated_entities=_dict_values,
+                    min_score=_part_scores.get(root_field_name, 0),
                 )
 
-                # try to assign a single entity if the field is not a list
-                if _valid is None:
-                    _valid = cls._assign_single_entity(
-                        extraction_result=part,
-                        field_name=k,
-                        field_info=v,
-                        populated_entities=_fields,
-                        min_score=_part_scores.get(k, 0),
-                    )
-
                 if _valid is not None:
-                    _fields[k] = _valid
-                    _part_scores[k] = part.score
+                    _dict_values[root_field_name] = _valid
+                    _part_scores[root_field_name] = part.score
                     break
 
-        logger.debug(f"Final fields after processing parts: {_fields}")
+        logger.debug(_dict_values)
 
         return cls.model_validate(
-            _fields,
+            _dict_values,
         )
 
     @classmethod
@@ -92,7 +110,7 @@ class Composable(BaseModel):
         )
 
     @staticmethod
-    def _fetch_valid_entities(
+    def _get_storable_for_field(
         extraction_result: ExtractionResult,
         field_name: str,
         field_info: FieldInfo,
@@ -101,15 +119,33 @@ class Composable(BaseModel):
     ) -> list[Storable] | None:
         """
         Fetch valid entities from the extraction result and assign them to the field.
-
         May return None if the entity is not valid or cannot be assigned.
+
+        Args:
+            extraction_result (ExtractionResult): The extraction result containing the entity to be assigned.
+            field_name (str): The name of the field to which the entity should be assigned.
+            field_info (FieldInfo): The field information containing the type and validation rules.
+            populated_entities (dict[str, Storable | list[Storable]]): A dictionary containing
+                already populated entities for the fields.
+            min_score (float): The minimum score required to override the existing entity.
+
+        Returns:
+            list[Storable] | None: the list of valid entities for the field, or None if the entity is not valid.
         """
+
+        entity: Storable = extraction_result.entity
 
         try:
 
-            entity: Storable = extraction_result.entity
+            if extraction_result.resolve_as is not None:
+                # if the extraction result has a resolve_as, we must use it
+                entity = extraction_result.resolve_as(**entity.model_dump())
+                logger.warning(
+                    f"'{extraction_result.entity.__class__.__name__}' will be resolved as '{entity.__class__.__name__}'",
+                )
 
             valid_entity = TypeAdapter(field_info.annotation).validate_python(
+                # try to validate the entity as a list
                 [entity],
             )
 
@@ -148,36 +184,24 @@ class Composable(BaseModel):
 
         except ValidationError:
 
-            return None
+            try:
 
-    @staticmethod
-    def _assign_single_entity(
-        extraction_result: ExtractionResult,
-        field_name: str,
-        field_info: FieldInfo,
-        populated_entities: dict[str, Storable | list[Storable]],
-        min_score: float,
-    ) -> Storable | None:
-        """
-        Assign a single entity to the field, validating it against the field's type.
+                valid_entity = TypeAdapter(field_info.annotation).validate_python(
+                    # try to validate the entity as a single item
+                    entity,
+                )
 
-        May return None if the entity is not valid
-        """
-        try:
-            entity: Storable = extraction_result.entity
+                valid_entity = Composable._override_or_complete(
+                    storable=valid_entity,
+                    candidate=extraction_result,
+                    min_score=min_score,
+                )
 
-            valid_entity = TypeAdapter(field_info.annotation).validate_python(
-                entity,
-            )
+                return valid_entity
 
-            valid_entity = Composable._override_or_complete(
-                storable=populated_entities.get(field_name),
-                candidate=extraction_result,
-                min_score=min_score,
-            )
+            except ValidationError:
 
-            return valid_entity
-        except ValidationError:
+                pass
 
             return None
 

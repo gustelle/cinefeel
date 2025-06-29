@@ -16,3 +16,9 @@ class ExtractionResult[T: Storable](BaseModel):
         le=1.0,  # highest score
     )
     entity: T
+
+    resolve_as: type[T] | None = Field(
+        default=None,
+        description="Optional type to resolve the extracted entity as. "
+        "This is useful when you want to force resolution to a specific type.",
+    )

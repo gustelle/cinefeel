@@ -1,6 +1,5 @@
 import abc
 
-from loguru import logger
 
 from src.entities.composable import Composable
 from src.entities.content import Section
@@ -65,7 +64,6 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
         entity = self.validate_entity(entity)
 
-        logger.info(f"Resolved Entity: '{entity.title}' : {entity.model_dump()}")
         return entity
 
     def filter_sections(self, sections: list[Section]) -> list[Section]:
@@ -129,7 +127,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
             section: Section  # for type checking
 
-            for i, title in enumerate(config.section_titles):
+            for title in config.section_titles:
 
                 section = self.section_searcher.process(title=title, sections=sections)
 
@@ -150,6 +148,8 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                         if result.entity is None:
                             continue
 
+                        result.resolve_as = config.resolve_as
+
                         extracted_parts.append(result)
 
                 # process main section removing children
@@ -163,6 +163,8 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
                 if result.entity is None:
                     continue
+
+                result.resolve_as = config.resolve_as
 
                 extracted_parts.append(result)
 
