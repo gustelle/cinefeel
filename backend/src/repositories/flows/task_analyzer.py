@@ -157,11 +157,14 @@ class AnalysisFlow(ITaskExecutor):
                         ],
                         extracted_type=PersonCharacteristics,
                     ),
-                    # take the infobox picture and analyze it
                     ResolutionConfiguration(
                         extractor=PersonVisualAnalysis(settings=self.settings),
                         section_titles=[INFOBOX_SECTION_TITLE],
                         extracted_type=PersonVisibleFeatures,
+                        # must specify the parent type
+                        # for the resolution to work correctly
+                        # because PersonVisibleFeatures is not a direct child of Person
+                        resolve_as=PersonCharacteristics,
                     ),
                 ],
             ).resolve(

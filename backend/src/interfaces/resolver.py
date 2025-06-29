@@ -13,12 +13,14 @@ class ResolutionConfiguration:
     extractor: IDataMiner
     section_titles: Sequence[SectionTitle]
     extracted_type: Type[Storable]
+    resolve_as: Type[Storable] | None = None
 
     def __init__(
         self,
         extractor: IDataMiner,
         section_titles: Sequence[SectionTitle],
         extracted_type: Type[Storable],
+        resolve_as: Type[Storable] | None = None,
     ):
         """Initializes the resolution configuration.
 
@@ -26,10 +28,30 @@ class ResolutionConfiguration:
             extractor (IDataMiner): The data extractor to use for extracting information from the sections.
             section_titles (list[SectionTitle]): The titles of the sections to extract.
             extracted_type (Type[Storable]): The type of the entity to extract in the sections having the given titles.
+            resolve_as (Type[Storable] | None): Optional type to resolve the extracted entity as.
+                this is useful when you want to force resolution to a specific type.
+
+
+        Example:
+            ```python
+            config = ResolutionConfiguration(
+                extractor=my_extractor,
+                section_titles=["Biography", "Career"],
+                extracted_type=Biography,
+            )
+
+            config = ResolutionConfiguration(
+                extractor=my_extractor,
+                section_titles=["Visible Features"],
+                extracted_type=PersonVisibleFeatures,
+                resolve_as=PersonCharacteristics,
+            )
+            ```
         """
         self.extractor = extractor
         self.section_titles = section_titles
         self.extracted_type = extracted_type
+        self.resolve_as = resolve_as
 
 
 class IEntityResolver[T](Protocol):
