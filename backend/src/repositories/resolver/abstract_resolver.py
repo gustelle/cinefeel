@@ -1,5 +1,6 @@
 import abc
 
+from loguru import logger
 
 from src.entities.composable import Composable
 from src.entities.content import Section
@@ -138,35 +139,51 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                 if section.children:
                     for child in section.children:
 
-                        result = config.extractor.extract_entity(
-                            content=child.content,
-                            media=child.media,
-                            entity_type=config.extracted_type,
-                            base_info=base_info,
-                        )
+                        try:
 
-                        if result.entity is None:
+                            result = config.extractor.extract_entity(
+                                content=child.content,
+                                media=child.media,
+                                entity_type=config.extracted_type,
+                                base_info=base_info,
+                            )
+
+                            if result.entity is None:
+                                continue
+
+                            result.resolve_as = config.resolve_as
+
+                            extracted_parts.append(result)
+
+                        except Exception as e:
+                            # log the error and continue
+                            logger.error(f"Error extracting entity from child: {e}")
                             continue
 
-                        result.resolve_as = config.resolve_as
+                try:
 
-                        extracted_parts.append(result)
+                    # process main section removing children
+                    # because we already processed them
+                    result = config.extractor.extract_entity(
+                        content=section.content,
+                        media=section.media,
+                        entity_type=config.extracted_type,
+                        base_info=base_info,
+                    )
 
-                # process main section removing children
-                # because we already processed them
-                result = config.extractor.extract_entity(
-                    content=section.content,
-                    media=section.media,
-                    entity_type=config.extracted_type,
-                    base_info=base_info,
-                )
+                    if result.entity is None:
+                        continue
 
-                if result.entity is None:
+                    result.resolve_as = config.resolve_as
+
+                    extracted_parts.append(result)
+                except Exception as e:
+                    # log the error and continue
+                    import traceback
+
+                    logger.error(traceback.format_exc())
+                    logger.error(f"Error extracting entity from section: {e}")
                     continue
-
-                result.resolve_as = config.resolve_as
-
-                extracted_parts.append(result)
 
         return extracted_parts
 

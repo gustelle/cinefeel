@@ -3,7 +3,7 @@ from loguru import logger
 
 from src.entities.content import Section
 from src.entities.nationality import NATIONALITIES
-from src.entities.person import Person, PersonMedia
+from src.entities.person import Biography, Person, PersonMedia
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.ml.ollama_date_parser import OllamaDateFormatter
@@ -128,6 +128,16 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 )
                 chat = OllamaDateFormatter(settings=self.settings)
                 death_date = chat.format(death_date)
+
+        if not entity.biography:
+            logger.warning(
+                f"Person entity '{entity.title}' has no biography, creating an empty one."
+            )
+            entity.biography = Biography(
+                uid=f"biography_{entity.uid}",
+                full_name=entity.title,
+            )
+            return entity
 
         return entity.model_copy(
             update={

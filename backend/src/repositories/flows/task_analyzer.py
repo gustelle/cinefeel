@@ -7,7 +7,7 @@ from prefect.futures import PrefectFuture
 from prefect_dask import DaskTaskRunner
 
 from src.entities.composable import Composable
-from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
+from src.entities.film import Film, FilmSpecifications
 from src.entities.person import (
     Biography,
     ChildHoodConditions,
@@ -15,7 +15,6 @@ from src.entities.person import (
     PersonCharacteristics,
     PersonVisibleFeatures,
 )
-from src.entities.woa import WOAInfluence
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.resolver import ResolutionConfiguration
 from src.interfaces.storage import IStorageHandler
@@ -31,8 +30,9 @@ from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
+from src.repositories.ml.mistral_data_miner import MistralDataMiner
+from src.repositories.ml.ollama_childhood import ChildhoodExtractor
 from src.repositories.ml.ollama_generic import GenericInfoExtractor
-from src.repositories.ml.ollama_influences import InfluenceExtractor
 from src.repositories.ml.ollama_person_feats import PersonFeaturesExtractor
 from src.repositories.ml.ollama_person_visualizer import PersonVisualAnalysis
 from src.repositories.resolver.film_resolver import BasicFilmResolver
@@ -88,35 +88,35 @@ class AnalysisFlow(ITaskExecutor):
                 section_searcher=SimilarSectionSearch(settings=self.settings),
                 configurations=[
                     ResolutionConfiguration(
-                        extractor=GenericInfoExtractor(settings=self.settings),
+                        extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[INFOBOX_SECTION_TITLE, "Fiche technique"],
                         extracted_type=FilmSpecifications,
                     ),
-                    ResolutionConfiguration(
-                        extractor=GenericInfoExtractor(settings=self.settings),
-                        section_titles=["Distribution"],
-                        extracted_type=FilmActor,
-                    ),
-                    ResolutionConfiguration(
-                        extractor=GenericInfoExtractor(settings=self.settings),
-                        section_titles=[
-                            "Synopsis",
-                            "Résumé",
-                            ORPHAN_SECTION_TITLE,
-                        ],
-                        extracted_type=FilmSummary,
-                    ),
-                    # search for influences
-                    ResolutionConfiguration(
-                        extractor=InfluenceExtractor(settings=self.settings),
-                        section_titles=[
-                            "Contexte",
-                            "Analyse",
-                            "Influences",
-                            ORPHAN_SECTION_TITLE,
-                        ],
-                        extracted_type=WOAInfluence,
-                    ),
+                    # ResolutionConfiguration(
+                    #     extractor=GenericInfoExtractor(settings=self.settings),
+                    #     section_titles=["Distribution"],
+                    #     extracted_type=FilmActor,
+                    # ),
+                    # ResolutionConfiguration(
+                    #     extractor=GenericInfoExtractor(settings=self.settings),
+                    #     section_titles=[
+                    #         "Synopsis",
+                    #         "Résumé",
+                    #         ORPHAN_SECTION_TITLE,
+                    #     ],
+                    #     extracted_type=FilmSummary,
+                    # ),
+                    # # search for influences
+                    # ResolutionConfiguration(
+                    #     extractor=InfluenceExtractor(settings=self.settings),
+                    #     section_titles=[
+                    #         "Contexte",
+                    #         "Analyse",
+                    #         "Influences",
+                    #         ORPHAN_SECTION_TITLE,
+                    #     ],
+                    #     extracted_type=WOAInfluence,
+                    # ),
                 ],
             ).resolve(
                 base_info=base_info,
@@ -134,7 +134,7 @@ class AnalysisFlow(ITaskExecutor):
                         extracted_type=Biography,
                     ),
                     ResolutionConfiguration(
-                        extractor=GenericInfoExtractor(settings=self.settings),
+                        extractor=ChildhoodExtractor(settings=self.settings),
                         section_titles=[
                             "Biographie",
                         ],
@@ -264,7 +264,7 @@ class AnalysisFlow(ITaskExecutor):
                 )
 
             i += 1
-            if i > 2:
+            if i > 3:
                 break
 
         # now wait for all tasks to complete
