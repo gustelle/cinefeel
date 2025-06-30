@@ -18,15 +18,14 @@ class Composable(BaseModel):
     @classmethod
     def construct(cls, parts: list[ExtractionResult], **kwargs) -> Self:
         """
-        inner method to compose this entity with other entities or data.
-        ** should not be called directly, use `from_parts` when calling from outside **
+        **should not be called directly, use `from_parts` when calling from outside**
 
         in case several parts for the same entity are provided:
         - if the inner fields are complementary, we merge them
         - if the inner fields are conflicting, we keep the one with the highest score
 
-        Only parts that are located at the root of the target entity
-        are considered for composition. This means that the entity must be
+        **Only parts that are located at the root of the target entity
+        are considered for composition**. This means that the entity must be
         directly assignable to the field in the model.
 
         Example:
@@ -67,7 +66,7 @@ class Composable(BaseModel):
         """
         _dict_values = kwargs
 
-        _part_scores: dict[str, float] = {}
+        _best_score_for_field: dict[str, float] = {}
 
         for part in parts:
 
@@ -79,15 +78,19 @@ class Composable(BaseModel):
                     field_name=root_field_name,
                     field_info=root_field_definition,
                     populated_entities=_dict_values,
-                    min_score=_part_scores.get(root_field_name, 0),
+                    min_score=_best_score_for_field.get(root_field_name, 0),
                 )
 
+                # save the best score for the field
                 if _valid is not None:
-                    _dict_values[root_field_name] = _valid
-                    _part_scores[root_field_name] = part.score
-                    break
 
-        logger.debug(_dict_values)
+                    # force casting to the correct type if needed
+                    if part.resolve_as is not None:
+                        _valid = part.resolve_as(**_valid.model_dump())
+
+                    _dict_values[root_field_name] = _valid
+                    _best_score_for_field[root_field_name] = part.score
+                    break
 
         return cls.model_validate(
             _dict_values,
@@ -140,9 +143,6 @@ class Composable(BaseModel):
             if extraction_result.resolve_as is not None:
                 # if the extraction result has a resolve_as, we must use it
                 entity = extraction_result.resolve_as(**entity.model_dump())
-                logger.warning(
-                    f"'{extraction_result.entity.__class__.__name__}' will be resolved as '{entity.__class__.__name__}'",
-                )
 
             valid_entity = TypeAdapter(field_info.annotation).validate_python(
                 # try to validate the entity as a list
@@ -192,7 +192,7 @@ class Composable(BaseModel):
                 )
 
                 valid_entity = Composable._override_or_complete(
-                    storable=valid_entity,
+                    storable=populated_entities.get(field_name, None),
                     candidate=extraction_result,
                     min_score=min_score,
                 )
@@ -226,9 +226,6 @@ class Composable(BaseModel):
         """
 
         if storable is None:
-            logger.debug(
-                f"Storable is None, creating a new one from candidate {candidate.entity.uid}"
-            )
             return candidate.entity
 
         # exclude case where the candidate and storable do not relate to the same entity
