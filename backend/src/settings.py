@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -123,7 +123,11 @@ class Settings(BaseSettings):
         description="The name of the LLM model to use",
     )
 
-    mistral_api_key: str = Field(
+    mistral_llm_model: str = Field(
+        default="mistral-medium-latest",
+    )
+
+    mistral_api_key: SecretStr = Field(
         default="",
         description="The API key for the Mistral API",
     )

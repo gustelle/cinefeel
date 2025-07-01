@@ -57,13 +57,11 @@ class MistralDataMiner(IDataMiner):
 
         response_model = create_response_model(entity_type)
 
-        logger.debug(response_model.model_json_schema())
-
-        client = Mistral(api_key=self.settings.mistral_api_key)
+        client = Mistral(api_key=self.settings.mistral_api_key.get_secret_value())
 
         messages = [{"role": "user", "content": content}]
         chat_response = client.chat.parse(
-            model="mimistral-medium-latest",
+            model=self.settings.mistral_llm_model,
             messages=messages,
             temperature=0.0,
             response_format=response_model,
@@ -71,7 +69,10 @@ class MistralDataMiner(IDataMiner):
 
         logger.debug(f"Response from Mistral: {chat_response}")
 
-        msg = chat_response.message.content
+        if not chat_response.choices or not chat_response.choices[0].message:
+            raise ValueError("No valid response from Mistral API.")
+
+        msg = chat_response.choices[0].message.content
 
         try:
 
