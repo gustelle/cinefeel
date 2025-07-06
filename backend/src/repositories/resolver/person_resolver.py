@@ -3,7 +3,7 @@ from loguru import logger
 
 from src.entities.content import Section
 from src.entities.nationality import NATIONALITIES
-from src.entities.person import Person, PersonMedia
+from src.entities.person import Biography, Person, PersonMedia
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.ml.ollama_date_parser import OllamaDateFormatter
@@ -66,9 +66,9 @@ class BasicPersonResolver(AbstractResolver[Person]):
         # Patch the media into the Film entity
         if posters or videos or audios:
             entity.media = PersonMedia(
-                uid=f"media_{entity.uid}",
                 photos=posters,
                 other_medias=audios + videos,
+                parent_uid=entity.uid,
             )
 
         return entity
@@ -128,6 +128,16 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 )
                 chat = OllamaDateFormatter(settings=self.settings)
                 death_date = chat.format(death_date)
+
+        if not entity.biography:
+            logger.warning(
+                f"Person entity '{entity.title}' has no biography, creating an empty one."
+            )
+            entity.biography = Biography(
+                full_name=entity.title,
+                parent_uid=entity.uid,
+            )
+            return entity
 
         return entity.model_copy(
             update={

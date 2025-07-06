@@ -1,3 +1,4 @@
+import sys
 import time
 
 import typer
@@ -60,4 +61,20 @@ async def async_run_persons():
 
 
 if __name__ == "__main__":
+
+    # configure logging
+    logger.remove()
+    # logger.add(
+    #     "logs/{time:YYYY-MM-DD}.log",
+    #     rotation="1 day",
+    #     retention="7 days",
+    #     level="INFO",
+    #     format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+    # )
+    logger.add(
+        sys.stderr,
+        level="DEBUG",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+    )
+
     app()

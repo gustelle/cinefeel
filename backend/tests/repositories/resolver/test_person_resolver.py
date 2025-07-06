@@ -1,3 +1,5 @@
+import pytest
+
 from src.entities.content import Section
 from src.entities.person import Biography, Person
 from src.interfaces.resolver import ResolutionConfiguration
@@ -134,6 +136,7 @@ def test_resolve_person_validate_nationalities():
     assert p.biography.nationalities == ["français"]
 
 
+@pytest.mark.skip(reason="requires Ollama to be running")
 def test_resolve_person_validate_birth_date():
     # Given a person with a valid birth date
     p = Person(
@@ -143,7 +146,7 @@ def test_resolve_person_validate_birth_date():
         biography=Biography(
             uid="bio_12345",
             full_name="John Doe",
-            birth_date="28 décembre 1861 à Paris 10ème",  # Valid date
+            birth_date="28 décembre 1861 à Paris",  # Valid date
         ),
     )
     resolver = BasicPersonResolver(

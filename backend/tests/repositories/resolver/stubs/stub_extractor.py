@@ -1,6 +1,6 @@
 from src.entities.content import Media
-from src.entities.extraction import ExtractionResult
 from src.entities.film import FilmActor, FilmMedia, FilmSpecifications, FilmSummary
+from src.entities.ml import ExtractionResult
 from src.interfaces.extractor import IDataMiner
 
 

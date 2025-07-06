@@ -1,5 +1,5 @@
+from src.entities.composable import Composable
 from src.entities.content import Section
-from src.entities.source import SourcedContentBase
 from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 from src.repositories.html_parser.wikipedia_info_retriever import (
@@ -80,9 +80,7 @@ def test_process_complex_page(read_melies_html):
     # then
     assert result is not None, "Result should not be None."
     assert isinstance(result, tuple), "Result should be a tuple."
-    assert isinstance(
-        result[0], SourcedContentBase
-    ), "First element should be SourcedContentBase."
+    assert isinstance(result[0], Composable), "First element should be Composable."
     assert isinstance(result[1], list), "Second element should be a list of sections."
     assert all(
         isinstance(section, Section) for section in result[1]

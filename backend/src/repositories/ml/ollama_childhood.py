@@ -6,10 +6,7 @@ from src.repositories.ml.ollama_messager import OllamaMessager
 from src.settings import Settings
 
 
-class InfluenceExtractor(IDataMiner, OllamaMessager):
-    """
-    specialized extractor for WOAInfluence
-    """
+class ChildhoodExtractor(IDataMiner, OllamaMessager):
 
     def __init__(self, settings: Settings):
 
@@ -25,7 +22,7 @@ class InfluenceExtractor(IDataMiner, OllamaMessager):
 
         prompt = f"""
             Context: {content}
-            Question: Quelles sont les influences ? Réponds de façon concise, si tu ne sais pas, n'invente pas de données.
+            Question: Quel était le métier des parents de ? Réponds de façon concise, si tu ne sais pas, n'invente pas de données.
             Réponse:"""
 
         return self.request_entity(

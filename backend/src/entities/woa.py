@@ -1,9 +1,10 @@
 from enum import StrEnum
 
-from pydantic import Field
+from pydantic import BaseModel, Field
+
+from src.entities.component import EntityComponent
 
 from .person import Person
-from .source import SourcedContentBase, Storable
 
 
 class WOAType(StrEnum):
@@ -27,10 +28,9 @@ class WOAType(StrEnum):
     OTHER = "other"
 
 
-class WOASpecifications(Storable):
+class WOASpecifications(EntityComponent):
     """
-    Représente les spécifications d'une œuvre d'art.
-    Cette classe contient des informations sur le titre, les autres titres et la date de sortie de l'œuvre d'art.
+    spécifications d'une œuvre d'art.
     """
 
     title: str = Field(
@@ -52,7 +52,7 @@ class WOASpecifications(Storable):
     )
 
 
-class WorkOfArt(SourcedContentBase):
+class WorkOfArt(BaseModel):
     """
     Represents a work of art
     """
@@ -65,7 +65,7 @@ class WorkOfArt(SourcedContentBase):
     )
 
 
-class WOAInfluence(Storable):
+class WOAInfluence(EntityComponent):
     """
     Représente les influences d'une oeuvre d'art.
     """
