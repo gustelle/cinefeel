@@ -1,7 +1,8 @@
 from typing import Protocol, Sequence, Type
 
+from src.entities.component import EntityComponent
+from src.entities.composable import Composable
 from src.entities.content import Section, SectionTitle
-from src.entities.source import SourcedContentBase, Storable
 from src.interfaces.extractor import IDataMiner
 
 
@@ -12,15 +13,15 @@ class ResolutionConfiguration:
 
     extractor: IDataMiner
     section_titles: Sequence[SectionTitle]
-    extracted_type: Type[Storable]
-    resolve_as: Type[Storable] | None = None
+    extracted_type: Type[EntityComponent]
+    resolve_as: Type[EntityComponent] | None = None
 
     def __init__(
         self,
         extractor: IDataMiner,
         section_titles: Sequence[SectionTitle],
-        extracted_type: Type[Storable],
-        resolve_as: Type[Storable] | None = None,
+        extracted_type: Type[EntityComponent],
+        resolve_as: Type[EntityComponent] | None = None,
     ):
         """Initializes the resolution configuration.
 
@@ -64,7 +65,7 @@ class IEntityResolver[T](Protocol):
     def resolve(
         self,
         uid: str,
-        base_info: SourcedContentBase,
+        base_info: Composable,
         sections: list[Section],
         *args,
         **kwargs,

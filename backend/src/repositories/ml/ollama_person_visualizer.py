@@ -3,8 +3,9 @@ import tempfile
 import httpx
 from loguru import logger
 
+from src.entities.component import EntityComponent
+from src.entities.composable import Composable
 from src.entities.content import Media
-from src.entities.source import SourcedContentBase, Storable
 from src.repositories.ml.ollama_visioner import OllamaVisioner
 from src.settings import Settings
 
@@ -19,9 +20,9 @@ class PersonVisualAnalysis(OllamaVisioner):
         self,
         content: str,
         media: list[Media],
-        entity_type: Storable,
-        base_info: SourcedContentBase,
-    ) -> Storable:
+        entity_type: EntityComponent,
+        parent: Composable | None = None,
+    ) -> EntityComponent:
 
         # take the first media item of type image
         if not media or not any(m.media_type == "image" for m in media):

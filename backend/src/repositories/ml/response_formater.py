@@ -7,22 +7,32 @@ from typing_inspection.introspection import (
     is_union_origin,
 )
 
-from src.entities.source import Storable
+from src.entities.component import EntityComponent
 
 
 def _is_expected_in_response(k: str, annotation: AnnotationSource) -> bool:
     """
-    some types are not expected in the response, like HttpUrl,
+    some fields or field types are not expected in the response, like `HttpUrl`, or the `uid` field,
+    which is not part of the entity type, but is used to identify the entity in the database.
+    This is also the case for `HttpUrl` fields, which are not expected in
     because the LLM usually provides crappy URLs that are not valid, which invalidates the model.
 
     Args:
-        k (str): The name of the field to inspect, may be used for logging or debugging.
+        k (str): The name of the field to inspect
         annotation (AnnotationSource): The type annotation to inspect.
 
     Returns:
         bool: True if the type should be kept, False if it should be excluded.
     """
     excluded_types = (HttpUrl, list[HttpUrl], set[HttpUrl])
+
+    excluded_fields = (
+        # optionnally, we could exclude fields here, like `uid`
+        # but in this case, be careful to validation if the field is required
+    )
+
+    if k in excluded_fields:
+        return False
 
     a = inspect_annotation(annotation, annotation_source=AnnotationSource.ANY)
 
@@ -41,7 +51,7 @@ def _is_expected_in_response(k: str, annotation: AnnotationSource) -> bool:
     return _is_expected
 
 
-def create_response_model(entity_type: Storable) -> type[BaseModel]:
+def create_response_model(entity_type: EntityComponent) -> type[BaseModel]:
     """
     Dynamically create a Pydantic model for the response based on the entity type.
 

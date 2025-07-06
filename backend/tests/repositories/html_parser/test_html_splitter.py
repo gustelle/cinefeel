@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from src.entities.source import SourcedContentBase
+from src.entities.composable import Composable
 from src.repositories.html_parser.html_splitter import (
     Section,
     WikipediaAPIContentSplitter,
@@ -35,7 +35,7 @@ def test_split_subsections():
     base_info, sections = semantic.split("1", html_content)
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert sections is not None
     assert sections[0].title == "Biographie"
     assert sections[0].children[0].title == "1770-1792: jeunesse à Bonn"
@@ -56,7 +56,7 @@ def test_split_complex_page(read_beethoven_html):
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert sections is not None
     assert len(sections) > 0
     assert all(
@@ -83,7 +83,7 @@ def test_split_melies_page(read_melies_html):
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert sections is not None
     assert len(sections) > 0
 
@@ -115,7 +115,7 @@ def test_split_with_root_tag(read_beethoven_html):
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert sections is not None
     assert len(sections) > 0
     assert any(
@@ -136,7 +136,7 @@ def test_split_ignores_non_significant_sections(read_beethoven_html):
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert sections is not None
     assert all(
         "notes et références" not in section.title.lower() for section in sections
@@ -161,7 +161,7 @@ def test_split_sections_no_title():
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert len(sections) > 0
     assert sections[0].title == ORPHAN_SECTION_TITLE
 
@@ -181,7 +181,7 @@ def test_split_sections_void_section():
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
 
     assert len(sections) == 0
 
@@ -212,7 +212,7 @@ def test_split_title_is_not_pure_text():
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert len(sections) == 1
 
 
@@ -242,7 +242,7 @@ def test_split_title_is_removed_from_content():
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert len(sections) == 1
 
 
@@ -271,7 +271,7 @@ def test_split_sections_no_title_and_no_content():
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert len(sections) == 0
 
 
@@ -310,7 +310,7 @@ def test_split_preserve_hierarchy():
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert len(sections) == 1
     assert sections[0].title == "Section 1"
     assert len(sections[0].children) == 2
@@ -358,7 +358,7 @@ def test_split_nested_sections_with_div():
 
     # then
     assert base_info is not None
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert len(sections) == 1
     assert sections[0].title == "Section 1"
     assert len(sections[0].children) == 2

@@ -66,9 +66,9 @@ class BasicPersonResolver(AbstractResolver[Person]):
         # Patch the media into the Film entity
         if posters or videos or audios:
             entity.media = PersonMedia(
-                uid=f"media_{entity.uid}",
                 photos=posters,
                 other_medias=audios + videos,
+                parent_uid=entity.uid,
             )
 
         return entity
@@ -134,8 +134,8 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 f"Person entity '{entity.title}' has no biography, creating an empty one."
             )
             entity.biography = Biography(
-                uid=f"biography_{entity.uid}",
                 full_name=entity.title,
+                parent_uid=entity.uid,
             )
             return entity
 

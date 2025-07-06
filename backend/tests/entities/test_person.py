@@ -1,6 +1,6 @@
 from jsonschema import validate
 
-from src.entities.extraction import ExtractionResult
+from src.entities.ml import ExtractionResult
 from src.entities.person import Person, PersonCharacteristics, PersonVisibleFeatures
 
 
@@ -29,6 +29,7 @@ def test_model_schema():
         {
             "handicaps": ["auditif", "visuel"],
             "uid": "123",
+            "parent_uid": "123",
         },
         schema=schema,
     )
@@ -42,7 +43,6 @@ def test_model_schema():
 def test_resolve_as():
     # given
     base_info = Person(
-        uid="123",
         title="John Doe",
         permalink="http://example.com/john-doe",
     )
@@ -50,8 +50,8 @@ def test_resolve_as():
         ExtractionResult(
             score=0.9,
             entity=PersonVisibleFeatures(
-                uid="123",
                 skin_color="claire",
+                parent_uid=base_info.uid,
             ),
             resolve_as=PersonCharacteristics,
         )

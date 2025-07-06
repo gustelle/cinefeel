@@ -2,8 +2,8 @@ import ollama
 from loguru import logger
 from pydantic import BaseModel
 
-from src.entities.extraction import ExtractionResult
-from src.entities.source import Storable
+from src.entities.component import EntityComponent
+from src.entities.ml import ExtractionResult
 from src.interfaces.extractor import IDataMiner
 
 from .response_formater import create_response_model
@@ -15,7 +15,7 @@ class OllamaVisioner(IDataMiner):
     prompt: str
 
     def analyze_image_using_prompt(
-        self, prompt: str, entity_type: Storable, image_path: str
+        self, prompt: str, entity_type: EntityComponent, image_path: str
     ) -> ExtractionResult:
 
         score = 0.0
@@ -65,4 +65,4 @@ class OllamaVisioner(IDataMiner):
             logger.error(traceback.format_exc())
             raise ValueError(f"Error parsing response: {e}") from e
 
-        return ExtractionResult[entity_type](score=score, entity=result)
+        return ExtractionResult(score=score, entity=result)

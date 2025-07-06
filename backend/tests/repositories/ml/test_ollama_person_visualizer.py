@@ -1,9 +1,9 @@
 # given
 import pytest
 
+from src.entities.composable import Composable
 from src.entities.content import Media
 from src.entities.person import PersonVisibleFeatures
-from src.entities.source import SourcedContentBase
 from src.repositories.ml.ollama_person_visualizer import PersonVisualAnalysis
 from src.settings import Settings
 
@@ -13,7 +13,7 @@ def test_visual_analysis():
     # given
 
     settings = Settings()
-    base_info = SourcedContentBase(
+    base_info = Composable(
         uid="test_uid",
         title="Test Title",
         permalink="http://example.com/test",

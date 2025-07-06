@@ -1,9 +1,8 @@
 import re
 
 from bs4 import BeautifulSoup, Tag
-from loguru import logger
 
-from src.entities.source import SourcedContentBase
+from src.entities.composable import Composable
 from src.interfaces.content_splitter import IContentSplitter, Section
 from src.interfaces.info_retriever import IParser
 from src.interfaces.nlp_processor import Processor
@@ -55,7 +54,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
         html_content: str,
         section_tag_name: str = "section",
         root_tag_name: str = "body",
-    ) -> tuple[SourcedContentBase, list[Section]] | None:
+    ) -> tuple[Composable, list[Section]] | None:
         """
         Splits the HTML content into sections based on the specified tags.
 
@@ -90,14 +89,14 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             ```
 
         Returns:
-            tuple[SourcedContentBase, list[Section]] | None: A tuple containing the base content and a list of sections.
+            tuple[Composable, list[Section]] | None: A tuple containing the base content and a list of sections.
         """
 
         # retrieve permalink and title before content simplification
         permakink = self.parser.retrieve_permalink(html_content)
         title = self.parser.retrieve_title(html_content)
 
-        base_content = SourcedContentBase(
+        base_content = Composable(
             uid=uid,
             title=title,
             permalink=permakink,
@@ -196,9 +195,9 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             ignored_title in section_title.casefold()
             for ignored_title in self.SKIPPED_SECTIONS
         ):
-            logger.debug(
-                f"Skipping section with title '{section_title}' as it is in the ignored sections list."
-            )
+            # logger.debug(
+            #     f"Skipping section with title '{section_title}' as it is in the ignored sections list."
+            # )
             return None
 
         # if the section contains children sections
@@ -246,9 +245,9 @@ class WikipediaAPIContentSplitter(IContentSplitter):
         # check the text content of the section is not empty
         # to avoid empty sections like <section><p id="mwBQ"></p></section>
         if self._is_empty(content):
-            logger.debug(
-                f"Skipping section with title '{section_title}' as it has no content."
-            )
+            # logger.debug(
+            #     f"Skipping section with title '{section_title}' as it has no content."
+            # )
             return None
 
         # make sure children are not None

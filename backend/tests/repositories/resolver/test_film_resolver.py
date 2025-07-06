@@ -1,6 +1,6 @@
+from src.entities.composable import Composable
 from src.entities.content import Section
 from src.entities.film import Film, FilmSpecifications
-from src.entities.source import SourcedContentBase
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.film_resolver import BasicFilmResolver
 
@@ -13,7 +13,7 @@ def test_BasicFilmResolver_nominal_case():
     title = "The Great Film"
     permalink = "https://example.com/the-great-film"
     uid = "12345"
-    base_info = SourcedContentBase(title=title, permalink=permalink, uid=uid)
+    base_info = Composable(title=title, permalink=permalink, uid=uid)
 
     sections = [
         Section(

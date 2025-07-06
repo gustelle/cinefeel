@@ -1,24 +1,74 @@
-from typing import Self
+from __future__ import annotations
+
+import re
+from typing import Any, Self
 
 from loguru import logger
-from pydantic import BaseModel, TypeAdapter, ValidationError
-from pydantic.fields import FieldInfo
+from pydantic import (
+    Field,
+    HttpUrl,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+)
+from unidecode import unidecode
 
-from src.entities.extraction import ExtractionResult
-from src.entities.source import Storable
+from src.entities.base import Identifiable
+from src.entities.component import EntityComponent
+from src.entities.ml import ExtractionResult
 
 
-class Composable(BaseModel):
+class Composable(Identifiable):
     """
-    Represents a composable entity that can be used to build complex structures.
-    This class is designed to be extended by other classes that require composability.
-
+    An entity that is made up of several parts that can be composed together.
     """
+
+    title: str = Field(
+        ...,
+        description="The title of the information entity.",
+        examples=["Stanley Kubrick", "The Shining"],
+    )
+
+    permalink: HttpUrl = Field(
+        ...,
+        description="The permalink to the object, typically a URL.",
+        examples=[
+            "https://fr.wikipedia.org/wiki/Stanley_Kubrick",
+        ],
+    )
+
+    @model_validator(mode="after")
+    def assign_uid(self) -> Self:
+        """
+        UID assignment is crucial for the entity merging process.
+        It is important to control how the UID is generated
+        """
+
+        # replace accents and casefold to lowercase
+        value = unidecode(self.title).casefold()
+
+        # constraint of meili:
+        # only (a-z A-Z 0-9), hyphens (-) and underscores (_) are allowed
+        value = re.sub(r"[^a-z0-9_-]", "", value, flags=re.IGNORECASE)
+
+        # remove quotes
+        value = value.replace('"', "").replace("'", "")
+
+        self.uid = value
+
+        return self
 
     @classmethod
-    def construct(cls, parts: list[ExtractionResult], **kwargs) -> Self:
+    def compose(
+        cls,
+        uid: str,
+        title: str,
+        permalink: str | HttpUrl,
+        parts: list[ExtractionResult],
+        **kwargs,
+    ) -> Self:
         """
-        **should not be called directly, use `from_parts` when calling from outside**
+        Compose this entity with other entities or data.
 
         in case several parts for the same entity are provided:
         - if the inner fields are complementary, we merge them
@@ -28,78 +78,77 @@ class Composable(BaseModel):
         are considered for composition**. This means that the entity must be
         directly assignable to the field in the model.
 
-        Example:
-            ```python
-
-            parts = [
-                ExtractionResult(score=0.9, entity=PersonVisibleFeatures(...)),
-            ]
-            base_info = Person(
-                uid="123",
-                title="John Doe",
-                permalink="http://example.com/john-doe",
-            )
-
-            composed_entity = Person.construct(base_info, parts)
-            # will work
-
-            # however:
-            parts = [
-                ExtractionResult(score=0.9, entity=PersonVisibleFeatures(...)),
-            ]
-
-            base_info = Person(
-                uid="123",
-                title="John Doe",
-                permalink="http://example.com/john-doe",
-            )
-            # will not work, as `PersonVisibleFeatures` is not a root field of Person
-
-            ```
-
         Args:
+            title (str): The title of the composed entity.
+            permalink (str | HttpUrl): The permalink to the composed entity.
             parts (list[ExtractionResult]): List of ExtractionResult objects containing parts to compose.
             kwargs: Additional keyword arguments for the composition.
 
         Returns:
             Composable: A new instance of the composed entity.
         """
-        _dict_values = kwargs
+
+        # NOTE
+        # we should pre-populate the composable entity with the base_info
+        # in particular the UID is essential in the information merging process
+        populated_entities = {
+            "title": title,
+            "permalink": permalink,
+        }
+
+        populated_entities.update(kwargs)
 
         _best_score_for_field: dict[str, float] = {}
 
         for part in parts:
 
+            # only parts that are directly related to the entity
+            # are considered for composition
+            if part.entity is not None and part.entity.parent_uid != uid:
+                continue
+
             for root_field_name, root_field_definition in cls.model_fields.items():
 
-                # try to work with list of entities first
-                _valid = cls._get_storable_for_field(
+                # fetch the field correctly from `extraction_result`,
+                # merging the field values if it is already populated
+                _valid_value = cls._validate_as_type(
                     extraction_result=part,
-                    field_name=root_field_name,
-                    field_info=root_field_definition,
-                    populated_entities=_dict_values,
-                    min_score=_best_score_for_field.get(root_field_name, 0),
+                    field_type=root_field_definition.annotation,
                 )
 
                 # save the best score for the field
-                if _valid is not None:
+                if _valid_value is not None:
 
-                    # force casting to the correct type if needed
-                    if part.resolve_as is not None:
-                        _valid = part.resolve_as(**_valid.model_dump())
+                    new_value = cls._update_value(
+                        initial_value=populated_entities.get(root_field_name, None),
+                        initial_score=_best_score_for_field.get(root_field_name, 0.0),
+                        value=_valid_value,
+                        score=part.score,
+                    )
 
-                    _dict_values[root_field_name] = _valid
+                    populated_entities[root_field_name] = new_value
                     _best_score_for_field[root_field_name] = part.score
                     break
 
-        return cls.model_validate(
-            _dict_values,
-        )
+        # re-pass through the model validation
+        # to ensure all fields are correctly populated
+        # and to ensure the UID is correctly assigned
+        v = cls.model_validate(populated_entities, by_name=True)
+
+        logger.debug("_" * 80)
+        logger.debug(f"Composed '{cls.__name__}'")
+        logger.debug(v.model_dump_json(indent=2))
+        logger.debug("-" * 80)
+
+        return v
 
     @classmethod
-    def from_parts(cls, base_info: BaseModel, parts: list[ExtractionResult]) -> Self:
+    def from_parts(cls, base: Composable, parts: list[ExtractionResult]) -> Self:
         """
         Compose this entity with other entities or data.
+
+        TODO:
+        - remove
 
         Args:
             base_info (BaseModel): Base information including title, permalink, and uid.
@@ -113,154 +162,85 @@ class Composable(BaseModel):
         )
 
     @staticmethod
-    def _get_storable_for_field(
+    def _validate_as_type(
         extraction_result: ExtractionResult,
-        field_name: str,
-        field_info: FieldInfo,
-        populated_entities: dict[str, Storable | list[Storable]],
-        min_score: float,
-    ) -> list[Storable] | None:
+        field_type: type[Any],
+    ) -> list[EntityComponent] | EntityComponent:
         """
-        Fetch valid entities from the extraction result and assign them to the field.
-        May return None if the entity is not valid or cannot be assigned.
-
-        Args:
-            extraction_result (ExtractionResult): The extraction result containing the entity to be assigned.
-            field_name (str): The name of the field to which the entity should be assigned.
-            field_info (FieldInfo): The field information containing the type and validation rules.
-            populated_entities (dict[str, Storable | list[Storable]]): A dictionary containing
-                already populated entities for the fields.
-            min_score (float): The minimum score required to override the existing entity.
+        Validate the extraction result as a specific type, either as a single entity or a list of entities.
 
         Returns:
-            list[Storable] | None: the list of valid entities for the field, or None if the entity is not valid.
+            list[EntityComponent] | EntityComponent : The valid entity or list of entities to be assigned to the field,
         """
 
-        entity: Storable = extraction_result.entity
+        entity: EntityComponent = extraction_result.entity
 
         try:
 
+            # this part runs for both cases: single entity or list of entities
             if extraction_result.resolve_as is not None:
-                # if the extraction result has a resolve_as, we must use it
                 entity = extraction_result.resolve_as(**entity.model_dump())
 
-            valid_entity = TypeAdapter(field_info.annotation).validate_python(
-                # try to validate the entity as a list
+            # try to validate the entity as a list
+            # if a list is expected for the field
+            return TypeAdapter(field_type).validate_python(
                 [entity],
             )
 
-            # 1. case where a value is already set for the field
-            # we must check if the entity is already in the list
-            # and eventually complete the list with the new entity
-            if populated_entities.get(field_name, None) is not None:
-
-                # case where the entity is a storable, so we can compare by uid
-                # --> search for the entity in the list using uid
-                _entity_uids = [ent.uid for ent in populated_entities[field_name]]
-                if entity.uid in _entity_uids:
-
-                    # if the entity is already in the list, check the score
-                    idx = _entity_uids.index(entity.uid)
-                    if extraction_result.score <= min_score:
-
-                        populated_entities[field_name][idx] = (
-                            Composable._override_or_complete(
-                                storable=populated_entities[field_name][idx],
-                                candidate=extraction_result,
-                            )
-                        )
-
-                    else:
-                        # replace the entity with the new one
-                        populated_entities[field_name][idx] = valid_entity[0]
-                else:
-                    # if the entity is not in the list, extend the list
-                    populated_entities[field_name].append(valid_entity[0])
-            else:
-                # 2. case where the field is not set
-                populated_entities[field_name] = valid_entity
-
-            return populated_entities[field_name]
-
         except ValidationError:
 
+            # 3. case where the entity is not valid as a list
+            # we try to validate it as a single item
             try:
-
-                valid_entity = TypeAdapter(field_info.annotation).validate_python(
-                    # try to validate the entity as a single item
+                return TypeAdapter(field_type).validate_python(
                     entity,
                 )
-
-                valid_entity = Composable._override_or_complete(
-                    storable=populated_entities.get(field_name, None),
-                    candidate=extraction_result,
-                    min_score=min_score,
-                )
-
-                return valid_entity
-
             except ValidationError:
-
                 pass
 
             return None
 
     @staticmethod
-    def _override_or_complete(
-        storable: Storable | None,
-        candidate: ExtractionResult,
-        min_score: float = 0.0,
-    ) -> Storable:
+    def _update_value(
+        initial_value: EntityComponent | list[EntityComponent] | None,
+        initial_score: float,
+        value: EntityComponent | list[EntityComponent],
+        score: float,
+    ) -> EntityComponent | list[EntityComponent]:
         """
-        Override or complete the storable with the extraction result,
-        taking into account the score when necessary,
-        and proceeding to a fine grained assembly if needed.
+        Populate the value of the field with the extraction result.
 
         Args:
-            storable (Storable | None): The existing storable entity to be updated.
-            candidate (ExtractionResult): The candidate extraction result containing the new entity.
-            min_score (float): The minimum score required to override the existing storable.
+            initial_value (EntityComponent | list[EntityComponent]): The initial value of the field.
+            initial_score (float): The score of the initial value.
+            value (EntityComponent | list[EntityComponent]): The new value to be assigned to the field.
+            score (float): The score of the new value.
 
         Returns:
-            Storable: The updated or new storable entity.
+            dict[str, Any]: The updated dictionary with the field populated with the component.
         """
+        new_value = None
 
-        if storable is None:
-            return candidate.entity
+        if isinstance(value, list):
 
-        # exclude case where the candidate and storable do not relate to the same entity
-        if storable.uid != candidate.entity.uid:
-            logger.debug(
-                f"Storable UID {storable.uid} does not match candidate UID {candidate.entity.uid}"
-            )
-            return storable
+            new_value = initial_value
 
-        # proceed to a json dump to compare the fields
-        storable_json = storable.model_dump(
-            mode="python",
-            exclude_none=True,
-        )
-        candidate_json = candidate.entity.model_dump(
-            mode="python",
-            exclude_none=True,
-        )
+            # 1. case where a value is already set for the field
+            # we must check if the entity is already in the list
+            # and eventually complete the list with the new entity
+            if new_value is not None and isinstance(new_value, list):
 
-        for key, value in candidate_json.items():
+                new_value.extend(value)
 
-            if key not in storable_json or storable_json[key] is None:
-                storable_json[key] = value
-            elif isinstance(value, list) and candidate.score >= min_score:
-                # merge lists if both are lists
-                current_list = storable_json.get(key, [])
-                current_list.extend(value)
-                storable_json[key] = list(set(current_list))
             else:
-                # if the key is already set and the score is lower, we keep the current value
-                if candidate.score >= min_score:
-                    storable_json[key] = value
+                # 2. case where the field is not set
+                new_value = value
+        else:
+            new_value = EntityComponent.override_or_complete(
+                current_component=initial_value,
+                current_score=initial_score,
+                component=value,
+                component_score=score,
+            )
 
-        new_storable = storable.model_construct(
-            **storable_json,
-        )
-
-        return new_storable
+        return new_value

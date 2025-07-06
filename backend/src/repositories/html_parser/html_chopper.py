@@ -1,7 +1,7 @@
 from loguru import logger
 
+from src.entities.composable import Composable
 from src.entities.content import Section
-from src.entities.source import SourcedContentBase
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.nlp_processor import Processor
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
@@ -26,7 +26,7 @@ class Html2TextSectionsChopper(IContentAnalyzer):
 
     def process(
         self, content_id: str, html_content: str
-    ) -> tuple[SourcedContentBase, list[Section]] | None:
+    ) -> tuple[Composable, list[Section]] | None:
         """
 
         Args:

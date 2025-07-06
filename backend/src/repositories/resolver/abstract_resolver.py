@@ -4,8 +4,7 @@ from loguru import logger
 
 from src.entities.composable import Composable
 from src.entities.content import Section
-from src.entities.extraction import ExtractionResult
-from src.entities.source import SourcedContentBase
+from src.entities.ml import ExtractionResult
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import IEntityResolver, ResolutionConfiguration
 from src.settings import Settings
@@ -36,18 +35,18 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
     def resolve(
         self,
-        base_info: SourcedContentBase,
+        base_info: Composable,
         sections: list[Section],
     ) -> T:
         """
-        Assembles a `SourcedContentBase` from the provided sections.
+        Assembles a `Composable` from the provided sections.
 
         Args:
-            base_info (SourcedContentBase): Base information including title, permalink, and uid.
+            base_info (Composable): Base information including title, permalink, and uid.
             sections (list[Section]): List of Section objects containing content.
 
         Returns:
-            SourcedContentBase: The assembled entity.
+            Composable: The assembled entity.
         """
         if not sections:
             raise ValueError("No sections provided to resolve the Person.")
@@ -105,7 +104,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         return sections
 
     def extract_entities(
-        self, sections: list[Section], base_info: SourcedContentBase
+        self, sections: list[Section], base_info: Composable
     ) -> list[ExtractionResult]:
         """
         Searches for entities in the provided sections and extracts them,
@@ -132,21 +131,68 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
                 section = self.section_searcher.process(title=title, sections=sections)
 
+                logger.info(
+                    f"Searching for section with title '{title}' in sections, found: {section.title if section else 'null'}"
+                )
+
                 if section is None:
                     continue
 
-                # process children
-                if section.children:
-                    for child in section.children:
+                try:
 
-                        try:
+                    logger.info("-" * 20)
+                    logger.info(
+                        f"Extracting parent entity from section '{section.title}'"
+                    )
+                    logger.info(section.content)
+
+                    # process main section removing children
+                    # because we already processed them
+                    result = config.extractor.extract_entity(
+                        content=section.content,
+                        media=section.media,
+                        entity_type=config.extracted_type,
+                        # base_info=base_info,
+                    )
+
+                    logger.info(
+                        result.model_dump_json(indent=2) if result else "No result"
+                    )
+                    logger.info("-" * 20)
+
+                    if result.entity is None:
+                        continue
+
+                    result.resolve_as = config.resolve_as
+
+                    extracted_parts.append(result)
+
+                    # process children
+                    if section.children:
+                        for child in section.children:
+
+                            # try:
+
+                            logger.info("-" * 20)
+                            logger.info(
+                                f"Extracting entity from child with title '{child.title}'"
+                            )
+                            logger.info(child.content)
 
                             result = config.extractor.extract_entity(
                                 content=child.content,
                                 media=child.media,
                                 entity_type=config.extracted_type,
-                                base_info=base_info,
+                                # base_info=base_info,
+                                parent=base_info,
                             )
+
+                            logger.info(
+                                result.model_dump_json(indent=2)
+                                if result
+                                else "No result"
+                            )
+                            logger.info("-" * 20)
 
                             if result.entity is None:
                                 continue
@@ -155,28 +201,11 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
                             extracted_parts.append(result)
 
-                        except Exception as e:
-                            # log the error and continue
-                            logger.error(f"Error extracting entity from child: {e}")
-                            continue
+                            # except Exception as e:
+                            #     # log the error and continue
+                            #     logger.error(f"Error extracting entity from child: {e}")
+                            #     continue
 
-                try:
-
-                    # process main section removing children
-                    # because we already processed them
-                    result = config.extractor.extract_entity(
-                        content=section.content,
-                        media=section.media,
-                        entity_type=config.extracted_type,
-                        base_info=base_info,
-                    )
-
-                    if result.entity is None:
-                        continue
-
-                    result.resolve_as = config.resolve_as
-
-                    extracted_parts.append(result)
                 except Exception as e:
                     # log the error and continue
                     import traceback
@@ -187,9 +216,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
         return extracted_parts
 
-    def assemble(
-        self, base_info: SourcedContentBase, parts: list[ExtractionResult]
-    ) -> T:
+    def assemble(self, base_info: Composable, parts: list[ExtractionResult]) -> T:
         """Assemble a film object from base info and extracted parts."""
 
         return self.entity_type.from_parts(base_info, parts)

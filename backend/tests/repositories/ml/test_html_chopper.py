@@ -1,5 +1,5 @@
+from src.entities.composable import Composable
 from src.entities.content import Section
-from src.entities.source import SourcedContentBase
 from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 
@@ -58,7 +58,7 @@ def test_analyze_nominal_case():
     base_info, sections = analyzer.process(content_id, html_content)
 
     # then
-    assert isinstance(base_info, SourcedContentBase)
+    assert isinstance(base_info, Composable)
     assert isinstance(sections, list)
     assert len(sections) > 0
     assert all(isinstance(section, Section) for section in sections)

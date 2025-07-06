@@ -1,7 +1,7 @@
 from typing import Protocol, Sequence
 
+from src.entities.composable import Composable
 from src.entities.content import Section
-from src.entities.source import SourcedContentBase
 
 
 class ContentAnalysisError(Exception):
@@ -23,7 +23,7 @@ class IContentAnalyzer(Protocol):
         html_content: str,
         *args,
         **kwargs,
-    ) -> tuple[SourcedContentBase, Sequence[Section]] | None:
+    ) -> tuple[Composable, Sequence[Section]] | None:
         """
         Extracts data from the provided HTML content and returns a structured representation.
 

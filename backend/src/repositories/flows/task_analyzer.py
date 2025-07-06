@@ -32,8 +32,6 @@ from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
 from src.repositories.ml.mistral_data_miner import MistralDataMiner
-from src.repositories.ml.ollama_generic import GenericInfoExtractor
-from src.repositories.ml.ollama_influences import InfluenceExtractor
 from src.repositories.ml.ollama_person_feats import PersonFeaturesExtractor
 from src.repositories.ml.ollama_person_visualizer import PersonVisualAnalysis
 from src.repositories.resolver.film_resolver import BasicFilmResolver
@@ -77,7 +75,7 @@ class AnalysisFlow(ITaskExecutor):
 
         if result is None:
             logger.warning(
-                f"No Sections or SourcedContentBase found for content ID '{content_id}'."
+                f"No Sections or Composable found for content ID '{content_id}'."
             )
             return None
 
@@ -94,12 +92,14 @@ class AnalysisFlow(ITaskExecutor):
                         extracted_type=FilmSpecifications,
                     ),
                     ResolutionConfiguration(
-                        extractor=GenericInfoExtractor(settings=self.settings),
+                        # extractor=GenericInfoExtractor(settings=self.settings),
+                        extractor=MistralDataMiner(settings=self.settings),
                         section_titles=["Distribution"],
                         extracted_type=FilmActor,
                     ),
                     ResolutionConfiguration(
-                        extractor=GenericInfoExtractor(settings=self.settings),
+                        # extractor=GenericInfoExtractor(settings=self.settings),
+                        extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
                             "Synopsis",
                             "Résumé",
@@ -109,7 +109,8 @@ class AnalysisFlow(ITaskExecutor):
                     ),
                     # search for influences
                     ResolutionConfiguration(
-                        extractor=InfluenceExtractor(settings=self.settings),
+                        # extractor=InfluenceExtractor(settings=self.settings),
+                        extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
                             "Contexte",
                             "Analyse",

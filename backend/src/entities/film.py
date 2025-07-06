@@ -3,14 +3,14 @@ from typing import Any, Self
 from numpy import ndarray
 from pydantic import Field, HttpUrl, field_serializer
 
+from src.entities.component import EntityComponent
 from src.entities.composable import Composable
-from src.entities.extraction import ExtractionResult
-from src.entities.source import SourcedContentBase, Storable
+from src.entities.ml import ExtractionResult
 
 from .woa import WOAInfluence, WOASpecifications, WOAType, WorkOfArt
 
 
-class FilmActor(Storable):
+class FilmActor(EntityComponent):
     """
     Représente un acteur et ses rôles dans un film.
     """
@@ -35,7 +35,7 @@ class FilmActor(Storable):
     )
 
 
-class FilmSummary(Storable):
+class FilmSummary(EntityComponent):
     """
     le résumé d'un film.
     """
@@ -58,7 +58,7 @@ class FilmSummary(Storable):
     )
 
 
-class FilmMedia(Storable):
+class FilmMedia(EntityComponent):
     """
     représente les médias associés à un film, tels que l'affiche, les autres médias et la bande-annonce.
     """
@@ -143,7 +143,6 @@ class FilmSpecifications(WOASpecifications):
 
 
 class Film(Composable, WorkOfArt):
-    """ """
 
     summary: FilmSummary | None = Field(
         None,
@@ -186,25 +185,23 @@ class Film(Composable, WorkOfArt):
     @classmethod
     def from_parts(
         cls,
-        base_info: SourcedContentBase,
+        base: Composable,
         parts: list[ExtractionResult],
     ) -> Self:
         """
         Compose this entity with other entities or data.
 
-        Args:
-            base_info (SourcedContentBase): Base information including title, permalink, and uid.
-            parts (list[ExtractionResult]): List of ExtractionResult objects containing parts to compose.
+        TODO:
+        - remove
 
         Returns:
             Film: A new instance of the composed Film entity.
         """
 
         additional_fields = {
-            "uid": base_info.uid,
-            "title": base_info.title,
-            "permalink": base_info.permalink,
             "woa_type": WOAType.FILM,
         }
 
-        return cls.construct(parts, **additional_fields)
+        return cls.compose(
+            base.uid, base.title, base.permalink, parts, **additional_fields
+        )

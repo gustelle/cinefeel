@@ -1,8 +1,8 @@
 from pydantic import HttpUrl
 
-from src.entities.extraction import ExtractionResult
+from src.entities.composable import Composable
+from src.entities.ml import ExtractionResult
 from src.entities.person import Biography
-from src.entities.source import SourcedContentBase
 from src.repositories.ml.ollama_generic import GenericInfoExtractor
 from src.settings import Settings
 
@@ -10,7 +10,7 @@ from src.settings import Settings
 def test_ollama_is_called_correctly(mocker):
 
     # given
-    base_info = SourcedContentBase(
+    base_info = Composable(
         uid="test_uid",
         title="Test Title",
         permalink=HttpUrl("http://example.com/test"),
@@ -35,7 +35,7 @@ def test_ollama_is_called_correctly(mocker):
 
     # suppose Ollama chat responds with a JSON string
     mocker.patch(
-        "src.repositories.ml.ollama_dataminer.ollama.chat",
+        "src.repositories.ml.ollama_messager.ollama.chat",
         return_value=MockResponse(MockMessage(mock_llm_response)),
     )
 

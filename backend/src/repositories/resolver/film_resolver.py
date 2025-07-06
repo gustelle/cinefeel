@@ -67,10 +67,10 @@ class BasicFilmResolver(AbstractResolver[Film]):
         # Patch the media into the Film entity
         if posters or videos or audios:
             entity.media = FilmMedia(
-                uid=f"media_{entity.uid}",
                 posters=posters,
                 trailers=videos,
                 other_medias=audios,
+                parent_uid=entity.uid,
             )
 
         return entity

@@ -63,3 +63,21 @@ def test_create_response_model_for_non_pydantic_entity():
     # when
     with pytest.raises(TypeError):
         create_response_model(ParentTrade)
+
+
+@pytest.mark.skip(reason="This test is not relevant for the current implementation")
+def test_uid_is_excluded_from_response_model():
+
+    # given
+    class MyModel(BaseModel):
+        uid: str = Field(..., description="Unique identifier")
+        name: str = Field(..., description="Name of the person")
+
+    # when
+    model = create_response_model(MyModel)
+    response = model(score=0.9, uid="12345", name="John Doe")
+
+    # then
+    assert "uid" not in response.model_dump()
+    assert response.name == "John Doe"
+    assert response.score == 0.9

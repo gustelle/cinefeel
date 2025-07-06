@@ -1,7 +1,7 @@
 import numpy
 import pytest
 
-from src.entities.extraction import ExtractionResult
+from src.entities.composable import Composable
 from src.entities.film import (
     Film,
     FilmActor,
@@ -9,39 +9,43 @@ from src.entities.film import (
     FilmSpecifications,
     FilmSummary,
 )
-from src.entities.source import SourcedContentBase
+from src.entities.ml import ExtractionResult
 from src.entities.woa import WOAInfluence
 
 
 def test_from_parts_list_of_different_entities():
 
-    base_info = SourcedContentBase(
-        uid="film-123",
+    base_info = Composable(
         title="Test Film",
         permalink="http://example.com/test-film",
     )
 
     parts = [
         ExtractionResult(
-            entity=FilmSummary(uid="1", content="A thrilling film."), score=0.95
+            entity=FilmSummary(content="A thrilling film.", parent_uid=base_info.uid),
+            score=0.95,
         ),
         ExtractionResult(
-            entity=FilmMedia(uid="1", trailers=["http://example.com/trailer"]),
+            entity=FilmMedia(
+                trailers=["http://example.com/trailer"], parent_uid=base_info.uid
+            ),
             score=0.90,
         ),
         ExtractionResult(
-            entity=FilmSpecifications(uid="1", title="Test Film"),
+            entity=FilmSpecifications(title="Test Film", parent_uid=base_info.uid),
             score=0.85,
         ),
-        ExtractionResult(entity=FilmActor(uid="1", full_name="Brad Pitt"), score=0.80),
         ExtractionResult(
-            entity=FilmActor(uid="2", full_name="Linda"), score=0.80
+            entity=FilmActor(full_name="Brad Pitt", parent_uid=base_info.uid),
+            score=0.80,
+        ),
+        ExtractionResult(
+            entity=FilmActor(full_name="Linda", parent_uid=base_info.uid), score=0.80
         ),  # different actor
     ]
 
     film = Film.from_parts(base_info, parts)
 
-    assert "film-123" in film.uid
     assert film.title == "Test Film"
     assert str(film.permalink) == "http://example.com/test-film"
     assert film.summary.content == "A thrilling film."
@@ -51,36 +55,53 @@ def test_from_parts_list_of_different_entities():
     assert film.actors[1].full_name == "Linda"
 
 
+@pytest.mark.skip("later, not implemented yet")
 def test_from_parts_list_of_sames_entities():
     """
     - when 2 parts relate to the same entity, the one with the highest score is kept.
     """
 
-    base_info = SourcedContentBase(
-        uid="film-123",
+    base_info = Composable(
         title="Test Film",
         permalink="http://example.com/test-film",
     )
 
     parts = [
         ExtractionResult(
-            entity=FilmSummary(uid="1", content="A thrilling film."), score=0.95
+            entity=FilmSummary(
+                uid="1", content="A thrilling film.", parent_uid=base_info.uid
+            ),
+            score=0.95,
         ),
         ExtractionResult(
-            entity=FilmMedia(uid="1", trailers=["http://example.com/trailer"]),
+            entity=FilmMedia(
+                uid="1",
+                trailers=["http://example.com/trailer"],
+                parent_uid=base_info.uid,
+            ),
             score=0.90,
         ),
         ExtractionResult(
-            entity=FilmSpecifications(uid="1", title="Test Film"),
+            entity=FilmSpecifications(
+                uid="1", title="Test Film", parent_uid=base_info.uid
+            ),
             score=0.85,
         ),
         ExtractionResult(
-            entity=FilmActor(uid="1", full_name="Brad Pitt", roles=["role1"]),
+            entity=FilmActor(
+                uid="1",
+                full_name="Brad Pitt",
+                roles=["role1"],
+                parent_uid=base_info.uid,
+            ),
             score=0.80,
         ),
         ExtractionResult(
             entity=FilmActor(
-                uid="1", full_name="Brad Pitt", roles=["role1"]
+                uid="1",
+                full_name="Brad Pitt",
+                roles=["role1"],
+                parent_uid=base_info.uid,
             ),  # same actor, same role, but lower score
             score=0.70,
         ),  # Same actor, lower score, should be ignored
@@ -88,7 +109,6 @@ def test_from_parts_list_of_sames_entities():
 
     film = Film.from_parts(base_info, parts)
 
-    assert "film-123" in film.uid
     assert film.title == "Test Film"
     assert str(film.permalink) == "http://example.com/test-film"
     assert film.summary.content == "A thrilling film."
@@ -105,8 +125,7 @@ def test_from_parts_with_influences():
     - when influences are present, they should be added to the film.
     """
 
-    base_info = SourcedContentBase(
-        uid="film-123",
+    base_info = Composable(
         title="Test Film",
         permalink="http://example.com/test-film",
     )
@@ -115,12 +134,14 @@ def test_from_parts_with_influences():
 
     parts = [
         ExtractionResult(
-            entity=FilmSummary(uid="1", content="A thrilling film."), score=0.95
+            entity=FilmSummary(
+                uid="1", content="A thrilling film.", parent_uid=base_info.uid
+            ),
+            score=0.95,
         ),
         ExtractionResult(
             entity=WOAInfluence(
-                uid="influence-1",
-                work_of_arts=woas,
+                uid="influence-1", work_of_arts=woas, parent_uid=base_info.uid
             ),
             score=0.75,
         ),

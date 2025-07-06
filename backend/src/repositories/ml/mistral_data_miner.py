@@ -2,9 +2,10 @@ from loguru import logger
 from mistralai import Mistral
 from pydantic import BaseModel
 
+from src.entities.component import EntityComponent
+from src.entities.composable import Composable
 from src.entities.content import Media
-from src.entities.extraction import ExtractionResult
-from src.entities.source import SourcedContentBase, Storable
+from src.entities.ml import ExtractionResult
 from src.interfaces.extractor import IDataMiner
 from src.settings import Settings
 
@@ -29,19 +30,19 @@ class MistralDataMiner(IDataMiner):
         self,
         content: str,
         media: list[Media],
-        entity_type: Storable,
-        base_info: SourcedContentBase,
+        entity_type: EntityComponent,
+        parent: Composable | None = None,
     ) -> ExtractionResult:
         """
-        Transform the given content into an entity of type T.
+        TODO:
+        - test that parent is correctly attached to the entity
 
         Args:
             content (str): The content to parse, typically a string containing text.
             media (list[Media]): A list of Media objects associated with the content.
             entity_type (Storable): The type of entity to create from the content.
                 This should be a Pydantic model that defines the structure of the entity.
-            base_info (SourcedContentBase): Base information to provide context to the LLM,
-                this avoids hallucinations and helps the model to focus on the right context.
+            parent (Composable | None): An optional parent Composable object to attach to the extracted entity.
 
         Returns:
             ExtractionResult: An instance of ExtractionResult containing:
@@ -60,14 +61,13 @@ class MistralDataMiner(IDataMiner):
         client = Mistral(api_key=self.settings.mistral_api_key.get_secret_value())
 
         messages = [{"role": "user", "content": content}]
+
         chat_response = client.chat.parse(
             model=self.settings.mistral_llm_model,
             messages=messages,
             temperature=0.0,
             response_format=response_model,
         )
-
-        logger.debug(f"Response from Mistral: {chat_response}")
 
         if not chat_response.choices or not chat_response.choices[0].message:
             raise ValueError("No valid response from Mistral API.")
@@ -91,6 +91,10 @@ class MistralDataMiner(IDataMiner):
             # sometimes the model returns a score like 1.0000000000000002
             score = max(0.0, min(score, 1.0))
 
+            # reattach the parent content if provided
+            if parent:
+                dict_resp["parent_uid"] = parent.uid
+
             # the entity is the remaining values
             result = entity_type.model_validate(dict_resp)
 
@@ -100,4 +104,4 @@ class MistralDataMiner(IDataMiner):
             logger.error(traceback.format_exc())
             raise ValueError(f"Error parsing response: {e}") from e
 
-        return ExtractionResult[entity_type](score=score, entity=result)
+        return ExtractionResult(score=score, entity=result)
