@@ -23,8 +23,13 @@ class GenericInfoExtractor(IDataMiner, OllamaMessager):
         parent: Composable | None = None,
     ) -> EntityComponent:
 
+        prompt = f"""
+            Context: {content}
+            Question: Structure les informations fournies en contexte au format JSON selon le modèle fourni.
+            Réponse:"""
+
         return self.request_entity(
-            prompt=content,
+            prompt=prompt,
             entity_type=entity_type,
             parent=parent,
         )

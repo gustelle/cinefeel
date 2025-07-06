@@ -4,13 +4,7 @@ import re
 from typing import Any, Self
 
 from loguru import logger
-from pydantic import (
-    Field,
-    HttpUrl,
-    TypeAdapter,
-    ValidationError,
-    model_validator,
-)
+from pydantic import Field, HttpUrl, TypeAdapter, ValidationError, model_validator
 from unidecode import unidecode
 
 from src.entities.base import Identifiable
@@ -86,6 +80,10 @@ class Composable(Identifiable):
 
         Returns:
             Composable: A new instance of the composed entity.
+
+        TODO:
+        - non regression testing of 'by_name=True'
+        - non regression testing of the part.entity.parent_uid
         """
 
         # NOTE
@@ -105,6 +103,10 @@ class Composable(Identifiable):
             # only parts that are directly related to the entity
             # are considered for composition
             if part.entity is not None and part.entity.parent_uid != uid:
+                logger.warning(
+                    f"Skipping part with UID '{part.entity.uid}' "
+                    f"because it is not related to the entity with UID '{uid}'."
+                )
                 continue
 
             for root_field_name, root_field_definition in cls.model_fields.items():
@@ -143,7 +145,7 @@ class Composable(Identifiable):
         return v
 
     @classmethod
-    def from_parts(cls, base: Composable, parts: list[ExtractionResult]) -> Self:
+    def from_parts(cls, base_info: Composable, parts: list[ExtractionResult]) -> Self:
         """
         Compose this entity with other entities or data.
 
@@ -151,7 +153,7 @@ class Composable(Identifiable):
         - remove
 
         Args:
-            base_info (BaseModel): Base information including title, permalink, and uid.
+            base_info (Composable): Base information including title, permalink, and uid.
             parts (list[ExtractionResult]): List of ExtractionResult objects containing parts to compose.
 
         Returns:

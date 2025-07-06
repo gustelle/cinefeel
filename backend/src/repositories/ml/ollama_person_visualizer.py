@@ -57,6 +57,7 @@ class PersonVisualAnalysis(OllamaVisioner):
                 prompt=prompt,
                 entity_type=entity_type,
                 image_path=temp.name,
+                parent=parent,
             )
 
             logger.debug(f"Visual analysis result: {r.model_dump_json(indent=2)}")

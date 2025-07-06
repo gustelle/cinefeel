@@ -202,7 +202,7 @@ class Person(Composable):
     @classmethod
     def from_parts(
         cls,
-        base: Composable,
+        base_info: Composable,
         parts: list[ExtractionResult],
     ) -> Self:
         """
@@ -218,8 +218,8 @@ class Person(Composable):
         """
 
         return cls.compose(
-            base.uid,
-            base.title,
-            base.permalink,
+            base_info.uid,
+            base_info.title,
+            base_info.permalink,
             parts,
         )

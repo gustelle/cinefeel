@@ -120,6 +120,9 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         Returns:
             list[ExtractionResult]: List of ExtractionResult objects containing extracted entities and their confidence scores.
 
+        TODO:
+        - test that the base_info is correctly attached to the extracted entities
+
         """
 
         extracted_parts: list[ExtractionResult] = []
@@ -142,17 +145,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                         content=section.content,
                         media=section.media,
                         entity_type=config.extracted_type,
-                    )
-
-                    logger.info(
-                        f"""
-                        -------
-                        content: \n
-                        {section.content}\n
-                        -------
-                        result: {result.model_dump_json(indent=2) if result else "No result"}\n
-                        --------
-                        """
+                        parent=base_info,
                     )
 
                     if result.entity is None:
@@ -179,17 +172,6 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                             result.resolve_as = config.resolve_as
 
                             extracted_parts.append(result)
-
-                            logger.info(
-                                f"""
-                                -------
-                                content: \n
-                                {child.content}\n
-                                -------
-                                result: {result.model_dump_json(indent=2) if result else "No result"}\n
-                                --------
-                                """
-                            )
 
                 except Exception as e:
                     # log the error and continue

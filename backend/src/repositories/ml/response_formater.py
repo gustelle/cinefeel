@@ -51,7 +51,9 @@ def _is_expected_in_response(k: str, annotation: AnnotationSource) -> bool:
     return _is_expected
 
 
-def create_response_model(entity_type: EntityComponent) -> type[BaseModel]:
+def create_response_model(
+    entity_type: EntityComponent,
+) -> type[BaseModel]:
     """
     Dynamically create a Pydantic model for the response based on the entity type.
 

@@ -15,8 +15,16 @@ class OllamaVisioner(IDataMiner):
     prompt: str
 
     def analyze_image_using_prompt(
-        self, prompt: str, entity_type: EntityComponent, image_path: str
+        self,
+        prompt: str,
+        entity_type: EntityComponent,
+        image_path: str,
+        parent: EntityComponent | None = None,
     ) -> ExtractionResult:
+        """
+        TODO:
+        - test that parent is correctly attached to the entity
+        """
 
         score = 0.0
         result: BaseModel | None = None
@@ -53,6 +61,12 @@ class OllamaVisioner(IDataMiner):
             # ensure score is between 0.0 and 1.0
             # sometimes the model returns a score like 1.0000000000000002
             score = max(0.0, min(score, 1.0))
+
+            if parent:
+                dict_resp["parent_uid"] = parent.uid
+                logger.debug(
+                    f"Attaching parent UID '{parent.uid}' to the extracted entity of type '{entity_type.__name__}'."
+                )
 
             # the entity is the remaining values
             result = entity_type.model_validate(dict_resp)

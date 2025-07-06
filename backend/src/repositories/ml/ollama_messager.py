@@ -56,6 +56,7 @@ class OllamaMessager(ILLM):
             ).model_dump(
                 mode="json",
                 exclude_none=True,
+                exclude_unset=True,
             )
 
             # pop the score from the values
@@ -70,6 +71,10 @@ class OllamaMessager(ILLM):
 
             # the entity is the remaining values
             result = entity_type.model_validate(dict_resp)
+
+            logger.debug(
+                f"Response from Ollama: {result.model_dump_json(indent=2, exclude_none=True, exclude_unset=True)}"
+            )
 
         except Exception as e:
             import traceback
