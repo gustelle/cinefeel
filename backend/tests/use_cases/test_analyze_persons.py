@@ -10,11 +10,10 @@ from src.use_cases.analyze_persons import WikipediaPersonAnalysisUseCase
 _local_dir = Path(__file__).parent.resolve()
 
 
-@pytest.mark.skip
+@pytest.mark.e2e
 def test_uc_person():
     """
-    End-to-end test for the WikipediaPersonAnalysisUseCase.
-    This test runs the use case and checks if it completes without errors.
+    End-to-end test on Georges Méliès
     """
     # given
     mediawiki_start_pages = [

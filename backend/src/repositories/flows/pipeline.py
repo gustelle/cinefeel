@@ -44,10 +44,6 @@ class PipelineRunner:
         # make them unique by page_id
         entity_pages = {p.page_id: p for p in entity_pages}.values()
 
-        logger.info(
-            f"Found {len(entity_pages)} pages of type {self.entity_type.__name__} in the settings."
-        )
-
         downloader_flow = DownloaderFlow(
             settings=self.settings,
             http_client=http_client,

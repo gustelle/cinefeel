@@ -1,7 +1,6 @@
 from typing import Type
 
 import dask
-import distributed
 from prefect import flow, get_run_logger, task
 from prefect.futures import PrefectFuture
 from prefect_dask import DaskTaskRunner
@@ -48,8 +47,6 @@ class AnalysisFlow(ITaskExecutor):
 
     entity_type: type[Composable]
     settings: Settings
-    dask_client: distributed.Client
-    dask_client_address: str
 
     def __init__(self, settings: Settings, entity_type: Type[Composable]):
         self.settings = settings
@@ -182,19 +179,15 @@ class AnalysisFlow(ITaskExecutor):
             return None
 
     @task(
-        task_run_name="store_entity-{entity}",
+        task_run_name="store_entity-{entity.uid}",
     )
     def store(self, storage: IStorageHandler, entity: Composable) -> None:
         """
         Store the film entity in the storage.
         """
 
-        logger = get_run_logger()
-
         if entity is not None:
             storage.insert(entity.uid, entity)
-        else:
-            logger.warning("skipping storage, entity is None")
 
     @flow(
         name="analyze",
@@ -204,7 +197,7 @@ class AnalysisFlow(ITaskExecutor):
                 "resources": {"GPU": 1, "process": 1},
                 "dashboard_address": ":8787",
                 "memory_limit": "4GB",
-            }
+            },
         ),
     )
     def execute(
@@ -215,7 +208,7 @@ class AnalysisFlow(ITaskExecutor):
 
         logger = get_run_logger()
 
-        person_storage = JSONEntityStorageHandler[self.entity_type](
+        json_p_storage = JSONEntityStorageHandler[self.entity_type](
             settings=self.settings
         )
 
@@ -238,49 +231,54 @@ class AnalysisFlow(ITaskExecutor):
 
         # need to keep track of the futures to wait for them later
         # see: https://github.com/PrefectHQ/prefect/issues/17517
-        analysis_futures = []
+        person_futures = []
 
-        for content_id in content_ids:
+        # analyze the HTML content
+        with (
+            dask.annotate(resources={"GPU": 1}),
+            dask.config.set({"array.chunk-size": "512 MiB"}),
+        ):
 
-            file_content = storage_handler.select(content_id)
+            for content_id in content_ids:
 
-            if file_content is None:
-                logger.warning(f"Content with ID '{content_id}' not found in storage.")
-                continue
+                file_content = storage_handler.select(content_id)
 
-            # analyze the HTML content
-            with (
-                dask.annotate(resources={"GPU": 1}),
-                dask.config.set({"array.chunk-size": "512 MiB"}),
-            ):
-                future = self.do_analysis.submit(
+                if file_content is None:
+                    logger.warning(
+                        f"Content with ID '{content_id}' not found in storage."
+                    )
+                    continue
+
+                future_person = self.do_analysis.submit(
                     analyzer=analyzer,
                     content_id=content_id,
                     html_content=file_content,
                 )
-                analysis_futures.append(future)
+                person_futures.append(future_person)
 
                 storage_futures.append(
                     self.store.submit(
-                        storage=person_storage,
-                        entity=future,
+                        storage=json_p_storage,
+                        entity=future_person,
                     )
                 )
 
-            i += 1
-            if i > 3:
-                break
+                i += 1
+                if i > 1:
+                    break
 
-        # now wait for all tasks to complete
-        future: PrefectFuture
-        for future in storage_futures:
-            try:
-                future.result(raise_on_failure=True, timeout=self.settings.task_timeout)
-            except TimeoutError:
-                logger.warning(
-                    f"Task timed out for {future.task_run_id}, skipping storage."
-                )
-            except Exception as e:
-                logger.error(f"Error in task execution: {e}")
+            # now wait for all tasks to complete
+            future_storage: PrefectFuture
+            for future_storage in storage_futures:
+                try:
+                    future_storage.result(
+                        raise_on_failure=True, timeout=self.settings.task_timeout
+                    )
+                except TimeoutError:
+                    logger.warning(
+                        f"Task timed out for {future_storage.task_run_id}, skipping storage."
+                    )
+                except Exception as e:
+                    logger.error(f"Error in task execution: {e}")
 
         logger.info("'analyze' flow completed successfully.")

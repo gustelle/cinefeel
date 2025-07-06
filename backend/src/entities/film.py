@@ -185,7 +185,7 @@ class Film(Composable, WorkOfArt):
     @classmethod
     def from_parts(
         cls,
-        base: Composable,
+        base_info: Composable,
         parts: list[ExtractionResult],
     ) -> Self:
         """
@@ -203,5 +203,9 @@ class Film(Composable, WorkOfArt):
         }
 
         return cls.compose(
-            base.uid, base.title, base.permalink, parts, **additional_fields
+            base_info.uid,
+            base_info.title,
+            base_info.permalink,
+            parts,
+            **additional_fields
         )

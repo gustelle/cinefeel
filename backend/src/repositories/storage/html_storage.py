@@ -26,10 +26,6 @@ class LocalTextStorage[T: Film | Person](IStorageHandler[T, str]):
         new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
         new_cls.entity_type = generic_type
 
-        logger.debug(
-            f"Created class '{new_cls.__name__}' with entity type '{new_cls.entity_type}'"
-        )
-
         return new_cls
 
     def __init__(self, path: Path):

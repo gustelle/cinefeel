@@ -60,7 +60,12 @@ class MistralDataMiner(IDataMiner):
 
         client = Mistral(api_key=self.settings.mistral_api_key.get_secret_value())
 
-        messages = [{"role": "user", "content": content}]
+        prompt = f"""
+            Context: {content}
+            Question: Structure les informations fournies en contexte au format JSON selon le modèle fourni.
+            Réponse:"""
+
+        messages = [{"role": "user", "content": prompt}]
 
         chat_response = client.chat.parse(
             model=self.settings.mistral_llm_model,
@@ -82,6 +87,7 @@ class MistralDataMiner(IDataMiner):
             ).model_dump(
                 mode="json",
                 exclude_none=True,
+                exclude_unset=True,
             )
 
             # pop the score from the values
@@ -94,6 +100,9 @@ class MistralDataMiner(IDataMiner):
             # reattach the parent content if provided
             if parent:
                 dict_resp["parent_uid"] = parent.uid
+                logger.debug(
+                    f"Attaching parent UID '{parent.uid}' to the extracted entity of type '{entity_type.__name__}'."
+                )
 
             # the entity is the remaining values
             result = entity_type.model_validate(dict_resp)
