@@ -64,6 +64,7 @@ if __name__ == "__main__":
 
     # configure logging
     logger.remove()
+
     # logger.add(
     #     "logs/{time:YYYY-MM-DD}.log",
     #     rotation="1 day",
@@ -71,10 +72,13 @@ if __name__ == "__main__":
     #     level="INFO",
     #     format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
     # )
+
     logger.add(
         sys.stderr,
         level="DEBUG",
         format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
     )
+
+    logger.info("Starting application...")
 
     app()

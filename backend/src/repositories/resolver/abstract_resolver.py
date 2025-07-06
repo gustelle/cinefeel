@@ -131,20 +131,10 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
                 section = self.section_searcher.process(title=title, sections=sections)
 
-                logger.info(
-                    f"Searching for section with title '{title}' in sections, found: {section.title if section else 'null'}"
-                )
-
                 if section is None:
                     continue
 
                 try:
-
-                    logger.info("-" * 20)
-                    logger.info(
-                        f"Extracting parent entity from section '{section.title}'"
-                    )
-                    logger.info(section.content)
 
                     # process main section removing children
                     # because we already processed them
@@ -152,13 +142,18 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                         content=section.content,
                         media=section.media,
                         entity_type=config.extracted_type,
-                        # base_info=base_info,
                     )
 
                     logger.info(
-                        result.model_dump_json(indent=2) if result else "No result"
+                        f"""
+                        -------
+                        content: \n
+                        {section.content}\n
+                        -------
+                        result: {result.model_dump_json(indent=2) if result else "No result"}\n
+                        --------
+                        """
                     )
-                    logger.info("-" * 20)
 
                     if result.entity is None:
                         continue
@@ -171,28 +166,12 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                     if section.children:
                         for child in section.children:
 
-                            # try:
-
-                            logger.info("-" * 20)
-                            logger.info(
-                                f"Extracting entity from child with title '{child.title}'"
-                            )
-                            logger.info(child.content)
-
                             result = config.extractor.extract_entity(
                                 content=child.content,
                                 media=child.media,
                                 entity_type=config.extracted_type,
-                                # base_info=base_info,
                                 parent=base_info,
                             )
-
-                            logger.info(
-                                result.model_dump_json(indent=2)
-                                if result
-                                else "No result"
-                            )
-                            logger.info("-" * 20)
 
                             if result.entity is None:
                                 continue
@@ -201,10 +180,16 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
                             extracted_parts.append(result)
 
-                            # except Exception as e:
-                            #     # log the error and continue
-                            #     logger.error(f"Error extracting entity from child: {e}")
-                            #     continue
+                            logger.info(
+                                f"""
+                                -------
+                                content: \n
+                                {child.content}\n
+                                -------
+                                result: {result.model_dump_json(indent=2) if result else "No result"}\n
+                                --------
+                                """
+                            )
 
                 except Exception as e:
                     # log the error and continue

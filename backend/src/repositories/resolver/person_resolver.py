@@ -130,9 +130,7 @@ class BasicPersonResolver(AbstractResolver[Person]):
                 death_date = chat.format(death_date)
 
         if not entity.biography:
-            logger.warning(
-                f"Person entity '{entity.title}' has no biography, creating an empty one."
-            )
+
             entity.biography = Biography(
                 full_name=entity.title,
                 parent_uid=entity.uid,

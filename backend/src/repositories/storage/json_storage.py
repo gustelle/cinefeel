@@ -56,7 +56,10 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
         content_id: str,
         content: T,
     ) -> None:
-        """Saves the given content to a file."""
+        """Saves the given content to a file.
+
+        Raises StorageError: so that the caller can log and handle it gracefully.
+        """
 
         path = self.persistence_directory / f"{content_id}.json"
 
@@ -74,7 +77,11 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
                 path.unlink()
 
             with open(path, "w") as file:
-                file.write(content.model_dump_json(exclude_none=True))
+                file.write(
+                    content.model_dump_json(
+                        exclude_none=True, exclude_unset=True, indent=2
+                    )
+                )
 
         except Exception as e:
             logger.exception(f"Error saving content {content_id}: {e}")
@@ -112,10 +119,6 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
 
         try:
 
-            logger.debug(
-                f"Querying {self.entity_type.__name__}s with order_by='{order_by}', after='{after}', limit={limit}"
-            )
-
             results = (
                 duckdb.sql(
                     f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
@@ -127,9 +130,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
             )
 
             if results.empty:
-                logger.warning(
-                    f"No {self.entity_type} found matching the criteria: {order_by}, {after}, {limit}"
-                )
+                logger.warning(f"No {self.entity_type} found matching the criteria")
                 return []
 
             return [

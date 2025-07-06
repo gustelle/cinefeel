@@ -1,4 +1,3 @@
-from loguru import logger
 
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
@@ -26,8 +25,6 @@ class ParentsTradesExctractor(IDataMiner, OllamaMessager):
             Context: {content}
             Question: Quel était le métier des parents ? Réponds de façon concise, si tu ne sais pas, n'invente pas de données.
             Réponse:"""
-
-        logger.debug(f"Extracting parents trades from content: {content[:100]}...")
 
         return self.request_entity(
             prompt=prompt,
