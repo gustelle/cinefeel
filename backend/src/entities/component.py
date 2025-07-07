@@ -19,9 +19,12 @@ class EntityComponent(Identifiable):
         ...,
         description="The parent to which this component belongs",
     )
-    score: float = Field(
-        default=0.0,
-        description="The score of the component, used to determine its relevance",
+    score: float | None = Field(
+        None,
+        description="""
+            The score of the component, used to determine its relevance,
+            it is optional initially but should be set during the extraction process.
+        """,
     )
 
     @model_validator(mode="after")

@@ -89,7 +89,10 @@ class MistralDataMiner(IDataMiner):
             )
 
             # pop the score from the values
-            score = dict_resp.pop("score")
+            score = dict_resp.pop("score", 0.0)
+
+            if score == 0.0:
+                logger.warning(f"The score returned by the Mistral API is 0.0 : {msg}")
 
             # ensure score is between 0.0 and 1.0
             # sometimes the model returns a score like 1.0000000000000002
