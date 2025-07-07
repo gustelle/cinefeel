@@ -1,7 +1,6 @@
 from jsonschema import validate
 
-from src.entities.ml import ExtractionResult
-from src.entities.person import Person, PersonCharacteristics, PersonVisibleFeatures
+from src.entities.person import Person, PersonCharacteristics
 
 
 def test_biography_may_be_None():
@@ -38,30 +37,3 @@ def test_model_schema():
     assert (
         result is None
     )  # validate does not return anything, it raises an error if validation fails
-
-
-def test_resolve_as():
-    # given
-    base_info = Person(
-        title="John Doe",
-        permalink="http://example.com/john-doe",
-    )
-    parts = [
-        ExtractionResult(
-            score=0.9,
-            entity=PersonVisibleFeatures(
-                skin_color="claire",
-                parent_uid=base_info.uid,
-            ),
-            resolve_as=PersonCharacteristics,
-        )
-    ]
-
-    # when
-    person = Person.from_parts(base_info, parts)
-
-    # then
-    assert (
-        person.characteristics is not None
-        and person.characteristics.skin_color == "claire"
-    )

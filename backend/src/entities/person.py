@@ -1,12 +1,11 @@
 from enum import StrEnum
-from typing import Annotated, Self
+from typing import Annotated
 
 from pydantic import Field, HttpUrl, StringConstraints
 
 from src.entities.color import SkinColor
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
-from src.entities.ml import ExtractionResult
 from src.entities.religion import Religion
 from src.entities.sexual_orientation import SexualOrientation
 
@@ -198,28 +197,3 @@ class Person(Composable):
         serialization_alias="influences",
         validation_alias="influences",
     )
-
-    @classmethod
-    def from_parts(
-        cls,
-        base_info: Composable,
-        parts: list[ExtractionResult],
-    ) -> Self:
-        """
-        Compose this entity with components extracted from the given parts.
-
-        TODO:
-        - remove
-
-
-
-        Returns:
-            Person: A new instance of the composed Person entity.
-        """
-
-        return cls.compose(
-            base_info.uid,
-            base_info.title,
-            base_info.permalink,
-            parts,
-        )

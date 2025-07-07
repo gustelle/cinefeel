@@ -1,5 +1,8 @@
+
 from src.entities.content import Section
 from src.entities.film import Film, FilmMedia
+from src.entities.ml import ExtractionResult
+from src.entities.person import Person, PersonCharacteristics, PersonVisibleFeatures
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.abstract_resolver import AbstractResolver
 from src.settings import Settings
@@ -213,3 +216,104 @@ def test_sections_max_per_page():
 
     # Then
     assert len(filtered_sections) == 100
+
+
+def test_extract_entities_calls_extractor_with_parent_arg():
+    """
+    Test that the extractor is called with the parent argument.
+    This is important for the resolver to work properly.
+    """
+
+    # given
+    base_info = Film(
+        title="Test Film",
+        permalink="http://example.com/test-film",
+    )
+
+    sections = [
+        Section(title="Section 1", content="Content 1"),
+    ]
+
+    extractor = StubExtractor()
+
+    # Dummy resolver for testing
+    class TestResolver(AbstractResolver[Film]):
+
+        def __init__(self):
+            self.section_searcher = ExactTitleSimilaritySearch()
+            self.configurations = [
+                ResolutionConfiguration(
+                    extractor=extractor,
+                    section_titles=["Section 1"],
+                    extracted_type=FilmMedia,
+                ),
+            ]
+
+        def assemble(self, *args, **kwargs):
+            return None
+
+        def patch_media(self, entity, sections):
+            return entity
+
+        def validate_entity(self, entity):
+            # For testing purposes, we assume the entity is always valid
+            return entity
+
+    resolver = TestResolver()
+
+    # When extracting entities
+    resolver.extract_entities(sections, base_info)
+
+    # Then
+    assert extractor.parent == base_info
+
+
+def test_resolve_as():
+
+    # given
+    base_info = Person(
+        title="John Doe",
+        permalink="http://example.com/john-doe",
+    )
+    parts = [
+        ExtractionResult(
+            entity=PersonVisibleFeatures(
+                skin_color="claire",
+                parent_uid=base_info.uid,
+            ),
+            resolve_as=PersonCharacteristics,
+        )
+    ]
+
+    extractor = StubExtractor()
+
+    # Dummy resolver for testing
+    class TestResolver(AbstractResolver[Person]):
+
+        def __init__(self):
+            self.section_searcher = ExactTitleSimilaritySearch()
+            self.configurations = [
+                ResolutionConfiguration(
+                    extractor=extractor,
+                    section_titles=["Section 1"],
+                    extracted_type=PersonVisibleFeatures,
+                ),
+            ]
+
+        def patch_media(self, entity, sections):
+            return entity
+
+        def validate_entity(self, entity):
+            # For testing purposes, we assume the entity is always valid
+            return entity
+
+    resolver = TestResolver()
+
+    # when
+    person = resolver.assemble(
+        base_info=base_info,
+        parts=parts,
+    )
+
+    # then
+    assert person is not None and person.characteristics.skin_color == "claire"

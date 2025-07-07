@@ -1,5 +1,3 @@
-from pydantic import HttpUrl
-
 from src.entities.composable import Composable
 from src.entities.ml import ExtractionResult
 from src.entities.person import Biography
@@ -7,13 +5,11 @@ from src.repositories.ml.ollama_generic import GenericInfoExtractor
 from src.settings import Settings
 
 
-def test_ollama_is_called_correctly(mocker):
-
+def test_parent_uid_is_attached_to_entity(mocker):
     # given
     base_info = Composable(
-        uid="test_uid",
         title="Test Title",
-        permalink=HttpUrl("http://example.com/test"),
+        permalink="http://example.com/test",
     )
 
     class MockMessage:
@@ -23,13 +19,14 @@ def test_ollama_is_called_correctly(mocker):
             self.content = content
 
     class MockResponse:
-
         message: MockMessage
 
         def __init__(self, message):
             self.message = message
 
-    mock_llm_response = '{"nom_complet": "Quentin Jerome Tarantino", "uid": "123", "score": 0.95, "parent_uid": "test_uid"}'
+    mock_llm_response = (
+        '{"score": 0.95, "parent_uid": "test_uid", "nom_complet": "John Doe"}'
+    )
 
     # suppose Ollama chat responds with a JSON string
     mocker.patch(
@@ -38,13 +35,11 @@ def test_ollama_is_called_correctly(mocker):
     )
 
     parser = GenericInfoExtractor(Settings())
-    content = "This is a test content for Ollama."
     entity_type = Biography
 
     # when
-    result = parser.extract_entity(
-        content,
-        None,  # No media for this test
+    result = parser.request_entity(
+        "",
         entity_type,
         base_info,
     )
@@ -52,5 +47,5 @@ def test_ollama_is_called_correctly(mocker):
     # then
     assert isinstance(result, ExtractionResult)
     assert isinstance(result.entity, Biography)
-    assert result.entity.full_name == "Quentin Jerome Tarantino"
+    assert result.entity.parent_uid == base_info.uid
     assert result.score == 0.95

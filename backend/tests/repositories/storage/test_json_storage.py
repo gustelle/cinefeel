@@ -65,8 +65,6 @@ def test_insert_film():
     test_settings = Settings(persistence_directory=local_path)
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
-    # when
-    content_id = "test_film"
     content = {
         "title": "Test Film",
     }
@@ -74,9 +72,9 @@ def test_insert_film():
     film = Film(
         title=content["title"],
         permalink=HttpUrl("http://example.com/test-film"),
-        uid=content_id,
     )
 
+    # when
     storage_handler.insert(film.uid, film)
 
     # then
@@ -292,21 +290,21 @@ def test_query_person():
     test_settings = Settings(persistence_directory=local_path)
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
-    content_id = "test_person"
     content = {
         "full_name": "Test Person",
     }
 
     person = Person(
-        uid=content_id,
         full_name=content["full_name"],
         title="Test Person Title",
         permalink=HttpUrl("http://example.com/test-person"),
-        biography=Biography(uid="1", nom_complet="Test Person Biography"),
-        media=PersonMedia(
-            uid="1",
-            url_affiche="http://example.com/test-person-poster",
-        ),
+    )
+    person.biography = (
+        Biography(nom_complet="Test Person Biography", parent_uid=person.uid),
+    )
+    person.media = PersonMedia(
+        url_affiche="http://example.com/test-person-poster",
+        parent_uid=person.uid,
     )
 
     storage_handler.insert(person.uid, person)

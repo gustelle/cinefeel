@@ -34,8 +34,6 @@ class MistralDataMiner(IDataMiner):
         parent: Composable | None = None,
     ) -> ExtractionResult:
         """
-        TODO:
-        - test that parent is correctly attached to the entity
 
         Args:
             content (str): The content to parse, typically a string containing text.

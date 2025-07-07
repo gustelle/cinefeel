@@ -96,8 +96,6 @@ class Composable(Identifiable):
 
         populated_entities.update(kwargs)
 
-        _best_score_for_field: dict[str, float] = {}
-
         for part in parts:
 
             # only parts that are directly related to the entity
@@ -121,15 +119,13 @@ class Composable(Identifiable):
                 # save the best score for the field
                 if _valid_value is not None:
 
-                    new_value = cls._update_value(
+                    new_value = cls._get_field_value(
                         initial_value=populated_entities.get(root_field_name, None),
-                        initial_score=_best_score_for_field.get(root_field_name, 0.0),
-                        value=_valid_value,
-                        score=part.score,
+                        candidate_value=_valid_value,
                     )
 
                     populated_entities[root_field_name] = new_value
-                    _best_score_for_field[root_field_name] = part.score
+
                     break
 
         # re-pass through the model validation
@@ -143,25 +139,6 @@ class Composable(Identifiable):
         logger.debug("-" * 80)
 
         return v
-
-    @classmethod
-    def from_parts(cls, base_info: Composable, parts: list[ExtractionResult]) -> Self:
-        """
-        Compose this entity with other entities or data.
-
-        TODO:
-        - remove
-
-        Args:
-            base_info (Composable): Base information including title, permalink, and uid.
-            parts (list[ExtractionResult]): List of ExtractionResult objects containing parts to compose.
-
-        Returns:
-            Composable: A new instance of the composed entity.
-        """
-        raise NotImplementedError(
-            f"{cls.__name__}.from_parts() must be implemented in subclasses."
-        )
 
     @staticmethod
     def _validate_as_type(
@@ -185,64 +162,64 @@ class Composable(Identifiable):
 
             # try to validate the entity as a list
             # if a list is expected for the field
-            return TypeAdapter(field_type).validate_python(
+            e = TypeAdapter(field_type).validate_python(
                 [entity],
             )
+
+            # save score for each item in the list
+            item: EntityComponent
+            for item in e:
+                item.score = extraction_result.score
+            return e
 
         except ValidationError:
 
             # 3. case where the entity is not valid as a list
             # we try to validate it as a single item
             try:
-                return TypeAdapter(field_type).validate_python(
+                e: EntityComponent = TypeAdapter(field_type).validate_python(
                     entity,
                 )
+                # save the score for the single entity
+                e.score = extraction_result.score
+                return e
             except ValidationError:
                 pass
 
             return None
 
     @staticmethod
-    def _update_value(
+    def _get_field_value(
         initial_value: EntityComponent | list[EntityComponent] | None,
-        initial_score: float,
-        value: EntityComponent | list[EntityComponent],
-        score: float,
+        candidate_value: EntityComponent | list[EntityComponent],
     ) -> EntityComponent | list[EntityComponent]:
         """
         Populate the value of the field with the extraction result.
 
         Args:
             initial_value (EntityComponent | list[EntityComponent]): The initial value of the field.
-            initial_score (float): The score of the initial value.
-            value (EntityComponent | list[EntityComponent]): The new value to be assigned to the field.
-            score (float): The score of the new value.
+            candidate_value (EntityComponent | list[EntityComponent]): The new value to be assigned to the field.
 
         Returns:
-            dict[str, Any]: The updated dictionary with the field populated with the component.
+            EntityComponent | list[EntityComponent]: The updated value of the field.
         """
-        new_value = None
+        new_value = initial_value
 
-        if isinstance(value, list):
+        if isinstance(candidate_value, list):
 
-            new_value = initial_value
-
-            # 1. case where a value is already set for the field
-            # we must check if the entity is already in the list
-            # and eventually complete the list with the new entity
+            # 1. case where the field is a list
             if new_value is not None and isinstance(new_value, list):
-
-                new_value.extend(value)
+                new_value.extend(candidate_value)
 
             else:
                 # 2. case where the field is not set
-                new_value = value
+                new_value = candidate_value
+
+        elif new_value is not None and isinstance(new_value, EntityComponent):
+            new_value = new_value.update(candidate_value)
+
         else:
-            new_value = EntityComponent.override_or_complete(
-                current_component=initial_value,
-                current_score=initial_score,
-                component=value,
-                component_score=score,
-            )
+            # 3. case where the field is not set
+            new_value = candidate_value
 
         return new_value

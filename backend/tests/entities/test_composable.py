@@ -240,21 +240,15 @@ def test_construct_fine_grained_assembly_in_case_of_list():
         permalink="http://example.com/mystorable_1",
     )
 
-    # all parts relate to the same entity, so we use the same uid
-    uid = "1"
-
     parts = [
         ExtractionResult(
-            entity=MyStorable(
-                some_field="some_field_value", uid=uid, parent_uid=base_info.uid
-            ),
+            entity=MyStorable(some_field="some_field_value", parent_uid=base_info.uid),
             score=0.9,
         ),
         # this time, some_field is not provided, but some_other_field is
         ExtractionResult(
             entity=MyStorable(
                 some_other_field=["some_other_value_1"],
-                uid=uid,
                 parent_uid=base_info.uid,
             ),
             score=0.10,
@@ -262,7 +256,6 @@ def test_construct_fine_grained_assembly_in_case_of_list():
         ExtractionResult(
             entity=MyStorable(
                 some_other_field=["some_other_value_2"],
-                uid=uid,
                 parent_uid=base_info.uid,
             ),
             score=0.10,
