@@ -22,8 +22,7 @@ class OllamaMessager(ILLM):
         parent: Composable | None = None,
     ) -> ExtractionResult:
         """
-        TODO:
-        - test that parent is correctly attached to the entity
+        sends a request to the Ollama model to extract an entity from the provided prompt.
         """
 
         try:

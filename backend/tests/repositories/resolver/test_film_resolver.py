@@ -45,7 +45,6 @@ def test_BasicFilmResolver_nominal_case():
 
     # Then the film should be correctly resolved
     assert film is not None
-    assert uid in film.uid
     assert film.title == title
     assert str(film.permalink) == permalink
 
@@ -144,14 +143,13 @@ def test_resolve_film_patch_media():
 def test_validate_iso_duration():
     # Given a film with a valid duration
     film = Film(
-        uid="12345",
         title="The Great Film",
         permalink="https://example.com/the-great-film",
-        specifications=FilmSpecifications(
-            uid="spec_12345",
-            title="Specifications for The Great Film",
-            duration="01:30:02",  # ISO 8601 duration format
-        ),
+    )
+    film.specifications = FilmSpecifications(
+        parent_uid=film.uid,
+        title="Specifications for The Great Film",
+        duration="01:30:02",  # ISO 8601 duration format
     )
 
     resolver = BasicFilmResolver(
@@ -171,21 +169,19 @@ def test_validate_iso_duration():
     film = resolver.validate_entity(film)
 
     # Then the duration should be valid
-
     assert film.specifications.duration == "01:30:02"
 
 
 def test_validate_duration_by_regex_no_hour():
     # Given a film with an invalid duration
     film = Film(
-        uid="12345",
         title="The Great Film",
         permalink="https://example.com/the-great-film",
-        specifications=FilmSpecifications(
-            uid="spec_12345",
-            title="Specifications for The Great Film",
-            duration="1 minute 20 secondes",  # Non-ISO duration format
-        ),
+    )
+    film.specifications = FilmSpecifications(
+        title="Specifications for The Great Film",
+        duration="1 minute 20 secondes",  # Non-ISO duration format
+        parent_uid=film.uid,
     )
 
     resolver = BasicFilmResolver(
@@ -213,14 +209,13 @@ def test_validate_duration_by_regex_no_hour():
 def test_validate_duration_by_regex_with_hour():
     # Given a film with an invalid duration
     film = Film(
-        uid="12345",
         title="The Great Film",
         permalink="https://example.com/the-great-film",
-        specifications=FilmSpecifications(
-            uid="spec_12345",
-            title="Specifications for The Great Film",
-            duration="1 heure 20 minutes 30 secondes",  # Non-ISO duration format
-        ),
+    )
+    film.specifications = FilmSpecifications(
+        title="Specifications for The Great Film",
+        duration="1 heure 20 minutes 30 secondes",  # Non-ISO duration format
+        parent_uid=film.uid,
     )
 
     resolver = BasicFilmResolver(

@@ -1,3 +1,4 @@
+from src.entities.composable import Composable
 from src.entities.content import Media
 from src.entities.film import FilmActor, FilmMedia, FilmSpecifications, FilmSummary
 from src.entities.ml import ExtractionResult
@@ -10,9 +11,16 @@ class StubExtractor(IDataMiner):
     """
 
     is_parsed: bool = False
+    parent: Composable | None = None
 
     def extract_entity(
-        self, content: str, media: list[Media], entity_type, *args, **kwargs
+        self,
+        content: str,
+        media: list[Media],
+        entity_type,
+        *args,
+        parent: Composable | None = None,
+        **kwargs
     ) -> ExtractionResult:
         """
         Parse the given content and return a dictionary representation.
@@ -24,17 +32,23 @@ class StubExtractor(IDataMiner):
             dict: A dictionary representation of the parsed content.
         """
         self.is_parsed = True
+        self.parent = parent
 
         if entity_type == FilmActor:
             # Simulate returning a FilmActor with dummy data
             return ExtractionResult(
-                score=1.0, entity=FilmActor(uid="1", full_name=content)
+                score=1.0,
+                entity=FilmActor(uid="1", full_name=content, parent_uid="test_uid"),
             )
         elif entity_type == FilmMedia:
             # Simulate returning a FilmMedia with dummy data
             return ExtractionResult(
                 score=1.0,
-                entity=FilmMedia(uid="1", posters=["https://example.com/trailer.mp4"]),
+                entity=FilmMedia(
+                    uid="1",
+                    posters=["https://example.com/trailer.mp4"],
+                    parent_uid="test_uid",
+                ),
             )
         elif entity_type == FilmSpecifications:
             # Simulate returning FilmSpecifications with dummy data
@@ -43,6 +57,7 @@ class StubExtractor(IDataMiner):
                 entity=FilmSpecifications(
                     uid="1",
                     title=content,
+                    parent_uid="test_uid",
                 ),
             )
         elif entity_type == FilmSummary:
@@ -52,6 +67,7 @@ class StubExtractor(IDataMiner):
                 entity=FilmSummary(
                     uid="1",
                     content=content,
+                    parent_uid="test_uid",
                 ),
             )
 

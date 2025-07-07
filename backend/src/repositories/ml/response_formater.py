@@ -78,16 +78,6 @@ def create_response_model(
 
     return create_model(
         "LLMResponse",
-        score=(
-            float,
-            Field(
-                # default=0.0,
-                # ge=0.0,
-                # le=1.0,  # it can happen that the model return a score like 1.0000000000000002
-                description="Confidence score of the extracted data, between 0.0 and 1.0.",
-                # examples=[0.95, 0.85, 0.75],
-            ),
-        ),
         **{
             k: (
                 v.annotation,

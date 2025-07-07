@@ -205,14 +205,9 @@ class WikipediaParser(IParser):
             case "a":
 
                 if not tag.get("href", "").startswith(self._inner_page_id_prefix):
-                    logger.debug(f"Skipping external link: {tag.get('href')}")
                     return
 
                 if "action=edit" in tag.get("href", ""):
-                    # the page does not exist
-                    logger.debug(
-                        f"Skipping link to non existing page: {tag.get('href')}"
-                    )
                     return
 
                 linked_page_id = tag.get("href").split("/")[-1]

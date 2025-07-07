@@ -77,11 +77,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
                 path.unlink()
 
             with open(path, "w") as file:
-                file.write(
-                    content.model_dump_json(
-                        exclude_none=True, exclude_unset=True, indent=2
-                    )
-                )
+                file.write(content.model_dump_json(exclude_none=True, indent=2))
 
         except Exception as e:
             logger.exception(f"Error saving content {content_id}: {e}")

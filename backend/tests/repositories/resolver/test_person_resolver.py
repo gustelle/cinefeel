@@ -106,15 +106,15 @@ def test_resolve_person_patch_media():
 def test_resolve_person_validate_nationalities():
     # Given a person with valid nationalities
     p = Person(
-        uid="12345",
         title="The Great Person",
         permalink="https://example.com/the-great-person",
-        biography=Biography(
-            uid="bio_12345",
-            full_name="John Doe",
-            nationalities=["Française", "Francais"],  # Valid nationalities
-        ),
     )
+    p.biography = Biography(
+        full_name="John Doe",
+        nationalities=["Française", "Francais"],  # Valid nationalities
+        parent_uid=p.uid,
+    )
+
     resolver = BasicPersonResolver(
         section_searcher=StubSimilaritySearch(
             return_value=Section(title="Biography", content="")
@@ -140,14 +140,13 @@ def test_resolve_person_validate_nationalities():
 def test_resolve_person_validate_birth_date():
     # Given a person with a valid birth date
     p = Person(
-        uid="12345",
         title="The Great Person",
         permalink="https://example.com/the-great-person",
-        biography=Biography(
-            uid="bio_12345",
-            full_name="John Doe",
-            birth_date="28 décembre 1861 à Paris",  # Valid date
-        ),
+    )
+    p.uid = Biography(
+        uid="bio_12345",
+        full_name="John Doe",
+        birth_date="28 décembre 1861 à Paris",  # Valid date
     )
     resolver = BasicPersonResolver(
         section_searcher=StubSimilaritySearch(

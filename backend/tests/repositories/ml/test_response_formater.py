@@ -3,27 +3,29 @@ from typing import Annotated
 import pytest
 from pydantic import BaseModel, Field, HttpUrl, StringConstraints
 
+from src.entities.component import EntityComponent
 from src.repositories.ml.response_formater import create_response_model
 
 
 def test_create_response_model():
 
     # given
-    class MyModel(BaseModel):
+    class MyModel(EntityComponent):
         height: int = Field(..., description="Height in centimeters")
 
     # when
-    response = create_response_model(MyModel)(score=0.9, height=180)
+    response = create_response_model(MyModel)(height=180, parent_uid="12345", score=0.8)
 
     # then
-    assert response.score == 0.9
+    assert response.score == 0.8
+    assert response.parent_uid == "12345"
     assert response.height == 180
 
 
 def test_create_response_model_excludes_http_fields():
 
     # given
-    class MyModel(BaseModel):
+    class MyModel(EntityComponent):
         name: str = Field(..., description="Name of the person")
         profile_url: HttpUrl = Field(..., description="Profile URL")
         list_of_urls: list[HttpUrl] = Field(
@@ -38,6 +40,7 @@ def test_create_response_model_excludes_http_fields():
     response = model(
         score=0.9,
         name="John Doe",
+        parent_uid="12345",
         profile_url="http://example.com/johndoe",
         list_of_urls=["http://example.com/url1", "http://example.com/url2"],
     )

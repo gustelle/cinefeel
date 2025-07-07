@@ -1,11 +1,10 @@
-from typing import Any, Self
+from typing import Any
 
 from numpy import ndarray
 from pydantic import Field, HttpUrl, field_serializer
 
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
-from src.entities.ml import ExtractionResult
 
 from .woa import WOAInfluence, WOASpecifications, WOAType, WorkOfArt
 
@@ -175,37 +174,11 @@ class Film(Composable, WorkOfArt):
         validation_alias="acteurs",
     )
 
+    woa_type: WOAType = WOAType.FILM
+
     @field_serializer("actors")
     def serialize_dt(self, value: Any):
         if isinstance(value, ndarray):
             value = value.tolist()
 
         return value
-
-    @classmethod
-    def from_parts(
-        cls,
-        base_info: Composable,
-        parts: list[ExtractionResult],
-    ) -> Self:
-        """
-        Compose this entity with other entities or data.
-
-        TODO:
-        - remove
-
-        Returns:
-            Film: A new instance of the composed Film entity.
-        """
-
-        additional_fields = {
-            "woa_type": WOAType.FILM,
-        }
-
-        return cls.compose(
-            base_info.uid,
-            base_info.title,
-            base_info.permalink,
-            parts,
-            **additional_fields
-        )

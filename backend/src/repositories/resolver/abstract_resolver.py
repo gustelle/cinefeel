@@ -120,9 +120,6 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         Returns:
             list[ExtractionResult]: List of ExtractionResult objects containing extracted entities and their confidence scores.
 
-        TODO:
-        - test that the base_info is correctly attached to the extracted entities
-
         """
 
         extracted_parts: list[ExtractionResult] = []
@@ -186,7 +183,12 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     def assemble(self, base_info: Composable, parts: list[ExtractionResult]) -> T:
         """Assemble a film object from base info and extracted parts."""
 
-        return self.entity_type.from_parts(base_info, parts)
+        return self.entity_type.compose(
+            title=base_info.title,
+            permalink=base_info.permalink,
+            uid=base_info.uid,
+            parts=parts,
+        )
 
     @abc.abstractmethod
     def patch_media(self, entity: T, sections: list[Section]) -> T:
