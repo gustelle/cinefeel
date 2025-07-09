@@ -6,7 +6,7 @@ from src.repositories.flows.task_analyzer import AnalysisFlow
 from src.repositories.flows.task_downloader import DownloaderFlow
 from src.repositories.flows.task_indexer import IndexerFlow
 from src.repositories.http.async_http import AsyncHttpClient
-from src.repositories.storage.html_storage import LocalTextStorage
+from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.settings import Settings
 
 
@@ -68,12 +68,19 @@ class PipelineRunner:
                 storage_handler=html_storage,
             )
 
-        # finally, index the films
+        # index the films into a search engine
         # here we can iterate over all the films in the storage
         # indexing is not a blocking operation
         IndexerFlow(
             settings=self.settings,
             entity_type=self.entity_type,
         ).execute()
+
+        # store the results into a graph database
+        # TODO: implement this
+        # GraphDatabaseFlow(
+        #     settings=self.settings,
+        #     entity_type=self.entity_type,
+        # ).execute()
 
         logger.info("Flow completed successfully.")
