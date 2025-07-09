@@ -5,11 +5,11 @@ from loguru import logger
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.interfaces.indexer import IDocumentIndexer
+from src.interfaces.document_repo import IDocumentRepository
 from src.settings import Settings
 
 
-class MeiliIndexer[T: Film | Person](IDocumentIndexer[T]):
+class MeiliIndexer[T: Film | Person](IDocumentRepository[T]):
 
     client: meilisearch.Client
     index: meilisearch.index.Index

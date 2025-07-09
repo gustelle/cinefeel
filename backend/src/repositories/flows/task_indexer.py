@@ -3,10 +3,10 @@ from prefect.cache_policies import NO_CACHE
 from prefect.futures import PrefectFuture
 
 from src.entities.component import EntityComponent
-from src.interfaces.indexer import IDocumentIndexer
+from src.interfaces.document_repo import IDocumentRepository
 from src.interfaces.task import ITaskExecutor
+from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
 from src.repositories.search.meili_indexer import MeiliIndexer
-from src.repositories.storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
 
@@ -23,7 +23,7 @@ class IndexerFlow(ITaskExecutor):
     def index_batch(
         self,
         films: list[EntityComponent],
-        indexer: IDocumentIndexer,
+        indexer: IDocumentRepository,
     ) -> None:
         """
         Index a batch of `Storable` using the provided indexer.

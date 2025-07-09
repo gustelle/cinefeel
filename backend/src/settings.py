@@ -214,3 +214,11 @@ class Settings(BaseSettings):
             If a section is shorter than this value, it will be ignored.
         """,
     )
+
+    db_persistence_directory: Path | None = Field(
+        None,
+        description="""
+            The path (relative or absolute) to the dir where the database will be saved.
+            None means the database will be in memory.
+        """,
+    )

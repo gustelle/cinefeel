@@ -12,7 +12,7 @@ from src.interfaces.info_retriever import IParser
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
-from src.repositories.storage.html_storage import LocalTextStorage
+from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.settings import Settings, WikiTOCPageConfig
 
 

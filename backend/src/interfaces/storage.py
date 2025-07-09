@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Generator, Protocol, runtime_checkable
+from typing import Generator, Protocol, Sequence, runtime_checkable
 
 from src.entities.film import Film
 from src.entities.person import Person
@@ -30,7 +30,7 @@ class IStorageHandler[U: Film | Person, V: bytes | str | dict](Protocol):
         """Loads a content from persistent storage."""
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def query(self, *args, **kwargs) -> list[V]:
+    def query(self, *args, **kwargs) -> Sequence[V]:
         """query contents corresponding to the given criteria."""
         raise NotImplementedError("This method should be overridden by subclasses.")
 

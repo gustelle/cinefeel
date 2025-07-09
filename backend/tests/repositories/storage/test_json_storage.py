@@ -7,7 +7,7 @@ from pydantic import HttpUrl
 from src.entities.film import Film
 from src.entities.person import Biography, Person, PersonMedia
 from src.interfaces.storage import StorageError
-from src.repositories.storage.json_storage import JSONEntityStorageHandler
+from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
 current_dir = Path(__file__).parent

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from src.entities.film import Film
-from src.repositories.storage.html_storage import LocalTextStorage
+from src.repositories.local_storage.html_storage import LocalTextStorage
 
 current_dir = Path(__file__).parent
 
