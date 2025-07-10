@@ -39,10 +39,10 @@ from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.settings import Settings
 
 
-class AnalysisFlow(ITaskExecutor):
+class HtmlParsingFlow(ITaskExecutor):
     """
-    handles persistence of `Film` or `Person` objects into JSON files.
-
+    Analyses the HTML content of a film or person page
+    and returns storable entities (i.e., Film or Person).
     """
 
     entity_type: type[Composable]

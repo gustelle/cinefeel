@@ -3,7 +3,7 @@ import time
 from loguru import logger
 
 from src.entities.film import Film
-from src.repositories.flows.pipeline import PipelineRunner
+from src.repositories.flows.html_pipeline import Html2EntitiesPipeline
 from src.settings import Settings
 
 
@@ -18,10 +18,10 @@ class WikipediaFilmAnalysisUseCase:
 
         start_time = time.time()
 
-        await PipelineRunner(
+        await Html2EntitiesPipeline(
             settings=self.settings,
             entity_type=Film,
-        ).run_chain()
+        ).execute_pipeline()
 
         end_time = time.time()
         logger.info(f"Execution time: {end_time - start_time:.2f} seconds")

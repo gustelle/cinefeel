@@ -1,7 +1,7 @@
 from pydantic import HttpUrl
 
 from src.entities.film import Film
-from src.repositories.flows.task_analyzer import AnalysisFlow
+from src.repositories.flows.tasks.task_html_parsing import HtmlParsingFlow
 from src.settings import Settings
 
 from .stubs.stub_analyzer import StubAnalyzer
@@ -12,7 +12,7 @@ def test_task_store():
 
     # given
     stub_storage = StubStorage()
-    flow_runner = AnalysisFlow(
+    flow_runner = HtmlParsingFlow(
         settings=None,  # Assuming settings are not needed for this test
         entity_type=Film,
     )
@@ -31,7 +31,7 @@ def test_task_store():
 
 def test_task_analyze():
     # given
-    flow_runner = AnalysisFlow(
+    flow_runner = HtmlParsingFlow(
         settings=Settings(),  # settings are not really needed for this test
         entity_type=Film,
     )

@@ -52,11 +52,11 @@ class IDocumentRepository[T: (Film, Person)](Protocol):
         raise NotImplementedError("Subclasses should implement this method.")
 
 
-class IDocumentQuery(Protocol):
+class IDocumentQuery[T: (Film, Person)](Protocol):
     """
     Interface for querying documents and their related entities.
     """
 
-    def query(self, *args, **kwargs) -> Sequence:
+    def query(self, *args, **kwargs) -> Sequence[T]:
         """query contents corresponding to the given criteria."""
         raise NotImplementedError("This method should be overridden by subclasses.")

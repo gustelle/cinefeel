@@ -1,19 +1,15 @@
-
 import kuzu
 from loguru import logger
 
 from src.entities.film import Film
-from src.entities.person import Person
 from src.interfaces.document_repo import IDocumentQuery
 from src.settings import Settings
 
 
-class GraphDBQuery(IDocumentQuery):
+class FilmQuery(IDocumentQuery[Film]):
 
     client: kuzu.Database
     settings: Settings
-    entity_type: type[Film | Person]
-    _is_initialized: bool = False
 
     def __init__(
         self,
@@ -29,7 +25,7 @@ class GraphDBQuery(IDocumentQuery):
         params: dict = None,
         *args,
         **kwargs,
-    ) -> list[dict]:
+    ) -> list[Film]:
         """
         Execute a query against the graph database and return the results.
 
