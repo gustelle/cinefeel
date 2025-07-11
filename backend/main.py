@@ -6,12 +6,13 @@ import uvloop
 from loguru import logger
 
 from src.settings import Settings
+from src.use_cases.find_relationships import RelationshipsUseCase
 
 app = typer.Typer()
 
 
 @app.command()
-def films():
+def extract_films():
     uvloop.run(async_run_films())
 
 
@@ -36,7 +37,7 @@ async def async_run_films():
 
 
 @app.command()
-def persons():
+def extract_persons():
     uvloop.run(async_run_persons())
 
 
@@ -58,6 +59,22 @@ async def async_run_persons():
     logger.info(
         "WikipediaPersonAnalysisUseCase completed in %.2f seconds." % elapsed_time
     )
+
+
+@app.command()
+def films_relationships():
+
+    start_time = time.time()
+    logger.info("Starting relationship processing...")
+    uc = RelationshipsUseCase(
+        settings=Settings(),
+    )
+    uc.execute()
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+
+    logger.info("RelationshipsUseCase completed in %.2f seconds." % elapsed_time)
 
 
 if __name__ == "__main__":

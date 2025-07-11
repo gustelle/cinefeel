@@ -1,10 +1,10 @@
-from prefect import flow, get_run_logger
+from prefect import flow
 from prefect_dask import DaskTaskRunner
 
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.pipeline import IPipelineRunner
-from src.repositories.db.graph_storage import GraphDBStorage
+from src.repositories.flows.tasks.task_relationship import RelationshipFlow
 from src.settings import Settings
 
 
@@ -31,21 +31,7 @@ class EntityRelationshipProcessor(IPipelineRunner):
         """
         Run the pipeline to analyze relationships between entities.
         """
-        logger = get_run_logger()
-
-        # Load entities from graph database
-        entity_storage = GraphDBStorage[self.entity_type](self.settings)
-        for entity in entity_storage.scan():
-            logger.info(f"Loaded entity: {entity.uid}")
-
-        # if not entities:
-        #     logger.warning(f"No entities found for {self.entity_type.__name__}.")
-        #     return None
-
-        # # Analyze relationships using Dask
-        # futures = [
-        #     dask.delayed(self.analyze_relationships)(entity) for entity in entities
-        # ]
-        # results = dask.compute(*futures)
-
-        # return results
+        RelationshipFlow(
+            settings=self.settings,
+            entity_type=self.entity_type,
+        ).execute()
