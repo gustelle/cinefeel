@@ -5,11 +5,11 @@ from loguru import logger
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.interfaces.document_repo import IDocumentRepository
+from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
 
 
-class MeiliIndexer[T: Film | Person](IDocumentRepository[T]):
+class MeiliIndexer[T: Film | Person](IStorageHandler[T]):
 
     client: meilisearch.Client
     index: meilisearch.index.Index
@@ -75,16 +75,16 @@ class MeiliIndexer[T: Film | Person](IDocumentRepository[T]):
 
         return self.index
 
-    def insert_or_update(
+    def insert_many(
         self,
-        docs: list[T],
+        contents: list[T],
         wait_for_completion: bool = True,
     ):
 
         try:
 
             json_docs = []
-            for doc in docs:
+            for doc in contents:
                 try:
                     # logger.debug(f"Processing {type(doc).__name__}: '{doc.uid}'")
                     json_docs.append(doc.model_dump(mode="json"))

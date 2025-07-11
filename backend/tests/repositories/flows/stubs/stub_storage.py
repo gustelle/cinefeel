@@ -3,7 +3,7 @@ from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler
 
 
-class StubStorage[T: Film | Person](IStorageHandler[T, str]):
+class StubStorage[T: Film | Person](IStorageHandler[T]):
     """
     handles storage and retrieval of HTML files on disk.
     """
@@ -13,7 +13,8 @@ class StubStorage[T: Film | Person](IStorageHandler[T, str]):
     def insert(
         self,
         content_id: str,
-        content: str,
+        content: T,
+        *args,
     ) -> None:
         """Saves the given data to a file."""
 

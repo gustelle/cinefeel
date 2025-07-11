@@ -37,10 +37,10 @@ def test_insert_or_update():
     )
 
     # when
-    graph_db.insert_or_update([film])
+    graph_db.insert_many([film])
 
     # then
-    retrieved_film = graph_db.get(film.uid)
+    retrieved_film = graph_db.select(film.uid)
 
     assert retrieved_film is not None
     assert retrieved_film.uid == film.uid
@@ -60,11 +60,11 @@ def test_insert_or_update_deduplication():
     )
 
     # when
-    count = graph_db.insert_or_update([film, film])
+    count = graph_db.insert_many([film, film])
 
     # This should not create a duplicate entry
     # then
-    retrieved_film = graph_db.get(film.uid)
+    retrieved_film = graph_db.select(film.uid)
 
     assert retrieved_film is not None
     assert retrieved_film.uid == film.uid
@@ -84,10 +84,10 @@ def test_get_nominal():
         permalink="https://example.com/inception",
     )
 
-    graph_db.insert_or_update([film])
+    graph_db.insert_many([film])
 
     # when
-    retrieved_film = graph_db.get(film.uid)
+    retrieved_film = graph_db.select(film.uid)
 
     # then
     assert retrieved_film is not None
@@ -105,7 +105,7 @@ def test_get_non_existent():
     non_existent_uid = uuid.uuid4().hex
 
     # when
-    retrieved_film = graph_db.get(non_existent_uid)
+    retrieved_film = graph_db.select(non_existent_uid)
 
     # then
     assert retrieved_film is None
@@ -154,6 +154,6 @@ def test_get_bad_data():
         graph_db = GraphDBStorage[Film](settings)
 
         # when
-        result = graph_db.get("bad-uid")
+        result = graph_db.select("bad-uid")
         # then
         assert result is None

@@ -8,7 +8,7 @@ from prefect.states import State
 
 from src.entities.content import PageLink
 from src.interfaces.http_client import HttpError, IHttpClient
-from src.interfaces.info_retriever import IParser
+from src.interfaces.info_retriever import IContentParser
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
@@ -92,7 +92,7 @@ class DownloaderFlow(ITaskExecutor):
     async def fetch_page_links(
         self,
         config: WikiTOCPageConfig,
-        link_extractor: IParser,
+        link_extractor: IContentParser,
     ) -> list[PageLink]:
         """
         downloads the HTML pages and returns the list of page IDs.
@@ -116,11 +116,13 @@ class DownloaderFlow(ITaskExecutor):
 
         # avoid blocking the event loop by using asyncio.to_thread
         try:
-            return await asyncio.to_thread(
+            _links = await asyncio.to_thread(
                 link_extractor.retrieve_inner_links,
                 html_content=html,
                 config=config,
             )
+
+            return _links
 
         except Exception as e:
             logger.error(f"Error extracting list of films: {e}")
@@ -153,10 +155,6 @@ class DownloaderFlow(ITaskExecutor):
         page_links = await self.fetch_page_links(
             config=start_page,
             link_extractor=link_extractor,
-        )
-
-        logger.info(
-            f"Found {len(page_links)} page links to download for '{start_page.page_id}'"
         )
 
         content_ids = await asyncio.gather(

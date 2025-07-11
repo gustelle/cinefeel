@@ -33,8 +33,9 @@ class Html2EntitiesPipeline(IPipelineRunner):
 
         logger = get_run_logger()
 
-        html_storage = LocalTextStorage[self.entity_type](
+        html_storage = LocalTextStorage(
             path=self.settings.persistence_directory,
+            entity_type=self.entity_type,
         )
 
         http_client = AsyncHttpClient(settings=self.settings)

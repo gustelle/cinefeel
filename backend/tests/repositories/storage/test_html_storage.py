@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 
 from src.entities.film import Film
 from src.repositories.local_storage.html_storage import LocalTextStorage
@@ -11,7 +10,7 @@ current_dir = Path(__file__).parent
 def test_local_text_storage_init():
     # Given
 
-    storage = LocalTextStorage[Film](path=current_dir)
+    storage = LocalTextStorage(path=current_dir, entity_type=Film)
 
     # When
     storage_path = storage.path
@@ -25,20 +24,9 @@ def test_local_text_storage_init():
     Path(current_dir / "html").rmdir()
 
 
-def test_local_text_storage_bad_init():
-    # Given
-
-    current_dir
-
-    # When
-    # Then
-    with pytest.raises(ValueError):
-        LocalTextStorage(path=current_dir)
-
-
 def test_local_text_storage_insert():
     # Given
-    storage = LocalTextStorage[Film](path=current_dir)
+    storage = LocalTextStorage(path=current_dir, entity_type=Film)
     content_id = "test"
     content = "<html><body><h1>Test</h1></body></html>"
 
@@ -59,7 +47,7 @@ def test_local_text_storage_insert():
 
 def test_local_text_storage_insert_existing_path():
     # Given
-    storage = LocalTextStorage[Film](path=current_dir)
+    storage = LocalTextStorage(path=current_dir, entity_type=Film)
     content_id = "test"
     content = "<html><body><h1>Test</h1></body></html>"
     path = storage.path / f"{content_id}.html"
@@ -84,7 +72,7 @@ def test_local_text_storage_insert_existing_path():
 
 def test_local_text_storage_select():
     # Given
-    storage = LocalTextStorage[Film](path=current_dir)
+    storage = LocalTextStorage(path=current_dir, entity_type=Film)
     content_id = "test"
     content = "<html><body><h1>Test</h1></body></html>"
     storage.insert(content_id, content)
@@ -104,7 +92,7 @@ def test_local_text_storage_select():
 
 def test_local_text_storage_select_non_existent():
     # Given
-    storage = LocalTextStorage[Film](path=current_dir)
+    storage = LocalTextStorage(path=current_dir, entity_type=Film)
     content_id = "non_existent"
 
     # When
@@ -120,7 +108,7 @@ def test_local_text_storage_select_non_existent():
 
 def test_local_text_storage_scan():
     # Given
-    storage = LocalTextStorage[Film](path=current_dir)
+    storage = LocalTextStorage(path=current_dir, entity_type=Film)
     content_id_1 = "test1"
     content_1 = "<html><body><h1>Test 1</h1></body></html>"
     content_id_2 = "test2"
@@ -145,7 +133,7 @@ def test_local_text_storage_scan():
 
 def test_local_text_storage_scan_no_files():
     # Given
-    storage = LocalTextStorage[Film](path=current_dir)
+    storage = LocalTextStorage(path=current_dir, entity_type=Film)
 
     # When
     results = list(storage.scan())
@@ -160,7 +148,7 @@ def test_local_text_storage_scan_no_files():
 
 def test_local_text_storage_scan_with_pattern():
     # Given
-    storage = LocalTextStorage[Film](path=current_dir)
+    storage = LocalTextStorage(path=current_dir, entity_type=Film)
     content_id_1 = "test1"
     content_1 = "<html><body><h1>Test 1</h1></body></html>"
     content_id_2 = "haha"

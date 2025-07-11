@@ -2,7 +2,7 @@ from prefect import flow, task
 from prefect.cache_policies import NO_CACHE
 
 from src.entities.component import EntityComponent
-from src.interfaces.document_repo import IDocumentRepository
+from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.settings import Settings
 
@@ -20,13 +20,13 @@ class GraphDatabaseFlow(ITaskExecutor):
     def index_batch(
         self,
         films: list[EntityComponent],
-        indexer: IDocumentRepository,
+        indexer: IStorageHandler,
     ) -> None:
         """
         Index a batch of `Storable` using the provided indexer.
         """
-        indexer.insert_or_update(
-            docs=films,
+        indexer.insert_many(
+            contents=films,
             wait_for_completion=False,
         )
 

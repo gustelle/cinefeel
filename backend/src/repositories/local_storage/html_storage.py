@@ -9,36 +9,20 @@ from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler
 
 
-class LocalTextStorage[T: Film | Person](IStorageHandler[T, str]):
+class LocalTextStorage(IStorageHandler[str]):
     """
     handles storage and retrieval of HTML files on disk.
     """
 
     path: Path
 
-    def __class_getitem__(cls, generic_type):
-        """Called when the class is indexed with a type parameter.
-        Enables to guess the type of the entity being stored.
+    entity_type: type[Film | Person]
 
-        Thanks to :
-        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
-        """
-        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
-        new_cls.entity_type = generic_type
+    def __init__(self, path: Path, entity_type: type[Film | Person]):
 
-        return new_cls
-
-    def __init__(self, path: Path):
-
-        if not hasattr(self, "entity_type"):
-            raise ValueError(
-                "LocalTextStorage must be initialized with a generic type."
-            )
-
-        # entity_type is set by the generic type in the class definition
-        # see `IStorageHandler.__class_getitem__`
-        self.path = path / "html" / self.entity_type.__name__.lower()
+        self.path = path / "html" / entity_type.__name__.lower()
         self.path.mkdir(parents=True, exist_ok=True)
+        self.entity_type = entity_type
 
     def insert(
         self,

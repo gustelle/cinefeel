@@ -1,15 +1,16 @@
 import tempfile
+from typing import Generator
 
 import kuzu
 from loguru import logger
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.interfaces.document_repo import IDocumentRepository
+from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
 
 
-class GraphDBStorage[T: Film | Person](IDocumentRepository[T]):
+class GraphDBStorage[T: Film | Person](IStorageHandler[T]):
 
     client: kuzu.Database
     settings: Settings
@@ -80,18 +81,15 @@ class GraphDBStorage[T: Film | Person](IDocumentRepository[T]):
         self._is_initialized = True
         return self._is_initialized
 
-    def insert_or_update(
+    def insert_many(
         self,
-        docs: list[T],
+        contents: list[T],
     ) -> int:
         """
         Index a document in the index in upsert mode.
         This means that if the document already exists, it will be updated.
         If it does not exist, it will be created.
 
-        Args:
-            docs (list[T]): A list of `T`s to index, where `T` is a subclass of `Film` or `Person`.
-            wait_for_completion (bool): Whether to wait for the indexing operation to complete.
         """
 
         if not self._is_initialized:
@@ -100,7 +98,7 @@ class GraphDBStorage[T: Film | Person](IDocumentRepository[T]):
         conn = kuzu.Connection(self.client)
 
         # deduplicate documents by their UID
-        docs = {doc.uid: doc for doc in docs}.values()
+        contents = {doc.uid: doc for doc in contents}.values()
 
         # create a temp json file to dump the documents
         # and load from JSON
@@ -108,7 +106,7 @@ class GraphDBStorage[T: Film | Person](IDocumentRepository[T]):
             # dump the documents to a JSON file
             temp.write(
                 b"["
-                + b",".join([doc.model_dump_json().encode("utf-8") for doc in docs])
+                + b",".join([doc.model_dump_json().encode("utf-8") for doc in contents])
                 + b"]"
             )
             temp.flush()
@@ -121,19 +119,16 @@ class GraphDBStorage[T: Film | Person](IDocumentRepository[T]):
                 """
             )
             logger.info(f"Documents of type '{entity_type}' created successfully.")
-            return len(docs)
+            return len(contents)
 
         return 0
 
-    def get(
+    def select(
         self,
-        doc_id: str,
+        content_id: str,
     ) -> T:
         """
         Retrieve a document by its ID.
-
-        Args:
-            doc_id (str): The ID of the document to retrieve.
 
         Returns:
             T: The document with the specified ID.
@@ -146,7 +141,7 @@ class GraphDBStorage[T: Film | Person](IDocumentRepository[T]):
 
             result = conn.execute(
                 f"""
-                MATCH (n:{entity_type} {{uid: '{doc_id}'}})
+                MATCH (n:{entity_type} {{uid: '{content_id}'}})
                 RETURN n LIMIT 1
                 """
             )
@@ -155,17 +150,21 @@ class GraphDBStorage[T: Film | Person](IDocumentRepository[T]):
                 docs = result.get_next()
 
                 if not docs:
-                    logger.warning(f"No document found with ID '{doc_id}'.")
+                    logger.warning(f"No document found with ID '{content_id}'.")
                     return None
 
                 return self.entity_type.model_validate(docs[0])
 
             else:
                 logger.warning(
-                    f"Document with ID '{doc_id}' not found in the database."
+                    f"Document with ID '{content_id}' not found in the database."
                 )
                 return None
 
         except Exception as e:
-            logger.error(f"Error validating document with ID '{doc_id}': {e}")
+            logger.error(f"Error validating document with ID '{content_id}': {e}")
             return None
+
+    def scan(self, *args, **kwargs) -> Generator[T, None, None]:
+        """Scans the persistent storage and returns a list of all contents."""
+        raise NotImplementedError("This method should be overridden by subclasses.")

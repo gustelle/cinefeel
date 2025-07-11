@@ -11,7 +11,7 @@ from src.interfaces.storage import IStorageHandler, StorageError
 from src.settings import Settings
 
 
-class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
+class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
     """
     handles persistence of `Film` or `Person` objects into JSON files.
     """
