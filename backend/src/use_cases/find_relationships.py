@@ -3,7 +3,7 @@ import time
 from loguru import logger
 
 from src.entities.film import Film
-from src.repositories.flows.entity_relationships_pipeline import (
+from src.repositories.flows.entity_enrichment_pipeline import (
     EntityRelationshipProcessor,
 )
 from src.settings import Settings

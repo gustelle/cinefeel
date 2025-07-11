@@ -4,6 +4,7 @@ from prefect import flow, get_run_logger, task
 from prefect.futures import PrefectFuture
 
 from src.entities.composable import Composable
+from src.entities.film import Film
 from src.interfaces.task import ITaskExecutor
 from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
@@ -47,11 +48,30 @@ class RelationshipFlow(ITaskExecutor):
         and store them in the graph database.
         """
         logger = get_run_logger()
-        logger.info(f"Analyzing relationships for {entity.uid}")
+        logger.info(f"Analyzing relationships for '{entity.uid}'")
 
-        # Here you would implement the logic to analyze relationships
-        # For example, you might query a graph database or perform some analysis
-        # and then store the results back into the graph database.
+        if self.entity_type == Film:
+            # retrieve the persons that influenced the film
+            ...
+            # retrieve the persons that directed the film
+            ...
+            # retrieve the persons that wrote the script of the film
+            ...
+            # retrieve the persons that composed the music of the film
+            ...
+            # retrieve the company that produced the film
+            ...
+            # retrieve the company that distributed the film
+            ...
+            # retrieve the persons that did the special effects of the film
+            ...
+            # retrieve the persons that did the scenography of the film
+            ...
+            # retrieve the persons that influenced the film
+            ...
+            # retrieve actors that played in the film
+            ...
+
         return entity
 
     @flow(
