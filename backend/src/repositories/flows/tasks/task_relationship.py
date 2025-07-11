@@ -150,7 +150,10 @@ class RelationshipFlow(ITaskExecutor):
             # retrieve the persons that directed the film
             entity: Film = entity  # type: ignore
 
-            if entity.specifications.directed_by is not None:
+            if (
+                entity.specifications is not None
+                and entity.specifications.directed_by is not None
+            ):
 
                 for name in entity.specifications.directed_by:
 
