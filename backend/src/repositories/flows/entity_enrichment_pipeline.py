@@ -4,14 +4,12 @@ from prefect_dask import DaskTaskRunner
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.pipeline import IPipelineRunner
-from src.repositories.flows.tasks.task_feature_extraction import (
-    ComposableFeatureExtractionFlow,
-)
+from src.repositories.flows.tasks.task_feature_extraction import FeatureExtractionFlow
 from src.repositories.flows.tasks.task_relationship import RelationshipFlow
 from src.settings import Settings
 
 
-class EntityRelationshipProcessor(IPipelineRunner):
+class EntityEnrichmentProcessor(IPipelineRunner):
     """
     Reads Entities (Film or Person) from the storage,
     and analyzes their content to identify relationships between them.
@@ -25,7 +23,7 @@ class EntityRelationshipProcessor(IPipelineRunner):
         self.settings = settings
 
     @flow(
-        name="Relationships Analysis Flow",
+        name="Enrichment Flow",
         task_runner=DaskTaskRunner(),
     )
     def execute_pipeline(
@@ -39,7 +37,7 @@ class EntityRelationshipProcessor(IPipelineRunner):
             entity_type=self.entity_type,
         ).execute()
 
-        ComposableFeatureExtractionFlow(
+        FeatureExtractionFlow(
             settings=self.settings,
             entity_type=self.entity_type,
         ).execute()
