@@ -179,9 +179,9 @@ class HtmlParsingFlow(ITaskExecutor):
             return None
 
     @task(
-        task_run_name="store_entity-{entity.uid}",
+        task_run_name="json_store_entity-{entity.uid}",
     )
-    def store(self, storage: IStorageHandler, entity: Composable) -> None:
+    def to_json_file(self, storage: IStorageHandler, entity: Composable) -> None:
         """
         Store the film entity in the storage.
         """
@@ -231,7 +231,7 @@ class HtmlParsingFlow(ITaskExecutor):
 
         # need to keep track of the futures to wait for them later
         # see: https://github.com/PrefectHQ/prefect/issues/17517
-        person_futures = []
+        entity_futures = []
 
         # analyze the HTML content
         with (
@@ -249,17 +249,17 @@ class HtmlParsingFlow(ITaskExecutor):
                     )
                     continue
 
-                future_person = self.do_analysis.submit(
+                future_entity = self.do_analysis.submit(
                     analyzer=analyzer,
                     content_id=content_id,
                     html_content=file_content,
                 )
-                person_futures.append(future_person)
+                entity_futures.append(future_entity)
 
                 storage_futures.append(
-                    self.store.submit(
+                    self.to_json_file.submit(
                         storage=json_p_storage,
-                        entity=future_person,
+                        entity=future_entity,
                     )
                 )
 

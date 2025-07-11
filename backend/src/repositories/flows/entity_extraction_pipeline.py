@@ -82,11 +82,4 @@ class Html2EntitiesPipeline(IPipelineRunner):
             entity_type=self.entity_type,
         ).execute()
 
-        # store the results into a graph database
-        # TODO: implement this
-        # GraphDatabaseFlow(
-        #     settings=self.settings,
-        #     entity_type=self.entity_type,
-        # ).execute()
-
         logger.info("Flow completed successfully.")

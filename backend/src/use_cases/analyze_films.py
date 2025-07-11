@@ -3,7 +3,7 @@ import time
 from loguru import logger
 
 from src.entities.film import Film
-from src.repositories.flows.html_pipeline import Html2EntitiesPipeline
+from src.repositories.flows.entity_extraction_pipeline import Html2EntitiesPipeline
 from src.settings import Settings
 
 
