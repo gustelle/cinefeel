@@ -1,7 +1,7 @@
 import pytest
 
 from src.interfaces.http_client import HttpError
-from src.repositories.flows.task_downloader import DownloaderFlow
+from src.repositories.flows.tasks.task_downloader import DownloaderFlow
 from src.settings import Settings, WikiTOCPageConfig
 
 from .stubs.stub_http import StubHttpClient

@@ -9,14 +9,14 @@ from loguru import logger
 from pydantic import HttpUrl, ValidationError
 
 from src.entities.content import Media, PageLink, Section
-from src.interfaces.info_retriever import IParser, RetrievalError
+from src.interfaces.info_retriever import IContentParser, RetrievalError
 from src.settings import WikiTOCPageConfig
 
 ORPHAN_SECTION_TITLE = "Introduction"
 INFOBOX_SECTION_TITLE = "Données clés"
 
 
-class WikipediaParser(IParser):
+class WikipediaParser(IContentParser):
     """
     This class is responsible for extracting Wikipedia data from a given HTML content.
 

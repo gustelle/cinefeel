@@ -3,22 +3,24 @@ import time
 from loguru import logger
 
 from src.entities.film import Film
-from src.repositories.flows.entity_extraction_pipeline import Html2EntitiesPipeline
+from src.repositories.flows.entity_relationships_pipeline import (
+    EntityRelationshipProcessor,
+)
 from src.settings import Settings
 
 
-class WikipediaFilmAnalysisUseCase:
+class RelationshipsUseCase:
 
     settings: Settings
 
     def __init__(self, settings: Settings):
         self.settings = settings
 
-    async def execute(self):
+    def execute(self):
 
         start_time = time.time()
 
-        await Html2EntitiesPipeline(
+        EntityRelationshipProcessor(
             settings=self.settings,
             entity_type=Film,
         ).execute_pipeline()

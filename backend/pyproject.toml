@@ -50,7 +50,7 @@ package-mode = false
 
 [tool.poe.tasks]
 run         = "python3 main.py"
-test        = "pytest"
+test        = "pytest -s --tb=line"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.5"

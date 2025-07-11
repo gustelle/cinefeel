@@ -1,9 +1,6 @@
 from pathlib import Path
 from typing import Generator, Protocol, Sequence, runtime_checkable
 
-from src.entities.film import Film
-from src.entities.person import Person
-
 
 class StorageError(Exception):
     """Base class for all storage exceptions."""
@@ -12,7 +9,7 @@ class StorageError(Exception):
 
 
 @runtime_checkable
-class IStorageHandler[U: Film | Person, V: bytes | str | dict](Protocol):
+class IStorageHandler[U](Protocol):
 
     # TODO; move this to an implementation
     # this should not be in the interface
@@ -22,18 +19,22 @@ class IStorageHandler[U: Film | Person, V: bytes | str | dict](Protocol):
     # e.g. Film or Person
     entity_type: U
 
-    def insert(self, content_id: str, content: V, *args, **kwargs) -> None:
+    def insert(self, content_id: str, content: U, *args, **kwargs) -> None:
         """Saves the given content to a persistent storage."""
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def select(self, content_id: str, *args, **kwargs) -> V:
+    def insert_many(self, contents: Sequence[U], *args, **kwargs) -> None:
+        """Saves multiple contents to persistent storage."""
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
+    def select(self, content_id: str, *args, **kwargs) -> U:
         """Loads a content from persistent storage."""
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def query(self, *args, **kwargs) -> Sequence[V]:
+    def query(self, *args, **kwargs) -> Sequence[U]:
         """query contents corresponding to the given criteria."""
         raise NotImplementedError("This method should be overridden by subclasses.")
 
-    def scan(self, *args, **kwargs) -> Generator[V, None, None]:
+    def scan(self, *args, **kwargs) -> Generator[U, None, None]:
         """Scans the persistent storage and returns a list of all contents."""
         raise NotImplementedError("This method should be overridden by subclasses.")

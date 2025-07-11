@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup, Tag
 
 from src.entities.composable import Composable
 from src.interfaces.content_splitter import IContentSplitter, Section
-from src.interfaces.info_retriever import IParser
+from src.interfaces.info_retriever import IContentParser
 from src.interfaces.nlp_processor import Processor
 from src.settings import Settings
 
@@ -21,7 +21,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
     """
 
-    parser: IParser
+    parser: IContentParser
     pruner: Processor[str]
     settings: Settings
 
@@ -35,7 +35,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
     ]
 
     def __init__(
-        self, parser: IParser, pruner: Processor[str], settings: Settings = None
+        self, parser: IContentParser, pruner: Processor[str], settings: Settings = None
     ):
         """
         Initializes the WikipediaAPIContentSplitter.

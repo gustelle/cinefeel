@@ -39,10 +39,10 @@ from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.settings import Settings
 
 
-class AnalysisFlow(ITaskExecutor):
+class HtmlParsingFlow(ITaskExecutor):
     """
-    handles persistence of `Film` or `Person` objects into JSON files.
-
+    Analyses the HTML content of a film or person page
+    and returns storable entities (i.e., Film or Person).
     """
 
     entity_type: type[Composable]
@@ -179,9 +179,9 @@ class AnalysisFlow(ITaskExecutor):
             return None
 
     @task(
-        task_run_name="store_entity-{entity.uid}",
+        task_run_name="json_store_entity-{entity.uid}",
     )
-    def store(self, storage: IStorageHandler, entity: Composable) -> None:
+    def to_json_file(self, storage: IStorageHandler, entity: Composable) -> None:
         """
         Store the film entity in the storage.
         """
@@ -231,7 +231,7 @@ class AnalysisFlow(ITaskExecutor):
 
         # need to keep track of the futures to wait for them later
         # see: https://github.com/PrefectHQ/prefect/issues/17517
-        person_futures = []
+        entity_futures = []
 
         # analyze the HTML content
         with (
@@ -249,17 +249,17 @@ class AnalysisFlow(ITaskExecutor):
                     )
                     continue
 
-                future_person = self.do_analysis.submit(
+                future_entity = self.do_analysis.submit(
                     analyzer=analyzer,
                     content_id=content_id,
                     html_content=file_content,
                 )
-                person_futures.append(future_person)
+                entity_futures.append(future_entity)
 
                 storage_futures.append(
-                    self.store.submit(
+                    self.to_json_file.submit(
                         storage=json_p_storage,
-                        entity=future_person,
+                        entity=future_entity,
                     )
                 )
 

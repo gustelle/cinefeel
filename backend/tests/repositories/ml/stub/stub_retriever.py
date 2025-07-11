@@ -3,10 +3,10 @@ from typing import Type
 from pydantic import HttpUrl
 
 from src.entities.content import PageLink, Section
-from src.interfaces.info_retriever import IParser, RetrievalError
+from src.interfaces.info_retriever import IContentParser, RetrievalError
 
 
-class NoPermakinRetriever(IParser):
+class NoPermakinRetriever(IContentParser):
     """
     A stub implementation of the IHtmlExtractor interface that raises an error when trying to retrieve a permalink.
     This class is used to test error handling in the HTML extraction process.
@@ -22,7 +22,7 @@ class NoPermakinRetriever(IParser):
         return "Test Page Title"
 
 
-class NoTitleRetriever(IParser):
+class NoTitleRetriever(IContentParser):
     """
     A stub implementation of the IHtmlExtractor interface that raises an error when trying to retrieve a title.
     This class is used to test error handling in the HTML extraction process.
@@ -35,7 +35,7 @@ class NoTitleRetriever(IParser):
         raise RetrievalError("Failed to retrieve title")
 
 
-class StubHtmlRetriever(IParser):
+class StubHtmlRetriever(IContentParser):
     """
     A stub implementation of the IHtmlExtractor interface for testing purposes.
     This class simulates the behavior of an HTML extractor without performing actual parsing.

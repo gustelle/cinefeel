@@ -407,3 +407,34 @@ def test_query_validation_err():
     # teardown
     (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
     storage_handler.persistence_directory.rmdir()
+
+
+def test_scan_film():
+    # given
+    local_path = current_dir
+    test_settings = Settings(persistence_directory=local_path)
+    storage_handler = JSONEntityStorageHandler[Film](test_settings)
+
+    content_id = "test_film"
+    content = {
+        "title": "Test Film",
+    }
+
+    film = Film(
+        title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
+        uid=content_id,
+    )
+
+    storage_handler.insert(film.uid, film)
+
+    # when
+    results = list(storage_handler.scan())
+
+    # then
+    assert len(results) == 1
+    assert results[0].uid == film.uid
+
+    # teardown
+    (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
+    storage_handler.persistence_directory.rmdir()

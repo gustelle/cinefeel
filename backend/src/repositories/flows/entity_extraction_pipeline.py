@@ -2,15 +2,20 @@ from prefect import flow, get_run_logger
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.repositories.flows.task_analyzer import AnalysisFlow
-from src.repositories.flows.task_downloader import DownloaderFlow
-from src.repositories.flows.task_indexer import IndexerFlow
+from src.interfaces.pipeline import IPipelineRunner
+from src.repositories.flows.tasks.task_downloader import DownloaderFlow
+from src.repositories.flows.tasks.task_html_parsing import HtmlParsingFlow
+from src.repositories.flows.tasks.task_indexer import IndexerFlow
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.settings import Settings
 
 
-class PipelineRunner:
+class Html2EntitiesPipeline(IPipelineRunner):
+    """
+    Scrape Wikipedia pages for a specific entity type (Film or Person),
+    analyze the content, index it into a search engine, and store results in a graph database
+    """
 
     entity_type: type[Film | Person]
     settings: Settings
@@ -22,14 +27,15 @@ class PipelineRunner:
     @flow(
         name="Wikipedia Analysis Flow",
     )
-    async def run_chain(
+    async def execute_pipeline(
         self,
     ) -> None:
 
         logger = get_run_logger()
 
-        html_storage = LocalTextStorage[self.entity_type](
+        html_storage = LocalTextStorage(
             path=self.settings.persistence_directory,
+            entity_type=self.entity_type,
         )
 
         http_client = AsyncHttpClient(settings=self.settings)
@@ -49,7 +55,7 @@ class PipelineRunner:
             http_client=http_client,
         )
 
-        analysis_flow = AnalysisFlow(
+        analysis_flow = HtmlParsingFlow(
             settings=self.settings,
             entity_type=self.entity_type,
         )
@@ -75,12 +81,5 @@ class PipelineRunner:
             settings=self.settings,
             entity_type=self.entity_type,
         ).execute()
-
-        # store the results into a graph database
-        # TODO: implement this
-        # GraphDatabaseFlow(
-        #     settings=self.settings,
-        #     entity_type=self.entity_type,
-        # ).execute()
 
         logger.info("Flow completed successfully.")

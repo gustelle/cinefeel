@@ -11,7 +11,7 @@ from src.interfaces.storage import IStorageHandler, StorageError
 from src.settings import Settings
 
 
-class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
+class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
     """
     handles persistence of `Film` or `Person` objects into JSON files.
     """
@@ -152,3 +152,29 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T, dict]):
 
             logger.error(traceback.format_exc())
             raise StorageError(f"Error querying data: {e}") from e
+
+    def scan(self) -> list[T]:
+        """Scans the persistent storage and returns a list of all contents."""
+
+        try:
+            results = (
+                duckdb.sql(
+                    f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
+                )
+                .order("uid")
+                .to_df()
+            )
+
+            if results.empty:
+                logger.warning(f"No {self.entity_type} found in the storage")
+                return []
+
+            return [
+                # use model_construct to avoid uid validation issues
+                self.entity_type.model_construct(**dict(row))
+                for row in results.to_dict("records")
+            ]
+
+        except Exception as e:
+            logger.error(f"Error scanning storage: {e}")
+            raise StorageError(f"Error scanning storage: {e}") from e
