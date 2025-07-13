@@ -10,7 +10,10 @@ from src.settings import Settings
 
 
 class AsyncHttpClient(IHttpClient):
-    """in charge of scraping data from the web using aiohttp"""
+    """
+    TODO:
+    - migrate to httpx.AsyncClient to reduce dependencies
+    """
 
     _session: aiohttp.ClientSession | CachedSession
 
@@ -52,6 +55,33 @@ class AsyncHttpClient(IHttpClient):
         )
 
     async def send(
+        self,
+        url: str,
+        headers: dict = None,
+        params: dict = None,
+        response_type: Literal["json", "text"] = "json",
+    ) -> dict:
+        """
+        Send a GET request.
+
+        Args:
+            endpoint (str): The API endpoint to call.
+            headers (dict): The headers to include in the request.
+            params (dict): The parameters to include in the request.
+            response_type (str): The type of response to expect ('json' or 'text').
+
+        Returns:
+            dict: The response data if as_json is True, otherwise the raw response text.
+        """
+
+        return await self._asend(
+            url=url,
+            headers=headers,
+            params=params,
+            response_type=response_type,
+        )
+
+    async def _asend(
         self,
         url: str,
         headers: dict = None,

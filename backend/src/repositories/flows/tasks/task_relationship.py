@@ -1,17 +1,16 @@
 import dask
 from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
-from prefect.futures import PrefectFuture
+from prefect.futures import PrefectFuture, wait
 
 from src.entities.composable import Composable
 from src.entities.film import Film
-from src.interfaces.http_client import IHttpClient
+from src.entities.person import Person
+from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.task import ITaskExecutor
 from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
-
-from .task_downloader import is_retriable
 
 
 class RelationshipFlow(ITaskExecutor):
@@ -36,20 +35,24 @@ class RelationshipFlow(ITaskExecutor):
         self.entity_type = entity_type
         self.http_client = http_client
 
+        get_run_logger().info(
+            f"Initialized RelationshipFlow, http_client: {http_client}"
+        )
+
     @task(
         task_run_name="download_relationship_page-{page_id}",
         retries=3,
         retry_delay_seconds=[1, 2, 5],
-        retry_condition_fn=is_retriable,
         cache_policy=NO_CACHE,
     )
-    async def download_relationship_page(
+    def download_person_page(
         self,
         page_id: str,
         storage_handler: LocalTextStorage | None = None,
         **params,
     ) -> str | None:
         """
+
 
         Args:
             page_id (str): The page ID to download.
@@ -60,30 +63,52 @@ class RelationshipFlow(ITaskExecutor):
             str | None: The content ID if the download was successful, None otherwise.
         """
 
+        logger = get_run_logger()
+
+        # 1. check if the page_id is already stored in the storage_handler
+        # in which case we return the page_id
+        if storage_handler is not None and storage_handler.select(content_id=page_id):
+            logger.info(f"Page '{page_id}' already exists in storage.")
+            return page_id
+
         endpoint = f"{self.settings.mediawiki_base_url}/page/{page_id}/html"
 
-        html = await self.http_client.send(
-            url=endpoint,
-            response_type="text",
-            params=params,
-        )
+        try:
 
-        if html is not None and storage_handler is not None:
-            storage_handler.insert(
-                content_id=page_id,
-                content=html,
+            logger = get_run_logger()
+            logger.info(f"Downloading page {page_id} from {endpoint}")
+
+            html = self.http_client.send(
+                url=endpoint,
+                response_type="text",
+                params=params,
             )
 
-        return page_id if html is not None else None
+            if html is not None and storage_handler is not None:
+                storage_handler.insert(
+                    content_id=page_id,
+                    content=html,
+                )
+
+            return page_id if html is not None else None
+
+        except Exception as e:
+            if isinstance(e, HttpError) and e.status_code == 404:
+                logger.warning(f"Page {page_id} not found (404).")
+                return None
+            elif not isinstance(e, HttpError):
+                logger.error(f"Error downloading page {page_id}: {e}")
+                return None
+            else:
+                raise
 
     @task(
         task_run_name="search_person-{name}",
         retries=3,
         retry_delay_seconds=[1, 2, 5],
-        retry_condition_fn=is_retriable,
         cache_policy=NO_CACHE,
     )
-    async def search_person(
+    def search_person(
         self,
         name: str,
     ) -> str | None:
@@ -92,21 +117,17 @@ class RelationshipFlow(ITaskExecutor):
             str | None: the page ID if the search was successful, None otherwise.
         """
 
-        logger = get_run_logger()
-
-        endpoint = f"https://fr.wikipedia.org/w/rest.php/v1/page/{name}/bare"
-
-        response = await self.http_client.send(
-            url=endpoint,
-        )
-
         try:
+            endpoint = f"https://fr.wikipedia.org/w/rest.php/v1/page/{name}/bare"
+            response = self.http_client.send(
+                url=endpoint,
+                response_type="json",
+            )
             return response["key"]
         except KeyError:
-            logger.warning(f"Person '{name}' not found in Wikipedia.")
             return None
 
-    @task(task_run_name="to_db-{entity.uid}")
+    @task(task_run_name="to_db-{entity.uid}", cache_policy=NO_CACHE)
     def to_db(self, entity: Composable) -> Composable:
         """
         Analyze the relationships of a single entity.
@@ -121,34 +142,31 @@ class RelationshipFlow(ITaskExecutor):
         # and then store the results back into the graph database.
         return entity
 
-    @task(task_run_name="analyze_relationships-{entity.uid}")
+    @task(task_run_name="analyze_relationships-{entity.uid}", cache_policy=NO_CACHE)
     def analyze_relationships(self, entity: Composable) -> Composable:
         """
-        TODO:
-        - lots of person pages are already present and analyzed
-            --> skip the analysis if the person page is already present (based on the uid)
-            --> e.g. if James_Cameron is already present, skip the analysis
-        - it will be simpler if the uid of the person is the same as the page_id
 
         Analyze the relationships of a single entity.
         This method should be implemented to analyze the relationships
         and store them in the graph database.
         """
         logger = get_run_logger()
-        logger.info(f"Analyzing relationships for '{entity.uid}'")
 
         _futures = []
-
-        html_storage = LocalTextStorage(
-            path=self.settings.persistence_directory / "relationships",
-            entity_type=self.entity_type,
-        )
 
         if self.entity_type == Film:
             # retrieve the persons that influenced the film
             ...
             # retrieve the persons that directed the film
             entity: Film = entity  # type: ignore
+            logger.info(
+                f"Analyzing relationships for '{entity.uid}' (specifications {entity.specifications})"
+            )
+
+            html_storage = LocalTextStorage(
+                path=self.settings.persistence_directory,
+                entity_type=Person,
+            )
 
             if (
                 entity.specifications is not None
@@ -157,14 +175,23 @@ class RelationshipFlow(ITaskExecutor):
 
                 for name in entity.specifications.directed_by:
 
+                    _fut_p = self.search_person.submit(name=name)
+
+                    # keep track of the future to wait for it later
+                    _futures.append(_fut_p)
+
                     # 1. query https://fr.wikipedia.org/w/rest.php/v1/page/James_cameron/bare and get the key (ex: "James_cameron")
                     # 2. download the HTML page of the person
                     _futures.append(
-                        self.download_relationship_page.submit(
-                            page_id=self.search_person.submit(name=name),
+                        self.download_person_page.submit(
+                            page_id=_fut_p,
                             storage_handler=html_storage,
                         )
                     )
+
+            wait(
+                _futures,
+            )
 
             # retrieve the persons that wrote the script of the film
             ...

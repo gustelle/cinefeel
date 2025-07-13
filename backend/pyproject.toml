@@ -43,6 +43,7 @@ dependencies = [
     "timefhuman (>=0.1.4,<0.2.0)",
     "isodate (>=0.7.2,<0.8.0)",
     "kuzu (>=0.10.1,<0.11.0)",
+    "hishel (>=0.1.3,<0.2.0)",
 ]
 
 [tool.poetry]
@@ -51,6 +52,9 @@ package-mode = false
 [tool.poe.tasks]
 run         = "python3 main.py"
 test        = "pytest -s --tb=line"
+enrich      = "poe run enrich"
+extract_persons = "poe run extract_persons"
+extract_movies = "poe run extract_movies"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.5"

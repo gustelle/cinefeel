@@ -6,13 +6,12 @@ import uvloop
 from loguru import logger
 
 from src.settings import Settings
-from src.use_cases.enrich import EnrichmentUseCase
 
 app = typer.Typer()
 
 
 @app.command()
-def extract_films():
+def extract_movies():
     uvloop.run(async_run_films())
 
 
@@ -64,8 +63,11 @@ async def async_run_persons():
 @app.command()
 def enrich():
 
+    from src.use_cases.enrich import EnrichmentUseCase
+
     start_time = time.time()
     logger.info("Starting enrichment processing...")
+
     uc = EnrichmentUseCase(
         settings=Settings(),
     )

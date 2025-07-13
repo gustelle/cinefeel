@@ -31,7 +31,7 @@ async def is_retriable(
             )
             return False
         else:
-            logger.warning(f"Exception is not retriable: {e}")
+            logger.error(f"Exception is not retriable: {e}")
     return False
 
 
@@ -72,7 +72,7 @@ class DownloaderFlow(ITaskExecutor):
 
         endpoint = f"{self.settings.mediawiki_base_url}/page/{page_id}/html"
 
-        html = await self.http_client.send(
+        html = await self.http_client.send_blocking(
             url=endpoint,
             response_type="text",
             params=params,

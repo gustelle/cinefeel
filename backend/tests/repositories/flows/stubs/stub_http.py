@@ -1,4 +1,3 @@
-
 from src.interfaces.http_client import IHttpClient
 
 
@@ -21,7 +20,7 @@ class StubHttpClient(IHttpClient):
         self._response = response
         self.raise_exc = raise_exc
 
-    async def send(
+    async def send_blocking(
         self,
         url: str,
         *args,

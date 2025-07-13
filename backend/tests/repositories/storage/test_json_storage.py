@@ -4,7 +4,7 @@ import orjson
 import pytest
 from pydantic import HttpUrl
 
-from src.entities.film import Film
+from src.entities.film import Film, FilmSpecifications
 from src.entities.person import Biography, Person, PersonMedia
 from src.interfaces.storage import StorageError
 from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
@@ -434,6 +434,40 @@ def test_scan_film():
     # then
     assert len(results) == 1
     assert results[0].uid == film.uid
+
+    # teardown
+    (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
+    storage_handler.persistence_directory.rmdir()
+
+
+def test_scan_film_object_is_deeply_rebuilt():
+    # given
+    local_path = current_dir
+    test_settings = Settings(persistence_directory=local_path)
+    storage_handler = JSONEntityStorageHandler[Film](test_settings)
+
+    content = {
+        "title": "Test Film",
+    }
+
+    film = Film(
+        title=content["title"],
+        permalink=HttpUrl("http://example.com/test-film"),
+    )
+    film.specifications = FilmSpecifications(
+        title=content["title"],
+        parent_uid=film.uid,
+        directed_by=["John Doe"],
+    )
+
+    storage_handler.insert(film.uid, film)
+
+    # when
+    results = list(storage_handler.scan())
+
+    # then
+    assert isinstance(results[0].specifications, FilmSpecifications)
+    assert results[0].specifications.directed_by == ["John Doe"]
 
     # teardown
     (storage_handler.persistence_directory / f"{film.uid}.json").unlink()

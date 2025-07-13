@@ -45,7 +45,7 @@ class FeatureExtractionFlow(ITaskExecutor):
         and store them in the graph database.
         """
         logger = get_run_logger()
-        logger.info(f"Analyzing relationships for '{entity.uid}'")
+        logger.info(f"Extracting features for '{entity.uid}'")
 
         if self.entity_type == Film:
             # extract features from the poster

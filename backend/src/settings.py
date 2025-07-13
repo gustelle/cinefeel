@@ -61,6 +61,10 @@ _default_tocs = _default_film_tocs + _default_person_tocs
 
 
 class Settings(BaseSettings):
+    """
+    TODO:
+    - rename some configs to be more explicit (crawler_use_cache -> http_cache_enabled, meili_ -> search_, etc.)
+    """
 
     model_config = SettingsConfigDict(
         # `.env.prod` takes priority over `.env`
