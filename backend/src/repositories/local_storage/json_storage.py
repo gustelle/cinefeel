@@ -166,12 +166,12 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
             )
 
             if results.empty:
-                logger.warning(f"No {self.entity_type} found in the storage")
+                logger.warning(f"No '{self.entity_type}' found in the storage")
                 return []
 
             return [
-                # use model_construct to avoid uid validation issues
-                self.entity_type.model_construct(**dict(row))
+                # rebuild the entity
+                self.entity_type.model_validate(dict(row), by_name=True)
                 for row in results.to_dict("records")
             ]
 

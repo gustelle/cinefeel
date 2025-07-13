@@ -1,7 +1,8 @@
+import datetime
 from typing import Any
 
 from numpy import ndarray
-from pydantic import Field, HttpUrl, field_serializer
+from pydantic import Field, HttpUrl, field_serializer, field_validator
 
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
@@ -139,6 +140,22 @@ class FilmSpecifications(WOASpecifications):
         serialization_alias="duree_film",
         validation_alias="duree_film",
     )
+
+    @field_validator("duration", mode="before")
+    @classmethod
+    def load_from_dt(cls, value: Any) -> str | None:
+        """case where the duration is provided as a datetime.timedelta object"""
+        if isinstance(value, str):
+            return value
+
+        if isinstance(value, datetime.time):
+            # Convert datetime.time to HH:MM:SS format
+            hours = value.hour
+            minutes = value.minute
+            seconds = value.second
+            return f"{hours:02}:{minutes:02}:{seconds:02}"
+
+        return None
 
 
 class Film(Composable, WorkOfArt):

@@ -59,7 +59,7 @@ class OllamaMessager(ILLM):
             )
 
             # pop the score from the values
-            score = dict_resp.pop("score")
+            score = dict_resp.pop("score", 0)
 
             # ensure score is between 0.0 and 1.0
             # sometimes the model returns a score like 1.0000000000000002

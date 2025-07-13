@@ -5,10 +5,11 @@ from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.pipeline import IPipelineRunner
 from src.repositories.flows.tasks.task_relationship import RelationshipFlow
+from src.repositories.http.sync_http import SyncHttpClient
 from src.settings import Settings
 
 
-class EntityRelationshipProcessor(IPipelineRunner):
+class EntityEnrichmentProcessor(IPipelineRunner):
     """
     Reads Entities (Film or Person) from the storage,
     and analyzes their content to identify relationships between them.
@@ -22,7 +23,7 @@ class EntityRelationshipProcessor(IPipelineRunner):
         self.settings = settings
 
     @flow(
-        name="Relationships Analysis Flow",
+        name="Enrichment Flow",
         task_runner=DaskTaskRunner(),
     )
     def execute_pipeline(
@@ -31,7 +32,15 @@ class EntityRelationshipProcessor(IPipelineRunner):
         """
         Run the pipeline to analyze relationships between entities.
         """
+        http_client = SyncHttpClient(settings=self.settings)
+
         RelationshipFlow(
             settings=self.settings,
             entity_type=self.entity_type,
+            http_client=http_client,
         ).execute()
+
+        # FeatureExtractionFlow(
+        #     settings=self.settings,
+        #     entity_type=self.entity_type,
+        # ).execute()

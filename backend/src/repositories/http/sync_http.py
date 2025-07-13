@@ -8,9 +8,17 @@ from src.interfaces.http_client import HttpError, IHttpClient
 from src.settings import Settings
 
 
-class AsyncHttpClient(IHttpClient):
+class SyncHttpClient(IHttpClient):
+    """executes HTTP requests synchronously
+    this is useful for cases where you need to keep synchronous code for GPU processing
+    or other synchronous libraries that do not support async/await
 
-    client: httpx.AsyncClient
+
+    """
+
+    settings: Settings
+
+    client: httpx.Client
 
     def __init__(
         self,
@@ -21,8 +29,8 @@ class AsyncHttpClient(IHttpClient):
             max_connections=settings.scraper_max_concurrent_connections
         )
 
-        self.client = hishel.AsyncCacheClient(
-            storage=hishel.AsyncFileStorage(
+        self.client = hishel.CacheClient(
+            storage=hishel.FileStorage(
                 base_path=".crawler_cache",
                 ttl=settings.crawler_cache_expire_after,
             ),
@@ -34,35 +42,32 @@ class AsyncHttpClient(IHttpClient):
             },
         )
 
-        logger.info(
-            f"AsyncHttpClient initialized with {settings.scraper_max_concurrent_connections} connections"
-        )
+    def __exit__(self, exc_type=None, exc_value=None, traceback=None):
+        """Close the HTTP client when exiting the context.
 
-    async def send(
+        here we don't use a context manager because we want to keep the client open
+        between requests. Using a context manager would close the client after the first request
+        which would violate the principle of httpx.Client being reusable.
+        """
+        if not self.client.is_closed:
+            logger.debug("Closing HTTP client connection.")
+            self.client.close()
+
+    def send(
         self,
         url: str,
         headers: dict = None,
         params: dict = None,
         response_type: Literal["json", "text"] = "json",
     ) -> dict | str:
-        """
-        Send a GET request.
-
-        Args:
-            endpoint (str): The API endpoint to call.
-            headers (dict): The headers to include in the request.
-            params (dict): The parameters to include in the request.
-            response_type (str): The type of response to expect ('json' or 'text').
-
-        Returns:
-            dict: The response data if as_json is True, otherwise the raw response text.
-        """
+        """Sends a GET request to the specified URL."""
 
         try:
 
-            response = await self.client.get(url, params=params, headers=headers)
+            response = self.client.get(url, params=params, headers=headers)
 
             response.raise_for_status()
+
             return response.text if response_type == "text" else response.json()
 
         except httpx.HTTPStatusError as e:
@@ -71,12 +76,3 @@ class AsyncHttpClient(IHttpClient):
                 message=f"HTTP error occurred: {e.response.status_code} - {e.response.text}",
                 status_code=e.response.status_code,
             )
-
-    async def __aexit__(self, *args):
-        """
-        Close the client when exiting the context.
-        """
-
-        if not self.client.is_closed:
-            logger.debug("Closing HTTP client connection.")
-            await self.client.close()

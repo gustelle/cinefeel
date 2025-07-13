@@ -31,7 +31,7 @@ async def is_retriable(
             )
             return False
         else:
-            logger.warning(f"Exception is not retriable: {e}")
+            logger.error(f"Exception is not retriable: {e}")
     return False
 
 
