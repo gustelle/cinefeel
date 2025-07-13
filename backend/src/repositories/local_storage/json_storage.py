@@ -61,9 +61,9 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
         Raises StorageError: so that the caller can log and handle it gracefully.
         """
 
-        path = self.persistence_directory / f"{content_id}.json"
-
         try:
+
+            path = self.persistence_directory / f"{content_id}.json"
 
             # check if the content is of the expected type
             if not isinstance(content, self.entity_type):
@@ -105,6 +105,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
     def query(
         self,
         order_by: str = "uid",
+        permalink: str | None = None,
         after: T | None = None,
         limit: int = 100,
     ) -> list[T]:
@@ -120,6 +121,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
                     f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
                 )
                 .filter(f"uid > '{after.uid}'" if after else "1=1")
+                .filter(f"permalink = '{permalink}'" if permalink else "1=1")
                 .limit(limit)
                 .order(order_by)
                 .to_df()
@@ -131,7 +133,7 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
 
             return [
                 # use model_construct to avoid uid validation issues
-                self.entity_type.model_construct(**dict(row))
+                self.entity_type.model_validate(dict(row), by_name=True)
                 for row in results.to_dict("records")
             ]
 

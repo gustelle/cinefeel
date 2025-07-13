@@ -103,9 +103,13 @@ def test_insert_person():
 
     person = Person(
         uid=content_id,
-        full_name=content["full_name"],
         title="Test Person Title",
         permalink=HttpUrl("http://example.com/test-person"),
+    )
+
+    person.biography = Biography(
+        full_name=content["full_name"],
+        parent_uid=person.uid,
     )
 
     storage_handler.insert(person.uid, person)
@@ -253,57 +257,23 @@ def test_select_corrupt_entity():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_query_film():
-    # given
-    local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
-    storage_handler = JSONEntityStorageHandler[Film](test_settings)
-
-    content_id = "test_film"
-    content = {
-        "title": "Test Film",
-    }
-
-    film = Film(
-        title=content["title"],
-        permalink=HttpUrl("http://example.com/test-film"),
-        uid=content_id,
-    )
-
-    storage_handler.insert(film.uid, film)
-
-    # when
-    results = storage_handler.query()
-
-    # then
-    assert len(results) == 1
-    assert results[0].uid == film.uid
-
-    # teardown
-    (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
-    storage_handler.persistence_directory.rmdir()
-
-
 def test_query_person():
+    """verify nested objects are correctly deserialized."""
+
     # given
     local_path = current_dir
     test_settings = Settings(persistence_directory=local_path)
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
-    content = {
-        "full_name": "Test Person",
-    }
-
     person = Person(
-        full_name=content["full_name"],
         title="Test Person Title",
         permalink=HttpUrl("http://example.com/test-person"),
     )
-    person.biography = (
-        Biography(nom_complet="Test Person Biography", parent_uid=person.uid),
+    person.biography = Biography(
+        nom_complet="Test Person Biography", parent_uid=person.uid
     )
     person.media = PersonMedia(
-        url_affiche="http://example.com/test-person-poster",
+        photos=["http://example.com/test-person-poster"],
         parent_uid=person.uid,
     )
 
@@ -315,9 +285,48 @@ def test_query_person():
     # then
     assert len(results) == 1
     assert results[0].uid == person.uid
+    assert isinstance(results[0].biography, Biography)
+    assert results[0].biography.full_name == "Test Person Biography"
+    assert isinstance(results[0].media, PersonMedia)
+    assert str(results[0].media.photos[0]) == "http://example.com/test-person-poster"
 
     # teardown
     (storage_handler.persistence_directory / f"{person.uid}.json").unlink()
+    storage_handler.persistence_directory.rmdir()
+
+
+def test_query_person_by_permalink():
+    # given
+    local_path = current_dir
+    test_settings = Settings(persistence_directory=local_path)
+    storage_handler = JSONEntityStorageHandler[Person](test_settings)
+
+    permalink = "http://example.com/test-person"
+
+    person = Person(
+        title="Test Person Title",
+        permalink=HttpUrl(permalink),
+    )
+
+    storage_handler.insert(person.uid, person)
+
+    # insert noise data
+    noise_person = Person(
+        title="Noise Person",
+        permalink=HttpUrl("http://example.com/noise-person"),
+    )
+    storage_handler.insert(noise_person.uid, noise_person)
+
+    # when
+    results = storage_handler.query(permalink=permalink)
+
+    # then
+    assert len(results) == 1
+    assert results[0].uid == person.uid
+
+    # teardown
+    (storage_handler.persistence_directory / f"{person.uid}.json").unlink()
+    (storage_handler.persistence_directory / f"{noise_person.uid}.json").unlink()
     storage_handler.persistence_directory.rmdir()
 
 

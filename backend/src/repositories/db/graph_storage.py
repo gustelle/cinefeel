@@ -70,8 +70,7 @@ class GraphDBStorage[T: Film | Person](IStorageHandler[T]):
         )
         conn.execute(
             """
-                CREATE REL TABLE IF NOT EXISTS InfluencedByPerson (FROM Film TO Person);
-                CREATE REL TABLE IF NOT EXISTS InfluencedByFilm (FROM Film TO Film);
+                CREATE REL TABLE IF NOT EXISTS DirectedBy (FROM Film TO Person);
             """
         )
 

@@ -7,10 +7,13 @@ from src.entities.composable import Composable
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.http_client import HttpError, IHttpClient
+from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
+
+from .task_html_parsing import HtmlParsingFlow
 
 
 class RelationshipFlow(ITaskExecutor):
@@ -40,15 +43,15 @@ class RelationshipFlow(ITaskExecutor):
         )
 
     @task(
-        task_run_name="download_relationship_page-{page_id}",
+        task_run_name="download_page-{page_id}",
         retries=3,
         retry_delay_seconds=[1, 2, 5],
         cache_policy=NO_CACHE,
     )
-    def download_person_page(
+    def download_page(
         self,
         page_id: str,
-        storage_handler: LocalTextStorage | None = None,
+        storage_handler: IStorageHandler | None = None,
         **params,
     ) -> str | None:
         """
@@ -76,7 +79,6 @@ class RelationshipFlow(ITaskExecutor):
         try:
 
             logger = get_run_logger()
-            logger.info(f"Downloading page {page_id} from {endpoint}")
 
             html = self.http_client.send(
                 url=endpoint,
@@ -127,6 +129,74 @@ class RelationshipFlow(ITaskExecutor):
         except KeyError:
             return None
 
+    @task(task_run_name="extract_entity-{page_id}", cache_policy=NO_CACHE)
+    def extract_entity(
+        self,
+        page_id: str,
+        entity_handler: IStorageHandler[Composable],
+        html_handler: IStorageHandler[str] | None = None,
+    ) -> Composable | None:
+        """
+        Extracts an entity from the HTML content and stores it using the provided storage handler.
+
+        Args:
+            page_id (str): The ID of the page from which to extract the entity.
+            entity_handler (IStorageHandler): The storage handler to use for storing the entity.
+
+        Returns:
+            Composable | None: The extracted entity if successful, None otherwise.
+        """
+        logger = get_run_logger()
+
+        try:
+            # search for the entity in the storage handler
+            permalink = f"https://fr.wikipedia.org/wiki/{page_id}"
+            results = entity_handler.query(
+                permalink=permalink,
+                limit=1,
+            )
+
+            if results:
+                logger.info(f"Entity {page_id} already exists in storage.")
+                return results[0]
+
+            logger.info(f"Extracting entity from page {page_id}")
+
+            html_fut = self.download_page.submit(
+                page_id=page_id,
+                storage_handler=html_handler,
+            )
+
+            wait([html_fut])
+
+            # trigger the HTML parsing flow
+            flow = HtmlParsingFlow(
+                settings=self.settings,
+                entity_type=Person,
+            )
+
+            flow.execute(
+                content_ids=[page_id],
+                storage_handler=html_handler,
+            )
+
+            results = entity_handler.select(
+                permalink=permalink,
+            )
+
+            if results:
+                logger.info(f"Entity '{page_id}' now found in storage after parsing.")
+                return results
+
+            return None
+
+        except Exception as e:
+            import traceback
+
+            logger.error(traceback.format_exc())
+            logger.error(f"Error extracting entity from HTML: {e}")
+            return None
+
     @task(task_run_name="to_db-{entity.uid}", cache_policy=NO_CACHE)
     def to_db(self, entity: Composable) -> Composable:
         """
@@ -150,7 +220,6 @@ class RelationshipFlow(ITaskExecutor):
         This method should be implemented to analyze the relationships
         and store them in the graph database.
         """
-        logger = get_run_logger()
 
         _futures = []
 
@@ -159,13 +228,14 @@ class RelationshipFlow(ITaskExecutor):
             ...
             # retrieve the persons that directed the film
             entity: Film = entity  # type: ignore
-            logger.info(
-                f"Analyzing relationships for '{entity.uid}' (specifications {entity.specifications})"
-            )
 
             html_storage = LocalTextStorage(
                 path=self.settings.persistence_directory,
                 entity_type=Person,
+            )
+
+            json_entity_storage = JSONEntityStorageHandler[Person](
+                settings=self.settings,
             )
 
             if (
@@ -175,19 +245,18 @@ class RelationshipFlow(ITaskExecutor):
 
                 for name in entity.specifications.directed_by:
 
-                    _fut_p = self.search_person.submit(name=name)
+                    _fut_id = self.search_person.submit(name=name)
 
                     # keep track of the future to wait for it later
-                    _futures.append(_fut_p)
+                    _futures.append(_fut_id)
 
-                    # 1. query https://fr.wikipedia.org/w/rest.php/v1/page/James_cameron/bare and get the key (ex: "James_cameron")
-                    # 2. download the HTML page of the person
-                    _futures.append(
-                        self.download_person_page.submit(
-                            page_id=_fut_p,
-                            storage_handler=html_storage,
-                        )
+                    _fut_extract_entity = self.extract_entity.submit(
+                        page_id=_fut_id,
+                        entity_handler=json_entity_storage,
+                        html_handler=html_storage,
                     )
+
+                    _futures.append(_fut_extract_entity)
 
             wait(
                 _futures,
