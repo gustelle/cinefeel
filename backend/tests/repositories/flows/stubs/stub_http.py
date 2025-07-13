@@ -20,7 +20,7 @@ class StubHttpClient(IHttpClient):
         self._response = response
         self.raise_exc = raise_exc
 
-    async def send_blocking(
+    async def send(
         self,
         url: str,
         *args,

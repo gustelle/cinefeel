@@ -72,7 +72,7 @@ class DownloaderFlow(ITaskExecutor):
 
         endpoint = f"{self.settings.mediawiki_base_url}/page/{page_id}/html"
 
-        html = await self.http_client.send_blocking(
+        html = await self.http_client.send(
             url=endpoint,
             response_type="text",
             params=params,
