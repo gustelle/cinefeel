@@ -176,3 +176,4 @@ dbt_odis/seeds/*
 log/*
 !log/.gitkeep
 
+.db/*
