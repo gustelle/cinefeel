@@ -1,29 +1,43 @@
 import tempfile
-from typing import Generator
 
 import kuzu
 from loguru import logger
+from pydantic import BaseModel
 
+from src.entities.composable import Composable
 from src.entities.film import Film
 from src.entities.person import Person
+from src.interfaces.relation_manager import IRelationshipHandler
 from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
 
 
-class GraphDBStorage[T: Film | Person](IStorageHandler[T]):
+class Relationship(BaseModel):
+    """A class representing a relationship between two entities."""
+
+    from_entity: Composable
+    to_entity: Composable
+    relation_type: str
+
+
+class AbstractGraphHandler[T: Film | Person](
+    IStorageHandler[T], IRelationshipHandler[T]
+):
 
     client: kuzu.Database
     settings: Settings
-    entity_type: type[Film | Person]
+    entity_type: type[T]
     _is_initialized: bool = False
 
     def __init__(
         self,
-        settings: Settings,
+        client: kuzu.Database | None = None,
+        settings: Settings = Settings(),
     ):
+        """if not client is provided, it will use an in-memory instance of kuzu."""
 
         self.settings = settings
-        self.client = kuzu.Database(settings.db_persistence_directory)
+        self.client = client or kuzu.Database()
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -76,7 +90,6 @@ class GraphDBStorage[T: Film | Person](IStorageHandler[T]):
 
         conn.close()
 
-        logger.info("KuzuDB client initialized successfully.")
         self._is_initialized = True
         return self._is_initialized
 
@@ -163,7 +176,5 @@ class GraphDBStorage[T: Film | Person](IStorageHandler[T]):
         except Exception as e:
             logger.error(f"Error validating document with ID '{content_id}': {e}")
             return None
-
-    def scan(self, *args, **kwargs) -> Generator[T, None, None]:
-        """Scans the persistent storage and returns a list of all contents."""
-        raise NotImplementedError("This method should be overridden by subclasses.")
+        finally:
+            conn.close()

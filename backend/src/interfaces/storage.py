@@ -38,3 +38,7 @@ class IStorageHandler[U](Protocol):
     def scan(self, *args, **kwargs) -> Generator[U, None, None]:
         """Scans the persistent storage and returns a list of all contents."""
         raise NotImplementedError("This method should be overridden by subclasses.")
+
+    def update(self, content: U, *args, **kwargs) -> U:
+        """Updates an existing content in persistent storage."""
+        raise NotImplementedError("This method should be overridden by subclasses.")

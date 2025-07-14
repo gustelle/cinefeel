@@ -114,10 +114,14 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
         Fixed: same as `select`, we go through `model_construct` to avoid uid validation issues.
         """
 
+        # fix: https://github.com/duckdb/duckdb/issues/13498
+        # duckdb.sql is not thread-safe, so we need to use a connection
+        conn = duckdb.connect()
+
         try:
 
             results = (
-                duckdb.sql(
+                conn.sql(
                     f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
                 )
                 .filter(f"uid > '{after.uid}'" if after else "1=1")
@@ -144,16 +148,17 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
             return []
 
         except (ValidationError, duckdb.ProgrammingError) as e:
-            import traceback
 
-            logger.error(traceback.format_exc())
             raise StorageError(f"Error validating data: {e}") from e
 
         except Exception as e:
+
             import traceback
 
             logger.error(traceback.format_exc())
             raise StorageError(f"Error querying data: {e}") from e
+        finally:
+            conn.close()
 
     def scan(self) -> list[T]:
         """Scans the persistent storage and returns a list of all contents."""

@@ -1,3 +1,5 @@
+import random
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import orjson
@@ -480,4 +482,41 @@ def test_scan_film_object_is_deeply_rebuilt():
 
     # teardown
     (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
+    storage_handler.persistence_directory.rmdir()
+
+
+def test_query_thread_safety():
+    """
+    verify that the query method is thread-safe and can be called concurrently.
+    """
+
+    # given
+    local_path = current_dir
+    test_settings = Settings(persistence_directory=local_path)
+    storage_handler = JSONEntityStorageHandler[Film](test_settings)
+
+    uids = []
+    n_threads = 4
+
+    for i in range(1_000):
+        permalink = HttpUrl(f"http://example.com/test-film/{i}")
+        film = Film(
+            title=f"Test Film {i}",
+            permalink=permalink,
+        )
+        storage_handler.insert(film.uid, film)
+        uids.append(film.uid)
+
+    # when
+    # call concurrently
+
+    with ThreadPoolExecutor(max_workers=n_threads) as executor:
+        random_index = random.randint(0, len(uids) - 1)
+        random_permalink = HttpUrl(f"http://example.com/test-film/{random_index}")
+        for _ in range(n_threads):
+            future = executor.submit(storage_handler.query, permalink=random_permalink)
+            assert future.result() is not None
+    # teardown
+    for uid in uids:
+        (storage_handler.persistence_directory / f"{uid}.json").unlink()
     storage_handler.persistence_directory.rmdir()

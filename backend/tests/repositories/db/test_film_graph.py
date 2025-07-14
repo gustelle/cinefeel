@@ -4,17 +4,17 @@ import uuid
 import kuzu
 
 from src.entities.film import Film
-from src.repositories.db.graph_storage import GraphDBStorage
+from src.entities.person import Person
+from src.repositories.db.abstract_graph import Relationship
+from src.repositories.db.film_graph import FimGraphHandler
+from src.repositories.db.person_graph import PersonGraphHandler
 from src.settings import Settings
 
 
 def test_graph_db_initialization():
     # given
-    settings = Settings(
-        db_persistence_directory=None,  # Use an in-memory database for testing
-    )
 
-    graph_db = GraphDBStorage[Film](settings)
+    graph_db = FimGraphHandler()
 
     # when
     is_setup = graph_db.setup()
@@ -25,11 +25,8 @@ def test_graph_db_initialization():
 
 def test_insert_or_update():
     # given
-    settings = Settings(
-        db_persistence_directory=None,  # Use an in-memory database for testing
-    )
 
-    graph_db = GraphDBStorage[Film](settings)
+    graph_db = FimGraphHandler()
 
     film = Film(
         title="Inception",
@@ -48,11 +45,8 @@ def test_insert_or_update():
 
 def test_insert_or_update_deduplication():
     # given
-    settings = Settings(
-        db_persistence_directory=None,  # Use an in-memory database for testing
-    )
 
-    graph_db = GraphDBStorage[Film](settings)
+    graph_db = FimGraphHandler()
 
     film = Film(
         title="Inception",
@@ -73,11 +67,8 @@ def test_insert_or_update_deduplication():
 
 def test_get_nominal():
     # given
-    settings = Settings(
-        db_persistence_directory=None,  # Use an in-memory database for testing
-    )
 
-    graph_db = GraphDBStorage[Film](settings)
+    graph_db = FimGraphHandler()
 
     film = Film(
         title="Inception",
@@ -96,11 +87,8 @@ def test_get_nominal():
 
 def test_get_non_existent():
     # given
-    settings = Settings(
-        db_persistence_directory=None,  # Use an in-memory database for testing
-    )
 
-    graph_db = GraphDBStorage[Film](settings)
+    graph_db = FimGraphHandler()
 
     non_existent_uid = uuid.uuid4().hex
 
@@ -151,9 +139,41 @@ def test_get_bad_data():
             """
         )
 
-        graph_db = GraphDBStorage[Film](settings)
+        graph_db = FimGraphHandler(client=client, settings=settings)
 
         # when
         result = graph_db.select("bad-uid")
         # then
         assert result is None
+
+
+def test_add_relationship_person():
+    # given
+
+    client = kuzu.Database()
+
+    film_db = FimGraphHandler(
+        client=client,
+    )
+
+    film = Film(
+        title="Inception",
+        permalink="https://example.com/inception",
+    )
+
+    person_db = PersonGraphHandler(client=client)
+
+    person = Person(
+        title="Christopher Nolan",
+        permalink="https://example.com/christopher-nolan",
+    )
+
+    film_db.insert_many([film])
+    person_db.insert_many([person])
+
+    # when
+    result = film_db.add_relationship(film, "directed_by", person)
+
+    # then
+    assert film_db.person_client.select(person.uid) is not None
+    assert isinstance(result, Relationship)
