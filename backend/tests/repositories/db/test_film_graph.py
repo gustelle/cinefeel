@@ -2,9 +2,11 @@ import tempfile
 import uuid
 
 import kuzu
+import pytest
 
 from src.entities.film import Film
 from src.entities.person import Person
+from src.interfaces.storage import StorageError
 from src.repositories.db.abstract_graph import Relationship
 from src.repositories.db.film_graph import FimGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
@@ -177,3 +179,65 @@ def test_add_relationship_person():
     # then
     assert film_db.person_client.select(person.uid) is not None
     assert isinstance(result, Relationship)
+
+
+def test_add_relationship_non_existent_film():
+    # given
+
+    client = kuzu.Database()
+
+    film_db = FimGraphHandler(
+        client=client,
+    )
+
+    film = Film(
+        title="Inception",
+        permalink="https://example.com/inception",
+    )
+
+    person_db = PersonGraphHandler(client=client)
+
+    person = Person(
+        title="Christopher Nolan",
+        permalink="https://example.com/christopher-nolan",
+    )
+
+    person_db.insert_many([person])
+
+    # when
+    with pytest.raises(StorageError) as exc_info:
+        film_db.add_relationship(film, "directed_by", person)
+
+    # then
+    assert "Content with ID" in str(exc_info.value)
+    assert "does not exist in the database" in str(exc_info.value)
+
+
+def test_add_relationship_non_existent_person():
+    # given
+
+    client = kuzu.Database()
+
+    film_db = FimGraphHandler(
+        client=client,
+    )
+
+    film = Film(
+        title="Inception",
+        permalink="https://example.com/inception",
+    )
+
+    film_db.insert_many([film])
+
+    non_existent_person = Person(
+        title="Non Existent Person",
+        permalink="https://example.com/non-existent-person",
+    )
+
+    # when
+    with pytest.raises(StorageError) as exc_info:
+        film_db.add_relationship(film, "directed_by", non_existent_person)
+
+    # then
+    assert "Related content with ID" in str(exc_info.value)
+    assert "does not exist in the database" in str(exc_info.value)

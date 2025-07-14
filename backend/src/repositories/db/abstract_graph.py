@@ -2,22 +2,12 @@ import tempfile
 
 import kuzu
 from loguru import logger
-from pydantic import BaseModel
 
-from src.entities.composable import Composable
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.relation_manager import IRelationshipHandler
 from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
-
-
-class Relationship(BaseModel):
-    """A class representing a relationship between two entities."""
-
-    from_entity: Composable
-    to_entity: Composable
-    relation_type: str
 
 
 class AbstractGraphHandler[T: Film | Person](
@@ -37,7 +27,15 @@ class AbstractGraphHandler[T: Film | Person](
         """if not client is provided, it will use an in-memory instance of kuzu."""
 
         self.settings = settings
-        self.client = client or kuzu.Database()
+
+        # fallback to in-memory database if no client is provided and no persistence directory is set
+        db_path = (
+            self.settings.db_persistence_directory / "graph.db"
+            if self.settings.db_persistence_directory
+            else None
+        )
+
+        self.client = client or kuzu.Database(database_path=db_path)
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.

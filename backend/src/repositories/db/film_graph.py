@@ -3,10 +3,11 @@ from loguru import logger
 
 from src.entities.film import Film
 from src.entities.person import Person
+from src.interfaces.relation_manager import Relationship
 from src.interfaces.storage import StorageError
 from src.settings import Settings
 
-from .abstract_graph import AbstractGraphHandler, Relationship
+from .abstract_graph import AbstractGraphHandler
 
 
 class FimGraphHandler(AbstractGraphHandler[Film]):
@@ -45,11 +46,6 @@ class FimGraphHandler(AbstractGraphHandler[Film]):
                 """
             )
             if result.has_next():
-                docs = result.get_next()
-
-                logger.debug(f"Validating related content: {docs[0]}")
-
-                Person.model_validate(docs[0])
 
                 # add relationships if any
                 if relation_name == "directed_by":
@@ -68,8 +64,12 @@ class FimGraphHandler(AbstractGraphHandler[Film]):
                     f"Related content with ID '{related_content.uid}' does not exist in the database."
                 )
         except Exception as e:
+            logger.error(
+                f"Error adding relationship '{relation_name}' between Film '{content.uid}' and Person '{related_content.uid}': {e}"
+            )
+
             raise StorageError(
-                f"Error validating related content with ID '{related_content.uid}': {e}"
+                f"Invalid related content with ID '{related_content.uid}': {e}"
             ) from e
         finally:
             conn.close()

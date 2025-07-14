@@ -7,6 +7,7 @@ from src.entities.composable import Composable
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.http_client import HttpError, IHttpClient
+from src.interfaces.relation_manager import Relationship
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.db.abstract_graph import AbstractGraphHandler
@@ -39,10 +40,6 @@ class RelationshipFlow(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
         self.http_client = http_client
-
-        get_run_logger().info(
-            f"Initialized RelationshipFlow, http_client: {http_client}"
-        )
 
     @task(
         task_run_name="download_page-{page_id}",
@@ -199,13 +196,16 @@ class RelationshipFlow(ITaskExecutor):
             logger.error(f"Error extracting entity from HTML: {e}")
             return None
 
-    @task(task_run_name="add_relationship-{entity.uid}", cache_policy=NO_CACHE)
-    def add_relationship(
+    @task(
+        task_run_name="store_relationship-{entity.uid}-{directed_by.uid}",
+        cache_policy=NO_CACHE,
+    )
+    def store_relationship(
         self,
         entity: Composable,
         directed_by: Composable | None,
         relation_handler: AbstractGraphHandler[Composable],
-    ) -> Composable:
+    ) -> Relationship:
         """
         Analyze the relationships of a single entity.
         This method should be implemented to analyze the relationships
@@ -214,22 +214,18 @@ class RelationshipFlow(ITaskExecutor):
         logger = get_run_logger()
 
         if directed_by is not None:
-            logger.info(
-                f"Adding relationship: '{entity.uid}' directed by '{directed_by.uid}'"
-            )
-            # Here you would implement the logic to add the relationship
-            # For example, you might query a graph database or perform some analysis
-            # and then store the results back into the graph database.
-            relation_handler.add_relationship(
+
+            result = relation_handler.add_relationship(
                 content=entity,
                 relation_name="directed_by",
                 related_content=directed_by,
             )
 
-        # Here you would implement the logic to analyze relationships
-        # For example, you might query a graph database or perform some analysis
-        # and then store the results back into the graph database.
-        return entity
+        logger.info(
+            f"Relationship '{result.relation_type}' added between '{result.from_entity.uid}' ' and '{result.to_entity.uid}'."
+        )
+
+        return result
 
     @task(task_run_name="analyze_relationships-{entity.uid}", cache_policy=NO_CACHE)
     def analyze_relationships(self, entity: Composable) -> Composable:
@@ -257,7 +253,7 @@ class RelationshipFlow(ITaskExecutor):
                 settings=self.settings,
             )
 
-            film_relation_handler = FimGraphHandler[Film](settings=self.settings)
+            film_relation_handler = FimGraphHandler(settings=self.settings)
 
             if (
                 entity.specifications is not None
@@ -274,7 +270,7 @@ class RelationshipFlow(ITaskExecutor):
                         entity_handler=json_entity_storage,
                         html_handler=html_storage,
                     )
-                    _fut_relationship = self.add_relationship.submit(
+                    _fut_relationship = self.store_relationship.submit(
                         entity=entity,
                         directed_by=_fut_entity,
                         relation_handler=film_relation_handler,
@@ -340,12 +336,14 @@ class RelationshipFlow(ITaskExecutor):
             )
             entity_futures.append(future_entity)
 
-            storage_futures.append(
-                self.add_relationship.submit(
-                    # storage=json_p_storage,
-                    entity=future_entity,
-                )
-            )
+            # storage_futures.append(
+            #     self.store_relationship.submit(
+            #         # storage=json_p_storage,
+            #         entity=future_entity,
+            #     )
+            # )
+
+        wait(entity_futures)
 
         # now wait for all tasks to complete
         future_storage: PrefectFuture
