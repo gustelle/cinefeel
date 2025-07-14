@@ -2,6 +2,7 @@ import tempfile
 
 import kuzu
 from loguru import logger
+from pydantic_settings import BaseSettings
 
 from src.entities.film import Film
 from src.entities.person import Person
@@ -22,7 +23,7 @@ class AbstractGraphHandler[T: Film | Person](
     def __init__(
         self,
         client: kuzu.Database | None = None,
-        settings: Settings = Settings(),
+        settings: BaseSettings = Settings(),
     ):
         """if not client is provided, it will use an in-memory instance of kuzu."""
 

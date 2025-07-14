@@ -56,7 +56,8 @@ class OllamaVisioner(IDataMiner):
             )
 
             # pop the score from the values
-            score = dict_resp.pop("score")
+            # fix: if the score is not returned, default to 0
+            score = dict_resp.pop("score", 0)
 
             # ensure score is between 0.0 and 1.0
             # sometimes the model returns a score like 1.0000000000000002
@@ -74,9 +75,7 @@ class OllamaVisioner(IDataMiner):
             logger.debug(f"Parsed result: {result}")
 
         except Exception as e:
-            import traceback
 
-            logger.error(traceback.format_exc())
             raise ValueError(f"Error parsing response: {e}") from e
 
         return ExtractionResult(score=score, entity=result)

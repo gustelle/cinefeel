@@ -12,8 +12,8 @@ from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.relation_manager import Relationship
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
-from src.repositories.db.abstract_graph import AbstractGraphHandler
 from src.repositories.db.film_graph import FimGraphHandler
+from src.repositories.db.person_graph import PersonGraphHandler
 from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
@@ -134,18 +134,17 @@ class RelationshipFlow(ITaskExecutor):
             return None
 
     @task(cache_policy=NO_CACHE)
-    def get_entity_by_permalink(
+    def get_entity(
         self,
         permalink: HttpUrl,
+        entity_type: type[Composable],
     ) -> Composable | None:
         """
         Extracts an entity from the HTML content and stores it using the provided storage handler.
 
         Args:
             permalink (HttpUrl): The permalink of the entity to extract.
-            html_handler (IStorageHandler[str] | None): The storage handler to use for storing the HTML content.
-            entity_handler (IStorageHandler): The storage handler to use for storing
-                (if not already existing) or to use for retrieving the entity if it already exists.
+            entity_type (type[Composable]): The type of the entity to extract.
 
         Returns:
             Composable | None: The extracted entity if successful, None otherwise.
@@ -156,14 +155,11 @@ class RelationshipFlow(ITaskExecutor):
 
             tmp_storage = LocalTextStorage(
                 path=self.settings.persistence_directory,
-                entity_type=self.entity_type,
+                entity_type=entity_type,
             )
 
-            json_storage = JSONEntityStorageHandler[self.entity_type](
-                settings=self.settings
-            )
-
-            # search for the entity in the storage handler
+            # here we are dealing with a Movie
+            json_storage = JSONEntityStorageHandler[entity_type](settings=self.settings)
             results = json_storage.query(
                 permalink=permalink,
                 limit=1,
@@ -187,13 +183,13 @@ class RelationshipFlow(ITaskExecutor):
             # trigger the HTML parsing flow
             flow = HtmlParsingFlow(
                 settings=self.settings,
-                entity_type=Person,
+                entity_type=entity_type,
             )
 
             flow.execute(
                 content_ids=[content_id],
                 input_storage=tmp_storage,
-                output_storage=json_storage,  # store the entity in the JSON storage
+                output_storage=json_storage,
             )
 
             logger.info(f"HTML parsing flow executed for content ID '{content_id}'.")
@@ -222,7 +218,6 @@ class RelationshipFlow(ITaskExecutor):
         self,
         entity: Composable,
         relationship: RelationshipData,
-        relation_handler: AbstractGraphHandler[Composable],
     ) -> Relationship:
         """
         Operates the storage of a relationship between two entities in the graph database.
@@ -232,6 +227,22 @@ class RelationshipFlow(ITaskExecutor):
         related_name = relationship.get("related_entity_name")
         relation_type = relationship.get("relation_type")
 
+        is_person_relation = (
+            True
+            if relation_type
+            in [
+                "directed_by",
+                "written_by",
+                "composed_by",
+                "produced_by",
+                "distributed_by",
+                "special_effects_by",
+                "scenography_by",
+                "influenced_by",
+            ]
+            else False
+        )
+
         permalink = self.get_permalink_by_name(name=related_name)
 
         if permalink is None:
@@ -240,22 +251,39 @@ class RelationshipFlow(ITaskExecutor):
             )
             return None
 
-        related_entity_future = self.get_entity_by_permalink(
-            permalink=permalink,
+        related_entity: Composable = self.get_entity(
+            permalink=permalink, entity_type=Person if is_person_relation else Film
         )
 
-        if related_entity_future is not None:
-
-            related_entity = related_entity_future.result(
-                raise_on_failure=True,
-                timeout=self.settings.task_timeout,
-            )
+        if related_entity is not None:
 
             logger.info(
                 f"Storing relationship '{relation_type}' between '{entity.uid}' and '{related_entity.uid if related_entity else 'None'}'."
             )
 
-            result = relation_handler.add_relationship(
+            related_entity_handler = (
+                PersonGraphHandler(None, self.settings)
+                if is_person_relation
+                else FimGraphHandler(None, self.settings)
+            )
+
+            # make sure the related entity exists in the database
+            # because the relationship cannot be stored otherwise
+            if not related_entity_handler.select(related_entity.uid):
+                logger.warning(
+                    f"Related entity '{related_entity.uid}' does not exist in the database. Storing it first."
+                )
+                related_entity_handler.insert_many([related_entity])
+
+            # now we can store the relationship
+            # using the entity graph handler
+            entity_handler = (
+                FimGraphHandler(None, self.settings)
+                if isinstance(entity, Film)
+                else PersonGraphHandler(None, self.settings)
+            )
+
+            result = entity_handler.add_relationship(
                 content=entity,
                 relation_name=relation_type,
                 related_content=related_entity,
@@ -284,8 +312,6 @@ class RelationshipFlow(ITaskExecutor):
             # retrieve the persons that directed the film
             entity: Film = entity  # type: ignore
 
-            film_relation_handler = FimGraphHandler(settings=self.settings)
-
             if (
                 entity.specifications is not None
                 and entity.specifications.directed_by is not None
@@ -299,7 +325,6 @@ class RelationshipFlow(ITaskExecutor):
                             "related_entity_name": name,
                             "relation_type": "directed_by",
                         },
-                        relation_handler=film_relation_handler,
                     )
 
                     _futures.append(_fut_relationship)
@@ -347,41 +372,46 @@ class RelationshipFlow(ITaskExecutor):
             settings=self.settings
         )
 
-        # send concurrent tasks to analyze HTML content
-        # don't wait for the task to be completed
-        storage_futures = []
+        try:
 
-        # need to keep track of the futures to wait for them later
-        # see: https://github.com/PrefectHQ/prefect/issues/17517
-        entity_futures = []
+            # send concurrent tasks to analyze HTML content
+            # don't wait for the task to be completed
+            storage_futures = []
 
-        for entity in local_storage_handler.scan():
+            # need to keep track of the futures to wait for them later
+            # see: https://github.com/PrefectHQ/prefect/issues/17517
+            entity_futures = []
 
-            future_entity = self.analyze_relationships.submit(
-                entity=entity,
-            )
-            entity_futures.append(future_entity)
+            for entity in local_storage_handler.scan():
 
-            # storage_futures.append(
-            #     self.store_relationship.submit(
-            #         # storage=json_p_storage,
-            #         entity=future_entity,
-            #     )
-            # )
-
-        wait(entity_futures)
-
-        # now wait for all tasks to complete
-        future_storage: PrefectFuture
-        for future_storage in storage_futures:
-            try:
-                future_storage.result(
-                    raise_on_failure=True, timeout=self.settings.task_timeout
+                future_entity = self.analyze_relationships.submit(
+                    entity=entity,
                 )
-            except TimeoutError:
-                logger.warning(f"Task timed out for {future_storage.task_run_id}.")
-            except Exception as e:
-                logger.error(f"Error in task execution: {e}")
+                entity_futures.append(future_entity)
+
+                # storage_futures.append(
+                #     self.store_relationship.submit(
+                #         # storage=json_p_storage,
+                #         entity=future_entity,
+                #     )
+                # )
+
+            wait(entity_futures)
+
+            # now wait for all tasks to complete
+            future_storage: PrefectFuture
+            for future_storage in storage_futures:
+                try:
+                    future_storage.result(
+                        raise_on_failure=True, timeout=self.settings.task_timeout
+                    )
+                except TimeoutError:
+                    logger.warning(f"Task timed out for {future_storage.task_run_id}.")
+                except Exception as e:
+                    logger.error(f"Error in task execution: {e}")
+
+        except Exception as e:
+            logger.error(f"Error executing relationship flow: {e}")
 
         # Iterate over the batch
         # pass the batch to the graph database

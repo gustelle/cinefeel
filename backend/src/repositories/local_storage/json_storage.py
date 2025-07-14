@@ -5,13 +5,12 @@ import orjson
 from loguru import logger
 from pydantic import ValidationError
 
-from src.entities.film import Film
-from src.entities.person import Person
+from src.entities.composable import Composable
 from src.interfaces.storage import IStorageHandler, StorageError
 from src.settings import Settings
 
 
-class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
+class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
     """
     handles persistence of `Film` or `Person` objects into JSON files.
     """
@@ -38,18 +37,10 @@ class JSONEntityStorageHandler[T: Film | Person](IStorageHandler[T]):
                 "JSONEntityStorageHandler must be initialized with a generic type."
             )
 
-        if self.entity_type is Film:
-            self.persistence_directory = settings.persistence_directory / "films"
-        elif self.entity_type is Person:
-            self.persistence_directory = settings.persistence_directory / "persons"
-        else:
-            raise ValueError(
-                f"Unsupported entity type: {self.entity_type}. "
-                "Expected Film or Person."
-            )
-
+        self.persistence_directory = (
+            settings.persistence_directory / f"{self.entity_type.__name__.lower()}s"
+        )
         self.persistence_directory.mkdir(parents=True, exist_ok=True)
-        logger.debug(f"Created dir '{self.persistence_directory}'")
 
     def insert(
         self,
