@@ -2,6 +2,7 @@ meili_data/
 .venv/
 .crawler_cache/
 data/
+.db/
 
 # From https://github.com/github/gitignore/blob/main/Python.gitignore
 # Byte-compiled / optimized / DLL files

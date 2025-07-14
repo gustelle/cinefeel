@@ -49,8 +49,8 @@ package-mode = false
 run         = "python3 main.py"
 test        = "pytest -s --tb=line"
 enrich      = "poe run enrich"
-extract_persons = "poe run extract_persons"
-extract_movies = "poe run extract_movies"
+extract_persons = "poe run extract-persons"
+extract_movies = "poe run extract-movies"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.5"

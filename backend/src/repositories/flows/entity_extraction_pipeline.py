@@ -8,6 +8,8 @@ from src.repositories.flows.tasks.task_html_parsing import HtmlParsingFlow
 from src.repositories.flows.tasks.task_indexer import IndexerFlow
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.local_storage.html_storage import LocalTextStorage
+from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
+from src.repositories.search.meili_indexer import MeiliIndexer
 from src.settings import Settings
 
 
@@ -37,6 +39,12 @@ class Html2EntitiesPipeline(IPipelineRunner):
             path=self.settings.persistence_directory,
             entity_type=self.entity_type,
         )
+
+        json_storage = JSONEntityStorageHandler[self.entity_type](
+            settings=self.settings
+        )
+
+        meili_storage = MeiliIndexer[self.entity_type](settings=self.settings)
 
         http_client = AsyncHttpClient(settings=self.settings)
 
@@ -71,7 +79,8 @@ class Html2EntitiesPipeline(IPipelineRunner):
             # filter the contents to only include the ones that are not already in the storage
             analysis_flow.execute(
                 content_ids=content_ids,
-                storage_handler=html_storage,
+                input_storage=html_storage,
+                output_storage=json_storage,
             )
 
         # index the films into a search engine
@@ -80,6 +89,9 @@ class Html2EntitiesPipeline(IPipelineRunner):
         IndexerFlow(
             settings=self.settings,
             entity_type=self.entity_type,
-        ).execute()
+        ).execute(
+            input_storage=json_storage,
+            output_storage=meili_storage,
+        )
 
         logger.info("Flow completed successfully.")

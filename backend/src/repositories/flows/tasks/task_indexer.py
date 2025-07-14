@@ -1,12 +1,9 @@
 from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
-from prefect.futures import PrefectFuture
 
 from src.entities.composable import Composable
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
-from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
-from src.repositories.search.meili_indexer import MeiliIndexer
 from src.settings import Settings
 
 
@@ -38,14 +35,11 @@ class IndexerFlow(ITaskExecutor):
     )
     def execute(
         self,
+        input_storage: IStorageHandler[Composable],
+        output_storage: IStorageHandler[Composable],
     ) -> None:
 
         logger = get_run_logger()
-
-        storage_handler = JSONEntityStorageHandler[self.entity_type](
-            settings=self.settings
-        )
-        indexer = MeiliIndexer[self.entity_type](settings=self.settings)
 
         # upsert in batches
         last_ = None
@@ -56,13 +50,13 @@ class IndexerFlow(ITaskExecutor):
 
         while has_more:
 
-            batch = storage_handler.query(
+            batch = input_storage.query(
                 order_by="uid",
                 after=last_,
                 limit=batch_size,
             )
 
-            futures.append(self.index_batch.submit(batch, indexer))
+            futures.append(self.index_batch.submit(batch, output_storage))
 
             if batch is None or len(batch) == 0:
                 logger.info(
@@ -78,14 +72,11 @@ class IndexerFlow(ITaskExecutor):
                 last_ = batch[-1]
                 logger.info(f"Next batch starting after '{last_.uid}'")
 
-        future: PrefectFuture
         for future in futures:
             try:
-                future.result(timeout=5, raise_on_failure=True)
+                future.result(timeout=self.settings.task_timeout, raise_on_failure=True)
             except TimeoutError:
-                logger.warning(
-                    f"Task timed out for {future.task_run_id}, skipping storage."
-                )
+                logger.warning(f"Task timed out for {future.task_run_id}.")
             except Exception as e:
                 logger.error(f"Error in task execution: {e}")
 

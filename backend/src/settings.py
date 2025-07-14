@@ -184,7 +184,7 @@ class Settings(BaseSettings):
     )
 
     task_timeout: int = Field(
-        default=120,  # 2 minutes
+        default=60,  # 1 minute
         description="The timeout for tasks in seconds",
     )
 

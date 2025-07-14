@@ -6,8 +6,8 @@ import pytest
 
 from src.entities.film import Film
 from src.entities.person import Person
+from src.interfaces.relation_manager import Relationship
 from src.interfaces.storage import StorageError
-from src.repositories.db.abstract_graph import Relationship
 from src.repositories.db.film_graph import FimGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
 from src.settings import Settings
@@ -28,7 +28,11 @@ def test_graph_db_initialization():
 def test_insert_or_update():
     # given
 
-    graph_db = FimGraphHandler()
+    graph_db = FimGraphHandler(
+        settings=Settings(
+            db_persistence_directory=None,  # Use in-memory database for testing
+        )
+    )
 
     film = Film(
         title="Inception",
@@ -48,7 +52,11 @@ def test_insert_or_update():
 def test_insert_or_update_deduplication():
     # given
 
-    graph_db = FimGraphHandler()
+    graph_db = FimGraphHandler(
+        settings=Settings(
+            db_persistence_directory=None,  # Use in-memory database for testing
+        )
+    )
 
     film = Film(
         title="Inception",
@@ -70,7 +78,11 @@ def test_insert_or_update_deduplication():
 def test_get_nominal():
     # given
 
-    graph_db = FimGraphHandler()
+    graph_db = FimGraphHandler(
+        settings=Settings(
+            db_persistence_directory=None,  # Use in-memory database for testing
+        )
+    )
 
     film = Film(
         title="Inception",
