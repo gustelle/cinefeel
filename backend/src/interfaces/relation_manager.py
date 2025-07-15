@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel
@@ -18,6 +19,32 @@ class Relationship(BaseModel):
     from_entity: Composable
     to_entity: Composable
     relation_type: str
+
+
+class RelationshipType(StrEnum):
+    """An enumeration of possible relationship types."""
+
+    pass
+
+
+class PeopleRelationshipType(RelationshipType):
+    """An enumeration of possible relationship types."""
+
+    # people
+    DIRECTED_BY = "DirectedBy"
+    ACTED_IN = "ActedIn"
+    WRITTEN_BY = "WrittenBy"
+    SCRIPTED_BY = "ScriptedBy"
+    COMPOSED_BY = "ComposedBy"
+    SPECIAL_EFFECTS_BY = "SpecialEffectsBy"
+    SCENOGRAPHY_BY = "ScenographyBy"
+    INFLUENCED_BY = "InfluencedBy"
+
+
+class CompanyRelationshipType(RelationshipType):
+    # Companies
+    PRODUCED_BY = "ProducedBy"
+    DISTRIBUTED_BY = "DistributedBy"
 
 
 @runtime_checkable

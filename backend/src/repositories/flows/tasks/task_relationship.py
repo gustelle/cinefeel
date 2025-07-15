@@ -1,15 +1,19 @@
-from typing import TypedDict
 
 from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 from prefect.futures import PrefectFuture, wait
-from pydantic import HttpUrl
+from pydantic import BaseModel, HttpUrl
 
 from src.entities.composable import Composable
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.http_client import HttpError, IHttpClient
-from src.interfaces.relation_manager import Relationship
+from src.interfaces.relation_manager import (
+    CompanyRelationshipType,
+    PeopleRelationshipType,
+    Relationship,
+    RelationshipType,
+)
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.db.film_graph import FimGraphHandler
@@ -21,13 +25,31 @@ from src.settings import Settings
 from .task_html_parsing import HtmlParsingFlow
 
 
-class RelationshipData(TypedDict):
+class RelationshipData(BaseModel):
     """
     Data structure for relationship information.
     """
 
     related_entity_name: str
-    relation_type: str
+    relation_type: RelationshipType
+
+    def is_person_relationship(self) -> bool:
+        """
+        Check if the relationship is a person relationship.
+
+        Returns:
+            bool: True if the relationship is a person relationship, False otherwise.
+        """
+        return isinstance(self.relation_type, PeopleRelationshipType)
+
+    def is_company_relationship(self) -> bool:
+        """
+        Check if the relationship is a company relationship.
+
+        Returns:
+            bool: True if the relationship is a company relationship, False otherwise.
+        """
+        return isinstance(self.relation_type, CompanyRelationshipType)
 
 
 class RelationshipFlow(ITaskExecutor):
@@ -142,6 +164,9 @@ class RelationshipFlow(ITaskExecutor):
         """
         Extracts an entity from the HTML content and stores it using the provided storage handler.
 
+        TODO:
+        - test this method
+
         Args:
             permalink (HttpUrl): The permalink of the entity to extract.
             entity_type (type[Composable]): The type of the entity to extract.
@@ -220,34 +245,20 @@ class RelationshipFlow(ITaskExecutor):
         relationship: RelationshipData,
     ) -> Relationship:
         """
+        TODO:
+        - test this method
+
         Operates the storage of a relationship between two entities in the graph database.
         """
         logger = get_run_logger()
 
-        related_name = relationship.get("related_entity_name")
-        relation_type = relationship.get("relation_type")
+        permalink = self.get_permalink_by_name(name=relationship.related_entity_name)
 
-        is_person_relation = (
-            True
-            if relation_type
-            in [
-                "directed_by",
-                "written_by",
-                "composed_by",
-                "produced_by",
-                "distributed_by",
-                "special_effects_by",
-                "scenography_by",
-                "influenced_by",
-            ]
-            else False
-        )
-
-        permalink = self.get_permalink_by_name(name=related_name)
+        is_person_relation = relationship.is_person_relationship()
 
         if permalink is None:
             logger.warning(
-                f"Could not find permalink for name '{related_name}'. Skipping relationship storage."
+                f"Could not find permalink for name '{relationship.related_entity_name}'. Skipping relationship storage."
             )
             return None
 
@@ -258,7 +269,7 @@ class RelationshipFlow(ITaskExecutor):
         if related_entity is not None:
 
             logger.info(
-                f"Storing relationship '{relation_type}' between '{entity.uid}' and '{related_entity.uid if related_entity else 'None'}'."
+                f"Storing relationship '{relationship.relation_type}' between '{entity.uid}' and '{related_entity.uid if related_entity else 'None'}'."
             )
 
             related_entity_handler = (
@@ -283,9 +294,15 @@ class RelationshipFlow(ITaskExecutor):
                 else PersonGraphHandler(None, self.settings)
             )
 
+            if not entity_handler.select(entity.uid):
+                logger.warning(
+                    f"Entity '{entity.uid}' does not exist in the database. Storing it first."
+                )
+                entity_handler.insert_many([entity])
+
             result = entity_handler.add_relationship(
                 content=entity,
-                relation_name=relation_type,
+                relation_name=relationship.relation_type,
                 related_content=related_entity,
             )
 
@@ -296,7 +313,6 @@ class RelationshipFlow(ITaskExecutor):
     @task(task_run_name="analyze_relationships-{entity.uid}", cache_policy=NO_CACHE)
     def analyze_relationships(self, entity: Composable) -> Composable:
         """
-
         Analyze the relationships of a single entity.
         This method should be implemented to analyze the relationships
         and store them in the graph database.
@@ -307,8 +323,7 @@ class RelationshipFlow(ITaskExecutor):
         _futures = []
 
         if self.entity_type == Film:
-            # retrieve the persons that influenced the film
-            ...
+
             # retrieve the persons that directed the film
             entity: Film = entity  # type: ignore
 
@@ -323,27 +338,64 @@ class RelationshipFlow(ITaskExecutor):
                         entity=entity,
                         relationship={
                             "related_entity_name": name,
-                            "relation_type": "directed_by",
+                            "relation_type": PeopleRelationshipType.DIRECTED_BY,
                         },
                     )
 
                     _futures.append(_fut_relationship)
 
-            for future in _futures:
-                try:
-                    future.result(
-                        raise_on_failure=True,
-                        timeout=self.settings.task_timeout,
-                    )
-                except TimeoutError:
-                    logger.warning(f"Task timed out for {future.task_run_id}.")
-                except Exception as e:
-                    logger.error(f"Error in task execution: {e}")
-
             # retrieve the persons that wrote the script of the film
-            ...
+            if (
+                entity.specifications is not None
+                and entity.specifications.written_by is not None
+            ):
+
+                for name in entity.specifications.written_by:
+
+                    _fut_relationship: PrefectFuture = self.do_enrichment.submit(
+                        entity=entity,
+                        relationship={
+                            "related_entity_name": name,
+                            "relation_type": PeopleRelationshipType.WRITTEN_BY,
+                        },
+                    )
+
+                    _futures.append(_fut_relationship)
+
             # retrieve the persons that composed the music of the film
-            ...
+            if (
+                entity.specifications is not None
+                and entity.specifications.music_by is not None
+            ):
+
+                for name in entity.specifications.music_by:
+
+                    _fut_relationship: PrefectFuture = self.do_enrichment.submit(
+                        entity=entity,
+                        relationship={
+                            "related_entity_name": name,
+                            "relation_type": PeopleRelationshipType.COMPOSED_BY,
+                        },
+                    )
+
+                    _futures.append(_fut_relationship)
+
+            # retrieve the persons that influenced the film
+            if entity.influences is not None and len(entity.influences) > 0:
+
+                for influence in entity.influences:
+                    for p in influence.persons:
+
+                        _fut_relationship: PrefectFuture = self.do_enrichment.submit(
+                            entity=entity,
+                            relationship={
+                                "related_entity_name": p.biography.full_name,
+                                "relation_type": PeopleRelationshipType.INFLUENCED_BY,
+                            },
+                        )
+
+                        _futures.append(_fut_relationship)
+
             # retrieve the company that produced the film
             ...
             # retrieve the company that distributed the film
@@ -356,6 +408,17 @@ class RelationshipFlow(ITaskExecutor):
             ...
             # retrieve actors that played in the film
             ...
+
+            for future in _futures:
+                try:
+                    future.result(
+                        raise_on_failure=True,
+                        timeout=self.settings.task_timeout,
+                    )
+                except TimeoutError:
+                    logger.warning(f"Task timed out for {future.task_run_id}.")
+                except Exception as e:
+                    logger.error(f"Error in task execution: {e}")
 
         return entity
 

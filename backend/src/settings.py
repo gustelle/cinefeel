@@ -226,3 +226,9 @@ class Settings(BaseSettings):
             None means the database will be in memory.
         """,
     )
+    db_max_size: int = Field(
+        default=8 * 1024 * 1024 * 1024,  # 8 GB
+        description="""
+            The maximum size of the database in bytes.
+        """,
+    )

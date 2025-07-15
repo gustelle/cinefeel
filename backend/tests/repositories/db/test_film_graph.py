@@ -3,36 +3,43 @@ import uuid
 
 import kuzu
 import pytest
+from pydantic import ValidationError
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.interfaces.relation_manager import Relationship
+from src.interfaces.relation_manager import PeopleRelationshipType, Relationship
 from src.interfaces.storage import StorageError
 from src.repositories.db.film_graph import FimGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
 from src.settings import Settings
 
 
-def test_graph_db_initialization():
+@pytest.fixture(scope="module")
+def test_db_settings():
+
+    yield Settings(
+        db_persistence_directory=None,  # Use in-memory database for testing
+        db_max_size=1 * 1024 * 1024 * 1024,  # 1 GB for testing
+    )
+
+
+@pytest.fixture(scope="function")
+def test_film_handler(test_db_settings):
+    yield FimGraphHandler(None, test_db_settings)
+
+
+def test_graph_db_initialization(test_film_handler: FimGraphHandler):
     # given
 
-    graph_db = FimGraphHandler()
-
     # when
-    is_setup = graph_db.setup()
+    is_setup = test_film_handler.setup()
 
     # then
     assert is_setup is True
 
 
-def test_insert_or_update():
+def test_insert_or_update(test_film_handler: FimGraphHandler):
     # given
-
-    graph_db = FimGraphHandler(
-        settings=Settings(
-            db_persistence_directory=None,  # Use in-memory database for testing
-        )
-    )
 
     film = Film(
         title="Inception",
@@ -40,23 +47,17 @@ def test_insert_or_update():
     )
 
     # when
-    graph_db.insert_many([film])
+    test_film_handler.insert_many([film])
 
     # then
-    retrieved_film = graph_db.select(film.uid)
+    retrieved_film = test_film_handler.select(film.uid)
 
     assert retrieved_film is not None
     assert retrieved_film.uid == film.uid
 
 
-def test_insert_or_update_deduplication():
+def test_insert_or_update_deduplication(test_film_handler: FimGraphHandler):
     # given
-
-    graph_db = FimGraphHandler(
-        settings=Settings(
-            db_persistence_directory=None,  # Use in-memory database for testing
-        )
-    )
 
     film = Film(
         title="Inception",
@@ -64,50 +65,42 @@ def test_insert_or_update_deduplication():
     )
 
     # when
-    count = graph_db.insert_many([film, film])
+    count = test_film_handler.insert_many([film, film])
 
     # This should not create a duplicate entry
     # then
-    retrieved_film = graph_db.select(film.uid)
+    retrieved_film = test_film_handler.select(film.uid)
 
     assert retrieved_film is not None
     assert retrieved_film.uid == film.uid
     assert count == 1  # Only one film should be inserted
 
 
-def test_get_nominal():
+def test_get_nominal(test_film_handler: FimGraphHandler):
     # given
-
-    graph_db = FimGraphHandler(
-        settings=Settings(
-            db_persistence_directory=None,  # Use in-memory database for testing
-        )
-    )
 
     film = Film(
         title="Inception",
         permalink="https://example.com/inception",
     )
 
-    graph_db.insert_many([film])
+    test_film_handler.insert_many([film])
 
     # when
-    retrieved_film = graph_db.select(film.uid)
+    retrieved_film = test_film_handler.select(film.uid)
 
     # then
     assert retrieved_film is not None
     assert retrieved_film.uid == film.uid
 
 
-def test_get_non_existent():
+def test_get_non_existent(test_film_handler: FimGraphHandler):
     # given
-
-    graph_db = FimGraphHandler()
 
     non_existent_uid = uuid.uuid4().hex
 
     # when
-    retrieved_film = graph_db.select(non_existent_uid)
+    retrieved_film = test_film_handler.select(non_existent_uid)
 
     # then
     assert retrieved_film is None
@@ -120,10 +113,6 @@ def test_get_bad_data():
     # and try to query a film
     with tempfile.TemporaryDirectory() as tmp_dir:
 
-        settings = Settings(
-            db_persistence_directory=tmp_dir,  # Use a temporary file for testing
-        )
-
         file_name = f"{tmp_dir}/bad_data.json"
 
         # create a file with bad data
@@ -131,7 +120,7 @@ def test_get_bad_data():
             f.write('{"uid": "bad-uid", "poo": "Bad Film"}')
 
         # create a GraphDB instance
-        client = kuzu.Database(settings.db_persistence_directory)
+        client = kuzu.Database(tmp_dir)
 
         conn = kuzu.Connection(client)
 
@@ -153,7 +142,13 @@ def test_get_bad_data():
             """
         )
 
-        graph_db = FimGraphHandler(client=client, settings=settings)
+        graph_db = FimGraphHandler(
+            client=client,
+            settings=Settings(
+                db_persistence_directory=tmp_dir,  # Use the temporary directory
+                db_max_size=1 * 1024 * 1024 * 1024,  # 1 GB for testing
+            ),
+        )
 
         # when
         result = graph_db.select("bad-uid")
@@ -161,10 +156,10 @@ def test_get_bad_data():
         assert result is None
 
 
-def test_add_relationship_person():
+def test_add_relationship_person(test_film_handler: FimGraphHandler):
     # given
 
-    client = kuzu.Database()
+    client = kuzu.Database(test_film_handler.client.database_path)
 
     film_db = FimGraphHandler(
         client=client,
@@ -186,17 +181,17 @@ def test_add_relationship_person():
     person_db.insert_many([person])
 
     # when
-    result = film_db.add_relationship(film, "directed_by", person)
+    result = film_db.add_relationship(film, PeopleRelationshipType.DIRECTED_BY, person)
 
     # then
     assert film_db.person_client.select(person.uid) is not None
     assert isinstance(result, Relationship)
 
 
-def test_add_relationship_non_existent_film():
+def test_add_relationship_non_existent_film(test_film_handler: FimGraphHandler):
     # given
 
-    client = kuzu.Database()
+    client = kuzu.Database(test_film_handler.client.database_path)
 
     film_db = FimGraphHandler(
         client=client,
@@ -218,17 +213,17 @@ def test_add_relationship_non_existent_film():
 
     # when
     with pytest.raises(StorageError) as exc_info:
-        film_db.add_relationship(film, "directed_by", person)
+        film_db.add_relationship(film, PeopleRelationshipType.DIRECTED_BY, person)
 
     # then
     assert "Content with ID" in str(exc_info.value)
     assert "does not exist in the database" in str(exc_info.value)
 
 
-def test_add_relationship_non_existent_person():
+def test_add_relationship_non_existent_person(test_film_handler: FimGraphHandler):
     # given
 
-    client = kuzu.Database()
+    client = kuzu.Database(test_film_handler.client.database_path)
 
     film_db = FimGraphHandler(
         client=client,
@@ -248,8 +243,42 @@ def test_add_relationship_non_existent_person():
 
     # when
     with pytest.raises(StorageError) as exc_info:
-        film_db.add_relationship(film, "directed_by", non_existent_person)
+        film_db.add_relationship(
+            film, PeopleRelationshipType.DIRECTED_BY, non_existent_person
+        )
 
     # then
     assert "Related content with ID" in str(exc_info.value)
     assert "does not exist in the database" in str(exc_info.value)
+
+
+def test_add_invalid_relationship(test_film_handler: FimGraphHandler):
+    # given
+
+    client = kuzu.Database(test_film_handler.client.database_path)
+
+    film_db = FimGraphHandler(
+        client=client,
+    )
+
+    film = Film(
+        title="Inception",
+        permalink="https://example.com/inception",
+    )
+
+    person_db = PersonGraphHandler(client=client)
+
+    person = Person(
+        title="Christopher Nolan",
+        permalink="https://example.com/christopher-nolan",
+    )
+
+    film_db.insert_many([film])
+    person_db.insert_many([person])
+
+    # when
+    with pytest.raises(ValidationError) as exc_info:
+        film_db.add_relationship(film, "INVALID_RELATIONSHIP_TYPE", person)
+
+    # then
+    assert "INVALID_RELATIONSHIP_TYPE" in str(exc_info.value)
