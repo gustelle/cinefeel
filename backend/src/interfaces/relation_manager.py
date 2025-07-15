@@ -59,7 +59,7 @@ class IRelationshipHandler[U: Film | Person](Protocol):
     def add_relationship(
         self,
         content: U,
-        relation_name: str,
+        relation_type: RelationshipType,
         related_content: Film | Person,
         *args,
         **kwargs,
