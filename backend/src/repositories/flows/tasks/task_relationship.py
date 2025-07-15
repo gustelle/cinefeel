@@ -1,4 +1,3 @@
-
 from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 from prefect.futures import PrefectFuture, wait
@@ -336,10 +335,10 @@ class RelationshipFlow(ITaskExecutor):
 
                     _fut_relationship: PrefectFuture = self.do_enrichment.submit(
                         entity=entity,
-                        relationship={
-                            "related_entity_name": name,
-                            "relation_type": PeopleRelationshipType.DIRECTED_BY,
-                        },
+                        relationship=RelationshipData(
+                            related_entity_name=name,
+                            relation_type=PeopleRelationshipType.DIRECTED_BY,
+                        ),
                     )
 
                     _futures.append(_fut_relationship)
@@ -354,10 +353,10 @@ class RelationshipFlow(ITaskExecutor):
 
                     _fut_relationship: PrefectFuture = self.do_enrichment.submit(
                         entity=entity,
-                        relationship={
-                            "related_entity_name": name,
-                            "relation_type": PeopleRelationshipType.WRITTEN_BY,
-                        },
+                        relationship=RelationshipData(
+                            related_entity_name=name,
+                            relation_type=PeopleRelationshipType.WRITTEN_BY,
+                        ),
                     )
 
                     _futures.append(_fut_relationship)
@@ -372,10 +371,10 @@ class RelationshipFlow(ITaskExecutor):
 
                     _fut_relationship: PrefectFuture = self.do_enrichment.submit(
                         entity=entity,
-                        relationship={
-                            "related_entity_name": name,
-                            "relation_type": PeopleRelationshipType.COMPOSED_BY,
-                        },
+                        relationship=RelationshipData(
+                            related_entity_name=name,
+                            relation_type=PeopleRelationshipType.COMPOSED_BY,
+                        ),
                     )
 
                     _futures.append(_fut_relationship)
@@ -388,10 +387,10 @@ class RelationshipFlow(ITaskExecutor):
 
                         _fut_relationship: PrefectFuture = self.do_enrichment.submit(
                             entity=entity,
-                            relationship={
-                                "related_entity_name": p.biography.full_name,
-                                "relation_type": PeopleRelationshipType.INFLUENCED_BY,
-                            },
+                            relationship=RelationshipData(
+                                related_entity_name=name,
+                                relation_type=PeopleRelationshipType.INFLUENCED_BY,
+                            ),
                         )
 
                         _futures.append(_fut_relationship)

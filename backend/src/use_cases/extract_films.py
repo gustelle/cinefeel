@@ -2,12 +2,12 @@ import time
 
 from loguru import logger
 
-from src.entities.person import Person
+from src.entities.film import Film
 from src.repositories.flows.entity_extraction_pipeline import Html2EntitiesPipeline
 from src.settings import Settings
 
 
-class WikipediaPersonAnalysisUseCase:
+class WikipediaFilmExtractionUseCase:
 
     settings: Settings
 
@@ -20,7 +20,7 @@ class WikipediaPersonAnalysisUseCase:
 
         await Html2EntitiesPipeline(
             settings=self.settings,
-            entity_type=Person,
+            entity_type=Film,
         ).execute_pipeline()
 
         end_time = time.time()
