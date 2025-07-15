@@ -23,7 +23,7 @@ def test_task_store():
     )
 
     # when
-    flow_runner.to_json_file(stub_storage, entity)
+    flow_runner.to_storage(stub_storage, entity)
 
     # then
     assert stub_storage.is_inserted, "Film was not inserted into the storage."

@@ -2,6 +2,8 @@ meili_data/
 .venv/
 .crawler_cache/
 data/
+.db/
+logs/
 
 # From https://github.com/github/gitignore/blob/main/Python.gitignore
 # Byte-compiled / optimized / DLL files
@@ -176,3 +178,4 @@ dbt_odis/seeds/*
 log/*
 !log/.gitkeep
 
+.db/*

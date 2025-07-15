@@ -1,7 +1,8 @@
+from datetime import datetime
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Any
 
-from pydantic import Field, HttpUrl, StringConstraints
+from pydantic import Field, HttpUrl, StringConstraints, field_validator
 
 from src.entities.color import SkinColor
 from src.entities.component import EntityComponent
@@ -105,6 +106,20 @@ class Biography(EntityComponent):
         serialization_alias="conditions_enfance",
         validation_alias="conditions_enfance",
     )
+
+    @field_validator("birth_date", "death_date", mode="before")
+    @classmethod
+    def load_from_dt(cls, value: Any) -> str | None:
+        """case when loading from a datetime.date object
+        which occurs when loading from duckdb JSON files
+        """
+
+        if isinstance(value, datetime):
+            # Convert datetime.time to HH:MM:SS format
+            print(f"Converting {value} to ISO 8601 format")
+            return value.isoformat().split("T")[0]  # Return only the date part
+
+        return str(value) if value else None
 
 
 class PersonMedia(EntityComponent):

@@ -184,7 +184,7 @@ class Settings(BaseSettings):
     )
 
     task_timeout: int = Field(
-        default=120,  # 2 minutes
+        default=60,  # 1 minute
         description="The timeout for tasks in seconds",
     )
 
@@ -224,5 +224,11 @@ class Settings(BaseSettings):
         description="""
             The path (relative or absolute) to the dir where the database will be saved.
             None means the database will be in memory.
+        """,
+    )
+    db_max_size: int = Field(
+        default=8 * 1024 * 1024 * 1024,  # 8 GB
+        description="""
+            The maximum size of the database in bytes.
         """,
     )

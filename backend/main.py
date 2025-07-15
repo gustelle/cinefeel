@@ -17,12 +17,12 @@ def extract_movies():
 
 async def async_run_films():
 
-    from src.use_cases.analyze_films import WikipediaFilmAnalysisUseCase
+    from src.use_cases.extract_films import WikipediaFilmExtractionUseCase
 
     start_time = time.time()
     logger.info("Starting scraping...")
 
-    uc = WikipediaFilmAnalysisUseCase(
+    uc = WikipediaFilmExtractionUseCase(
         settings=Settings(),
     )
     await uc.execute()
@@ -42,12 +42,12 @@ def extract_persons():
 
 async def async_run_persons():
 
-    from src.use_cases.analyze_persons import WikipediaPersonAnalysisUseCase
+    from src.use_cases.extract_persons import WikipediaPersonExtractionUseCase
 
     start_time = time.time()
     logger.info("Starting scraping...")
 
-    uc = WikipediaPersonAnalysisUseCase(
+    uc = WikipediaPersonExtractionUseCase(
         settings=Settings(),
     )
     await uc.execute()
@@ -84,16 +84,13 @@ if __name__ == "__main__":
     # configure logging
     logger.remove()
 
-    # TODO:
-    # Fix: logging to file is not working with dask/prefect
-    # try logging to file with dask/prefect logging
-    # logger.add(
-    #     "logs/{time:YYYY-MM-DD}.log",
-    #     rotation="1 day",
-    #     retention="7 days",
-    #     level="INFO",
-    #     format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-    # )
+    logger.add(
+        "logs/{time:YYYY-MM-DD}.log",
+        rotation="1 day",
+        retention="7 days",
+        level="INFO",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
+    )
 
     logger.add(
         sys.stderr,

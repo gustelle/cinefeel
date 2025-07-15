@@ -1,9 +1,6 @@
 from typing import Type
 
-import dask
 from prefect import flow, get_run_logger, task
-from prefect.futures import PrefectFuture
-from prefect_dask import DaskTaskRunner
 
 from src.entities.composable import Composable
 from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
@@ -26,7 +23,6 @@ from src.repositories.html_parser.wikipedia_info_retriever import (
     ORPHAN_SECTION_TITLE,
     WikipediaParser,
 )
-from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
 from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
@@ -179,9 +175,9 @@ class HtmlParsingFlow(ITaskExecutor):
             return None
 
     @task(
-        task_run_name="json_store_entity-{entity.uid}",
+        task_run_name="to_storage-{entity.uid}",
     )
-    def to_json_file(self, storage: IStorageHandler, entity: Composable) -> None:
+    def to_storage(self, storage: IStorageHandler, entity: Composable) -> None:
         """
         Store the film entity in the storage.
         """
@@ -190,27 +186,25 @@ class HtmlParsingFlow(ITaskExecutor):
             storage.insert(entity.uid, entity)
 
     @flow(
-        name="analyze",
-        task_runner=DaskTaskRunner(
-            cluster_kwargs={
-                "n_workers": 4,
-                "resources": {"GPU": 1, "process": 1},
-                "dashboard_address": ":8787",
-                "memory_limit": "4GB",
-            },
-        ),
+        name="html_parsing_flow_execute",
+        description="Flow to analyze HTML content and store the results as entities.",
     )
     def execute(
         self,
         content_ids: list[str] | None,
-        storage_handler: IStorageHandler,
+        input_storage: IStorageHandler[str],
+        output_storage: IStorageHandler[Composable],
     ) -> None:
+        """
+
+        Args:
+            content_ids (list[str] | None): _description_
+            storage_handler (IStorageHandler): the storage handler to use for storing the extracted entities.
+        """
 
         logger = get_run_logger()
 
-        json_p_storage = JSONEntityStorageHandler[self.entity_type](
-            settings=self.settings
-        )
+        logger.info("'analyze' flow started with content IDs: %s", content_ids)
 
         analyzer = Html2TextSectionsChopper(
             content_splitter=WikipediaAPIContentSplitter(
@@ -233,52 +227,38 @@ class HtmlParsingFlow(ITaskExecutor):
         # see: https://github.com/PrefectHQ/prefect/issues/17517
         entity_futures = []
 
-        # analyze the HTML content
-        with (
-            dask.annotate(resources={"GPU": 1}),
-            dask.config.set({"array.chunk-size": "512 MiB"}),
-        ):
+        for content_id in content_ids:
 
-            for content_id in content_ids:
+            file_content = input_storage.select(content_id)
 
-                file_content = storage_handler.select(content_id)
+            if file_content is None:
+                logger.warning(f"Content with ID '{content_id}' not found in storage.")
+                continue
 
-                if file_content is None:
-                    logger.warning(
-                        f"Content with ID '{content_id}' not found in storage."
-                    )
-                    continue
+            future_entity = self.do_analysis.submit(
+                analyzer=analyzer,
+                content_id=content_id,
+                html_content=file_content,
+            )
+            entity_futures.append(future_entity)
 
-                future_entity = self.do_analysis.submit(
-                    analyzer=analyzer,
-                    content_id=content_id,
-                    html_content=file_content,
+            storage_futures.append(
+                self.to_storage.submit(
+                    storage=output_storage,
+                    entity=future_entity,
                 )
-                entity_futures.append(future_entity)
+            )
 
-                storage_futures.append(
-                    self.to_json_file.submit(
-                        storage=json_p_storage,
-                        entity=future_entity,
-                    )
-                )
+            i += 1
+            if i > 10:
+                break
 
-                i += 1
-                if i > 1:
-                    break
-
-            # now wait for all tasks to complete
-            future_storage: PrefectFuture
-            for future_storage in storage_futures:
-                try:
-                    future_storage.result(
-                        raise_on_failure=True, timeout=self.settings.task_timeout
-                    )
-                except TimeoutError:
-                    logger.warning(
-                        f"Task timed out for {future_storage.task_run_id}, skipping storage."
-                    )
-                except Exception as e:
-                    logger.error(f"Error in task execution: {e}")
+        for future in entity_futures + storage_futures:
+            try:
+                future.result(timeout=self.settings.task_timeout, raise_on_failure=True)
+            except TimeoutError:
+                logger.warning(f"Task timed out for {future.task_run_id}.")
+            except Exception as e:
+                logger.error(f"Error in task execution: {e}")
 
         logger.info("'analyze' flow completed successfully.")
