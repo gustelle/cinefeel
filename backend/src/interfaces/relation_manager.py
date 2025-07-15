@@ -13,14 +13,6 @@ class RelationshipError(Exception):
     pass
 
 
-class Relationship(BaseModel):
-    """A class representing a relationship between two entities."""
-
-    from_entity: Composable
-    to_entity: Composable
-    relation_type: str
-
-
 class RelationshipType(StrEnum):
     """An enumeration of possible relationship types."""
 
@@ -45,6 +37,14 @@ class CompanyRelationshipType(RelationshipType):
     # Companies
     PRODUCED_BY = "ProducedBy"
     DISTRIBUTED_BY = "DistributedBy"
+
+
+class Relationship(BaseModel):
+    """A class representing a relationship between two entities."""
+
+    from_entity: Composable
+    to_entity: Composable
+    relation_type: RelationshipType
 
 
 @runtime_checkable
