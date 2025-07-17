@@ -161,45 +161,9 @@ class AbstractGraphHandler[T: Film | Person](
         self,
         content_id: str,
     ) -> T:
-        """
-        Retrieve a document by its ID.
-
-        Returns:
-            T: The document with the specified ID.
-        """
-        conn = kuzu.Connection(self.client)
-
-        entity_type = self.entity_type.__name__
-
-        try:
-
-            result = conn.execute(
-                f"""
-                MATCH (n:{entity_type} {{uid: '{content_id}'}})
-                RETURN n LIMIT 1
-                """
-            )
-            if result.has_next():
-
-                docs = result.get_next()
-
-                if not docs:
-                    logger.warning(f"No document found with ID '{content_id}'.")
-                    return None
-
-                return self.entity_type.model_validate(docs[0])
-
-            else:
-                logger.warning(
-                    f"Document with ID '{content_id}' not found in the database."
-                )
-                return None
-
-        except Exception as e:
-            logger.error(f"Error validating document with ID '{content_id}': {e}")
-            return None
-        finally:
-            conn.close()
+        raise NotImplementedError(
+            "This method should be overridden by subclasses to implement the selection logic."
+        )
 
     @validate_call
     def add_relationship(

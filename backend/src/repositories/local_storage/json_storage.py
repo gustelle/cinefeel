@@ -123,7 +123,12 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
             )
 
             if results.empty:
-                logger.warning(f"No {self.entity_type} found matching the criteria")
+                logger.warning(
+                    f"No '{self.entity_type.__name__}' found matching the criteria"
+                )
+                logger.warning(
+                    f"Criteria: permalink={permalink}, after={after}, limit={limit}"
+                )
                 return []
 
             return [

@@ -8,7 +8,7 @@ from src.settings import Settings
 from .abstract_graph import AbstractGraphHandler
 
 
-class FimGraphHandler(AbstractGraphHandler[Film]):
+class FilmGraphHandler(AbstractGraphHandler[Film]):
 
     # required to handle relationships with Person entities
     person_client: AbstractGraphHandler[Person]

@@ -9,26 +9,17 @@ from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.relation_manager import PeopleRelationshipType, Relationship
 from src.interfaces.storage import StorageError
-from src.repositories.db.film_graph import FimGraphHandler
+from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
 from src.settings import Settings
 
 
-@pytest.fixture(scope="module")
-def test_db_settings():
-
-    yield Settings(
-        db_persistence_directory=None,  # Use in-memory database for testing
-        db_max_size=1 * 1024 * 1024 * 1024,  # 1 GB for testing
-    )
-
-
 @pytest.fixture(scope="function")
 def test_film_handler(test_db_settings):
-    yield FimGraphHandler(None, test_db_settings)
+    yield FilmGraphHandler(None, test_db_settings)
 
 
-def test_graph_db_initialization(test_film_handler: FimGraphHandler):
+def test_graph_db_initialization(test_film_handler: FilmGraphHandler):
     # given
 
     # when
@@ -38,7 +29,7 @@ def test_graph_db_initialization(test_film_handler: FimGraphHandler):
     assert is_setup is True
 
 
-def test_insert_or_update(test_film_handler: FimGraphHandler):
+def test_insert_or_update(test_film_handler: FilmGraphHandler):
     # given
 
     film = Film(
@@ -56,7 +47,7 @@ def test_insert_or_update(test_film_handler: FimGraphHandler):
     assert retrieved_film.uid == film.uid
 
 
-def test_insert_or_update_deduplication(test_film_handler: FimGraphHandler):
+def test_insert_or_update_deduplication(test_film_handler: FilmGraphHandler):
     # given
 
     film = Film(
@@ -76,7 +67,7 @@ def test_insert_or_update_deduplication(test_film_handler: FimGraphHandler):
     assert count == 1  # Only one film should be inserted
 
 
-def test_get_nominal(test_film_handler: FimGraphHandler):
+def test_get_nominal(test_film_handler: FilmGraphHandler):
     # given
 
     film = Film(
@@ -94,7 +85,7 @@ def test_get_nominal(test_film_handler: FimGraphHandler):
     assert retrieved_film.uid == film.uid
 
 
-def test_get_non_existent(test_film_handler: FimGraphHandler):
+def test_get_non_existent(test_film_handler: FilmGraphHandler):
     # given
 
     non_existent_uid = uuid.uuid4().hex
@@ -142,7 +133,7 @@ def test_get_bad_data():
             """
         )
 
-        graph_db = FimGraphHandler(
+        graph_db = FilmGraphHandler(
             client=client,
             settings=Settings(
                 db_persistence_directory=tmp_dir,  # Use the temporary directory
@@ -156,12 +147,12 @@ def test_get_bad_data():
         assert result is None
 
 
-def test_add_relationship_person(test_film_handler: FimGraphHandler):
+def test_add_relationship_person(test_film_handler: FilmGraphHandler):
     # given
 
     client = kuzu.Database(test_film_handler.client.database_path)
 
-    film_db = FimGraphHandler(
+    film_db = FilmGraphHandler(
         client=client,
     )
 
@@ -188,12 +179,12 @@ def test_add_relationship_person(test_film_handler: FimGraphHandler):
     assert isinstance(result, Relationship)
 
 
-def test_add_relationship_non_existent_film(test_film_handler: FimGraphHandler):
+def test_add_relationship_non_existent_film(test_film_handler: FilmGraphHandler):
     # given
 
     client = kuzu.Database(test_film_handler.client.database_path)
 
-    film_db = FimGraphHandler(
+    film_db = FilmGraphHandler(
         client=client,
     )
 
@@ -220,12 +211,12 @@ def test_add_relationship_non_existent_film(test_film_handler: FimGraphHandler):
     assert "does not exist in the database" in str(exc_info.value)
 
 
-def test_add_relationship_non_existent_person(test_film_handler: FimGraphHandler):
+def test_add_relationship_non_existent_person(test_film_handler: FilmGraphHandler):
     # given
 
     client = kuzu.Database(test_film_handler.client.database_path)
 
-    film_db = FimGraphHandler(
+    film_db = FilmGraphHandler(
         client=client,
     )
 
@@ -252,12 +243,12 @@ def test_add_relationship_non_existent_person(test_film_handler: FimGraphHandler
     assert "does not exist in the database" in str(exc_info.value)
 
 
-def test_add_invalid_relationship(test_film_handler: FimGraphHandler):
+def test_add_invalid_relationship(test_film_handler: FilmGraphHandler):
     # given
 
     client = kuzu.Database(test_film_handler.client.database_path)
 
-    film_db = FimGraphHandler(
+    film_db = FilmGraphHandler(
         client=client,
     )
 

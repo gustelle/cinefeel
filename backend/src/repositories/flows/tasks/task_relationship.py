@@ -1,6 +1,6 @@
 from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
-from prefect.futures import PrefectFuture, wait
+from prefect.futures import PrefectFuture
 from pydantic import BaseModel, HttpUrl
 
 from src.entities.composable import Composable
@@ -15,7 +15,7 @@ from src.interfaces.relation_manager import (
 )
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
-from src.repositories.db.film_graph import FimGraphHandler
+from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
 from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
@@ -237,6 +237,8 @@ class RelationshipFlow(ITaskExecutor):
     @task(
         task_run_name="store_relationship",
         cache_policy=NO_CACHE,
+        retries=3,
+        retry_delay_seconds=[2, 5, 10],
     )
     def do_enrichment(
         self,
@@ -267,14 +269,10 @@ class RelationshipFlow(ITaskExecutor):
 
         if related_entity is not None:
 
-            logger.info(
-                f"Storing relationship '{relationship.relation_type}' between '{entity.uid}' and '{related_entity.uid if related_entity else 'None'}'."
-            )
-
             related_entity_handler = (
                 PersonGraphHandler(None, self.settings)
                 if is_person_relation
-                else FimGraphHandler(None, self.settings)
+                else FilmGraphHandler(None, self.settings)
             )
 
             # make sure the related entity exists in the database
@@ -288,7 +286,7 @@ class RelationshipFlow(ITaskExecutor):
             # now we can store the relationship
             # using the entity graph handler
             entity_handler = (
-                FimGraphHandler(None, self.settings)
+                FilmGraphHandler(None, self.settings)
                 if isinstance(entity, Film)
                 else PersonGraphHandler(None, self.settings)
             )
@@ -299,14 +297,26 @@ class RelationshipFlow(ITaskExecutor):
                 )
                 entity_handler.insert_many([entity])
 
+            logger.info(
+                f"Storing relationship '{relationship.relation_type}' between '{entity.uid}' and '{related_entity.uid}'."
+            )
+
             result = entity_handler.add_relationship(
                 content=entity,
                 relation_name=relationship.relation_type,
                 related_content=related_entity,
             )
 
+            logger.info(
+                f"Relationship '{relationship.relation_type}' between '{entity.uid}' and '{related_entity.uid}' stored successfully."
+            )
+
             return result
 
+        else:
+            logger.warning(
+                f"Related entity for '{relationship.related_entity_name}' not found. Skipping relationship storage."
+            )
         return None
 
     @task(task_run_name="analyze_relationships-{entity.uid}", cache_policy=NO_CACHE)
@@ -414,6 +424,9 @@ class RelationshipFlow(ITaskExecutor):
                         raise_on_failure=True,
                         timeout=self.settings.task_timeout,
                     )
+                    logger.info(
+                        f"Relationship analysis completed for entity '{entity.uid}'."
+                    )
                 except TimeoutError:
                     logger.warning(f"Task timed out for {future.task_run_id}.")
                 except Exception as e:
@@ -422,7 +435,7 @@ class RelationshipFlow(ITaskExecutor):
         return entity
 
     @flow(
-        name="find_relationships",
+        name="execute_find_relationships",
     )
     def execute(
         self,
@@ -446,6 +459,10 @@ class RelationshipFlow(ITaskExecutor):
 
             for entity in local_storage_handler.scan():
 
+                logger.info(
+                    f"Found entity '{entity.uid}' in json storage, launching analysis."
+                )
+
                 future_entity = self.analyze_relationships.submit(
                     entity=entity,
                 )
@@ -458,11 +475,9 @@ class RelationshipFlow(ITaskExecutor):
                 #     )
                 # )
 
-            wait(entity_futures)
-
             # now wait for all tasks to complete
             future_storage: PrefectFuture
-            for future_storage in storage_futures:
+            for future_storage in storage_futures + entity_futures:
                 try:
                     future_storage.result(
                         raise_on_failure=True, timeout=self.settings.task_timeout

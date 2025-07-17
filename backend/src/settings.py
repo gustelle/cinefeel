@@ -228,6 +228,7 @@ class Settings(BaseSettings):
     )
     db_max_size: int = Field(
         default=8 * 1024 * 1024 * 1024,  # 8 GB
+        ge=4194304,  # 4 MB, the minimum size for Kuzu
         description="""
             The maximum size of the database in bytes.
         """,
