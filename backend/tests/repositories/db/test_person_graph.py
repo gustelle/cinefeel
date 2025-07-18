@@ -9,7 +9,7 @@ def test_film_handler(test_db_settings):
     yield PersonGraphHandler(None, test_db_settings)
 
 
-def test_select_loads_person_by_name(test_film_handler: PersonGraphHandler):
+def test_select_person(test_film_handler: PersonGraphHandler):
     # given
 
     person = Person(
@@ -26,8 +26,6 @@ def test_select_loads_person_by_name(test_film_handler: PersonGraphHandler):
 
     # when
     retrieved_person = test_film_handler.select(person.uid)
-
-    print(retrieved_person)
 
     # then
     assert retrieved_person is not None

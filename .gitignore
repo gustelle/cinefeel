@@ -3,7 +3,6 @@ meili_data/
 .crawler_cache/
 data/
 .db/
-db/
 logs/
 
 # From https://github.com/github/gitignore/blob/main/Python.gitignore

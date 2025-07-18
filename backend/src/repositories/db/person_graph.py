@@ -1,26 +1,13 @@
 import kuzu
 from loguru import logger
-from pydantic_settings import BaseSettings
+from pydantic import TypeAdapter
 
-from src.entities.film import Film
-from src.entities.person import Biography, Person
-from src.settings import Settings
+from src.entities.person import Person
 
 from .abstract_graph import AbstractGraphHandler
 
 
 class PersonGraphHandler(AbstractGraphHandler[Person]):
-
-    # required to handle relationships with Film entities
-    film_client: AbstractGraphHandler[Film]
-
-    def __init__(
-        self,
-        client: kuzu.Database | None = None,
-        settings: BaseSettings = Settings(),
-    ):
-        super().__init__(client, settings)
-        self.film_client = AbstractGraphHandler[Film](client, settings)
 
     def select(
         self,
@@ -28,11 +15,6 @@ class PersonGraphHandler(AbstractGraphHandler[Person]):
     ) -> Person | None:
         """
         Retrieve a document by its ID.
-
-        TODO:
-        - the object is stored as JSON, so we need to parse it
-        - example: biography = Biography.model_validate(docs[0]["biography"], by_name=True)
-        - test model_validate(docs[0], by_name=True)
 
         Returns:
             T: The document with the specified ID.
@@ -59,17 +41,25 @@ class PersonGraphHandler(AbstractGraphHandler[Person]):
 
                 doc = docs[0]
 
-                if "biography" in doc:
-                    # if the document has a biography, we need to validate it
-                    try:
-                        doc["biography"] = Biography.model_validate_json(
-                            doc["biography"], by_name=True
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Error validating biography for document with ID '{content_id}': {e}"
-                        )
-                        return None
+                for (
+                    root_field_name,
+                    root_field_definition,
+                ) in Person.model_fields.items():
+                    if root_field_name in doc and root_field_name in [
+                        "biography",
+                        "media",
+                        "characteristics",
+                        "influences",
+                    ]:
+                        # load json parts
+                        try:
+                            doc[root_field_name] = TypeAdapter(
+                                root_field_definition.annotation
+                            ).validate_json(doc[root_field_name], by_name=True)
+                        except Exception as e:
+                            logger.warning(
+                                f"field '{root_field_name}' will be ignored: {e}"
+                            )
 
                 return self.entity_type.model_validate(doc, by_name=True)
 

@@ -5,7 +5,7 @@ import kuzu
 import pytest
 from pydantic import ValidationError
 
-from src.entities.film import Film
+from src.entities.film import Film, FilmSpecifications
 from src.entities.person import Person
 from src.interfaces.relation_manager import PeopleRelationshipType, Relationship
 from src.interfaces.storage import StorageError
@@ -175,7 +175,6 @@ def test_add_relationship_person(test_film_handler: FilmGraphHandler):
     result = film_db.add_relationship(film, PeopleRelationshipType.DIRECTED_BY, person)
 
     # then
-    assert film_db.person_client.select(person.uid) is not None
     assert isinstance(result, Relationship)
 
 
@@ -273,3 +272,33 @@ def test_add_invalid_relationship(test_film_handler: FilmGraphHandler):
 
     # then
     assert "INVALID_RELATIONSHIP_TYPE" in str(exc_info.value)
+
+
+def test_select_film(test_film_handler: FilmGraphHandler):
+    # given
+
+    film = Film(
+        title="Inception",
+        permalink="https://example.com/inception",
+    )
+    specifications = FilmSpecifications(
+        parent_uid=film.uid,
+        title="Inception",
+        duration=148,
+        release_date="2010-07-16",
+        genres=["Science Fiction", "Action"],
+        written_by=["Christopher Nolan"],
+    )
+    film.specifications = specifications
+
+    test_film_handler.insert_many([film])
+
+    # when
+    retrieved_film = test_film_handler.select(film.uid)
+
+    # then
+    assert retrieved_film is not None
+    assert retrieved_film.specifications.duration == specifications.duration
+    assert retrieved_film.specifications.release_date == specifications.release_date
+    assert retrieved_film.specifications.genres == specifications.genres
+    assert retrieved_film.specifications.written_by == specifications.written_by

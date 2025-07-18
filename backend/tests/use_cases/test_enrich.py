@@ -17,7 +17,7 @@ def test_uc_enrich():
     """
     # given
 
-    local_db_path = _local_dir / "db"
+    local_db_path = _local_dir / ".db"
 
     settings = Settings(
         persistence_directory="/Users/guillaume/Dev/cinefeel/backend/data",
