@@ -182,6 +182,8 @@ class Film(Composable, WorkOfArt):
 
     @field_serializer("actors")
     def serialize_dt(self, value: Any):
+
+        # values coming from LLMs or other sources may be numpy arrays
         if isinstance(value, ndarray):
             value = value.tolist()
 

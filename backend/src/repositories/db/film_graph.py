@@ -16,6 +16,10 @@ class FilmGraphHandler(AbstractMemGraph[Film]):
     ) -> int:
         """only interesting film props are retained in the database,
         i.e. title, permalink, uid, directed_by, media, influences, specifications, actors
+
+        NB: when storing in DB, serialization aliases are not used (useless for DB),
+        so the field names are the same as in the model definition.
+        This makes testing more robust.
         """
 
         try:
@@ -29,11 +33,10 @@ class FilmGraphHandler(AbstractMemGraph[Film]):
                         exclude_unset=True,
                         exclude_none=True,
                         mode="json",
+                        by_alias=False,
                     )
                     for content in contents
                 ]
-
-                logger.debug(rows)
 
                 session: Session = self.client.session()
 

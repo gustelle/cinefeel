@@ -8,9 +8,8 @@ from neo4j import GraphDatabase
 from neo4j.graph import Node
 from pydantic import ValidationError
 
-from src.entities.film import Film, FilmActor, FilmMedia, FilmSpecifications
+from src.entities.film import Film, FilmSpecifications
 from src.entities.person import Person
-from src.entities.woa import WOAInfluence
 from src.interfaces.relation_manager import PeopleRelationshipType, Relationship
 from src.interfaces.storage import StorageError
 from src.repositories.db.film_graph import FilmGraphHandler
@@ -18,8 +17,10 @@ from src.repositories.db.person_graph import PersonGraphHandler
 from src.settings import Settings
 
 
-def test_insert_many_films(
-    test_memgraph_client: GraphDatabase, test_film_handler: FilmGraphHandler
+def test_insert_a_film(
+    test_memgraph_client: GraphDatabase,
+    test_film_handler: FilmGraphHandler,
+    test_film: Film,
 ):
     """assert the data type is correct when inserting a film"""
 
@@ -28,46 +29,8 @@ def test_insert_many_films(
 
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
 
-    film = Film(
-        title="Inception",
-        permalink="https://example.com/inception",
-        media=FilmMedia(
-            **{
-                "parent_uid": uuid.uuid4().hex,
-                "posters": [
-                    "https://example.com/poster1.jpg",
-                    "https://example.com/poster2.jpg",
-                ],
-            }
-        ),
-        influences=[
-            WOAInfluence(
-                **{
-                    "parent_uid": uuid.uuid4().hex,
-                    "persons": ["Christopher Nolan"],
-                }
-            )
-        ],
-        specifications=FilmSpecifications(
-            **{
-                "parent_uid": uuid.uuid4().hex,
-                "written_by": ["Christopher Nolan"],
-                "title": "Inception",
-            }
-        ),
-        actors=[
-            FilmActor(
-                **{
-                    "parent_uid": uuid.uuid4().hex,
-                    "full_name": "Leonardo DiCaprio",
-                    "roles": ["Dom Cobb"],
-                }
-            )
-        ],
-    )
-
     # when
-    count = test_film_handler.insert_many([film])
+    count = test_film_handler.insert_many([test_film])
 
     # then
     assert count == 1  # Only one film should be inserted
@@ -75,7 +38,7 @@ def test_insert_many_films(
     # select the film to verify its type
     records, _, _ = test_memgraph_client.execute_query(
         f"""
-        MATCH (n:Film {{uid: '{film.uid}'}})
+        MATCH (n:Film {{uid: '{test_film.uid}'}})
         RETURN n LIMIT 1;
         """
     )
@@ -115,8 +78,31 @@ def test_insert_many_films(
             )
         elif field in ["actors"]:
             assert isinstance(value, list) and all(
-                isinstance(actor, str) for actor in value
+                isinstance(actor, dict) for actor in value
             )
+
+    # tear down the database
+    with test_film_handler.client as driver:
+        driver.execute_query("MATCH (n:Film) DETACH DELETE n")
+
+
+def test_insert_several_films(
+    test_memgraph_client: GraphDatabase,
+    test_film_handler: FilmGraphHandler,
+    test_film: Film,
+):
+    """assert several films can be inserted at once"""
+
+    # given
+    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    other_film = test_film.copy(deep=True)
+    other_film.title = "The Dark Knight"
+
+    # when
+    count = test_film_handler.insert_many([test_film, other_film])
+
+    # then
+    assert count == 2  # Two films should be inserted
 
     # tear down the database
     with test_film_handler.client as driver:

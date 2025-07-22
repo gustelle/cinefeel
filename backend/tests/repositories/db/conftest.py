@@ -1,6 +1,8 @@
 import pytest
 from neo4j import GraphDatabase
 
+from src.entities.film import Film, FilmActor, FilmMedia, FilmSpecifications
+from src.entities.woa import WOAInfluence, WOAType
 from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
 from src.settings import Settings
@@ -31,3 +33,44 @@ def test_memgraph_client(test_db_settings):
     )
     yield client
     client.close()
+
+
+@pytest.fixture(scope="function")
+def test_film():
+    film = Film(
+        title="Inception",
+        permalink="https://example.com/inception",
+    )
+    film.influences = [
+        WOAInfluence(
+            parent_uid=film.uid,
+            type=WOAType.FILM,
+            persons=["Christopher Nolan"],
+        ),
+    ]
+    film.media = FilmMedia(
+        **{
+            "parent_uid": film.uid,
+            "posters": [
+                "https://example.com/poster1.jpg",
+                "https://example.com/poster2.jpg",
+            ],
+        }
+    )
+    film.specifications = FilmSpecifications(
+        parent_uid=film.uid,
+        title="Inception",
+        written_by=["Christopher Nolan"],
+    )
+
+    film.actors = [
+        FilmActor(
+            parent_uid=film.uid,
+            full_name="Leonardo DiCaprio",
+        ),
+        FilmActor(
+            parent_uid=film.uid,
+            full_name="Joseph Gordon-Levitt",
+        ),
+    ]
+    yield film
