@@ -27,38 +27,38 @@ class FilmGraphHandler(AbstractMemGraph[Film]):
             if not self._is_initialized:
                 self.setup()
 
-                # Convert contents to a Polars DataFrame
-                rows = [
-                    content.model_dump(
-                        exclude_unset=True,
-                        exclude_none=True,
-                        mode="json",
-                        by_alias=False,
-                    )
-                    for content in contents
-                ]
+            # Convert contents to a Polars DataFrame
+            rows = [
+                content.model_dump(
+                    exclude_unset=True,
+                    exclude_none=True,
+                    mode="json",
+                    by_alias=False,
+                )
+                for content in contents
+            ]
 
-                session: Session = self.client.session()
+            session: Session = self.client.session()
 
-                with session:
-                    result = session.run(
-                        """
-                        UNWIND $rows AS o
-                        MERGE (n:Film {uid: o.uid})
-                        ON CREATE SET   
-                                n.title = o.title, n.permalink = o.permalink,
-                                n.media = o.media, n.influences = o.influences,
-                                n.specifications = o.specifications, n.actors = o.actors
-                        ON MATCH SET 
-                                n.title = o.title, n.permalink = o.permalink,
-                                n.media = o.media, n.influences = o.influences,
-                                n.specifications = o.specifications, n.actors = o.actors
-                        RETURN count(n) AS count;
-                        """,
-                        parameters={"rows": rows},
-                    )
+            with session:
+                result = session.run(
+                    """
+                    UNWIND $rows AS o
+                    MERGE (n:Film {uid: o.uid})
+                    ON CREATE SET   
+                            n.title = o.title, n.permalink = o.permalink,
+                            n.media = o.media, n.influences = o.influences,
+                            n.specifications = o.specifications, n.actors = o.actors
+                    ON MATCH SET 
+                            n.title = o.title, n.permalink = o.permalink,
+                            n.media = o.media, n.influences = o.influences,
+                            n.specifications = o.specifications, n.actors = o.actors
+                    RETURN count(n) AS count;
+                    """,
+                    parameters={"rows": rows},
+                )
 
-                    return result.fetch(1)[0]["count"]
+                return result.fetch(1)[0]["count"]
 
             return 0
 

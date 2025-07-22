@@ -95,7 +95,7 @@ def test_insert_several_films(
 
     # given
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
-    other_film = test_film.copy(deep=True)
+    other_film = test_film.model_copy(deep=True)
     other_film.title = "The Dark Knight"
 
     # when
@@ -103,6 +103,43 @@ def test_insert_several_films(
 
     # then
     assert count == 2  # Two films should be inserted
+
+    # tear down the database
+    with test_film_handler.client as driver:
+        driver.execute_query("MATCH (n:Film) DETACH DELETE n")
+
+
+def test_update_a_film(
+    test_memgraph_client: GraphDatabase,
+    test_film_handler: FilmGraphHandler,
+    test_film: Film,
+):
+    """assert a film can be updated if it already exists in the database
+
+    TODO: update deep fields like media, influences, specifications, actors
+    """
+
+    # given
+    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_film_handler.insert_many([test_film])
+
+    # when
+    updated_film = test_film.model_copy(deep=True)
+    updated_film.title = "Inception (Updated)"
+    c = test_film_handler.insert_many([updated_film])
+
+    # then
+    assert c == 1  # Only one film should be updated
+    # check if the film was updated
+    records, _, _ = test_memgraph_client.execute_query(
+        f"""
+        MATCH (n:Film {{uid: '{updated_film.uid}'}})
+        RETURN n LIMIT 1;
+        """
+    )
+    film_data: Node = records[0].get("n", {})
+    assert film_data is not None
+    assert film_data.get("title") == "Inception (Updated)"
 
     # tear down the database
     with test_film_handler.client as driver:
