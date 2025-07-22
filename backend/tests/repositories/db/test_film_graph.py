@@ -1,12 +1,16 @@
 import tempfile
 import uuid
+from pathlib import Path
 
 import kuzu
 import pytest
+from neo4j import GraphDatabase
+from neo4j.graph import Node
 from pydantic import ValidationError
 
-from src.entities.film import Film, FilmSpecifications
+from src.entities.film import Film, FilmActor, FilmMedia, FilmSpecifications
 from src.entities.person import Person
+from src.entities.woa import WOAInfluence
 from src.interfaces.relation_manager import PeopleRelationshipType, Relationship
 from src.interfaces.storage import StorageError
 from src.repositories.db.film_graph import FilmGraphHandler
@@ -14,22 +18,138 @@ from src.repositories.db.person_graph import PersonGraphHandler
 from src.settings import Settings
 
 
-@pytest.fixture(scope="function")
-def test_film_handler(test_db_settings):
-    yield FilmGraphHandler(None, test_db_settings)
+def test_insert_many_films(
+    test_memgraph_client: GraphDatabase, test_film_handler: FilmGraphHandler
+):
+    """assert the data type is correct when inserting a film"""
 
-
-def test_graph_db_initialization(test_film_handler: FilmGraphHandler):
     # given
+    # drop all existing data
+
+    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+
+    film = Film(
+        title="Inception",
+        permalink="https://example.com/inception",
+        media=FilmMedia(
+            **{
+                "parent_uid": uuid.uuid4().hex,
+                "posters": [
+                    "https://example.com/poster1.jpg",
+                    "https://example.com/poster2.jpg",
+                ],
+            }
+        ),
+        influences=[
+            WOAInfluence(
+                **{
+                    "parent_uid": uuid.uuid4().hex,
+                    "persons": ["Christopher Nolan"],
+                }
+            )
+        ],
+        specifications=FilmSpecifications(
+            **{
+                "parent_uid": uuid.uuid4().hex,
+                "written_by": ["Christopher Nolan"],
+                "title": "Inception",
+            }
+        ),
+        actors=[
+            FilmActor(
+                **{
+                    "parent_uid": uuid.uuid4().hex,
+                    "full_name": "Leonardo DiCaprio",
+                    "roles": ["Dom Cobb"],
+                }
+            )
+        ],
+    )
 
     # when
-    is_setup = test_film_handler.setup()
+    count = test_film_handler.insert_many([film])
 
     # then
-    assert is_setup is True
+    assert count == 1  # Only one film should be inserted
+
+    # select the film to verify its type
+    records, _, _ = test_memgraph_client.execute_query(
+        f"""
+        MATCH (n:Film {{uid: '{film.uid}'}})
+        RETURN n LIMIT 1;
+        """
+    )
+    film_data: Node = records[0].get("n", {})
+
+    assert film_data is not None
+    assert "uid" in film_data
+    assert "title" in film_data
+    assert "permalink" in film_data
+    assert "media" in film_data
+    assert "influences" in film_data
+    assert "specifications" in film_data
+    assert "actors" in film_data
+
+    for field, value in film_data.items():
+        if field == "uid":
+            assert isinstance(value, str)
+        elif field == "title":
+            assert isinstance(value, str)
+        elif field == "permalink":
+            assert isinstance(value, str)
+        elif field in ["media"]:
+            assert (
+                isinstance(value, dict)
+                and "posters" in value
+                and isinstance(value["posters"], list)
+            )
+        elif field in ["influences"]:
+            assert isinstance(value, list) and all(
+                isinstance(item, dict) for item in value
+            )
+        elif field in ["specifications"]:
+            assert (
+                isinstance(value, dict)
+                and "written_by" in value
+                and isinstance(value["written_by"], list)
+            )
+        elif field in ["actors"]:
+            assert isinstance(value, list) and all(
+                isinstance(actor, str) for actor in value
+            )
+
+    # tear down the database
+    with test_film_handler.client as driver:
+        driver.execute_query("MATCH (n:Film) DETACH DELETE n")
 
 
-def test_insert_or_update(test_film_handler: FilmGraphHandler):
+def test_insert_existing(test_film_handler: FilmGraphHandler):
+    """assert a film identified by its uid can be inserted or updated,
+    there is no duplicate
+    """
+
+    # given
+
+    film = Film(
+        title="Inception",
+        permalink="https://example.com/inception",
+    )
+
+    # when
+    test_film_handler.insert_many([film])
+
+    # then
+    retrieved_film = test_film_handler.select(film.uid)
+
+    assert retrieved_film is not None
+    assert retrieved_film.uid == film.uid
+
+
+def test_insert_new(test_film_handler: FilmGraphHandler):
+    """assert a film identified by its uid can be inserted or updated,
+    there is no duplicate
+    """
+
     # given
 
     film = Film(
@@ -111,7 +231,7 @@ def test_get_bad_data():
             f.write('{"uid": "bad-uid", "poo": "Bad Film"}')
 
         # create a GraphDB instance
-        client = kuzu.Database(tmp_dir)
+        client = kuzu.Database(Path(tmp_dir) / "test.db")
 
         conn = kuzu.Connection(client)
 
@@ -136,7 +256,7 @@ def test_get_bad_data():
         graph_db = FilmGraphHandler(
             client=client,
             settings=Settings(
-                db_persistence_directory=tmp_dir,  # Use the temporary directory
+                db_path=Path(tmp_dir) / "test.db",  # Use the temporary directory
                 db_max_size=1 * 1024 * 1024 * 1024,  # 1 GB for testing
             ),
         )
@@ -302,3 +422,63 @@ def test_select_film(test_film_handler: FilmGraphHandler):
     assert retrieved_film.specifications.release_date == specifications.release_date
     assert retrieved_film.specifications.genres == specifications.genres
     assert retrieved_film.specifications.written_by == specifications.written_by
+
+
+def test_get_related_person_single():
+    """caveat: make sure the db is shared between the two handlers
+    if using defaut memory db, this will not work
+    """
+    # given
+
+    cur_dir = Path(__file__).parent
+
+    settings = Settings(
+        db_path=Path(cur_dir) / "test.db",  # Use the temporary directory
+        db_max_size=1 * 1024 * 1024 * 1024,  # 1 GB for testing
+    )
+
+    person_db = PersonGraphHandler(
+        None,
+        settings=settings,
+    )
+
+    film_db = FilmGraphHandler(
+        None,
+        settings=settings,
+    )
+
+    film1 = Film(
+        title="Inception",
+        permalink="https://example.com/inception",
+    )
+    specifications = FilmSpecifications(
+        parent_uid=film1.uid,
+        title="Inception",
+        duration="02:28:00",
+        release_date="2010-07-16",
+        genres=["Science Fiction", "Action"],
+        written_by=["Christopher Nolan"],
+    )
+    film1.specifications = specifications
+    person = Person(
+        title="Christopher Nolan",
+        permalink="https://example.com/christopher-nolan",
+    )
+
+    film_db.insert_many([film1])
+    person_db.insert_many([person])
+
+    film_db.add_relationship(film1, PeopleRelationshipType.DIRECTED_BY, person)
+
+    # when
+    relations = film_db.get_related(film1, PeopleRelationshipType.DIRECTED_BY)
+
+    # then
+    assert isinstance(relations, list)
+    assert len(relations) == 1  # One relationship added
+    assert relations[0].to_entity.title == person.title
+    assert relations[0].from_entity.title == film1.title
+    assert relations[0].relation_type == PeopleRelationshipType.DIRECTED_BY
+
+    # Cleanup
+    Path(cur_dir / "test.db").unlink(missing_ok=True)  # Remove the test database file

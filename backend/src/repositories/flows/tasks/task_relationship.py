@@ -303,7 +303,7 @@ class RelationshipFlow(ITaskExecutor):
 
             result = entity_handler.add_relationship(
                 content=entity,
-                relation_name=relationship.relation_type,
+                relation_type=relationship.relation_type,
                 related_content=related_entity,
             )
 

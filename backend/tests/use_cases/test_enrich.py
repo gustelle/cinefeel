@@ -21,7 +21,7 @@ def test_uc_enrich():
 
     settings = Settings(
         persistence_directory="/Users/guillaume/Dev/cinefeel/backend/data",
-        db_persistence_directory=local_db_path,
+        db_path=local_db_path / "test.db",  # Use the local directory for the database
     )
     use_case = EnrichmentUseCase(settings=settings)
 

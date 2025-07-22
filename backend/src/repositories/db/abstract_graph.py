@@ -1,4 +1,5 @@
 import tempfile
+from typing import Sequence
 
 import kuzu
 from loguru import logger
@@ -21,6 +22,9 @@ from src.settings import Settings
 class AbstractGraphHandler[T: Film | Person](
     IStorageHandler[T], IRelationshipHandler[T]
 ):
+    """TODO
+    - migrate to redis graph
+    """
 
     client: kuzu.Database
     settings: Settings
@@ -36,12 +40,18 @@ class AbstractGraphHandler[T: Film | Person](
 
         self.settings = settings
 
+        # create path if it does not exist
+        if self.settings.db_path:
+            parent_folder = self.settings.db_path.parent
+            if parent_folder and not parent_folder.exists():
+                parent_folder.mkdir(parents=True, exist_ok=True)
+
         self.client = client or kuzu.Database(
-            database_path=self.settings.db_persistence_directory,  # will fallback to in-memory if not set
+            database_path=self.settings.db_path,  # will fallback to in-memory if not set
             max_db_size=self.settings.db_max_size,
         )
 
-        logger.info(f"Connected to Kuzu database '{self.client.database_path}' ")
+        logger.info(f"Connected to Graph database '{self.client.database_path}' ")
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -57,7 +67,13 @@ class AbstractGraphHandler[T: Film | Person](
     def setup(self) -> bool:
 
         conn = kuzu.Connection(self.client)
-        conn.execute("INSTALL json;LOAD json;")
+        try:
+            conn.execute("INSTALL json;LOAD json;")
+            logger.info("JSON extension installed successfully.")
+        except RuntimeError as e:
+            logger.warning(
+                f"Error installing JSON extension, this may occur if the module is already installed: {e}"
+            )
 
         conn.execute(
             """
@@ -94,14 +110,6 @@ class AbstractGraphHandler[T: Film | Person](
                 """
             )
 
-        # later on we can add the company relationships
-        # for relation_type in list(CompanyRelationshipType):
-        #     conn.execute(
-        #         f"""
-        #             CREATE REL TABLE IF NOT EXISTS {relation_type.value} (FROM Film TO Company);
-        #         """
-        #     )
-
         logger.info("Database schema initialized successfully.")
 
         conn.close()
@@ -130,25 +138,26 @@ class AbstractGraphHandler[T: Film | Person](
 
             # create a temp json file to dump the documents
             # and load from JSON
-            with tempfile.NamedTemporaryFile() as temp:
+            with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as temp:
                 # dump the documents to a JSON file
                 temp.write(
-                    b"["
-                    + b",".join(
-                        [doc.model_dump_json().encode("utf-8") for doc in contents]
-                    )
-                    + b"]"
+                    "[" + ",".join([doc.model_dump_json() for doc in contents]) + "]"
                 )
                 temp.flush()
 
                 entity_type = self.entity_type.__name__
 
+                # .json suffix provides hint to the db that it's JSON
                 conn.execute(
                     f"""
-                    COPY {entity_type} FROM '{temp.name}' (file_format = 'json');
+                    COPY {entity_type} FROM '{temp.name}';
                     """
                 )
-                logger.info(f"Documents of type '{entity_type}' created successfully.")
+
+                logger.info(
+                    f"{entity_type} [{','.join([c.uid for c in contents])}] created successfully."
+                )
+
                 return len(contents)
 
             return 0
@@ -182,7 +191,7 @@ class AbstractGraphHandler[T: Film | Person](
 
         if not self.select(content.uid):
             raise StorageError(
-                f"Content with ID '{content.uid}' does not exist in the database."
+                f"Content with ID '{content.uid}' is missing or invalid."
             )
 
         # verify the related content is a valid related content
@@ -190,12 +199,15 @@ class AbstractGraphHandler[T: Film | Person](
             conn = kuzu.Connection(self.client)
             content_type = self.entity_type.__name__
             related_type = related_content.__class__.__name__
-            result = conn.execute(
-                f"""
-                MATCH (n:{related_type} {{uid: '{related_content.uid}'}})
-                RETURN n LIMIT 1
+            q = f"""
+                MATCH (p:{related_type} {{uid: '{related_content.uid}'}})
+                RETURN p.uid
+                LIMIT 1;
                 """
-            )
+
+            logger.debug(f"Executing query to check related content: {q}")
+            result = conn.execute(q)
+
             if result.has_next():
 
                 # add relationships if any
@@ -211,7 +223,7 @@ class AbstractGraphHandler[T: Film | Person](
 
             else:
                 raise StorageError(
-                    f"Related content with ID '{related_content.uid}' does not exist in the database."
+                    f"Related {related_type} '{related_content.uid}' does not exist in the database."
                 )
         except Exception as e:
             logger.error(
@@ -229,3 +241,48 @@ class AbstractGraphHandler[T: Film | Person](
             relation_type=relation_type,
             to_entity=related_content,
         )
+
+    def get_related(
+        self, content: Film, relation_type: RelationshipType = None
+    ) -> Sequence[Relationship]:
+        """
+        Retrieve relationships of a specific type for a given content.
+
+        Args:
+            content (Film): The content to retrieve relationships for.
+            relation_type (RelationshipType, optional): The type of relationship to filter by. Defaults to None,
+                in which case all relationships are returned.
+
+        Returns:
+            Sequence[Relationship]: A sequence of relationships matching the criteria.
+        """
+        if not self._is_initialized:
+            self.setup()
+
+        relation_path = f"r:{relation_type}" if relation_type else ""
+
+        conn = kuzu.Connection(self.client)
+        query = f"""
+            MATCH (f:Film {{uid: '{content.uid}'}})-[p:{relation_path}]->(related)
+            RETURN p, related
+        """
+        result = conn.execute(query)
+
+        relationships = []
+
+        while result.has_next():
+            related_doc = result.get_next()[0]
+            logger.debug(f"Related document: {related_doc}")
+            try:
+                related = Film.model_validate(related_doc, by_name=True)
+                relationships.append(
+                    Relationship(
+                        from_entity=content,
+                        to_entity=related,
+                        relation_type=related_doc["type"],
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"Failed to validate related document: {e}")
+
+        return relationships

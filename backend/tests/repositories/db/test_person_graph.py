@@ -1,15 +1,9 @@
-import pytest
 
 from src.entities.person import Biography, Person
 from src.repositories.db.person_graph import PersonGraphHandler
 
 
-@pytest.fixture(scope="function")
-def test_film_handler(test_db_settings):
-    yield PersonGraphHandler(None, test_db_settings)
-
-
-def test_select_person(test_film_handler: PersonGraphHandler):
+def test_select_person(test_person_handler: PersonGraphHandler):
     # given
 
     person = Person(
@@ -22,10 +16,10 @@ def test_select_person(test_film_handler: PersonGraphHandler):
     )
     person.biography = bio
 
-    test_film_handler.insert_many([person])
+    test_person_handler.insert_many([person])
 
     # when
-    retrieved_person = test_film_handler.select(person.uid)
+    retrieved_person = test_person_handler.select(person.uid)
 
     # then
     assert retrieved_person is not None

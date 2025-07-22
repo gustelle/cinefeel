@@ -1,16 +1,68 @@
-import kuzu
+from typing import Sequence
+
 from loguru import logger
-from pydantic import TypeAdapter
+from neo4j import Session
 
 from src.entities.film import Film
-from src.interfaces.relation_manager import (
-    RelationshipType,
-)
 
-from .abstract_graph import AbstractGraphHandler
+from .mg_core import AbstractMemGraph
 
 
-class FilmGraphHandler(AbstractGraphHandler[Film]):
+class FilmGraphHandler(AbstractMemGraph[Film]):
+
+    def insert_many(
+        self,
+        contents: Sequence[Film],
+    ) -> int:
+        """only interesting film props are retained in the database,
+        i.e. title, permalink, uid, directed_by, media, influences, specifications, actors
+        """
+
+        try:
+
+            if not self._is_initialized:
+                self.setup()
+
+                # Convert contents to a Polars DataFrame
+                rows = [
+                    content.model_dump(
+                        exclude_unset=True,
+                        exclude_none=True,
+                        mode="json",
+                    )
+                    for content in contents
+                ]
+
+                logger.debug(rows)
+
+                session: Session = self.client.session()
+
+                with session:
+                    result = session.run(
+                        """
+                        UNWIND $rows AS o
+                        MERGE (n:Film {uid: o.uid})
+                        ON CREATE SET   
+                                n.title = o.title, n.permalink = o.permalink,
+                                n.media = o.media, n.influences = o.influences,
+                                n.specifications = o.specifications, n.actors = o.actors
+                        ON MATCH SET 
+                                n.title = o.title, n.permalink = o.permalink,
+                                n.media = o.media, n.influences = o.influences,
+                                n.specifications = o.specifications, n.actors = o.actors
+                        RETURN count(n) AS count;
+                        """,
+                        parameters={"rows": rows},
+                    )
+
+                    return result.fetch(1)[0]["count"]
+
+            return 0
+
+        except Exception as e:
+
+            logger.error(f"Error inserting documents: {e}")
+            return 0
 
     def select(
         self,
@@ -22,91 +74,59 @@ class FilmGraphHandler(AbstractGraphHandler[Film]):
         Returns:
             T: The document with the specified ID.
         """
-        conn = kuzu.Connection(self.client)
+        return None
+        # conn = kuzu.Connection(self.client)
 
-        entity_type = self.entity_type.__name__
+        # entity_type = self.entity_type.__name__
 
-        try:
+        # try:
 
-            result = conn.execute(
-                f"""
-                MATCH (n:{entity_type} {{uid: '{content_id}'}})
-                RETURN n LIMIT 1
-                """
-            )
-            if result.has_next():
+        #     result = conn.execute(
+        #         f"""
+        #         MATCH (n:{entity_type} {{uid: '{content_id}'}})
+        #         RETURN n
+        #         LIMIT 1;
+        #         """
+        #     )
 
-                docs = result.get_next()
+        #     for doc in result:
 
-                if not docs:
-                    logger.warning(f"No document found with ID '{content_id}'.")
-                    return None
+        #         doc = doc[0]  # Get the first element of the result
 
-                doc = docs[0]
+        #         for (
+        #             root_field_name,
+        #             root_field_definition,
+        #         ) in Film.model_fields.items():
+        #             if root_field_name in doc and root_field_name in [
+        #                 "summary",
+        #                 "media",
+        #                 "influences",
+        #                 "specifications",
+        #                 "actors",
+        #             ]:
+        #                 # load json parts
+        #                 try:
+        #                     doc[root_field_name] = TypeAdapter(
+        #                         root_field_definition.annotation
+        #                     ).validate_json(doc[root_field_name], by_name=True)
+        #                 except Exception as e:
+        #                     logger.warning(
+        #                         f"field '{root_field_name}' will be ignored: {e}"
+        #                     )
 
-                for (
-                    root_field_name,
-                    root_field_definition,
-                ) in Film.model_fields.items():
-                    if root_field_name in doc and root_field_name in [
-                        "summary",
-                        "media",
-                        "influences",
-                        "specifications",
-                        "actors",
-                    ]:
-                        # load json parts
-                        try:
-                            doc[root_field_name] = TypeAdapter(
-                                root_field_definition.annotation
-                            ).validate_json(doc[root_field_name], by_name=True)
-                        except Exception as e:
-                            logger.warning(
-                                f"field '{root_field_name}' will be ignored: {e}"
-                            )
+        #         return self.entity_type.model_validate(doc, by_name=True)
 
-                return self.entity_type.model_validate(doc, by_name=True)
+        #     else:
+        #         logger.warning(
+        #             f"Document with ID '{content_id}' is missing or invalid."
+        #         )
+        #         return None
 
-            else:
-                logger.warning(
-                    f"Document with ID '{content_id}' not found in the database."
-                )
-                return None
+        # except Exception as e:
+        #     import traceback
 
-        except Exception as e:
-            logger.error(f"Error validating document with ID '{content_id}': {e}")
-            return None
-        finally:
-            conn.close()
-
-    def get_relationships(
-        self,
-        content: Film,
-        relation_type: RelationshipType,
-    ) -> list[Film]:
-        """
-        Retrieve relationships of a specific type for a given content.
-
-        Args:
-            content (Film): The content to retrieve relationships for.
-            relation_type (RelationshipType): The type of relationship to retrieve.
-
-        Returns:
-            list[Film]: A list of related Film entities.
-        """
-        if not self._is_initialized:
-            self.setup()
-
-        conn = kuzu.Connection(self.client)
-        query = f"""
-            MATCH (f:Film {{uid: '{content.uid}'}})-[r:{relation_type}]->(related)
-            RETURN related
-        """
-        result = conn.execute(query)
-
-        related_films = []
-        while result.has_next():
-            related_doc = result.get_next()[0]
-            related_films.append(Film.model_validate(related_doc, by_name=True))
-
-        return related_films
+        #     logger.error(traceback.format_exc())
+        #     logger.error(f"Error validating document with ID '{content_id}': {e}")
+        #     return None
+        # finally:
+        #     conn.close()

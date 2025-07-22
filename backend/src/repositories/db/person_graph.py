@@ -4,10 +4,10 @@ from pydantic import TypeAdapter
 
 from src.entities.person import Person
 
-from .abstract_graph import AbstractGraphHandler
+from .mg_core import AbstractMemGraph
 
 
-class PersonGraphHandler(AbstractGraphHandler[Person]):
+class PersonGraphHandler(AbstractMemGraph[Person]):
 
     def select(
         self,
@@ -19,7 +19,10 @@ class PersonGraphHandler(AbstractGraphHandler[Person]):
         Returns:
             T: The document with the specified ID.
         """
+        return None
         conn = kuzu.Connection(self.client)
+
+        logger.debug(f"select person Using client: {self.client.database_path}")
 
         entity_type = self.entity_type.__name__
 
@@ -28,7 +31,7 @@ class PersonGraphHandler(AbstractGraphHandler[Person]):
             result = conn.execute(
                 f"""
                 MATCH (n:{entity_type} {{uid: '{content_id}'}})
-                RETURN n LIMIT 1
+                RETURN n LIMIT 1;
                 """
             )
             if result.has_next():

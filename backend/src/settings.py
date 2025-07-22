@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import AnyUrl, BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -185,15 +185,7 @@ class Settings(BaseSettings):
 
     task_timeout: int = Field(
         default=60,  # 1 minute
-        description="The timeout for tasks in seconds",
-    )
-
-    TOKENIZERS_PARALLELISM: bool = Field(
-        default=False,
-        description="""
-            Whether to enable parallelism for tokenizers.
-            This is useful for speeding up the tokenization process, but may lead to issues with some models.
-        """,
+        description="The timeout for prefect tasks in seconds",
     )
 
     # section params
@@ -219,17 +211,9 @@ class Settings(BaseSettings):
         """,
     )
 
-    db_persistence_directory: Path | None = Field(
-        None,
+    db_uri: AnyUrl = Field(
+        ...,
         description="""
-            The path (relative or absolute) to the dir where the database will be saved.
-            None means the database will be in memory.
-        """,
-    )
-    db_max_size: int = Field(
-        default=8 * 1024 * 1024 * 1024,  # 8 GB
-        ge=4194304,  # 4 MB, the minimum size for Kuzu
-        description="""
-            The maximum size of the database in bytes.
+            The URI of the database.
         """,
     )
