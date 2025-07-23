@@ -2,8 +2,6 @@ from typing import Sequence
 
 from loguru import logger
 from neo4j import Session
-from neo4j.graph import Node
-from pydantic import TypeAdapter
 
 from src.entities.film import Film
 from src.entities.woa import WOAType
@@ -99,31 +97,13 @@ class FilmGraphHandler(AbstractMemGraph[Film]):
                     """
                 )
 
-                doc: Node = dict(result.fetch(1)[0].get("n"))
-
-                for (
-                    root_field_name,
-                    root_field_definition,
-                ) in Film.model_fields.items():
-                    if root_field_name in doc and root_field_name in [
-                        "summary",
-                        "media",
-                        "influences",
-                        "specifications",
-                        "actors",
-                    ]:
-                        # load json parts
-                        try:
-                            doc[root_field_name] = TypeAdapter(
-                                root_field_definition.annotation
-                            ).validate_json(doc[root_field_name])
-                        except Exception as e:
-                            logger.warning(
-                                f"field '{root_field_name}' (passed value {doc[root_field_name]}) will be ignored due to error: {e}"
-                            )
+                doc = dict(result.fetch(1)[0].get("n"))
 
                 doc["woa_type"] = WOAType.FILM
-                return self.entity_type.model_validate(doc)
+
+                return self.entity_type.model_validate(
+                    doc, by_alias=False, by_name=True
+                )
 
         except IndexError as e:
             logger.warning(f"Document with ID '{content_id}' not found: {e}")

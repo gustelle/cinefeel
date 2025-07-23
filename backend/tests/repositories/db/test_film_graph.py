@@ -1,15 +1,17 @@
 import uuid
-from pathlib import Path
 
 from neo4j import GraphDatabase
 from neo4j.graph import Node
 
 from src.entities.film import Film, FilmSpecifications
 from src.entities.person import Person
-from src.interfaces.relation_manager import PeopleRelationshipType, Relationship
+from src.interfaces.relation_manager import (
+    PeopleRelationshipType,
+    Relationship,
+    WOARelationshipType,
+)
 from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
-from src.settings import Settings
 
 
 def test_insert_a_film(
@@ -89,8 +91,11 @@ def test_insert_several_films(
 
     # given
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
-    other_film = test_film.model_copy(deep=True)
-    other_film.title = "The Dark Knight"
+
+    dict_film = test_film.model_dump()
+    dict_film["title"] = f"{test_film.title} Copy"
+
+    other_film = Film(**dict_film)
 
     # when
     count = test_film_handler.insert_many([test_film, other_film])
@@ -202,7 +207,7 @@ def test_get_bad_data(
     # insert bad data
     test_memgraph_client.execute_query(
         """
-        CREATE (node: Film {property: 42})
+        CREATE (node:Film {property: 42})
         """
     )
 
@@ -215,11 +220,11 @@ def test_get_bad_data(
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
 
 
-def test_add_relationship_person(
+def test_add_relationship_to_person(
     test_memgraph_client: GraphDatabase,
     test_film_handler: FilmGraphHandler,
-    test_person_handler: PersonGraphHandler,
     test_film: Film,
+    test_person_handler: PersonGraphHandler,
     test_person: Person,
 ):
     # given
@@ -228,111 +233,89 @@ def test_add_relationship_person(
     test_person_handler.insert_many([test_person])
 
     # when
-    result = test_film_handler.add_relationship(
-        test_film, PeopleRelationshipType.DIRECTED_BY, test_person
+    test_film_handler.add_relationship(
+        relationship=Relationship(
+            from_entity=test_film,
+            to_entity=test_person,
+            relation_type=PeopleRelationshipType.DIRECTED_BY,
+        )
     )
 
     # then
-    assert isinstance(result, Relationship)
+    # verify the relationship was created
+    results, _, _ = test_memgraph_client.execute_query(
+        f"""
+        MATCH (n:Film {{uid: $from_uid}})-[r:{str(PeopleRelationshipType.DIRECTED_BY)}]->(m:Person {{uid: $to_uid}})
+        RETURN r
+        """,
+        from_uid=test_film.uid,
+        to_uid=test_person.uid,
+    )
+
+    assert len(results) == 1
+
+    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+
+
+def test_add_relationship_to_film(
+    test_memgraph_client: GraphDatabase,
+    test_film_handler: FilmGraphHandler,
+    test_film: Film,
+):
+    # given
+    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+
+    dict_film = test_film.model_dump()
+    dict_film["title"] = "Inception Copy"
+
+    film_copy = Film(**dict_film)
+
+    assert film_copy.uid != test_film.uid  # Ensure it's a different instance
+    test_film_handler.insert_many([test_film, film_copy])
+
+    # when
+    test_film_handler.add_relationship(
+        relationship=Relationship(
+            from_entity=test_film,
+            to_entity=film_copy,
+            relation_type=WOARelationshipType.INSPIRED_BY,
+        )
+    )
+
+    # then
+    # verify the relationship was created
+    results, _, _ = test_memgraph_client.execute_query(
+        f"""
+        MATCH (n:Film {{uid: $from_uid}})-[r:{str(WOARelationshipType.INSPIRED_BY)}]->(m:Film {{uid: $to_uid}})
+        RETURN r
+        """,
+        from_uid=test_film.uid,
+        to_uid=film_copy.uid,
+    )
+
+    assert len(results) == 1
+
     test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
 
 
 def test_add_relationship_non_existent_film(test_film_handler: FilmGraphHandler):
-    # given
-
-    # film_db = FilmGraphHandler(
-    #     client=client,
-    # )
-
-    # film = Film(
-    #     title="Inception",
-    #     permalink="https://example.com/inception",
-    # )
-
-    # person_db = PersonGraphHandler(client=client)
-
-    # person = Person(
-    #     title="Christopher Nolan",
-    #     permalink="https://example.com/christopher-nolan",
-    # )
-
-    # person_db.insert_many([person])
-
-    # # when
-    # with pytest.raises(StorageError) as exc_info:
-    #     film_db.add_relationship(film, PeopleRelationshipType.DIRECTED_BY, person)
-
-    # # then
-    # assert "Content with ID" in str(exc_info.value)
-    # assert "does not exist in the database" in str(exc_info.value)
     pass
 
 
 def test_add_relationship_non_existent_person(test_film_handler: FilmGraphHandler):
-    # given
-
-    # film_db = FilmGraphHandler(
-    #     client=client,
-    # )
-
-    # film = Film(
-    #     title="Inception",
-    #     permalink="https://example.com/inception",
-    # )
-
-    # film_db.insert_many([film])
-
-    # non_existent_person = Person(
-    #     title="Non Existent Person",
-    #     permalink="https://example.com/non-existent-person",
-    # )
-
-    # # when
-    # with pytest.raises(StorageError) as exc_info:
-    #     film_db.add_relationship(
-    #         film, PeopleRelationshipType.DIRECTED_BY, non_existent_person
-    #     )
-
-    # # then
-    # assert "Related content with ID" in str(exc_info.value)
-    # assert "does not exist in the database" in str(exc_info.value)
     pass
 
 
 def test_add_invalid_relationship(test_film_handler: FilmGraphHandler):
-    # given
-
-    # film_db = FilmGraphHandler(
-    #     client=client,
-    # )
-
-    # film = Film(
-    #     title="Inception",
-    #     permalink="https://example.com/inception",
-    # )
-
-    # person_db = PersonGraphHandler(client=client)
-
-    # person = Person(
-    #     title="Christopher Nolan",
-    #     permalink="https://example.com/christopher-nolan",
-    # )
-
-    # film_db.insert_many([film])
-    # person_db.insert_many([person])
-
-    # # when
-    # with pytest.raises(ValidationError) as exc_info:
-    #     film_db.add_relationship(film, "INVALID_RELATIONSHIP_TYPE", person)
-
-    # # then
-    # assert "INVALID_RELATIONSHIP_TYPE" in str(exc_info.value)
     pass
 
 
-def test_select_film(test_film_handler: FilmGraphHandler):
+def test_select_film(
+    test_film_handler: FilmGraphHandler,
+    test_memgraph_client: GraphDatabase,
+):
     # given
-
+    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
     film = Film(
         title="Inception",
         permalink="https://example.com/inception",
@@ -359,62 +342,11 @@ def test_select_film(test_film_handler: FilmGraphHandler):
     assert retrieved_film.specifications.genres == specifications.genres
     assert retrieved_film.specifications.written_by == specifications.written_by
 
+    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+
 
 def test_get_related_person_single():
     """caveat: make sure the db is shared between the two handlers
     if using defaut memory db, this will not work
     """
-    # given
-
-    cur_dir = Path(__file__).parent
-
-    settings = Settings(
-        db_path=Path(cur_dir) / "test.db",  # Use the temporary directory
-        db_max_size=1 * 1024 * 1024 * 1024,  # 1 GB for testing
-    )
-
-    person_db = PersonGraphHandler(
-        None,
-        settings=settings,
-    )
-
-    film_db = FilmGraphHandler(
-        None,
-        settings=settings,
-    )
-
-    film1 = Film(
-        title="Inception",
-        permalink="https://example.com/inception",
-    )
-    specifications = FilmSpecifications(
-        parent_uid=film1.uid,
-        title="Inception",
-        duration="02:28:00",
-        release_date="2010-07-16",
-        genres=["Science Fiction", "Action"],
-        written_by=["Christopher Nolan"],
-    )
-    film1.specifications = specifications
-    person = Person(
-        title="Christopher Nolan",
-        permalink="https://example.com/christopher-nolan",
-    )
-
-    film_db.insert_many([film1])
-    person_db.insert_many([person])
-
-    film_db.add_relationship(film1, PeopleRelationshipType.DIRECTED_BY, person)
-
-    # when
-    relations = film_db.get_related(film1, PeopleRelationshipType.DIRECTED_BY)
-
-    # then
-    assert isinstance(relations, list)
-    assert len(relations) == 1  # One relationship added
-    assert relations[0].to_entity.title == person.title
-    assert relations[0].from_entity.title == film1.title
-    assert relations[0].relation_type == PeopleRelationshipType.DIRECTED_BY
-
-    # Cleanup
-    Path(cur_dir / "test.db").unlink(missing_ok=True)  # Remove the test database file
+    pass

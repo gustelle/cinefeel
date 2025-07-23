@@ -4,8 +4,6 @@ from typing import Protocol, runtime_checkable
 from pydantic import BaseModel
 
 from src.entities.composable import Composable
-from src.entities.film import Film
-from src.entities.person import Person
 
 
 class RelationshipError(Exception):
@@ -33,6 +31,14 @@ class PeopleRelationshipType(RelationshipType):
     INFLUENCED_BY = "InfluencedBy"
 
 
+class WOARelationshipType(RelationshipType):
+
+    # Works of Art
+    INSPIRED_BY = "InspiredBy"
+    BASED_ON = "BasedOn"
+    ADAPTED_FROM = "AdaptedFrom"
+
+
 class CompanyRelationshipType(RelationshipType):
     # Companies
     PRODUCED_BY = "ProducedBy"
@@ -48,21 +54,17 @@ class Relationship(BaseModel):
 
 
 @runtime_checkable
-class IRelationshipHandler[U: Film | Person](Protocol):
-
-    # the type of the entity being handled
-    # e.g. Film or Person
-    entity_type: U
-
-    relation_type: U
+class IRelationshipHandler[U: Composable](Protocol):
 
     def add_relationship(
         self,
-        content: U,
-        relation_type: RelationshipType,
-        related_content: Film | Person,
+        relationship: Relationship,
         *args,
         **kwargs,
-    ) -> Relationship:
-        """Adds a relationship between two contents."""
+    ) -> None:
+        """Adds a relationship between two contents.
+
+        raises:
+            RelationshipError: If the relationship cannot be added.
+        """
         raise NotImplementedError("This method should be overridden by subclasses.")
