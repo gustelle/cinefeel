@@ -2,8 +2,11 @@ from typing import Sequence
 
 from loguru import logger
 from neo4j import Session
+from neo4j.graph import Node
+from pydantic import TypeAdapter
 
 from src.entities.film import Film
+from src.entities.woa import WOAType
 
 from .mg_core import AbstractMemGraph
 
@@ -38,6 +41,10 @@ class FilmGraphHandler(AbstractMemGraph[Film]):
                 for content in contents
             ]
 
+            # deduplicate rows based on 'uid'
+            unique_rows = {row["uid"]: row for row in rows}
+            rows = list(unique_rows.values())
+
             session: Session = self.client.session()
 
             with session:
@@ -64,7 +71,7 @@ class FilmGraphHandler(AbstractMemGraph[Film]):
 
         except Exception as e:
 
-            logger.error(f"Error inserting documents: {e}")
+            logger.error(f"Error inserting films: {e}")
             return 0
 
     def select(
@@ -77,59 +84,52 @@ class FilmGraphHandler(AbstractMemGraph[Film]):
         Returns:
             T: The document with the specified ID.
         """
-        return None
-        # conn = kuzu.Connection(self.client)
 
-        # entity_type = self.entity_type.__name__
+        try:
 
-        # try:
+            session: Session = self.client.session()
 
-        #     result = conn.execute(
-        #         f"""
-        #         MATCH (n:{entity_type} {{uid: '{content_id}'}})
-        #         RETURN n
-        #         LIMIT 1;
-        #         """
-        #     )
+            with session:
 
-        #     for doc in result:
+                result = session.run(
+                    f"""
+                    MATCH (n:Film {{uid: '{content_id}'}})
+                    RETURN n
+                    LIMIT 1;
+                    """
+                )
 
-        #         doc = doc[0]  # Get the first element of the result
+                doc: Node = dict(result.fetch(1)[0].get("n"))
 
-        #         for (
-        #             root_field_name,
-        #             root_field_definition,
-        #         ) in Film.model_fields.items():
-        #             if root_field_name in doc and root_field_name in [
-        #                 "summary",
-        #                 "media",
-        #                 "influences",
-        #                 "specifications",
-        #                 "actors",
-        #             ]:
-        #                 # load json parts
-        #                 try:
-        #                     doc[root_field_name] = TypeAdapter(
-        #                         root_field_definition.annotation
-        #                     ).validate_json(doc[root_field_name], by_name=True)
-        #                 except Exception as e:
-        #                     logger.warning(
-        #                         f"field '{root_field_name}' will be ignored: {e}"
-        #                     )
+                for (
+                    root_field_name,
+                    root_field_definition,
+                ) in Film.model_fields.items():
+                    if root_field_name in doc and root_field_name in [
+                        "summary",
+                        "media",
+                        "influences",
+                        "specifications",
+                        "actors",
+                    ]:
+                        # load json parts
+                        try:
+                            doc[root_field_name] = TypeAdapter(
+                                root_field_definition.annotation
+                            ).validate_json(doc[root_field_name])
+                        except Exception as e:
+                            logger.warning(
+                                f"field '{root_field_name}' (passed value {doc[root_field_name]}) will be ignored due to error: {e}"
+                            )
 
-        #         return self.entity_type.model_validate(doc, by_name=True)
+                doc["woa_type"] = WOAType.FILM
+                return self.entity_type.model_validate(doc)
 
-        #     else:
-        #         logger.warning(
-        #             f"Document with ID '{content_id}' is missing or invalid."
-        #         )
-        #         return None
+        except IndexError as e:
+            logger.warning(f"Document with ID '{content_id}' not found: {e}")
+            return None
 
-        # except Exception as e:
-        #     import traceback
+        except Exception as e:
 
-        #     logger.error(traceback.format_exc())
-        #     logger.error(f"Error validating document with ID '{content_id}': {e}")
-        #     return None
-        # finally:
-        #     conn.close()
+            logger.error(f"Error validating document with ID '{content_id}': {e}")
+            return None

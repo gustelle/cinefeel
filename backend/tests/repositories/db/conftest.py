@@ -2,6 +2,7 @@ import pytest
 from neo4j import GraphDatabase
 
 from src.entities.film import Film, FilmActor, FilmMedia, FilmSpecifications
+from src.entities.person import Biography, GenderEnum, Person, PersonCharacteristics
 from src.entities.woa import WOAInfluence, WOAType
 from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
@@ -74,3 +75,23 @@ def test_film():
         ),
     ]
     yield film
+
+
+@pytest.fixture(scope="function")
+def test_person():
+    person = Person(
+        title="Christopher Nolan",
+        permalink="https://example.com/christopher-nolan",
+    )
+
+    person.biography = Biography(
+        parent_uid=person.uid,
+        full_name="Christopher Nolan",
+    )
+
+    person.characteristics = PersonCharacteristics(
+        parent_uid=person.uid,
+        gender=GenderEnum.MALE,
+    )
+
+    yield person

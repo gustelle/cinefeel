@@ -9,6 +9,7 @@ from src.entities.component import EntityComponent
 from src.entities.composable import Composable
 from src.entities.religion import Religion
 from src.entities.sexual_orientation import SexualOrientation
+from src.entities.woa import WOAInfluence
 
 
 class GenderEnum(StrEnum):
@@ -23,14 +24,6 @@ class GenderEnum(StrEnum):
 
 
 ParentTrade = Annotated[
-    str,
-    StringConstraints(
-        strip_whitespace=True,
-    ),
-]  # may be empty for some sections
-
-
-PersonInfluence = Annotated[
     str,
     StringConstraints(
         strip_whitespace=True,
@@ -171,7 +164,7 @@ class PersonVisibleFeatures(EntityComponent):
         validation_alias="est_handicapee",
         examples=[True, False],
     )
-    genre: GenderEnum | None = Field(
+    gender: GenderEnum | None = Field(
         None,
         description="Le genre de la personne: homme, femme, non-binaire ou inconnu.",
         serialization_alias="genre",
@@ -206,9 +199,8 @@ class Person(Composable):
         None,
     )
 
-    influences: list[PersonInfluence] | None = Field(
+    influences: list[WOAInfluence] | None = Field(
         None,
-        description="List of influences on the person, such as mentors or significant figures in their life.",
         serialization_alias="influences",
         validation_alias="influences",
     )

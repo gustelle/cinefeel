@@ -1,6 +1,44 @@
+from neo4j import GraphDatabase
+from neo4j.graph import Node
 
 from src.entities.person import Biography, Person
 from src.repositories.db.person_graph import PersonGraphHandler
+
+
+def test_insert_a_person(
+    test_memgraph_client: GraphDatabase,
+    test_person_handler: PersonGraphHandler,
+    test_person: Person,
+):
+    """assert the data type is correct when inserting a person"""
+
+    # given
+    # drop all existing data
+
+    test_memgraph_client.execute_query("MATCH (n:Person) DETACH DELETE n")
+
+    # when
+    count = test_person_handler.insert_many([test_person])
+
+    # then
+    assert count == 1  # Only one person should be inserted
+
+    # select the person to verify its type
+    records, _, _ = test_memgraph_client.execute_query(
+        f"""
+        MATCH (n:Person {{uid: '{test_person.uid}'}})
+        RETURN n LIMIT 1;
+        """
+    )
+    person_data: Node = records[0].get("n", {})
+
+    assert person_data is not None
+    assert "uid" in person_data
+    assert "title" in person_data
+    assert "permalink" in person_data
+
+    # tear down the database
+    test_memgraph_client.execute_query("MATCH (n:Person) DETACH DELETE n")
 
 
 def test_select_person(test_person_handler: PersonGraphHandler):
