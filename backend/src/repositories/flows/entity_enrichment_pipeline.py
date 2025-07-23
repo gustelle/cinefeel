@@ -1,5 +1,4 @@
 from prefect import flow
-from prefect_dask import DaskTaskRunner
 
 from src.entities.film import Film
 from src.entities.person import Person
@@ -24,7 +23,6 @@ class EntityEnrichmentProcessor(IPipelineRunner):
 
     @flow(
         name="Enrichment Flow",
-        task_runner=DaskTaskRunner(),
     )
     def execute_pipeline(
         self,
