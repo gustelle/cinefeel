@@ -36,13 +36,25 @@ def test_insert_a_person(
     assert "uid" in person_data
     assert "title" in person_data
     assert "permalink" in person_data
+    assert "biography" in person_data
+    assert isinstance(person_data["biography"], dict)
+    assert "full_name" in person_data["biography"]
+    assert person_data["biography"]["full_name"] == test_person.biography.full_name
+    assert "characteristics" in person_data
+    assert isinstance(person_data["characteristics"], dict)
+    assert "influences" in person_data
+    assert isinstance(person_data["influences"], dict)
 
     # tear down the database
     test_memgraph_client.execute_query("MATCH (n:Person) DETACH DELETE n")
 
 
-def test_select_person(test_person_handler: PersonGraphHandler):
+def test_select_person(
+    test_person_handler: PersonGraphHandler, test_memgraph_client: GraphDatabase
+):
     # given
+
+    test_memgraph_client.execute_query("MATCH (n:Person) DETACH DELETE n")
 
     person = Person(
         title="Christopher Nolan",
@@ -62,3 +74,7 @@ def test_select_person(test_person_handler: PersonGraphHandler):
     # then
     assert retrieved_person is not None
     assert retrieved_person.biography.full_name == bio.full_name
+    assert retrieved_person.title == person.title
+    assert retrieved_person.permalink == person.permalink
+
+    test_memgraph_client.execute_query("MATCH (n:Person) DETACH DELETE n")

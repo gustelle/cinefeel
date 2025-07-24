@@ -83,10 +83,41 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
     def select(
         self,
         content_id: str,
-    ) -> T:
-        raise NotImplementedError(
-            "This method should be overridden by subclasses to implement the selection logic."
-        )
+    ) -> T | None:
+        """
+        Retrieve a document by its ID.
+
+        Returns:
+            T: The document with the specified ID.
+        """
+        try:
+
+            session: Session = self.client.session()
+
+            with session:
+
+                result = session.run(
+                    f"""
+                    MATCH (n:{self.entity_type.__name__} {{uid: '{content_id}'}})
+                    RETURN n
+                    LIMIT 1;
+                    """
+                )
+
+                doc = dict(result.fetch(1)[0].get("n"))
+
+                return self.entity_type.model_validate(
+                    doc, by_alias=False, by_name=True
+                )
+
+        except IndexError as e:
+            logger.warning(f"Document with ID '{content_id}' not found: {e}")
+            return None
+
+        except Exception as e:
+
+            logger.error(f"Error validating document with ID '{content_id}': {e}")
+            return None
 
     @validate_call
     def add_relationship(

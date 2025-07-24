@@ -4,7 +4,6 @@ from loguru import logger
 from neo4j import Session
 
 from src.entities.film import Film
-from src.entities.woa import WOAType
 
 from .mg_core import AbstractMemGraph
 
@@ -71,45 +70,3 @@ class FilmGraphHandler(AbstractMemGraph[Film]):
 
             logger.error(f"Error inserting films: {e}")
             return 0
-
-    def select(
-        self,
-        content_id: str,
-    ) -> Film | None:
-        """
-        Retrieve a document by its ID.
-
-        Returns:
-            T: The document with the specified ID.
-        """
-
-        try:
-
-            session: Session = self.client.session()
-
-            with session:
-
-                result = session.run(
-                    f"""
-                    MATCH (n:Film {{uid: '{content_id}'}})
-                    RETURN n
-                    LIMIT 1;
-                    """
-                )
-
-                doc = dict(result.fetch(1)[0].get("n"))
-
-                doc["woa_type"] = WOAType.FILM
-
-                return self.entity_type.model_validate(
-                    doc, by_alias=False, by_name=True
-                )
-
-        except IndexError as e:
-            logger.warning(f"Document with ID '{content_id}' not found: {e}")
-            return None
-
-        except Exception as e:
-
-            logger.error(f"Error validating document with ID '{content_id}': {e}")
-            return None

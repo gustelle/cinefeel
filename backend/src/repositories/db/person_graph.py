@@ -70,15 +70,3 @@ class PersonGraphHandler(AbstractMemGraph[Person]):
 
             logger.error(f"Error inserting persons: {e}")
             return 0
-
-    def select(
-        self,
-        content_id: str,
-    ) -> Person | None:
-        """
-        Retrieve a document by its ID.
-
-        Returns:
-            T: The document with the specified ID.
-        """
-        return None

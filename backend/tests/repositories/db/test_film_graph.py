@@ -298,18 +298,6 @@ def test_add_relationship_to_film(
     test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
 
 
-def test_add_relationship_non_existent_film(test_film_handler: FilmGraphHandler):
-    pass
-
-
-def test_add_relationship_non_existent_person(test_film_handler: FilmGraphHandler):
-    pass
-
-
-def test_add_invalid_relationship(test_film_handler: FilmGraphHandler):
-    pass
-
-
 def test_select_film(
     test_film_handler: FilmGraphHandler,
     test_memgraph_client: GraphDatabase,
