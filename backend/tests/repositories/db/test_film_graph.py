@@ -112,10 +112,7 @@ def test_update_a_film(
     test_film_handler: FilmGraphHandler,
     test_film: Film,
 ):
-    """assert a film can be updated if it already exists in the database
-
-    TODO: update deep fields like media, influences, specifications, actors
-    """
+    """assert a film can be updated if it already exists in the database"""
 
     # given
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")

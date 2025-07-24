@@ -270,9 +270,9 @@ class RelationshipFlow(ITaskExecutor):
         if related_entity is not None:
 
             related_entity_handler = (
-                PersonGraphHandler(None, self.settings)
+                PersonGraphHandler(self.settings)
                 if is_person_relation
-                else FilmGraphHandler(None, self.settings)
+                else FilmGraphHandler(self.settings)
             )
 
             # make sure the related entity exists in the database
@@ -286,9 +286,9 @@ class RelationshipFlow(ITaskExecutor):
             # now we can store the relationship
             # using the entity graph handler
             entity_handler = (
-                FilmGraphHandler(None, self.settings)
+                FilmGraphHandler(self.settings)
                 if isinstance(entity, Film)
-                else PersonGraphHandler(None, self.settings)
+                else PersonGraphHandler(self.settings)
             )
 
             if not entity_handler.select(entity.uid):
