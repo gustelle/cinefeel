@@ -5,7 +5,7 @@ from neo4j.graph import Node
 
 from src.entities.film import Film, FilmSpecifications
 from src.entities.person import Person
-from src.interfaces.relation_manager import (
+from src.entities.relationship import (
     PeopleRelationshipType,
     Relationship,
     WOARelationshipType,
@@ -333,8 +333,111 @@ def test_select_film(
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
 
 
-def test_get_related_person_single():
-    """caveat: make sure the db is shared between the two handlers
-    if using defaut memory db, this will not work
-    """
+def test_get_related(
+    test_film_handler: FilmGraphHandler,
+    test_memgraph_client: GraphDatabase,
+    test_person_handler: PersonGraphHandler,
+    test_film: Film,
+    test_person: Person,
+):
+    # given
+    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+
+    film_copy = test_film.model_copy(deep=True)
+    film_copy.title = "Inception Copy"
+
+    test_film_handler.insert_many([test_film, film_copy])
+    test_person_handler.insert_many([test_person])
+
+    test_film_handler.add_relationship(
+        relationship=Relationship(
+            from_entity=test_film,
+            to_entity=test_person,
+            relation_type=PeopleRelationshipType.DIRECTED_BY,
+        )
+    )
+
+    test_film_handler.add_relationship(
+        relationship=Relationship(
+            from_entity=test_film,
+            to_entity=film_copy,
+            relation_type=WOARelationshipType.INSPIRED_BY,
+        )
+    )
+
+    # when
+    related = test_film_handler.get_related(test_film)
+
+    # then
+    assert len(related) == 2
+    assert any(
+        rel.from_entity.uid == test_film.uid
+        and rel.to_entity.uid == test_person.uid
+        and rel.relation_type == PeopleRelationshipType.DIRECTED_BY
+        for rel in related
+    )
+    assert any(
+        rel.from_entity.uid == test_film.uid
+        and rel.to_entity.uid == film_copy.uid
+        and rel.relation_type == WOARelationshipType.INSPIRED_BY
+        for rel in related
+    )
+
+    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+
+
+def test_get_related_with_relation_type(
+    test_film_handler: FilmGraphHandler,
+    test_memgraph_client: GraphDatabase,
+    test_person_handler: PersonGraphHandler,
+    test_film: Film,
+    test_person: Person,
+):
+
+    # given
+    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+
+    film_copy = test_film.model_copy(deep=True)
+    film_copy.title = "Inception Copy"
+
+    test_film_handler.insert_many([test_film, film_copy])
+    test_person_handler.insert_many([test_person])
+
+    test_film_handler.add_relationship(
+        relationship=Relationship(
+            from_entity=test_film,
+            to_entity=test_person,
+            relation_type=PeopleRelationshipType.DIRECTED_BY,
+        )
+    )
+
+    test_film_handler.add_relationship(
+        relationship=Relationship(
+            from_entity=test_film,
+            to_entity=film_copy,
+            relation_type=WOARelationshipType.INSPIRED_BY,
+        )
+    )
+
+    # when
+    related = test_film_handler.get_related(
+        test_film, relation_type=PeopleRelationshipType.DIRECTED_BY
+    )
+
+    # then
+    assert len(related) == 1
+    assert any(
+        rel.from_entity.uid == test_film.uid
+        and rel.to_entity.uid == test_person.uid
+        and rel.relation_type == PeopleRelationshipType.DIRECTED_BY
+        for rel in related
+    )
+
+    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+
+
+def test_get_related_with_invalid_related_type(
+    test_film_handler: FilmGraphHandler,
+    test_memgraph_client: GraphDatabase,
+):
     pass

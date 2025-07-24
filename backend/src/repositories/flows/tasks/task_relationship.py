@@ -6,13 +6,13 @@ from pydantic import BaseModel, HttpUrl
 from src.entities.composable import Composable
 from src.entities.film import Film
 from src.entities.person import Person
-from src.interfaces.http_client import HttpError, IHttpClient
-from src.interfaces.relation_manager import (
+from src.entities.relationship import (
     CompanyRelationshipType,
     PeopleRelationshipType,
     Relationship,
     RelationshipType,
 )
+from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.db.film_graph import FilmGraphHandler

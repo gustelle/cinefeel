@@ -1,4 +1,4 @@
-from src.interfaces.relation_manager import PeopleRelationshipType
+from src.entities.relationship import PeopleRelationshipType
 from src.repositories.flows.tasks.task_relationship import RelationshipData
 
 

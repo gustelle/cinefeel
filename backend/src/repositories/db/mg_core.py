@@ -1,3 +1,4 @@
+import importlib
 from typing import Sequence
 
 from loguru import logger
@@ -6,13 +7,8 @@ from pydantic import validate_call
 from pydantic_settings import BaseSettings
 
 from src.entities.composable import Composable
-from src.entities.film import Film
-from src.interfaces.relation_manager import (
-    IRelationshipHandler,
-    Relationship,
-    RelationshipError,
-    RelationshipType,
-)
+from src.entities.relationship import Relationship, RelationshipType
+from src.interfaces.relation_manager import IRelationshipHandler, RelationshipError
 from src.interfaces.storage import IStorageHandler, StorageError
 from src.settings import Settings
 
@@ -157,10 +153,6 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
                     },
                 )
 
-                logger.debug(
-                    f"Added relationship {relationship.from_entity.__class__.__name__}('{relationship.from_entity.uid}') -[{relationship.relation_type}]-> {relationship.to_entity.__class__.__name__}('{relationship.to_entity.uid}')"
-                )
-
         except Exception as e:
             logger.error(
                 f"Error adding relationship '{relationship.relation_type}' between '{relationship.from_entity.uid}' and '{relationship.to_entity.uid}': {e}"
@@ -170,13 +162,13 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
             ) from e
 
     def get_related(
-        self, content: Film, relation_type: RelationshipType = None
+        self, content: T, relation_type: RelationshipType = None
     ) -> Sequence[Relationship]:
         """
         Retrieve relationships of a specific type for a given content.
 
         Args:
-            content (Film): The content to retrieve relationships for.
+            content (T): The content to retrieve relationships for.
             relation_type (RelationshipType, optional): The type of relationship to filter by. Defaults to None,
                 in which case all relationships are returned.
 
@@ -185,5 +177,56 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
         """
         if not self._is_initialized:
             self.setup()
+
+        try:
+            session: Session = self.client.session()
+
+            with session:
+
+                results = session.run(
+                    f"""
+                    MATCH (:{self.entity_type.__name__} {{uid: $uid}})-[r{':' + relation_type.value if relation_type else ''}]->(n)
+                    RETURN labels(n) as labels, n, r;
+                    """,
+                    parameters={
+                        "uid": content.uid,
+                    },
+                )
+
+                rels = []
+
+                for result in results:
+                    first_label = (
+                        result.get("labels")[0] if result.get("labels") else None
+                    )
+                    if first_label is None:
+                        continue
+
+                    m = importlib.import_module("src.entities")
+                    related_type = getattr(m, first_label, None)
+                    if related_type is None:
+                        logger.warning(
+                            f"Related type '{first_label}' not found in entities module for content with ID '{content.uid}'"
+                        )
+                        continue
+
+                    rels.append(
+                        Relationship(
+                            from_entity=content,
+                            to_entity=related_type.model_validate(
+                                dict(result.get("n")), by_alias=False, by_name=True
+                            ),
+                            relation_type=RelationshipType.from_string(
+                                result.get("r").type
+                            ),
+                        )
+                    )
+
+                return rels
+
+        except Exception as e:
+            raise RelationshipError(
+                f"Invalid related content with ID '{content.uid}': {e}"
+            ) from e
 
         return []
