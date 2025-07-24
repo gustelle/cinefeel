@@ -94,4 +94,11 @@ def test_person():
         gender=GenderEnum.MALE,
     )
 
+    person.influences = [
+        WOAInfluence(
+            parent_uid=person.uid,
+            persons=["Steven Spielberg"],
+        ),
+    ]
+
     yield person

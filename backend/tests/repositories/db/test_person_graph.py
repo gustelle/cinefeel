@@ -43,7 +43,7 @@ def test_insert_a_person(
     assert "characteristics" in person_data
     assert isinstance(person_data["characteristics"], dict)
     assert "influences" in person_data
-    assert isinstance(person_data["influences"], dict)
+    assert isinstance(person_data["influences"], list)
 
     # tear down the database
     test_memgraph_client.execute_query("MATCH (n:Person) DETACH DELETE n")
