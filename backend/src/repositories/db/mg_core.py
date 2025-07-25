@@ -64,6 +64,7 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
                         session.run(
                             f"""
                             CREATE INDEX ON :{self.entity_type.__name__}(uid);
+                            CREATE INDEX ON :{self.entity_type.__name__}(permalink);
                             """
                         )
             except Exception:
@@ -119,9 +120,7 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
 
                 doc = dict(result.fetch(1)[0].get("n"))
 
-                return self.entity_type.model_validate(
-                    doc, by_alias=False, by_name=True
-                )
+                return self.entity_type.model_validate(doc, by_name=True)
 
         except IndexError as e:
             logger.warning(f"Document with ID '{content_id}' not found: {e}")
@@ -297,3 +296,53 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
 
             logger.error(f"Error scanning for documents: {e}")
             return None
+
+    def query(
+        self,
+        order_by: str = "uid",
+        permalink: str | None = None,
+        after: T | None = None,
+        limit: int = 100,
+    ) -> Sequence[T]:
+
+        if not self._is_initialized:
+            self.setup()
+
+        try:
+            session: Session = self.client.session()
+
+            with session:
+
+                results = session.run(
+                    f"""
+                    MATCH (n:{self.entity_type.__name__})
+                    WHERE 
+                    {'n.uid n.uid > $after_uid' if after else '1=1'}
+                    AND 
+                    {'n.permalink = $permalink' if permalink else '1=1'}
+                    RETURN n
+                    ORDER BY n.{order_by} ASC
+                    LIMIT $limit;
+                """,
+                    parameters={
+                        "order_by": order_by,
+                        "permalink": str(permalink) if permalink else "",
+                        "after_uid": after.uid if after else "",
+                        "limit": limit,
+                    },
+                )
+
+                if not results.peek():
+                    logger.warning(
+                        f"No '{self.entity_type.__name__}' found matching the criteria"
+                    )
+                    return []
+
+                return [
+                    self.entity_type.model_validate(dict(result.get("n")), by_name=True)
+                    for result in results
+                ]
+
+        except Exception as e:
+
+            raise StorageError(f"Query execution error: {e}") from e

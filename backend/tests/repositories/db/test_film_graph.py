@@ -473,3 +473,45 @@ def test_graph_scan(
     )  # there is no person in the scan
 
     test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+
+
+def test_query_graph_by_permalink(
+    test_film_handler: FilmGraphHandler,
+    test_memgraph_client: GraphDatabase,
+    test_person_handler: PersonGraphHandler,
+    test_film: Film,
+    test_person: Person,
+):
+    # given
+    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+
+    films = [test_film]
+
+    for i in range(5):
+        film_copy = test_film.model_copy(deep=True)
+        film_copy.title = f"Inception Copy {i}"
+        film_copy.permalink = f"https://example.com/inception-copy-{i}"
+        films.append(film_copy)
+
+    test_film_handler.insert_many(films)
+
+    persons = [test_person]
+
+    for i in range(5):
+        person_copy = test_person.model_copy(deep=True)
+        person_copy.title = f"Person Copy {i}"
+
+        persons.append(person_copy)
+
+    test_person_handler.insert_many(persons)
+
+    # when
+    results = test_film_handler.query(permalink=test_film.permalink)
+
+    # then
+    assert len(results) == 1
+    assert isinstance(results[0], Film)
+    assert results[0].uid == test_film.uid
+
+    # tear down the database
+    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")

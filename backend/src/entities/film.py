@@ -164,8 +164,6 @@ class Film(Composable, WorkOfArt):
     )
     influences: list[WOAInfluence] | None = Field(
         None,
-        serialization_alias="influences",
-        validation_alias="influences",
     )
     specifications: FilmSpecifications | None = Field(
         None,

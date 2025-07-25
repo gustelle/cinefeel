@@ -63,6 +63,9 @@ class RelationshipFlow(ITaskExecutor):
         retrieves a content from the input storage by its name.
         if not found, it downloads the page and parses it to extract the entity.
 
+        TODO:
+        - notify if the entity is not found; so that it's downloaded later.
+
         Args:
             name (str): The name of the entity to extract.
             entity_type (type[Composable]): The type of the entity to extract.
@@ -100,7 +103,7 @@ class RelationshipFlow(ITaskExecutor):
             return None
 
     @task(
-        task_run_name="store_relationship",
+        task_run_name="do_enrichment-{relationship.from_entity.uid}-{relationship.to_entity.uid}",
         cache_policy=NO_CACHE,
         retries=3,
         retry_delay_seconds=[2, 5, 10],
@@ -108,18 +111,18 @@ class RelationshipFlow(ITaskExecutor):
     def do_enrichment(
         self,
         relationship: Relationship,
-        db_handler: IRelationshipHandler,
+        output_storage: IRelationshipHandler,
     ) -> Relationship:
         """
         Operates the storage of a relationship between two entities in the graph database.
 
         Args:
             relationship (Relationship): The relationship to store.
-            db_handler (IRelationshipHandler): The storage handler to use for storing the relationship.
+            output_storage (IRelationshipHandler): The handler to use for storing the relationship.
 
         """
 
-        result = db_handler.add_relationship(relationship=relationship)
+        result = output_storage.add_relationship(relationship=relationship)
 
         return result
 
@@ -134,7 +137,6 @@ class RelationshipFlow(ITaskExecutor):
 
         Args:
             entity (Composable): The entity to analyze.
-            input_storage (IStorageHandler[Composable]): The storage handler to use for retrieving the entity.
             output_storage (IRelationshipHandler): The storage handler to use for storing the relationships.
 
         """
@@ -235,28 +237,31 @@ class RelationshipFlow(ITaskExecutor):
             if entity.influences is not None and len(entity.influences) > 0:
 
                 for influence in entity.influences:
-                    for name in influence.persons:
+                    if influence.persons is not None and len(influence.persons) > 0:
+                        for name in influence.persons:
 
-                        related_entity: Composable = self.load_entity_by_name(
-                            name=name,
-                            input_storage=PersonGraphHandler(
-                                settings=self.settings,
-                            ),
-                        )
+                            related_entity: Composable = self.load_entity_by_name(
+                                name=name,
+                                input_storage=PersonGraphHandler(
+                                    settings=self.settings,
+                                ),
+                            )
 
-                        if related_entity is None:
-                            continue
+                            if related_entity is None:
+                                continue
 
-                        _fut_relationship: PrefectFuture = self.do_enrichment.submit(
-                            relationship=Relationship(
-                                from_entity=entity,
-                                to_entity=related_entity,
-                                relation_type=PeopleRelationshipType.INFLUENCED_BY,
-                            ),
-                            output_storage=output_storage,
-                        )
+                            _fut_relationship: PrefectFuture = (
+                                self.do_enrichment.submit(
+                                    relationship=Relationship(
+                                        from_entity=entity,
+                                        to_entity=related_entity,
+                                        relation_type=PeopleRelationshipType.INFLUENCED_BY,
+                                    ),
+                                    output_storage=output_storage,
+                                )
+                            )
 
-                        _futures.append(_fut_relationship)
+                            _futures.append(_fut_relationship)
 
             # retrieve the company that produced the film
             ...

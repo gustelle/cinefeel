@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Generator
 
 import duckdb
-import orjson
 from loguru import logger
 from pydantic import ValidationError
 
@@ -13,7 +12,9 @@ from src.settings import Settings
 
 class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
     """
-    handles persistence of `Film` or `Person` objects into JSON files.
+    handles persistence of `Composable` objects into JSON files.
+
+    JSON is dumped using the model's field names, not aliases, for better readability
     """
 
     persistence_directory: Path
@@ -88,7 +89,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
 
             with open(path, "r") as file:
                 # load through orjson to avoid uid validation issues
-                woa = self.entity_type.model_construct(**orjson.loads(file.read()))
+                woa = self.entity_type.model_validate_json(file.read(), by_name=True)
                 return woa
         except Exception as e:
             logger.exception(f"Error loading film from {path}: {e}")
@@ -114,7 +115,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
 
             results = (
                 conn.sql(
-                    f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
+                    f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json', union_by_name = true)"
                 )
                 .filter(f"uid > '{after.uid}'" if after else "1=1")
                 .filter(f"permalink = '{permalink}'" if permalink else "1=1")
@@ -127,13 +128,9 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
                 logger.warning(
                     f"No '{self.entity_type.__name__}' found matching the criteria"
                 )
-                logger.warning(
-                    f"Criteria: permalink={permalink}, after={after}, limit={limit}"
-                )
                 return []
 
             return [
-                # use model_construct to avoid uid validation issues
                 self.entity_type.model_validate(dict(row), by_name=True)
                 for row in results.to_dict("records")
             ]
@@ -166,6 +163,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
             for file in self.persistence_directory.glob("*.json"):
                 with open(file, "r") as f:
                     try:
+
                         # use model_construct to avoid uid validation issues
                         yield self.entity_type.model_validate_json(
                             f.read(), by_name=True
