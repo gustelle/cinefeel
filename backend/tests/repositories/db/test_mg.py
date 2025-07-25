@@ -1,4 +1,3 @@
-
 from src.repositories.db.mg_core import AbstractMemGraph
 from src.settings import Settings
 

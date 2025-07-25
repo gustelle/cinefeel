@@ -433,8 +433,6 @@ def test_get_related_with_relation_type(
     test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
 
 
-def test_get_related_with_invalid_related_type(
-    test_film_handler: FilmGraphHandler,
-    test_memgraph_client: GraphDatabase,
-):
+def test_scan():
+
     pass

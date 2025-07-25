@@ -121,7 +121,9 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
         relationship: Relationship,
     ) -> None:
         """
-        assumes that the content exists in the database, or raises an error if it does not.
+        adds a relationship between two contents in the database,
+
+        It assumes that both entities already exist in the database.
 
         Args:
             relationship (Relationship): The relationship to add.
@@ -131,10 +133,8 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
         if not self._is_initialized:
             self.setup()
 
-        if not self.select(relationship.from_entity.uid):
-            raise RelationshipError(
-                f"Content with ID '{relationship.from_entity.uid}' is missing or invalid."
-            )
+        # if not self.select(relationship.from_entity.uid):
+        #     self.insert_many([relationship.from_entity])
 
         try:
             session: Session = self.client.session()
@@ -153,9 +153,13 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
                     },
                 )
 
+                logger.info(
+                    f"Stored relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_entity.uid}'."
+                )
+
         except Exception as e:
             logger.error(
-                f"Error adding relationship '{relationship.relation_type}' between '{relationship.from_entity.uid}' and '{relationship.to_entity.uid}': {e}"
+                f"Error adding relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_entity.uid}': {e}"
             )
             raise RelationshipError(
                 f"Invalid related content with ID '{relationship.to_entity.uid}': {e}"
@@ -230,3 +234,6 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
             ) from e
 
         return []
+
+    def scan(self, *args, **kwargs):
+        return super().scan(*args, **kwargs)

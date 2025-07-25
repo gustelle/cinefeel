@@ -3,9 +3,12 @@ from prefect import flow, get_run_logger
 from src.entities.film import Film
 from src.entities.person import Person
 from src.interfaces.pipeline import IPipelineRunner
+from src.repositories.db.film_graph import FilmGraphHandler
+from src.repositories.db.person_graph import PersonGraphHandler
 from src.repositories.flows.tasks.task_downloader import DownloaderFlow
+from src.repositories.flows.tasks.task_graph_storage import GraphDBStorageFlow
 from src.repositories.flows.tasks.task_html_parsing import HtmlParsingFlow
-from src.repositories.flows.tasks.task_indexer import IndexerFlow
+from src.repositories.flows.tasks.task_indexer import SearchIndexerFlow
 from src.repositories.http.async_http import AsyncHttpClient
 from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
@@ -13,7 +16,7 @@ from src.repositories.search.meili_indexer import MeiliIndexer
 from src.settings import Settings
 
 
-class Html2EntitiesPipeline(IPipelineRunner):
+class ExtractionPipeline(IPipelineRunner):
     """
     Scrape Wikipedia pages for a specific entity type (Film or Person),
     analyze the content, index it into a search engine, and store results in a graph database
@@ -43,8 +46,6 @@ class Html2EntitiesPipeline(IPipelineRunner):
         json_storage = JSONEntityStorageHandler[self.entity_type](
             settings=self.settings
         )
-
-        meili_storage = MeiliIndexer[self.entity_type](settings=self.settings)
 
         http_client = AsyncHttpClient(settings=self.settings)
 
@@ -84,14 +85,23 @@ class Html2EntitiesPipeline(IPipelineRunner):
             )
 
         # index the films into a search engine
-        # here we can iterate over all the films in the storage
-        # indexing is not a blocking operation
-        IndexerFlow(
+        SearchIndexerFlow(
             settings=self.settings,
             entity_type=self.entity_type,
         ).execute(
             input_storage=json_storage,
-            output_storage=meili_storage,
+            output_storage=MeiliIndexer[self.entity_type](settings=self.settings),
         )
+
+        # Store in the graph database
+        db_storage = (
+            FilmGraphHandler(settings=self.settings)
+            if self.entity_type is Film
+            else PersonGraphHandler(settings=self.settings)
+        )
+        GraphDBStorageFlow(
+            settings=self.settings,
+            entity_type=self.entity_type,
+        ).execute(input_storage=json_storage, output_storage=db_storage)
 
         logger.info("Flow completed successfully.")

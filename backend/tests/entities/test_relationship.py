@@ -1,4 +1,7 @@
-from src.entities.relationship import PeopleRelationshipType, RelationshipType
+from src.entities.relationship import (
+    PeopleRelationshipType,
+    RelationshipType,
+)
 
 
 def test_RelationshipType_from_string():
