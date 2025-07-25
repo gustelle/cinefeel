@@ -28,7 +28,9 @@ class SimilarSectionSearch(Processor[Section]):
             model_name (str): The name of the BERT model to use.
         """
         self.settings = settings
-        self.embedder = SentenceTransformer(settings.bert_similarity_model)
+        self.embedder = SentenceTransformer(
+            settings.bert_similarity_model,  # backend="onnx"
+        )
 
     def _most_similar_text(self, query: str, corpus: list[str]) -> str | None:
         """
