@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Generator
 
 import duckdb
 import orjson
@@ -156,27 +157,22 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
         finally:
             conn.close()
 
-    def scan(self) -> list[T]:
-        """Scans the persistent storage and returns a list of all contents."""
+    def scan(self) -> Generator[T, None, None]:
+        """Scans the persistent storage and returns an iterator over the contents."""
 
         try:
-            results = (
-                duckdb.sql(
-                    f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
-                )
-                .order("uid")
-                .to_df()
-            )
 
-            if results.empty:
-                logger.warning(f"No '{self.entity_type}' found in the storage")
-                return []
-
-            return [
-                # rebuild the entity
-                self.entity_type.model_validate(dict(row), by_name=True)
-                for row in results.to_dict("records")
-            ]
+            # iterate over all JSON files in the directory
+            for file in self.persistence_directory.glob("*.json"):
+                with open(file, "r") as f:
+                    try:
+                        # use model_construct to avoid uid validation issues
+                        yield self.entity_type.model_validate_json(
+                            f.read(), by_name=True
+                        )
+                    except ValidationError as e:
+                        logger.error(f"Error loading JSON from '{file}': {e}")
+                        continue
 
         except Exception as e:
             logger.error(f"Error scanning storage: {e}")

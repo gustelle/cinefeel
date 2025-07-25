@@ -433,6 +433,43 @@ def test_get_related_with_relation_type(
     test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
 
 
-def test_scan():
+def test_graph_scan(
+    test_film_handler: FilmGraphHandler,
+    test_memgraph_client: GraphDatabase,
+    test_person_handler: PersonGraphHandler,
+    test_film: Film,
+    test_person: Person,
+):
 
-    pass
+    # given
+    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+
+    films = [test_film]
+
+    for i in range(5):
+        film_copy = test_film.model_copy(deep=True)
+        film_copy.title = f"Inception Copy {i}"
+        films.append(film_copy)
+
+    test_film_handler.insert_many(films)
+
+    persons = [test_person]
+
+    for i in range(5):
+        person_copy = test_person.model_copy(deep=True)
+        person_copy.title = f"Person Copy {i}"
+        persons.append(person_copy)
+
+    test_person_handler.insert_many(persons)
+
+    # when
+    film_scan = test_film_handler.scan()
+
+    results = list(film_scan)
+
+    assert len(results) == 6  # 1 original + 5 copies
+    assert all(
+        isinstance(film, Film) for film in results
+    )  # there is no person in the scan
+
+    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")

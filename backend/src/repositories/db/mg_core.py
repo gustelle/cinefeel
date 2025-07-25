@@ -1,9 +1,9 @@
 import importlib
-from typing import Sequence
+from typing import Generator, Sequence
 
 from loguru import logger
 from neo4j import GraphDatabase, Session
-from pydantic import validate_call
+from pydantic import ValidationError, validate_call
 from pydantic_settings import BaseSettings
 
 from src.entities.composable import Composable
@@ -55,6 +55,23 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
                 return True
 
             self.client.verify_connectivity()
+
+            try:
+                if hasattr(self, "entity_type") and self.entity_type is not None:
+                    # create indexes if they do not exist
+                    session: Session = self.client.session()
+                    with session:
+                        session.run(
+                            f"""
+                            CREATE INDEX ON :{self.entity_type.__name__}(uid);
+                            """
+                        )
+            except Exception:
+
+                logger.warning(
+                    f"Index for {self.entity_type.__name__} already exists or could not be created."
+                )
+
             self._is_initialized = True
             logger.info("Database schema initialized successfully.")
 
@@ -132,9 +149,6 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
         """
         if not self._is_initialized:
             self.setup()
-
-        # if not self.select(relationship.from_entity.uid):
-        #     self.insert_many([relationship.from_entity])
 
         try:
             session: Session = self.client.session()
@@ -235,5 +249,51 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
 
         return []
 
-    def scan(self, *args, **kwargs):
-        return super().scan(*args, **kwargs)
+    def scan(self) -> Generator[T, None, None]:
+
+        try:
+
+            _last_uid = ""
+
+            while _last_uid is not None:
+
+                try:
+
+                    session: Session = self.client.session()
+
+                    with session:
+
+                        result = session.run(
+                            f"""
+                            MATCH (n:{self.entity_type.__name__})
+                            WHERE n.uid IS NOT NULL AND n.uid > $uid
+                            RETURN n
+                            ORDER BY n.uid ASC
+                            LIMIT 1;
+                            """,
+                            parameters={"uid": _last_uid},
+                        )
+
+                        if not result.peek():
+                            # stop if no more results
+                            logger.debug(
+                                f"No more '{self.entity_type.__name__}' found after UID '{_last_uid}'"
+                            )
+                            break
+
+                        doc = dict(result.fetch(1)[0].get("n"))
+
+                        _last_uid = doc.get("uid")
+
+                        yield self.entity_type.model_validate(doc, by_name=True)
+
+                except (IndexError, KeyError, ValidationError):
+                    logger.warning(
+                        f"No documents found for entity type '{self.entity_type.__name__}'"
+                    )
+                    continue
+
+        except Exception as e:
+
+            logger.error(f"Error scanning for documents: {e}")
+            return None
