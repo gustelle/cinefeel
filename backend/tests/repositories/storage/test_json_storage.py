@@ -86,7 +86,8 @@ def test_insert_film():
     ) == film.model_dump(mode="json", exclude_none=True)
 
     # teardown
-    (storage_handler.persistence_directory / f"{film.uid}.json").unlink()
+    for file in storage_handler.persistence_directory.iterdir():
+        file.unlink()
     storage_handler.persistence_directory.rmdir()
 
 
@@ -163,7 +164,6 @@ def test_select_film():
     test_settings = Settings(persistence_directory=local_path)
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
-    # when
     content_id = "test_film"
     content = {
         "title": "Test Film",
@@ -178,13 +178,22 @@ def test_select_film():
         permalink=HttpUrl("http://example.com/test-film"),
         uid=content_id,
     )
+    film.specifications = FilmSpecifications(
+        title=content["title"],
+        parent_uid=film.uid,
+        directed_by=content["directors"],
+    )
 
     storage_handler.insert(film.uid, film)
 
-    # then
+    # when
+    result = storage_handler.select(film.uid)
 
-    assert storage_handler.select(film.uid) is not None
-    assert storage_handler.select(film.uid).uid == film.uid
+    # then
+    assert result is not None
+    assert result.uid == film.uid
+    assert isinstance(result.specifications, FilmSpecifications)
+    assert result.specifications.directed_by == content["directors"]
 
     # teardown
     (storage_handler.persistence_directory / f"{film.uid}.json").unlink()

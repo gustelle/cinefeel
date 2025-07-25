@@ -1,10 +1,52 @@
+from enum import StrEnum
 from string import ascii_letters, digits, punctuation, whitespace
 
 import pytest
+from pydantic import field_validator
 
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
 from src.entities.ml import ExtractionResult
+
+
+def test_use_enum_values():
+    # given
+    class MyEnum(StrEnum):
+        VALUE1 = "value1"
+        VALUE2 = "value2"
+
+    class MyComposable(Composable):
+        my_enum: MyEnum
+
+    # when
+    instance = MyComposable(
+        my_enum=MyEnum.VALUE1, title="Test Title", permalink="http://example.com/test"
+    )
+
+    # then
+    assert (
+        instance.my_enum == "value1"
+    )  # should use the enum value, not the enum instance
+
+
+def test_validate_assignment():
+    # given
+    class MyComposable(Composable):
+        some_field: str
+
+        @field_validator("some_field")
+        def validate_some_field(cls, value: str) -> str:
+            value = f"modified-{value}"
+            return value
+
+    # when
+    instance = MyComposable(
+        title="Test Title", permalink="http://example.com/test", some_field="test"
+    )
+    instance.some_field = "new value"
+
+    # then
+    assert instance.some_field == "modified-new value"
 
 
 def test_uid_validation():

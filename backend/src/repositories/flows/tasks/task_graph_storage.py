@@ -7,7 +7,7 @@ from src.interfaces.task import ITaskExecutor
 from src.settings import Settings
 
 
-class SearchIndexerFlow(ITaskExecutor):
+class GraphDBStorageFlow(ITaskExecutor):
 
     entity_type: type[Composable]
     settings: Settings
@@ -27,7 +27,6 @@ class SearchIndexerFlow(ITaskExecutor):
         """
         indexer.insert_many(
             contents=entities,
-            wait_for_completion=False,
         )
 
     @flow(

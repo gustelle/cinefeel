@@ -3,7 +3,7 @@ import time
 from loguru import logger
 
 from src.entities.film import Film
-from src.repositories.flows.entity_enrichment_pipeline import EntityEnrichmentProcessor
+from src.repositories.flows.relations_pipeline import RelationshipProcessor
 from src.settings import Settings
 
 
@@ -18,7 +18,7 @@ class EnrichmentUseCase:
 
         start_time = time.time()
 
-        EntityEnrichmentProcessor(
+        RelationshipProcessor(
             settings=self.settings,
             entity_type=Film,
         ).execute_pipeline()

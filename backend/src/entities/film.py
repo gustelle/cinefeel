@@ -92,43 +92,36 @@ class FilmSpecifications(WOASpecifications):
 
     directed_by: list[str] | None = Field(
         None,
-        repr=False,
         serialization_alias="realisateurs",
         validation_alias="realisateurs",
     )
     produced_by: list[str] | None = Field(
         None,
-        repr=False,
         serialization_alias="producteurs",
         validation_alias="producteurs",
     )
     genres: list[str] | None = Field(
         None,
-        repr=False,
         serialization_alias="genres",
         validation_alias="genres",
     )
     special_effects_by: list[str] | None = Field(
         None,
-        repr=False,
         serialization_alias="effets_speciaux",
         validation_alias="effets_speciaux",
     )
     scenary_by: list[str] | None = Field(
         None,
-        repr=False,
         serialization_alias="decorateurs",
         validation_alias="decorateurs",
     )
     written_by: list[str] | None = Field(
         None,
-        repr=False,
         serialization_alias="scenaristes",
         validation_alias="scenaristes",
     )
     music_by: list[str] | None = Field(
         None,
-        repr=False,
         serialization_alias="compositeurs_musique",
         validation_alias="compositeurs_musique",
     )
@@ -136,7 +129,6 @@ class FilmSpecifications(WOASpecifications):
         None,
         description="Durée du film au format HH:MM:SS.",
         examples=["01:30:00", "02:15:45"],
-        repr=False,
         serialization_alias="duree_film",
         validation_alias="duree_film",
     )
@@ -162,31 +154,24 @@ class Film(Composable, WorkOfArt):
 
     summary: FilmSummary | None = Field(
         None,
-        repr=False,
         serialization_alias="resume",
         validation_alias="resume",
     )
     media: FilmMedia | None = Field(
         None,
-        repr=False,
         serialization_alias="medias",
         validation_alias="medias",
     )
     influences: list[WOAInfluence] | None = Field(
         None,
-        repr=False,
-        serialization_alias="influences",
-        validation_alias="influences",
     )
     specifications: FilmSpecifications | None = Field(
         None,
-        repr=False,
         serialization_alias="fiche_technique",
         validation_alias="fiche_technique",
     )
     actors: list[FilmActor] | None = Field(
         None,
-        repr=False,
         serialization_alias="acteurs",
         validation_alias="acteurs",
     )
@@ -195,6 +180,8 @@ class Film(Composable, WorkOfArt):
 
     @field_serializer("actors")
     def serialize_dt(self, value: Any):
+
+        # values coming from LLMs or other sources may be numpy arrays
         if isinstance(value, ndarray):
             value = value.tolist()
 

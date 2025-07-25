@@ -1,7 +1,7 @@
 from pathlib import Path
+from typing import Generator
 
 import duckdb
-import orjson
 from loguru import logger
 from pydantic import ValidationError
 
@@ -12,7 +12,9 @@ from src.settings import Settings
 
 class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
     """
-    handles persistence of `Film` or `Person` objects into JSON files.
+    handles persistence of `Composable` objects into JSON files.
+
+    JSON is dumped using the model's field names, not aliases, for better readability
     """
 
     persistence_directory: Path
@@ -87,7 +89,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
 
             with open(path, "r") as file:
                 # load through orjson to avoid uid validation issues
-                woa = self.entity_type.model_construct(**orjson.loads(file.read()))
+                woa = self.entity_type.model_validate_json(file.read(), by_name=True)
                 return woa
         except Exception as e:
             logger.exception(f"Error loading film from {path}: {e}")
@@ -113,7 +115,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
 
             results = (
                 conn.sql(
-                    f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
+                    f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json', union_by_name = true)"
                 )
                 .filter(f"uid > '{after.uid}'" if after else "1=1")
                 .filter(f"permalink = '{permalink}'" if permalink else "1=1")
@@ -123,11 +125,12 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
             )
 
             if results.empty:
-                logger.warning(f"No {self.entity_type} found matching the criteria")
+                logger.warning(
+                    f"No '{self.entity_type.__name__}' found matching the criteria"
+                )
                 return []
 
             return [
-                # use model_construct to avoid uid validation issues
                 self.entity_type.model_validate(dict(row), by_name=True)
                 for row in results.to_dict("records")
             ]
@@ -151,27 +154,23 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
         finally:
             conn.close()
 
-    def scan(self) -> list[T]:
-        """Scans the persistent storage and returns a list of all contents."""
+    def scan(self) -> Generator[T, None, None]:
+        """Scans the persistent storage and returns an iterator over the contents."""
 
         try:
-            results = (
-                duckdb.sql(
-                    f"SELECT * FROM read_json_auto('{str(self.persistence_directory)}/*.json')"
-                )
-                .order("uid")
-                .to_df()
-            )
 
-            if results.empty:
-                logger.warning(f"No '{self.entity_type}' found in the storage")
-                return []
+            # iterate over all JSON files in the directory
+            for file in self.persistence_directory.glob("*.json"):
+                with open(file, "r") as f:
+                    try:
 
-            return [
-                # rebuild the entity
-                self.entity_type.model_validate(dict(row), by_name=True)
-                for row in results.to_dict("records")
-            ]
+                        # use model_construct to avoid uid validation issues
+                        yield self.entity_type.model_validate_json(
+                            f.read(), by_name=True
+                        )
+                    except ValidationError as e:
+                        logger.error(f"Error loading JSON from '{file}': {e}")
+                        continue
 
         except Exception as e:
             logger.error(f"Error scanning storage: {e}")
