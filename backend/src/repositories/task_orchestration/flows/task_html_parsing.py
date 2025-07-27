@@ -50,7 +50,11 @@ class HtmlParsingFlow(ITaskExecutor):
 
     @task(task_run_name="do_analysis-{content_id}")
     def do_analysis(
-        self, analyzer: IContentAnalyzer, content_id: str, html_content: str
+        self,
+        analyzer: IContentAnalyzer,
+        content_id: str,
+        html_content: str,
+        search_processor: SimilarSectionSearch,
     ) -> Composable | None:
         """
         Analyze the content and return a storable entity.
@@ -77,7 +81,7 @@ class HtmlParsingFlow(ITaskExecutor):
         # assemble the entity from the sections
         if self.entity_type == Film:
             return BasicFilmResolver(
-                section_searcher=SimilarSectionSearch(settings=self.settings),
+                section_searcher=search_processor,
                 configurations=[
                     ResolutionConfiguration(
                         extractor=MistralDataMiner(settings=self.settings),
@@ -119,7 +123,7 @@ class HtmlParsingFlow(ITaskExecutor):
             )
         elif self.entity_type == Person:
             return BasicPersonResolver(
-                section_searcher=SimilarSectionSearch(settings=self.settings),
+                section_searcher=search_processor,
                 configurations=[
                     ResolutionConfiguration(
                         # extractor=GenericInfoExtractor(settings=self.settings),
@@ -217,6 +221,8 @@ class HtmlParsingFlow(ITaskExecutor):
             ],
         )
 
+        search_processor = SimilarSectionSearch(settings=self.settings)
+
         i = 0
 
         # send concurrent tasks to analyze HTML content
@@ -239,6 +245,7 @@ class HtmlParsingFlow(ITaskExecutor):
                 analyzer=analyzer,
                 content_id=content_id,
                 html_content=file_content,
+                search_processor=search_processor,
             )
             entity_futures.append(future_entity)
 
@@ -250,7 +257,7 @@ class HtmlParsingFlow(ITaskExecutor):
             )
 
             i += 1
-            if i > 10:
+            if i > 1_000:
                 break
 
         for future in entity_futures + storage_futures:
