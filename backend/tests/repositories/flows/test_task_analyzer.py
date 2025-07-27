@@ -1,7 +1,7 @@
 from pydantic import HttpUrl
 
 from src.entities.film import Film
-from src.repositories.flows.tasks.task_html_parsing import HtmlParsingFlow
+from src.repositories.task_orchestration.flows.task_html_parsing import HtmlParsingFlow
 from src.settings import Settings
 
 from .stubs.stub_analyzer import StubAnalyzer

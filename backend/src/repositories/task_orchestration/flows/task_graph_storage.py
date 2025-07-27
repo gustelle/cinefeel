@@ -7,7 +7,7 @@ from src.interfaces.task import ITaskExecutor
 from src.settings import Settings
 
 
-class GraphDBStorageFlow(ITaskExecutor):
+class DBStorageFlow(ITaskExecutor):
 
     entity_type: type[Composable]
     settings: Settings

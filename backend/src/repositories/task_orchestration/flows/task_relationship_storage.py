@@ -11,6 +11,9 @@ from src.interfaces.relation_manager import IRelationshipHandler
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.db.person_graph import PersonGraphHandler
+from src.repositories.task_orchestration.extraction_pipeline import (
+    UnitExtractionPipeline,
+)
 from src.settings import Settings
 
 
@@ -63,12 +66,8 @@ class RelationshipFlow(ITaskExecutor):
         retrieves a content from the input storage by its name.
         if not found, it downloads the page and parses it to extract the entity.
 
-        TODO:
-        - notify if the entity is not found; so that it's downloaded later.
-
         Args:
             name (str): The name of the entity to extract.
-            entity_type (type[Composable]): The type of the entity to extract.
             input_storage (IStorageHandler[Composable]): The storage handler to use for retrieving the entity.
 
         Returns:
@@ -94,7 +93,29 @@ class RelationshipFlow(ITaskExecutor):
             if results:
                 return results[0]
 
-            logger.warning(f"Entity with permalink '{permalink}' not found in storage")
+            logger.warning(
+                f"Permalink '{permalink}' not found in storage --> triggering extraction."
+            )
+            UnitExtractionPipeline(
+                settings=self.settings,
+                entity_type=Film,  # or Person, depending on the context
+                http_client=self.http_client,
+            ).execute_pipeline(
+                permalink=permalink,
+            )
+
+            # After extraction, try to retrieve the entity again
+            results = input_storage.query(
+                permalink=permalink,
+            )
+
+            if results:
+                return results[0]
+
+            logger.warning(
+                f"Entity with permalink '{permalink}' not found after extraction."
+            )
+
             return None
 
         except Exception as e:

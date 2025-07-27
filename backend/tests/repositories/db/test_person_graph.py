@@ -7,7 +7,7 @@ from src.repositories.db.person_graph import PersonGraphHandler
 
 def test_insert_a_person(
     test_memgraph_client: GraphDatabase,
-    test_person_handler: PersonGraphHandler,
+    test_person_graphdb: PersonGraphHandler,
     test_person: Person,
 ):
     """assert the data type is correct when inserting a person"""
@@ -18,7 +18,7 @@ def test_insert_a_person(
     test_memgraph_client.execute_query("MATCH (n:Person) DETACH DELETE n")
 
     # when
-    count = test_person_handler.insert_many([test_person])
+    count = test_person_graphdb.insert_many([test_person])
 
     # then
     assert count == 1  # Only one person should be inserted
@@ -50,7 +50,7 @@ def test_insert_a_person(
 
 
 def test_select_person(
-    test_person_handler: PersonGraphHandler, test_memgraph_client: GraphDatabase
+    test_person_graphdb: PersonGraphHandler, test_memgraph_client: GraphDatabase
 ):
     # given
 
@@ -66,10 +66,10 @@ def test_select_person(
     )
     person.biography = bio
 
-    test_person_handler.insert_many([person])
+    test_person_graphdb.insert_many([person])
 
     # when
-    retrieved_person = test_person_handler.select(person.uid)
+    retrieved_person = test_person_graphdb.select(person.uid)
 
     # then
     assert retrieved_person is not None

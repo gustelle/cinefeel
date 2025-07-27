@@ -16,7 +16,7 @@ from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.settings import Settings, WikiTOCPageConfig
 
 
-async def is_retriable(
+async def is_async_task_retriable(
     task: Task[..., Any], task_run: TaskRun, state: State[Any]
 ) -> bool:
     logger = get_run_logger()
@@ -35,23 +35,44 @@ async def is_retriable(
     return False
 
 
+def is_task_retriable(
+    task: Task[..., Any], task_run: TaskRun, state: State[Any]
+) -> bool:
+    logger = get_run_logger()
+    try:
+        state.result()
+    except Exception as e:
+        if isinstance(e, HttpError) and e.status_code >= 429:
+            return True
+        elif isinstance(e, HttpError):
+            logger.warning(
+                f"HTTP error with status {e.status_code} will not be retried"
+            )
+            return False
+        else:
+            logger.error(f"Exception is not retriable: {e}")
+    return False
+
+
 class DownloaderFlow(ITaskExecutor):
 
     settings: Settings
     http_client: IHttpClient
+    page_endpoint: str
 
     def __init__(self, settings: Settings, http_client: IHttpClient):
         self.settings = settings
         self.http_client = http_client
+        self.page_endpoint = f"{self.settings.mediawiki_base_url}/page/{{page_id}}/html"
 
     @task(
-        task_run_name="download_page-{page_id}",
+        task_run_name="async_download-{page_id}",
         retries=3,
         retry_delay_seconds=[1, 2, 5],
-        retry_condition_fn=is_retriable,
+        retry_condition_fn=is_async_task_retriable,
         cache_policy=NO_CACHE,
     )
-    async def download_page(
+    async def async_download(
         self,
         page_id: str,
         storage_handler: LocalTextStorage | None = None,
@@ -59,6 +80,7 @@ class DownloaderFlow(ITaskExecutor):
         **params,
     ) -> str | None:
         """
+        Pre-requisite: The HttpClient must be asynchronous.
 
         Args:
             page_id (str): The page ID to download.
@@ -70,9 +92,54 @@ class DownloaderFlow(ITaskExecutor):
             str | None: The content ID if the download was successful, None otherwise.
         """
 
-        endpoint = f"{self.settings.mediawiki_base_url}/page/{page_id}/html"
+        endpoint = self.page_endpoint.format(page_id=page_id)
 
         html = await self.http_client.send(
+            url=endpoint,
+            response_type="text",
+            params=params,
+        )
+
+        if html is not None and storage_handler is not None:
+            storage_handler.insert(
+                content_id=page_id,
+                content=html,
+            )
+        if return_content:
+            return html
+
+        return page_id if html is not None else None
+
+    @task(
+        task_run_name="download-{page_id}",
+        retries=3,
+        retry_delay_seconds=[1, 2, 5],
+        retry_condition_fn=is_task_retriable,
+        cache_policy=NO_CACHE,
+    )
+    def download(
+        self,
+        page_id: str,
+        storage_handler: LocalTextStorage | None = None,
+        return_content: bool = False,
+        **params,
+    ) -> str | None:
+        """
+        Pre-requisite: The HttpClient must be synchronous.
+
+        Args:
+            page_id (str): The page ID to download.
+            storage_handler (HtmlContentStorageHandler | None, optional): The storage handler to use for storing the content. Defaults to None.
+            return_content (bool, optional): Whether to return the content. Defaults to False, in which case the content ID is returned.
+            **params: Additional parameters for the HTTP request.
+
+        Returns:
+            str | None: The content ID if the download was successful, None otherwise.
+        """
+
+        endpoint = self.page_endpoint.format(page_id=page_id)
+
+        html = self.http_client.send(
             url=endpoint,
             response_type="text",
             params=params,
@@ -95,7 +162,7 @@ class DownloaderFlow(ITaskExecutor):
         link_extractor: IContentParser,
     ) -> list[PageLink]:
         """
-        downloads the HTML pages and returns the list of page IDs.
+        downloads the HTML page and extracts the links from it.
 
         Args:
             page (WikiTOCPageConfig): The configuration for the page to be downloaded.
@@ -106,7 +173,7 @@ class DownloaderFlow(ITaskExecutor):
 
         logger = get_run_logger()
 
-        html = await self.download_page(
+        html = await self.async_download(
             page_id=config.page_id,
             return_content=True,  # return the content
         )
@@ -159,7 +226,7 @@ class DownloaderFlow(ITaskExecutor):
 
         content_ids = await asyncio.gather(
             *[
-                self.download_page(
+                self.async_download(
                     page_id=page_link.page_id,
                     storage_handler=storage_handler,
                     return_content=False,  # for memory constraints, return the content ID

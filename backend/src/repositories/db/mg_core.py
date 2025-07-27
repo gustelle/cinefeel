@@ -27,7 +27,7 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
 
         self.settings = settings
         self.client: GraphDatabase = GraphDatabase.driver(
-            str(self.settings.db_uri),
+            str(self.settings.graph_db_uri),
             auth=("", ""),
         )
 

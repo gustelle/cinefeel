@@ -16,7 +16,7 @@ from src.repositories.db.person_graph import PersonGraphHandler
 
 def test_insert_a_film(
     test_memgraph_client: GraphDatabase,
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_film: Film,
 ):
     """assert the data type is correct when inserting a film"""
@@ -27,7 +27,7 @@ def test_insert_a_film(
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
 
     # when
-    count = test_film_handler.insert_many([test_film])
+    count = test_film_graphdb.insert_many([test_film])
 
     # then
     assert count == 1  # Only one film should be inserted
@@ -84,7 +84,7 @@ def test_insert_a_film(
 
 def test_insert_several_films(
     test_memgraph_client: GraphDatabase,
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_film: Film,
 ):
     """assert several films can be inserted at once"""
@@ -98,7 +98,7 @@ def test_insert_several_films(
     other_film = Film(**dict_film)
 
     # when
-    count = test_film_handler.insert_many([test_film, other_film])
+    count = test_film_graphdb.insert_many([test_film, other_film])
 
     # then
     assert count == 2  # Two films should be inserted
@@ -109,19 +109,19 @@ def test_insert_several_films(
 
 def test_update_a_film(
     test_memgraph_client: GraphDatabase,
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_film: Film,
 ):
     """assert a film can be updated if it already exists in the database"""
 
     # given
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
-    test_film_handler.insert_many([test_film])
+    test_film_graphdb.insert_many([test_film])
 
     # when
     updated_film = test_film.model_copy(deep=True)
     updated_film.title = "Inception (Updated)"
-    c = test_film_handler.insert_many([updated_film])
+    c = test_film_graphdb.insert_many([updated_film])
 
     # then
     assert c == 1  # Only one film should be updated
@@ -142,14 +142,14 @@ def test_update_a_film(
 
 def test_insert_film_deduplication(
     test_memgraph_client: GraphDatabase,
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_film: Film,
 ):
     # given
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
 
     # when
-    count = test_film_handler.insert_many([test_film, test_film])
+    count = test_film_graphdb.insert_many([test_film, test_film])
 
     # This should not create a duplicate entry
     # then
@@ -160,16 +160,16 @@ def test_insert_film_deduplication(
 
 
 def test_get_nominal(
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_film: Film,
     test_memgraph_client: GraphDatabase,
 ):
     # given
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
-    test_film_handler.insert_many([test_film])
+    test_film_graphdb.insert_many([test_film])
 
     # when
-    retrieved_film = test_film_handler.select(test_film.uid)
+    retrieved_film = test_film_graphdb.select(test_film.uid)
 
     # then
     assert retrieved_film is not None
@@ -184,13 +184,13 @@ def test_get_nominal(
     test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
 
 
-def test_get_non_existent(test_film_handler: FilmGraphHandler):
+def test_get_non_existent(test_film_graphdb: FilmGraphHandler):
     # given
 
     non_existent_uid = uuid.uuid4().hex
 
     # when
-    retrieved_film = test_film_handler.select(non_existent_uid)
+    retrieved_film = test_film_graphdb.select(non_existent_uid)
 
     # then
     assert retrieved_film is None
@@ -198,7 +198,7 @@ def test_get_non_existent(test_film_handler: FilmGraphHandler):
 
 def test_get_bad_data(
     test_memgraph_client: GraphDatabase,
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
 ):
     # given
     # insert bad data
@@ -209,7 +209,7 @@ def test_get_bad_data(
     )
 
     # when
-    result = test_film_handler.select("bad-uid")
+    result = test_film_graphdb.select("bad-uid")
     # then
     assert result is None
 
@@ -219,18 +219,18 @@ def test_get_bad_data(
 
 def test_add_relationship_to_person(
     test_memgraph_client: GraphDatabase,
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_film: Film,
-    test_person_handler: PersonGraphHandler,
+    test_person_graphdb: PersonGraphHandler,
     test_person: Person,
 ):
     # given
     test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
-    test_film_handler.insert_many([test_film])
-    test_person_handler.insert_many([test_person])
+    test_film_graphdb.insert_many([test_film])
+    test_person_graphdb.insert_many([test_person])
 
     # when
-    test_film_handler.add_relationship(
+    test_film_graphdb.add_relationship(
         relationship=Relationship(
             from_entity=test_film,
             to_entity=test_person,
@@ -256,7 +256,7 @@ def test_add_relationship_to_person(
 
 def test_add_relationship_to_film(
     test_memgraph_client: GraphDatabase,
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_film: Film,
 ):
     # given
@@ -268,10 +268,10 @@ def test_add_relationship_to_film(
     film_copy = Film(**dict_film)
 
     assert film_copy.uid != test_film.uid  # Ensure it's a different instance
-    test_film_handler.insert_many([test_film, film_copy])
+    test_film_graphdb.insert_many([test_film, film_copy])
 
     # when
-    test_film_handler.add_relationship(
+    test_film_graphdb.add_relationship(
         relationship=Relationship(
             from_entity=test_film,
             to_entity=film_copy,
@@ -296,7 +296,7 @@ def test_add_relationship_to_film(
 
 
 def test_select_film(
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_memgraph_client: GraphDatabase,
 ):
     # given
@@ -315,10 +315,10 @@ def test_select_film(
     )
     film.specifications = specifications
 
-    test_film_handler.insert_many([film])
+    test_film_graphdb.insert_many([film])
 
     # when
-    retrieved_film = test_film_handler.select(film.uid)
+    retrieved_film = test_film_graphdb.select(film.uid)
 
     # then
     assert retrieved_film is not None
@@ -331,9 +331,9 @@ def test_select_film(
 
 
 def test_get_related(
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_memgraph_client: GraphDatabase,
-    test_person_handler: PersonGraphHandler,
+    test_person_graphdb: PersonGraphHandler,
     test_film: Film,
     test_person: Person,
 ):
@@ -343,10 +343,10 @@ def test_get_related(
     film_copy = test_film.model_copy(deep=True)
     film_copy.title = "Inception Copy"
 
-    test_film_handler.insert_many([test_film, film_copy])
-    test_person_handler.insert_many([test_person])
+    test_film_graphdb.insert_many([test_film, film_copy])
+    test_person_graphdb.insert_many([test_person])
 
-    test_film_handler.add_relationship(
+    test_film_graphdb.add_relationship(
         relationship=Relationship(
             from_entity=test_film,
             to_entity=test_person,
@@ -354,7 +354,7 @@ def test_get_related(
         )
     )
 
-    test_film_handler.add_relationship(
+    test_film_graphdb.add_relationship(
         relationship=Relationship(
             from_entity=test_film,
             to_entity=film_copy,
@@ -363,7 +363,7 @@ def test_get_related(
     )
 
     # when
-    related = test_film_handler.get_related(test_film)
+    related = test_film_graphdb.get_related(test_film)
 
     # then
     assert len(related) == 2
@@ -384,9 +384,9 @@ def test_get_related(
 
 
 def test_get_related_with_relation_type(
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_memgraph_client: GraphDatabase,
-    test_person_handler: PersonGraphHandler,
+    test_person_graphdb: PersonGraphHandler,
     test_film: Film,
     test_person: Person,
 ):
@@ -397,10 +397,10 @@ def test_get_related_with_relation_type(
     film_copy = test_film.model_copy(deep=True)
     film_copy.title = "Inception Copy"
 
-    test_film_handler.insert_many([test_film, film_copy])
-    test_person_handler.insert_many([test_person])
+    test_film_graphdb.insert_many([test_film, film_copy])
+    test_person_graphdb.insert_many([test_person])
 
-    test_film_handler.add_relationship(
+    test_film_graphdb.add_relationship(
         relationship=Relationship(
             from_entity=test_film,
             to_entity=test_person,
@@ -408,7 +408,7 @@ def test_get_related_with_relation_type(
         )
     )
 
-    test_film_handler.add_relationship(
+    test_film_graphdb.add_relationship(
         relationship=Relationship(
             from_entity=test_film,
             to_entity=film_copy,
@@ -417,7 +417,7 @@ def test_get_related_with_relation_type(
     )
 
     # when
-    related = test_film_handler.get_related(
+    related = test_film_graphdb.get_related(
         test_film, relation_type=PeopleRelationshipType.DIRECTED_BY
     )
 
@@ -434,9 +434,9 @@ def test_get_related_with_relation_type(
 
 
 def test_graph_scan(
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_memgraph_client: GraphDatabase,
-    test_person_handler: PersonGraphHandler,
+    test_person_graphdb: PersonGraphHandler,
     test_film: Film,
     test_person: Person,
 ):
@@ -451,7 +451,7 @@ def test_graph_scan(
         film_copy.title = f"Inception Copy {i}"
         films.append(film_copy)
 
-    test_film_handler.insert_many(films)
+    test_film_graphdb.insert_many(films)
 
     persons = [test_person]
 
@@ -460,10 +460,10 @@ def test_graph_scan(
         person_copy.title = f"Person Copy {i}"
         persons.append(person_copy)
 
-    test_person_handler.insert_many(persons)
+    test_person_graphdb.insert_many(persons)
 
     # when
-    film_scan = test_film_handler.scan()
+    film_scan = test_film_graphdb.scan()
 
     results = list(film_scan)
 
@@ -476,9 +476,9 @@ def test_graph_scan(
 
 
 def test_query_graph_by_permalink(
-    test_film_handler: FilmGraphHandler,
+    test_film_graphdb: FilmGraphHandler,
     test_memgraph_client: GraphDatabase,
-    test_person_handler: PersonGraphHandler,
+    test_person_graphdb: PersonGraphHandler,
     test_film: Film,
     test_person: Person,
 ):
@@ -493,7 +493,7 @@ def test_query_graph_by_permalink(
         film_copy.permalink = f"https://example.com/inception-copy-{i}"
         films.append(film_copy)
 
-    test_film_handler.insert_many(films)
+    test_film_graphdb.insert_many(films)
 
     persons = [test_person]
 
@@ -503,10 +503,10 @@ def test_query_graph_by_permalink(
 
         persons.append(person_copy)
 
-    test_person_handler.insert_many(persons)
+    test_person_graphdb.insert_many(persons)
 
     # when
-    results = test_film_handler.query(permalink=test_film.permalink)
+    results = test_film_graphdb.query(permalink=test_film.permalink)
 
     # then
     assert len(results) == 1

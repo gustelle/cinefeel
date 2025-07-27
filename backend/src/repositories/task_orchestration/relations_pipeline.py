@@ -5,8 +5,10 @@ from src.entities.film import Film
 from src.interfaces.pipeline import IPipelineRunner
 from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
-from src.repositories.flows.tasks.task_relationship_storage import RelationshipFlow
 from src.repositories.http.sync_http import SyncHttpClient
+from src.repositories.task_orchestration.flows.task_relationship_storage import (
+    RelationshipFlow,
+)
 from src.settings import Settings
 
 

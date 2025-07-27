@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import AnyUrl, BaseModel, Field, SecretStr
+from pydantic import AnyUrl, BaseModel, Field, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -102,7 +102,7 @@ class Settings(BaseSettings):
         description="The user agent to use for the Wikipedia API",
     )
 
-    meili_base_url: str = Field(
+    meili_base_url: HttpUrl | None = Field(
         default="http://localhost:7700",
         description="The base URL of the MeiliSearch API",
     )
@@ -211,7 +211,7 @@ class Settings(BaseSettings):
         """,
     )
 
-    db_uri: AnyUrl = Field(
+    graph_db_uri: AnyUrl | None = Field(
         ...,
         description="""
             The URI of the database.
