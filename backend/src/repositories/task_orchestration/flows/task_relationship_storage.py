@@ -98,7 +98,7 @@ class RelationshipFlow(ITaskExecutor):
             )
             UnitExtractionPipeline(
                 settings=self.settings,
-                entity_type=Film,  # or Person, depending on the context
+                entity_type=input_storage.entity_type,  # or Person, depending on the context
                 http_client=self.http_client,
             ).execute_pipeline(
                 permalink=permalink,
