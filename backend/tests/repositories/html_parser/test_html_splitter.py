@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 
 from src.entities.composable import Composable
 from src.repositories.html_parser.html_splitter import (
@@ -404,20 +403,6 @@ def test_sections_are_enriched_with_media():
     assert (
         len(sections[0].children[0].children[0].media) > 0
     ), "Grand Children sections should have media"
-
-
-@pytest.mark.todo
-def test_missing_tests():
-    """
-    This is a placeholder for tests that are not yet implemented.
-    The following tests should be implemented:
-
-    - test orphans sections are retrieved correctly
-    - test that infobox is retrieved correctly
-    - test base information is retrieved correctly
-    - test extract section titles
-    """
-    pass
 
 
 def test_empty_sections_are_filtered():

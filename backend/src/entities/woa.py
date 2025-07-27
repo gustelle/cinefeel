@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 
 from src.entities.component import EntityComponent
 
-from .person import Person
 
 
 class WOAType(StrEnum):
@@ -70,7 +69,7 @@ class WOAInfluence(EntityComponent):
     Représente les influences d'une oeuvre d'art.
     """
 
-    persons: list[Person] | None = Field(
+    persons: list[str] | None = Field(
         None,
         description="les personnes qui ont influencé l'oeuvre d'art actuelle.",
         repr=False,

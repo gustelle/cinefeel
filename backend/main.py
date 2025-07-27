@@ -79,6 +79,29 @@ def enrich():
     logger.info("EnrichmentUseCase completed in %.2f seconds." % elapsed_time)
 
 
+@app.command()
+def consume_events():
+
+    from src.repositories.task_orchestration.automations.extraction_trigger import (
+        extract_person,
+        trigger_extract_person,
+    )
+
+    start_time = time.time()
+    logger.info("Starting consume_events processing...")
+
+    extract_person.serve(
+        name="Person Extraction Flow",
+        tags=["extraction", "person"],
+        triggers=[trigger_extract_person],
+    )
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+
+    logger.info("consume_events completed in %.2f seconds." % elapsed_time)
+
+
 if __name__ == "__main__":
 
     # configure logging

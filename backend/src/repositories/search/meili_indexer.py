@@ -22,7 +22,7 @@ class MeiliIndexer[T: Film | Person](IStorageHandler[T]):
     ):
 
         self.client = meilisearch.Client(
-            settings.meili_base_url, settings.meili_api_key
+            str(settings.meili_base_url), settings.meili_api_key
         )
         self.settings = settings
 

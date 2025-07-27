@@ -1,10 +1,10 @@
 import pytest
 
 from src.interfaces.http_client import HttpError
-from src.repositories.flows.tasks.task_downloader import DownloaderFlow
+from src.repositories.task_orchestration.flows.task_downloader import DownloaderFlow
 from src.settings import Settings, WikiTOCPageConfig
 
-from .stubs.stub_http import StubHttpClient
+from .stubs.stub_http import StubAsyncHttpClient
 from .stubs.stub_storage import StubStorage
 
 
@@ -13,7 +13,7 @@ async def test_execute():
     # given
     settings = Settings()
     internal_wiki_page = "Example_Film"
-    client = StubHttpClient(
+    client = StubAsyncHttpClient(
         # Reminder: the flow will call internally `fetch_page_links`
         # thus the response should contain a link to an internal wiki page
         response=f"""
@@ -44,12 +44,12 @@ async def test_download_page_return_page_id():
 
     # given
     settings = Settings()
-    client = StubHttpClient(response="<html>Test Content</html>")
+    client = StubAsyncHttpClient(response="<html>Test Content</html>")
     runner = DownloaderFlow(settings=settings, http_client=client)
     storage_handler = StubStorage()
 
     # when
-    result = await runner.download_page(
+    result = await runner.async_download(
         "page_id",
         storage_handler=storage_handler,
         return_content=False,
@@ -64,12 +64,12 @@ async def test_download_page_using_storage_return_content():
 
     # given
     settings = Settings()
-    client = StubHttpClient(response="<html>Test Content</html>")
+    client = StubAsyncHttpClient(response="<html>Test Content</html>")
     storage_handler = StubStorage()
     runner = DownloaderFlow(settings=settings, http_client=client)
 
     # when
-    result = await runner.download_page(
+    result = await runner.async_download(
         "page_id",
         storage_handler=storage_handler,
         return_content=True,  # return the content
@@ -84,12 +84,12 @@ async def test_download_page_using_storage_dont_return_content():
 
     # given
     settings = Settings()
-    client = StubHttpClient(response="<html>Test Content</html>")
+    client = StubAsyncHttpClient(response="<html>Test Content</html>")
     storage_handler = StubStorage()
     runner = DownloaderFlow(settings=settings, http_client=client)
 
     # when
-    page_id = await runner.download_page(
+    page_id = await runner.async_download(
         "page_id",
         storage_handler=storage_handler,
         return_content=False,
@@ -104,7 +104,7 @@ async def test_download_page_http_error():
 
     # given
     settings = Settings()
-    client = StubHttpClient(
+    client = StubAsyncHttpClient(
         response="<html>Test Content</html>",
         raise_exc=HttpError("Boom", status_code=503),
     )
@@ -112,7 +112,7 @@ async def test_download_page_http_error():
 
     # when
     with pytest.raises(HttpError) as exc_info:
-        await runner.download_page(
+        await runner.async_download(
             "page_id",
             return_content=True,
         )

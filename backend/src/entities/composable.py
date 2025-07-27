@@ -4,7 +4,14 @@ import re
 from typing import Any, Self
 
 from loguru import logger
-from pydantic import Field, HttpUrl, TypeAdapter, ValidationError, model_validator
+from pydantic import (
+    ConfigDict,
+    Field,
+    HttpUrl,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+)
 from unidecode import unidecode
 
 from src.entities.base import Identifiable
@@ -16,6 +23,11 @@ class Composable(Identifiable):
     """
     An entity that is made up of several parts that can be composed together.
     """
+
+    model_config = ConfigDict(
+        validate_assignment=True,  # re-validate the model when assigning values
+        use_enum_values=True,  # use the enum values instead of the enum instances
+    )
 
     title: str = Field(
         ...,
@@ -31,15 +43,16 @@ class Composable(Identifiable):
         ],
     )
 
-    @model_validator(mode="after")
-    def assign_uid(self) -> Self:
+    @model_validator(mode="before")
+    @classmethod
+    def assign_uid(cls, data: dict[str, Any]) -> dict[str, Any]:
         """
         UID assignment is crucial for the entity merging process.
         It is important to control how the UID is generated
         """
 
         # replace accents and casefold to lowercase
-        value = unidecode(self.title).casefold()
+        value = unidecode(data.get("title")).casefold()
 
         # constraint of meili:
         # only (a-z A-Z 0-9), hyphens (-) and underscores (_) are allowed
@@ -48,9 +61,9 @@ class Composable(Identifiable):
         # remove quotes
         value = value.replace('"', "").replace("'", "")
 
-        self.uid = value
+        data["uid"] = value
 
-        return self
+        return data
 
     @classmethod
     def compose(

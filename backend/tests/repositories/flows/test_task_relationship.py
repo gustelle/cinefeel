@@ -1,16 +1,15 @@
-from src.interfaces.relation_manager import PeopleRelationshipType
-from src.repositories.flows.tasks.task_relationship import RelationshipData
+import pytest
 
 
-def test_is_person_relationship():
+@pytest.mark.todo
+def test_task_load_entity_by_name_ok():
     # given
-    relationship = RelationshipData(
-        related_entity_name="the_director",
-        relation_type=PeopleRelationshipType.DIRECTED_BY,
-    )
+    pass
 
-    # when
-    is_person_relationship = relationship.is_person_relationship()
 
-    # then
-    assert is_person_relationship is True
+@pytest.mark.todo
+def test_task_load_entity_by_name_not_found():
+    # given
+    # create a temporary json storage without the film entity
+    # make sure the extraction flow is executed
+    pass

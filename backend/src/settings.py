@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import AnyUrl, BaseModel, Field, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -102,7 +102,7 @@ class Settings(BaseSettings):
         description="The user agent to use for the Wikipedia API",
     )
 
-    meili_base_url: str = Field(
+    meili_base_url: HttpUrl | None = Field(
         default="http://localhost:7700",
         description="The base URL of the MeiliSearch API",
     )
@@ -185,15 +185,7 @@ class Settings(BaseSettings):
 
     task_timeout: int = Field(
         default=60,  # 1 minute
-        description="The timeout for tasks in seconds",
-    )
-
-    TOKENIZERS_PARALLELISM: bool = Field(
-        default=False,
-        description="""
-            Whether to enable parallelism for tokenizers.
-            This is useful for speeding up the tokenization process, but may lead to issues with some models.
-        """,
+        description="The timeout for prefect tasks in seconds",
     )
 
     # section params
@@ -219,16 +211,9 @@ class Settings(BaseSettings):
         """,
     )
 
-    db_persistence_directory: Path | None = Field(
-        None,
+    graph_db_uri: AnyUrl | None = Field(
+        ...,
         description="""
-            The path (relative or absolute) to the dir where the database will be saved.
-            None means the database will be in memory.
-        """,
-    )
-    db_max_size: int = Field(
-        default=8 * 1024 * 1024 * 1024,  # 8 GB
-        description="""
-            The maximum size of the database in bytes.
+            The URI of the database.
         """,
     )
