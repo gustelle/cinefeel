@@ -191,7 +191,7 @@ class HtmlParsingFlow(ITaskExecutor):
 
     @flow(
         name="html_parsing_flow_execute",
-        description="Flow to analyze HTML content and store the results as entities.",
+        description="Analyzes HTML content and stores the results into the specified storage.",
     )
     def execute(
         self,
@@ -202,8 +202,9 @@ class HtmlParsingFlow(ITaskExecutor):
         """
 
         Args:
-            content_ids (list[str] | None): _description_
-            storage_handler (IStorageHandler): the storage handler to use for storing the extracted entities.
+            content_ids (list[str] | None): List of content IDs to analyze.
+            input_storage (IStorageHandler[str]): Storage handler for input HTML content downloaded.
+            output_storage (IStorageHandler[Composable]): Storage handler for output entities extracted from the HTML content.
         """
 
         logger = get_run_logger()
@@ -257,7 +258,7 @@ class HtmlParsingFlow(ITaskExecutor):
             )
 
             i += 1
-            if i > 1_000:
+            if i > 100:
                 break
 
         for future in entity_futures + storage_futures:

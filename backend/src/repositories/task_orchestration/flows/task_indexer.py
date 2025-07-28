@@ -37,7 +37,7 @@ class SearchIndexerFlow(ITaskExecutor):
         self,
         input_storage: IStorageHandler[Composable],
         output_storage: IStorageHandler[Composable],
-    ) -> None:
+    ):
 
         logger = get_run_logger()
 
