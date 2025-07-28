@@ -55,4 +55,7 @@ class RelationshipProcessor(IPipelineRunner):
         ).execute(
             input_storage=db_storage,
             output_storage=db_storage,
+        ).deploy(
+            name="relationship-finder",
+            work_pool_name="local-processes",
         )
