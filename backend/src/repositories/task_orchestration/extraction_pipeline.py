@@ -168,7 +168,12 @@ class UnitExtractionPipeline(IPipelineRunner):
             content_ids=[content_id],
             input_storage=html_storage,
             output_storage=json_storage,  # persist the parsed entity
+        ).deploy(
+            name="html-parsing",
+            work_pool_name="local-processes",
         )
+
+        logger.info("Deployed HTML parsing flow.")
 
         # index the films into a search engine
         if self.settings.meili_base_url:
@@ -178,7 +183,12 @@ class UnitExtractionPipeline(IPipelineRunner):
             ).execute(
                 input_storage=json_storage,
                 output_storage=MeiliIndexer[self.entity_type](settings=self.settings),
+            ).deploy(
+                name="meili-indexing",
+                work_pool_name="local-processes",
             )
+
+            logger.info("Deployed Meili search indexing flow.")
         else:
             logger.warning("Meili base URL is not set. Skipping search indexing step.")
 
@@ -192,9 +202,12 @@ class UnitExtractionPipeline(IPipelineRunner):
             DBStorageFlow(
                 settings=self.settings,
                 entity_type=self.entity_type,
-            ).execute(input_storage=json_storage, output_storage=db_storage)
+            ).execute(input_storage=json_storage, output_storage=db_storage).deploy(
+                name="db-storage",
+                work_pool_name="local-processes",
+            )
 
-            logger.info("Flow completed successfully.")
+            logger.info("Deployed graph database storage flow.")
         else:
             logger.warning(
                 "Graph database URI is not set. Skipping graph storage step."

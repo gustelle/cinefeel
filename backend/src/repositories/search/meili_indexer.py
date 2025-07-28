@@ -47,6 +47,7 @@ class MeiliIndexer[T: Film | Person](IStorageHandler[T]):
         try:
             self.index = self.client.get_index(index_name)
         except meilisearch.errors.MeilisearchApiError as e:
+            logger.warning(f"Index '{index_name}' not found. Attempting to create it.")
             if e.status_code == 404:
                 t = self.client.create_index(
                     index_name,
@@ -61,13 +62,11 @@ class MeiliIndexer[T: Film | Person](IStorageHandler[T]):
                     )
                 else:
                     # TODO
-                    # self.index.update_searchable_attributes(
-                    #     ["name", "summary", "info"]
-                    # )
                     pass
 
             else:
-                logger.info(f"Error getting index '{index_name}': {e}")
+                logger.error(f"Error getting index '{index_name}': {e}")
+                raise
 
             logger.info(f"Index '{index_name}' created: {e}")
         else:
