@@ -71,12 +71,6 @@ class FeatureExtractionFlow(ITaskExecutor):
         # see: https://github.com/PrefectHQ/prefect/issues/17517
         entity_futures = []
 
-        # analyze the HTML content
-        # with (
-        #     dask.annotate(resources={"GPU": 1}),
-        #     dask.config.set({"array.chunk-size": "512 MiB"}),
-        # ):
-
         for entity in local_storage_handler.scan():
 
             future_entity = self.extract_features.submit(

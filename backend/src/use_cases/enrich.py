@@ -1,9 +1,8 @@
-import time
 
-from loguru import logger
 
-from src.entities.film import Film
-from src.repositories.task_orchestration.relations_pipeline import RelationshipProcessor
+from src.repositories.task_orchestration.relations_pipeline import (
+    relationship_processor_flow,
+)
 from src.settings import Settings
 
 
@@ -16,12 +15,18 @@ class EnrichmentUseCase:
 
     def execute(self):
 
-        start_time = time.time()
+        relationship_processor_flow.serve(
+            name="Film Enrichment",
+            parameters={
+                "settings": self.settings,
+                "entity": "Film",
+            },
+        )
 
-        RelationshipProcessor(
-            settings=self.settings,
-            entity_type=Film,
-        ).execute_pipeline()
-
-        end_time = time.time()
-        logger.info(f"Execution time: {end_time - start_time:.2f} seconds")
+        relationship_processor_flow.serve(
+            name="Person Enrichment",
+            parameters={
+                "settings": self.settings,
+                "entity": "Person",
+            },
+        )

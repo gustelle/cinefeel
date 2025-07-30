@@ -29,6 +29,8 @@ class SyncHttpClient(IHttpClient):
             max_connections=settings.scraper_max_concurrent_connections
         )
 
+        pwd = self.settings.mediawiki_api_key
+
         self.client = hishel.CacheClient(
             storage=hishel.FileStorage(
                 base_path=".crawler_cache",
@@ -38,8 +40,12 @@ class SyncHttpClient(IHttpClient):
             follow_redirects=True,
             headers={
                 "User-Agent": self.settings.scraper_user_agent,
-                "Authorization": f"Bearer {self.settings.mediawiki_api_key}",
+                "Authorization": f"Bearer {pwd}",
             },
+        )
+
+        logger.info(
+            f"SyncHttpClient initialized with {settings.scraper_max_concurrent_connections} connections ({pwd})"
         )
 
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):

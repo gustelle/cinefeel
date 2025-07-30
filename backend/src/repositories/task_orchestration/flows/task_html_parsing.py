@@ -254,7 +254,7 @@ class HtmlParsingFlow(ITaskExecutor):
             )
 
             i += 1
-            if i > 100:
+            if i > 1:
                 break
 
         for future in entity_futures + storage_futures:

@@ -80,7 +80,10 @@ class Settings(BaseSettings):
         description="The expiration time of the cache in seconds",
     )
 
-    mediawiki_api_key: str
+    mediawiki_api_key: str = Field(
+        default="",
+        description="The API key for the MediaWiki API",
+    )
     mediawiki_base_url: str = Field(
         default="https://api.wikimedia.org/core/v1/wikipedia/fr",
         description="The base URL of the Wikipedia API",

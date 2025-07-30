@@ -1,55 +1,71 @@
-from prefect import flow
+from typing import Literal
 
-from src.entities.composable import Composable
-from src.interfaces.pipeline import IPipelineRunner
+from prefect import Flow, flow, get_run_logger
+from prefect.client.schemas import FlowRun, State
+
+from src.entities.film import Film
+from src.entities.person import Person
+from src.repositories.db.film_graph import FilmGraphHandler
+from src.repositories.db.person_graph import PersonGraphHandler
+from src.repositories.http.sync_http import SyncHttpClient
+from src.repositories.task_orchestration.flows.task_relationship_storage import (
+    RelationshipFlow,
+)
 from src.settings import Settings
 
 
-class RelationshipProcessor(IPipelineRunner):
+def relationship_failure_handler(flow: Flow, flow_run: FlowRun, state: State) -> None:
+    """
+    Handles failures in the relationship processing flow.
+    This function can be used to log errors or perform cleanup actions.
+
+    TODO:
+    - trigger a unit extraction of the  entity
+    """
+    get_run_logger().error("-" * 40)
+    get_run_logger().error("Relationship processing flow failed.")
+    get_run_logger().error(flow)
+    get_run_logger().error(flow_run)
+    get_run_logger().error(state)
+    get_run_logger().error("-" * 40)
+
+
+@flow(name="Relationship Processor Flow", on_failure=[relationship_failure_handler])
+def relationship_processor_flow(
+    settings: Settings,
+    entity: Literal["Movie", "Person"],
+) -> None:
     """
     Reads Entities (Film or Person) from the storage,
     and analyzes their content to identify relationships between them.
     """
 
-    entity_type: type[Composable]
-    settings: Settings
+    match entity:
+        case "Movie":
+            entity_type = Film
+        case "Person":
 
-    def __init__(self, settings: Settings, entity_type: type[Composable]):
-        self.entity_type = entity_type
-        self.settings = settings
+            entity_type = Person
+        case _:
+            raise ValueError(f"Unsupported entity type: {entity_type}")
 
-    @flow(
-        name="Enrichment Flow",
+    http_client = SyncHttpClient(settings=settings)
+
+    # where to store the relationships
+    db_storage = (
+        FilmGraphHandler(
+            settings=settings,
+        )
+        if entity_type is Film
+        else PersonGraphHandler(
+            settings=settings,
+        )
     )
-    def execute_pipeline(
-        self,
-    ) -> None:
-        """
-        Run the pipeline to analyze relationships between entities.
-        """
-        pass
 
-        # # needed to retrieve permalinks by name
-        # http_client = SyncHttpClient(settings=self.settings)
-
-        # # where to store the relationships
-        # db_storage = (
-        #     FilmGraphHandler(
-        #         settings=self.settings,
-        #     )
-        #     if self.entity_type is Film
-        #     else PersonGraphHandler(
-        #         settings=self.settings,
-        #     )
-        # )
-
-        # RelationshipFlow(
-        #     settings=self.settings,
-        #     http_client=http_client,
-        # ).execute(
-        #     input_storage=db_storage,
-        #     output_storage=db_storage,
-        # ).deploy(
-        #     name="relationship-finder",
-        #     work_pool_name="local-processes",
-        # )
+    RelationshipFlow(
+        settings=settings,
+        http_client=http_client,
+    ).execute(
+        input_storage=db_storage,
+        output_storage=db_storage,
+    )
