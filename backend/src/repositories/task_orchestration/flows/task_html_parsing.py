@@ -1,6 +1,6 @@
 from typing import Type
 
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 
 from src.entities.composable import Composable
 from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
@@ -189,10 +189,6 @@ class HtmlParsingFlow(ITaskExecutor):
         if entity is not None:
             storage.insert(entity.uid, entity)
 
-    @flow(
-        name="html_parsing_flow_execute",
-        description="Analyzes HTML content and stores the results into the specified storage.",
-    )
     def execute(
         self,
         content_ids: list[str] | None,

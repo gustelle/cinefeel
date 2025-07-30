@@ -1,4 +1,4 @@
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 
 from src.entities.composable import Composable
@@ -30,9 +30,6 @@ class SearchIndexerFlow(ITaskExecutor):
             wait_for_completion=False,
         )
 
-    @flow(
-        name="index",
-    )
     def execute(
         self,
         input_storage: IStorageHandler[Composable],

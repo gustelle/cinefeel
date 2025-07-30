@@ -12,10 +12,11 @@ app = typer.Typer()
 
 @app.command()
 def extract_movies():
-    uvloop.run(async_run_films())
+    #
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(async_run_films())
 
-
-async def async_run_films():
+    # async def async_run_films():
 
     from src.use_cases.extract_films import WikipediaFilmExtractionUseCase
 
@@ -25,7 +26,8 @@ async def async_run_films():
     uc = WikipediaFilmExtractionUseCase(
         settings=Settings(),
     )
-    await uc.execute()
+    # await
+    uc.execute()
 
     end_time = time.time()
     elapsed_time = end_time - start_time

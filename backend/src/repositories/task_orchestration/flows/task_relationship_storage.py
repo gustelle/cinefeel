@@ -1,4 +1,4 @@
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 from prefect.futures import PrefectFuture
 from pydantic import HttpUrl
@@ -313,9 +313,6 @@ class RelationshipFlow(ITaskExecutor):
 
         return entity
 
-    @flow(
-        name="execute_find_relationships",
-    )
     def execute(
         self,
         input_storage: IStorageHandler[Composable],

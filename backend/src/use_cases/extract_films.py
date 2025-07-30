@@ -1,11 +1,4 @@
-import time
-
-from loguru import logger
-
-from src.entities.film import Film
-from src.repositories.task_orchestration.extraction_pipeline import (
-    BatchExtractionPipeline,
-)
+from src.repositories.task_orchestration.extraction_pipeline import extraction_flow
 from src.settings import Settings
 
 
@@ -16,14 +9,12 @@ class WikipediaFilmExtractionUseCase:
     def __init__(self, settings: Settings):
         self.settings = settings
 
-    async def execute(self):
+    def execute(self):
 
-        start_time = time.time()
-
-        await BatchExtractionPipeline(
-            settings=self.settings,
-            entity_type=Film,
-        ).execute_pipeline()
-
-        end_time = time.time()
-        logger.info(f"Execution time: {end_time - start_time:.2f} seconds")
+        extraction_flow.serve(
+            name="Wikipedia Film Extraction",
+            parameters={
+                "settings": self.settings,
+                "entity": "Movie",
+            },
+        )

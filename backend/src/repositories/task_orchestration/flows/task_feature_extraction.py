@@ -1,5 +1,4 @@
-import dask
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 from prefect.futures import PrefectFuture
 
 from src.entities.composable import Composable
@@ -54,9 +53,6 @@ class FeatureExtractionFlow(ITaskExecutor):
 
         return entity
 
-    @flow(
-        name="extract_features-{entity_type.__name__}",
-    )
     def execute(
         self,
     ) -> None:
@@ -76,36 +72,36 @@ class FeatureExtractionFlow(ITaskExecutor):
         entity_futures = []
 
         # analyze the HTML content
-        with (
-            dask.annotate(resources={"GPU": 1}),
-            dask.config.set({"array.chunk-size": "512 MiB"}),
-        ):
+        # with (
+        #     dask.annotate(resources={"GPU": 1}),
+        #     dask.config.set({"array.chunk-size": "512 MiB"}),
+        # ):
 
-            for entity in local_storage_handler.scan():
+        for entity in local_storage_handler.scan():
 
-                future_entity = self.extract_features.submit(
-                    entity=entity,
+            future_entity = self.extract_features.submit(
+                entity=entity,
+            )
+            entity_futures.append(future_entity)
+
+            storage_futures.append(
+                self.to_db.submit(
+                    # storage=json_p_storage,
+                    entity=future_entity,
                 )
-                entity_futures.append(future_entity)
+            )
 
-                storage_futures.append(
-                    self.to_db.submit(
-                        # storage=json_p_storage,
-                        entity=future_entity,
-                    )
+        # now wait for all tasks to complete
+        future_storage: PrefectFuture
+        for future_storage in storage_futures:
+            try:
+                future_storage.result(
+                    raise_on_failure=True, timeout=self.settings.task_timeout
                 )
-
-            # now wait for all tasks to complete
-            future_storage: PrefectFuture
-            for future_storage in storage_futures:
-                try:
-                    future_storage.result(
-                        raise_on_failure=True, timeout=self.settings.task_timeout
-                    )
-                except TimeoutError:
-                    logger.warning(f"Task timed out for {future_storage.task_run_id}.")
-                except Exception as e:
-                    logger.error(f"Error in task execution: {e}")
+            except TimeoutError:
+                logger.warning(f"Task timed out for {future_storage.task_run_id}.")
+            except Exception as e:
+                logger.error(f"Error in task execution: {e}")
 
         # Iterate over the batch
         # pass the batch to the graph database

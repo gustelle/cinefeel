@@ -1,4 +1,4 @@
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 
 from src.entities.composable import Composable
@@ -29,9 +29,6 @@ class DBStorageFlow(ITaskExecutor):
             contents=entities,
         )
 
-    @flow(
-        name="index",
-    )
     def execute(
         self,
         input_storage: IStorageHandler[Composable],
