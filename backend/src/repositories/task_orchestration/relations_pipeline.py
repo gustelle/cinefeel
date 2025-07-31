@@ -1,8 +1,10 @@
-from prefect import flow
+from typing import Literal
 
-from src.entities.composable import Composable
+from prefect import flow
+from prefect.events.schemas.deployment_triggers import DeploymentEventTrigger
+
 from src.entities.film import Film
-from src.interfaces.pipeline import IPipelineRunner
+from src.entities.person import Person
 from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
 from src.repositories.http.sync_http import SyncHttpClient
@@ -11,51 +13,61 @@ from src.repositories.task_orchestration.flows.task_relationship_storage import 
 )
 from src.settings import Settings
 
+permalink_no_found_trigger = DeploymentEventTrigger(
+    expect={"permalink.not_found"},
+    for_each={"prefect.resource.id"},
+    parameters={
+        "permalink": "{{ event.resource.id }}",
+        "entity_type": "{{event.payload.entity_type}}",
+    },
+)
 
-class RelationshipProcessor(IPipelineRunner):
+
+@flow(log_prints=True)
+def on_permalink_not_found(
+    permalink: str,  # entity_type: Literal["Movie", "Person"]
+) -> None:
+    print(
+        f"Ressource with permalink {permalink} not found in storage. Triggering extraction flow."
+    )
+
+
+@flow(name="Relationship Processor Flow")
+def relationship_processor_flow(
+    settings: Settings,
+    entity_type: Literal["Movie", "Person"],
+) -> None:
     """
     Reads Entities (Film or Person) from the storage,
     and analyzes their content to identify relationships between them.
     """
 
-    entity_type: type[Composable]
-    settings: Settings
+    match entity_type:
+        case "Movie":
+            entity_type = Film
+        case "Person":
 
-    def __init__(self, settings: Settings, entity_type: type[Composable]):
-        self.entity_type = entity_type
-        self.settings = settings
+            entity_type = Person
+        case _:
+            raise ValueError(f"Unsupported entity type: {entity_type}")
 
-    @flow(
-        name="Enrichment Flow",
+    http_client = SyncHttpClient(settings=settings)
+
+    # where to store the relationships
+    db_storage = (
+        FilmGraphHandler(
+            settings=settings,
+        )
+        if entity_type is Film
+        else PersonGraphHandler(
+            settings=settings,
+        )
     )
-    def execute_pipeline(
-        self,
-    ) -> None:
-        """
-        Run the pipeline to analyze relationships between entities.
-        """
 
-        # needed to retrieve permalinks by name
-        http_client = SyncHttpClient(settings=self.settings)
-
-        # where to store the relationships
-        db_storage = (
-            FilmGraphHandler(
-                settings=self.settings,
-            )
-            if self.entity_type is Film
-            else PersonGraphHandler(
-                settings=self.settings,
-            )
-        )
-
-        RelationshipFlow(
-            settings=self.settings,
-            http_client=http_client,
-        ).execute(
-            input_storage=db_storage,
-            output_storage=db_storage,
-        ).deploy(
-            name="relationship-finder",
-            work_pool_name="local-processes",
-        )
+    RelationshipFlow(
+        settings=settings,
+        http_client=http_client,
+    ).execute(
+        input_storage=db_storage,
+        output_storage=db_storage,
+    )

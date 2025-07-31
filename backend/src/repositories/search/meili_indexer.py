@@ -9,7 +9,7 @@ from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
 
 
-class MeiliIndexer[T: Film | Person](IStorageHandler[T]):
+class MeiliHandler[T: Film | Person](IStorageHandler[T]):
 
     client: meilisearch.Client
     index: meilisearch.index.Index

@@ -1,10 +1,5 @@
-import time
-
-from loguru import logger
-
-from src.entities.person import Person
 from src.repositories.task_orchestration.extraction_pipeline import (
-    BatchExtractionPipeline,
+    batch_extraction_flow,
 )
 from src.settings import Settings
 
@@ -16,14 +11,17 @@ class WikipediaPersonExtractionUseCase:
     def __init__(self, settings: Settings):
         self.settings = settings
 
-    async def execute(self):
+    def execute(self):
 
-        start_time = time.time()
-
-        await BatchExtractionPipeline(
-            settings=self.settings,
-            entity_type=Person,
-        ).execute_pipeline()
-
-        end_time = time.time()
-        logger.info(f"Execution time: {end_time - start_time:.2f} seconds")
+        batch_extraction_flow.serve(
+            name="Wikipedia Person Extraction",
+            parameters={
+                "settings": self.settings,
+                "page_links": [
+                    p
+                    for p in self.settings.mediawiki_start_pages
+                    if p.entity_type == "Person"
+                ],
+            },
+            cron="0 0 * * *",  # Every day at midnight
+        )

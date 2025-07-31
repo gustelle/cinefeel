@@ -29,6 +29,8 @@ class SyncHttpClient(IHttpClient):
             max_connections=settings.scraper_max_concurrent_connections
         )
 
+        pwd = self.settings.mediawiki_api_key
+
         self.client = hishel.CacheClient(
             storage=hishel.FileStorage(
                 base_path=".crawler_cache",
@@ -38,7 +40,7 @@ class SyncHttpClient(IHttpClient):
             follow_redirects=True,
             headers={
                 "User-Agent": self.settings.scraper_user_agent,
-                "Authorization": f"Bearer {self.settings.mediawiki_api_key}",
+                "Authorization": f"Bearer {pwd}",
             },
         )
 
@@ -59,12 +61,15 @@ class SyncHttpClient(IHttpClient):
         headers: dict = None,
         params: dict = None,
         response_type: Literal["json", "text"] = "json",
+        timeout: int = 10,
     ) -> dict | str:
         """Sends a GET request to the specified URL."""
 
         try:
 
-            response = self.client.get(url, params=params, headers=headers)
+            response = self.client.get(
+                url, params=params, headers=headers, timeout=timeout
+            )
 
             response.raise_for_status()
 

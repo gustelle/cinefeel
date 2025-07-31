@@ -1,19 +1,17 @@
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
+from prefect.events import emit_event
 from prefect.futures import PrefectFuture
 from pydantic import HttpUrl
 
 from src.entities.composable import Composable
 from src.entities.film import Film
 from src.entities.relationship import PeopleRelationshipType, Relationship
-from src.interfaces.http_client import IHttpClient
+from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.relation_manager import IRelationshipHandler
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.db.person_graph import PersonGraphHandler
-from src.repositories.task_orchestration.extraction_pipeline import (
-    UnitExtractionPipeline,
-)
 from src.settings import Settings
 
 
@@ -55,16 +53,20 @@ class RelationshipFlow(ITaskExecutor):
             return HttpUrl(f"https://fr.wikipedia.org/wiki/{page_id}")
         except KeyError:
             return None
+        except HttpError as e:
+            if e.status_code == 404:
+                get_run_logger().warning(f"Page not found for name '{name}'")
+                return None
+            raise
 
-    @task(cache_policy=NO_CACHE)
+    @task(
+        cache_policy=NO_CACHE,
+    )
     def load_entity_by_name(
-        self,
-        name: str,
-        input_storage: IStorageHandler[Composable],
+        self, name: str, input_storage: IStorageHandler[Composable]
     ) -> Composable | None:
         """
         retrieves a content from the input storage by its name.
-        if not found, it downloads the page and parses it to extract the entity.
 
         Args:
             name (str): The name of the entity to extract.
@@ -72,56 +74,38 @@ class RelationshipFlow(ITaskExecutor):
 
         Returns:
             Composable | None: The extracted entity if successful, None otherwise.
+
+
         """
         logger = get_run_logger()
 
-        try:
+        permalink = self.get_permalink_by_name(name=name)
 
-            permalink = self.get_permalink_by_name(name=name)
-
-            if permalink is None:
-                logger.warning(
-                    f"Could not find permalink for name '{name}'. Skipping relationship storage."
-                )
-                return None
-
-            results = input_storage.query(
-                permalink=permalink,
-                limit=1,
-            )
-
-            if results:
-                return results[0]
-
+        if permalink is None:
             logger.warning(
-                f"Permalink '{permalink}' not found in storage --> triggering extraction."
+                f"Could not find permalink for name '{name}'. Skipping relationship storage."
             )
-            UnitExtractionPipeline(
-                settings=self.settings,
-                entity_type=input_storage.entity_type,  # or Person, depending on the context
-                http_client=self.http_client,
-            ).execute_pipeline(
-                permalink=permalink,
-            )
-
-            # After extraction, try to retrieve the entity again
-            results = input_storage.query(
-                permalink=permalink,
-            )
-
-            if results:
-                return results[0]
-
-            logger.warning(
-                f"Entity with permalink '{permalink}' not found after extraction."
-            )
-
             return None
 
-        except Exception as e:
+        results = input_storage.query(
+            permalink=permalink,
+            limit=1,
+        )
 
-            logger.error(f"Error extracting entity from HTML: {e}")
-            return None
+        if results:
+            return results[0]
+
+        # send an event to the caller to extract the entity from the web
+        logger.warning(f"No entity found for name '{name}' in storage.")
+
+        emit_event(
+            event="permalink.not_found",
+            resource={"prefect.resource.id": str(permalink)},
+            payload={
+                "entity_type": input_storage.entity_type.__class__.__name__,
+                "permalink": permalink,
+            },
+        )
 
     @task(
         task_run_name="do_enrichment-{relationship.from_entity.uid}-{relationship.to_entity.uid}",
@@ -313,9 +297,6 @@ class RelationshipFlow(ITaskExecutor):
 
         return entity
 
-    @flow(
-        name="execute_find_relationships",
-    )
     def execute(
         self,
         input_storage: IStorageHandler[Composable],

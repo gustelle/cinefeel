@@ -1,9 +1,8 @@
-import time
+from prefect import serve
 
-from loguru import logger
-
-from src.entities.film import Film
-from src.repositories.task_orchestration.relations_pipeline import RelationshipProcessor
+from src.repositories.task_orchestration.relations_pipeline import (
+    relationship_processor_flow,
+)
 from src.settings import Settings
 
 
@@ -16,12 +15,27 @@ class EnrichmentUseCase:
 
     def execute(self):
 
-        start_time = time.time()
+        # extraction_trigger = on_permalink_not_found.to_deployment(
+        #     name="On Permalink Not Found",
+        #     triggers=[permalink_no_found_trigger],
+        # )
 
-        RelationshipProcessor(
-            settings=self.settings,
-            entity_type=Film,
-        ).execute_pipeline()
+        film_enrich = relationship_processor_flow.to_deployment(
+            name="Film Enrichment",
+            parameters={
+                "settings": self.settings,
+                "entity_type": "Movie",
+            },
+            cron="00 08 * * *",  # Every day at 8:00 AM
+        )
 
-        end_time = time.time()
-        logger.info(f"Execution time: {end_time - start_time:.2f} seconds")
+        person_enrich = relationship_processor_flow.to_deployment(
+            name="Person Enrichment",
+            parameters={
+                "settings": self.settings,
+                "entity_type": "Person",
+            },
+            cron="00 09 * * *",  # Every day at 9:00 AM
+        )
+
+        serve(film_enrich, person_enrich)  # extraction_trigger)

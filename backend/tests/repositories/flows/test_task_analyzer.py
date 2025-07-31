@@ -1,10 +1,13 @@
 from pydantic import HttpUrl
 
 from src.entities.film import Film
-from src.repositories.task_orchestration.flows.task_html_parsing import HtmlParsingFlow
+from src.repositories.task_orchestration.flows.task_html_parsing import (
+    HtmlEntityExtractor,
+)
 from src.settings import Settings
 
 from .stubs.stub_analyzer import StubAnalyzer
+from .stubs.stub_section_search import StubSectionSearch
 from .stubs.stub_storage import StubStorage
 
 
@@ -12,7 +15,7 @@ def test_task_store():
 
     # given
     stub_storage = StubStorage()
-    flow_runner = HtmlParsingFlow(
+    flow_runner = HtmlEntityExtractor(
         settings=None,  # Assuming settings are not needed for this test
         entity_type=Film,
     )
@@ -31,11 +34,12 @@ def test_task_store():
 
 def test_task_analyze():
     # given
-    flow_runner = HtmlParsingFlow(
+    flow_runner = HtmlEntityExtractor(
         settings=Settings(),  # settings are not really needed for this test
         entity_type=Film,
     )
     analyzer = StubAnalyzer()
+    section_searcher = StubSectionSearch()
 
     content_id = "test_content_id"
     html_content = "<html><body>Test Content</body></html>"
@@ -45,9 +49,11 @@ def test_task_analyze():
         analyzer=analyzer,
         content_id=content_id,
         html_content=html_content,
+        section_searcher=section_searcher,
     )
 
     # then
 
     assert isinstance(result, Film), "Result is not of type Film."
     assert analyzer.is_analyzed, "Analyzer was not called."
+    assert section_searcher.is_called, "Section searcher was not called."

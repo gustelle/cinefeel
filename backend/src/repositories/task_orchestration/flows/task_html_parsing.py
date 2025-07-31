@@ -1,6 +1,6 @@
 from typing import Type
 
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 
 from src.entities.composable import Composable
 from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
@@ -35,7 +35,7 @@ from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.settings import Settings
 
 
-class HtmlParsingFlow(ITaskExecutor):
+class HtmlEntityExtractor(ITaskExecutor):
     """
     Analyses the HTML content of a film or person page
     and returns storable entities (i.e., Film or Person).
@@ -54,18 +54,11 @@ class HtmlParsingFlow(ITaskExecutor):
         analyzer: IContentAnalyzer,
         content_id: str,
         html_content: str,
-        search_processor: SimilarSectionSearch,
+        section_searcher: SimilarSectionSearch,
     ) -> Composable | None:
         """
         Analyze the content and return a storable entity.
 
-        Args:
-            analyzer (IContentAnalyzer): _description_
-            content_id (str): _description_
-            html_content (str): _description_
-
-        Returns:
-            Storable | None: _description_
         """
         logger = get_run_logger()
         result = analyzer.process(content_id, html_content)
@@ -81,7 +74,7 @@ class HtmlParsingFlow(ITaskExecutor):
         # assemble the entity from the sections
         if self.entity_type == Film:
             return BasicFilmResolver(
-                section_searcher=search_processor,
+                section_searcher=section_searcher,
                 configurations=[
                     ResolutionConfiguration(
                         extractor=MistralDataMiner(settings=self.settings),
@@ -123,7 +116,7 @@ class HtmlParsingFlow(ITaskExecutor):
             )
         elif self.entity_type == Person:
             return BasicPersonResolver(
-                section_searcher=search_processor,
+                section_searcher=section_searcher,
                 configurations=[
                     ResolutionConfiguration(
                         # extractor=GenericInfoExtractor(settings=self.settings),
@@ -189,10 +182,6 @@ class HtmlParsingFlow(ITaskExecutor):
         if entity is not None:
             storage.insert(entity.uid, entity)
 
-    @flow(
-        name="html_parsing_flow_execute",
-        description="Analyzes HTML content and stores the results into the specified storage.",
-    )
     def execute(
         self,
         content_ids: list[str] | None,
@@ -246,7 +235,7 @@ class HtmlParsingFlow(ITaskExecutor):
                 analyzer=analyzer,
                 content_id=content_id,
                 html_content=file_content,
-                search_processor=search_processor,
+                section_searcher=search_processor,
             )
             entity_futures.append(future_entity)
 
@@ -258,7 +247,7 @@ class HtmlParsingFlow(ITaskExecutor):
             )
 
             i += 1
-            if i > 100:
+            if i > 1:
                 break
 
         for future in entity_futures + storage_futures:

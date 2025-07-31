@@ -1,11 +1,12 @@
 from pathlib import Path
-from typing import Literal
 
-from pydantic import AnyUrl, BaseModel, Field, HttpUrl, SecretStr
+from pydantic import AnyUrl, Field, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.entities.content import PageLink
 
-class WikiTOCPageConfig(BaseModel):
+
+class WikipediaTableOfContents(PageLink):
     """Configuration for a Wikipedia Table-of-content (TOC) page.
 
     A table of content page is a page that contains a list of links to other pages.
@@ -13,47 +14,30 @@ class WikiTOCPageConfig(BaseModel):
     all the films released in 1907.
     """
 
-    page_id: str = Field(
-        default="",
-        description="The ID of the Wikipedia page",
-        examples=["Film_Title", "Liste_de_films_français_sortis_en_1907"],
-    )
-
-    toc_content_type: Literal["film", "person"] = Field(
-        ...,
-        description="""
-            The type of content to extract from the TOC page.
-            Can be either "film" or "person".
-            Example: 
-            - "film" for a page containing a list of films,
-            - "person" for a page containing a list of people.
-        """,
-        examples=["film", "person"],
-    )
-
-    toc_css_selector: str | None = Field(
+    permalinks_selector: str | None = Field(
         None,
         description="""
-            The CSS selector to use to extract the links from the table of contents.
+            The CSS selector to use to extract the (list of) links from the table of contents.
+            The selector should return a list of links to the pages to download.
         """,
         examples=[".wikitable td:nth-child(1)"],
     )
 
 
 _default_film_tocs = [
-    WikiTOCPageConfig(
+    WikipediaTableOfContents(
         page_id=f"Liste_de_films_français_sortis_en_{year}",
-        toc_css_selector=".wikitable td:nth-child(1)",
-        toc_content_type="film",
+        permalinks_selector=".wikitable td:nth-child(1)",
+        entity_type="Movie",
     )
     for year in range(1907, 1908)
 ]
 
 _default_person_tocs = [
-    WikiTOCPageConfig(
+    WikipediaTableOfContents(
         page_id=f"Liste_de_films_français_sortis_en_{year}",
-        toc_css_selector=".wikitable td:nth-child(2)",
-        toc_content_type="person",
+        permalinks_selector=".wikitable td:nth-child(2)",
+        entity_type="Person",
     )
     for year in range(1907, 1908)
 ]
@@ -80,7 +64,10 @@ class Settings(BaseSettings):
         description="The expiration time of the cache in seconds",
     )
 
-    mediawiki_api_key: str
+    mediawiki_api_key: str = Field(
+        default="",
+        description="The API key for the MediaWiki API",
+    )
     mediawiki_base_url: str = Field(
         default="https://api.wikimedia.org/core/v1/wikipedia/fr",
         description="The base URL of the Wikipedia API",
@@ -89,7 +76,7 @@ class Settings(BaseSettings):
         default="Cinefeel",
         description="The user agent to use for the Wikipedia API",
     )
-    mediawiki_start_pages: list[WikiTOCPageConfig] = Field(
+    mediawiki_start_pages: list[WikipediaTableOfContents] = Field(
         default=_default_tocs,
     )
 
