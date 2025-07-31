@@ -23,5 +23,5 @@ class WikipediaPersonExtractionUseCase:
                     if p.entity_type == "Person"
                 ],
             },
-            interval=0,
+            cron="0 0 * * *",  # Every day at midnight
         )

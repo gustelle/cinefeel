@@ -36,8 +36,6 @@ def batch_extraction_flow(
     - index them into a search engine
     - store results in a graph database.
 
-    TODO:
-    - inject the HTTP client and storage handler as parameters to the flow.
 
     Args:
         settings (Settings): The application settings.
@@ -120,7 +118,10 @@ def batch_extraction_flow(
         )
 
 
-@flow
+@flow(
+    name="Unit Extraction Flow",
+    description="Extract a single entity (Film or Person) from a given permalink.",
+)
 def unit_extraction_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],

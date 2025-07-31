@@ -1,12 +1,13 @@
 from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
+from prefect.events import emit_event
 from prefect.futures import PrefectFuture
 from pydantic import HttpUrl
 
 from src.entities.composable import Composable
 from src.entities.film import Film
 from src.entities.relationship import PeopleRelationshipType, Relationship
-from src.interfaces.http_client import IHttpClient
+from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.relation_manager import IRelationshipHandler
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
@@ -52,6 +53,11 @@ class RelationshipFlow(ITaskExecutor):
             return HttpUrl(f"https://fr.wikipedia.org/wiki/{page_id}")
         except KeyError:
             return None
+        except HttpError as e:
+            if e.status_code == 404:
+                get_run_logger().warning(f"Page not found for name '{name}'")
+                return None
+            raise
 
     @task(
         cache_policy=NO_CACHE,
@@ -69,10 +75,7 @@ class RelationshipFlow(ITaskExecutor):
         Returns:
             Composable | None: The extracted entity if successful, None otherwise.
 
-        Raises:
-            ValueError: If no entity is found for the given name in the storage,
-                in which case the failure should be catched by the caller
-                to extract the entity from the web.
+
         """
         logger = get_run_logger()
 
@@ -92,7 +95,17 @@ class RelationshipFlow(ITaskExecutor):
         if results:
             return results[0]
 
-        raise ValueError(f"No entity found for name '{name}' in storage.")
+        # send an event to the caller to extract the entity from the web
+        logger.warning(f"No entity found for name '{name}' in storage.")
+
+        emit_event(
+            event="permalink.not_found",
+            resource={"prefect.resource.id": str(permalink)},
+            payload={
+                "entity_type": input_storage.entity_type.__class__.__name__,
+                "permalink": permalink,
+            },
+        )
 
     @task(
         task_run_name="do_enrichment-{relationship.from_entity.uid}-{relationship.to_entity.uid}",

@@ -23,5 +23,5 @@ class WikipediaFilmExtractionUseCase:
                     if p.entity_type == "Movie"
                 ],
             },
-            interval=0,
+            cron="0 0 * * *",  # Every day at midnight
         )

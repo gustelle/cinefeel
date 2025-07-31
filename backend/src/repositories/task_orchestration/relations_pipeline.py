@@ -1,7 +1,7 @@
 from typing import Literal
 
-from prefect import Flow, flow, get_run_logger
-from prefect.client.schemas import FlowRun, State
+from prefect import flow
+from prefect.events.schemas.deployment_triggers import DeploymentEventTrigger
 
 from src.entities.film import Film
 from src.entities.person import Person
@@ -13,24 +13,26 @@ from src.repositories.task_orchestration.flows.task_relationship_storage import 
 )
 from src.settings import Settings
 
-
-def relationship_failure_handler(flow: Flow, flow_run: FlowRun, state: State) -> None:
-    """
-    Handles failures in the relationship processing flow.
-    This function can be used to log errors or perform cleanup actions.
-
-    TODO:
-    - trigger a unit extraction of the  entity
-    """
-    get_run_logger().error("-" * 40)
-    get_run_logger().error("Relationship processing flow failed.")
-    get_run_logger().error(flow)
-    get_run_logger().error(flow_run)
-    get_run_logger().error(state)
-    get_run_logger().error("-" * 40)
+permalink_no_found_trigger = DeploymentEventTrigger(
+    expect={"permalink.not_found"},
+    for_each={"prefect.resource.id"},
+    parameters={
+        "permalink": "{{ event.resource.id }}",
+        "entity_type": "{{event.payload.entity_type}}",
+    },
+)
 
 
-@flow(name="Relationship Processor Flow", on_failure=[relationship_failure_handler])
+@flow(log_prints=True)
+def on_permalink_not_found(
+    permalink: str,  # entity_type: Literal["Movie", "Person"]
+) -> None:
+    print(
+        f"Ressource with permalink {permalink} not found in storage. Triggering extraction flow."
+    )
+
+
+@flow(name="Relationship Processor Flow")
 def relationship_processor_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
