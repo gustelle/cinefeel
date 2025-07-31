@@ -23,4 +23,5 @@ class WikipediaPersonExtractionUseCase:
                     if p.entity_type == "Person"
                 ],
             },
+            interval=0,
         )

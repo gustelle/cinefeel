@@ -23,4 +23,5 @@ class WikipediaFilmExtractionUseCase:
                     if p.entity_type == "Movie"
                 ],
             },
+            interval=0,
         )
