@@ -44,10 +44,6 @@ class SyncHttpClient(IHttpClient):
             },
         )
 
-        logger.info(
-            f"SyncHttpClient initialized with {settings.scraper_max_concurrent_connections} connections ({pwd})"
-        )
-
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         """Close the HTTP client when exiting the context.
 

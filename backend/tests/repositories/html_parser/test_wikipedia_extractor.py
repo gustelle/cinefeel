@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from src.interfaces.info_retriever import PageLink, RetrievalError
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
-from src.settings import WikiTOCPageConfig
+from src.settings import WikipediaTableOfContents
 
 
 def test_extract_links_from_table():
@@ -39,10 +39,10 @@ def test_extract_links_from_table():
     </html>
     """
 
-    config = WikiTOCPageConfig(
+    config = WikipediaTableOfContents(
         page_id="My TOC Page",
-        toc_content_type="film",
-        toc_css_selector=".wikitable td:nth-child(1)",
+        entity_type="Movie",
+        permalinks_selector=".wikitable td:nth-child(1)",
     )
 
     # Expected output
@@ -50,12 +50,12 @@ def test_extract_links_from_table():
         PageLink(
             page_title="Film Title",
             page_id="Film_Title",
-            content_type="film",
+            entity_type="Movie",
         ),
         PageLink(
             page_title="Other Film Title",
             page_id="Other_Film_Title",
-            content_type="film",
+            entity_type="Movie",
         ),
     ]
 
@@ -77,10 +77,10 @@ def test_extract_links_with_css_selector():
     # given
     extractor = WikipediaParser()
 
-    config = WikiTOCPageConfig(
+    config = WikipediaTableOfContents(
         page_id="My TOC Page",
-        toc_content_type="person",
-        toc_css_selector=".wikitable td:nth-child(2)",
+        entity_type="Person",
+        permalinks_selector=".wikitable td:nth-child(2)",
     )
 
     # Mock HTML content
@@ -106,12 +106,12 @@ def test_extract_links_with_css_selector():
         PageLink(
             page_title="Lucien Nonguet",
             page_id="Lucien_Nonguet",
-            content_type="person",
+            entity_type="Person",
         ),
         PageLink(
             page_title="Toto",
             page_id="toto",
-            content_type="person",
+            entity_type="Person",
         ),
     ]
 
@@ -130,10 +130,10 @@ def test_dedup_extract_links():
     # given
     extractor = WikipediaParser()
 
-    config = WikiTOCPageConfig(
+    config = WikipediaTableOfContents(
         page_id="My TOC Page",
-        toc_content_type="person",
-        toc_css_selector=".wikitable td:nth-child(2)",
+        entity_type="Person",
+        permalinks_selector=".wikitable td:nth-child(2)",
     )
 
     # Mock HTML content
@@ -159,7 +159,7 @@ def test_dedup_extract_links():
         PageLink(
             page_title="Lucien Nonguet",
             page_id="Lucien_Nonguet",
-            content_type="person",
+            entity_type="Person",
         ),
     ]
 
@@ -178,9 +178,9 @@ def test_extract_links_with_no_links():
     # given
     extractor = WikipediaParser()
 
-    config = WikiTOCPageConfig(
+    config = WikipediaTableOfContents(
         page_id="My TOC Page",
-        toc_content_type="person",
+        entity_type="Person",
     )
 
     # Mock HTML content
@@ -220,9 +220,9 @@ def test_extract_links_excludes_external_links():
     # given
     extractor = WikipediaParser()
 
-    config = WikiTOCPageConfig(
+    config = WikipediaTableOfContents(
         page_id="My TOC Page",
-        toc_content_type="film",
+        entity_type="Movie",
     )
 
     # Mock HTML content
@@ -252,7 +252,7 @@ def test_extract_links_excludes_external_links():
         PageLink(
             page_title="Film Title",
             page_id="Film_Title",
-            content_type="film",
+            entity_type="Movie",
         ),
     ]
 
@@ -274,9 +274,9 @@ def test_extract_links_excludes_non_existing_pages():
     # given
     extractor = WikipediaParser()
 
-    config = WikiTOCPageConfig(
+    config = WikipediaTableOfContents(
         page_id="My TOC Page",
-        toc_content_type="film",
+        entity_type="Movie",
     )
 
     # Mock HTML content
@@ -306,7 +306,7 @@ def test_extract_links_excludes_non_existing_pages():
         PageLink(
             page_title="Film Title",
             page_id="Film_Title",
-            content_type="film",
+            entity_type="Movie",
         ),
     ]
 

@@ -7,7 +7,7 @@ from src.interfaces.task import ITaskExecutor
 from src.settings import Settings
 
 
-class SearchIndexerFlow(ITaskExecutor):
+class SearchUpdater(ITaskExecutor):
 
     entity_type: type[Composable]
     settings: Settings

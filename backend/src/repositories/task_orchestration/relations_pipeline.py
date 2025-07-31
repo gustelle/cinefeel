@@ -33,14 +33,14 @@ def relationship_failure_handler(flow: Flow, flow_run: FlowRun, state: State) ->
 @flow(name="Relationship Processor Flow", on_failure=[relationship_failure_handler])
 def relationship_processor_flow(
     settings: Settings,
-    entity: Literal["Movie", "Person"],
+    entity_type: Literal["Movie", "Person"],
 ) -> None:
     """
     Reads Entities (Film or Person) from the storage,
     and analyzes their content to identify relationships between them.
     """
 
-    match entity:
+    match entity_type:
         case "Movie":
             entity_type = Film
         case "Person":

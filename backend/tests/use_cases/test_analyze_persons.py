@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.settings import Settings, WikiTOCPageConfig
+from src.settings import Settings, WikipediaTableOfContents
 from src.use_cases.extract_persons import WikipediaPersonExtractionUseCase
 
 _local_dir = Path(__file__).parent.resolve()
@@ -17,10 +17,10 @@ def test_uc_person():
     """
     # given
     mediawiki_start_pages = [
-        WikiTOCPageConfig(
+        WikipediaTableOfContents(
             page_id="Liste_de_films_français_sortis_en_1907",  # Example page ID for Douglas Adams
-            toc_content_type="person",
-            toc_css_selector=".wikitable td:nth-child(2) [title='Georges Méliès']",
+            entity_type="person",
+            permalinks_selector=".wikitable td:nth-child(2) [title='Georges Méliès']",
         )
     ]
     settings = Settings(

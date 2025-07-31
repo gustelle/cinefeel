@@ -1,5 +1,3 @@
-
-
 from src.repositories.task_orchestration.relations_pipeline import (
     relationship_processor_flow,
 )
@@ -19,7 +17,7 @@ class EnrichmentUseCase:
             name="Film Enrichment",
             parameters={
                 "settings": self.settings,
-                "entity": "Film",
+                "entity_type": "Movie",
             },
         )
 
@@ -27,6 +25,6 @@ class EnrichmentUseCase:
             name="Person Enrichment",
             parameters={
                 "settings": self.settings,
-                "entity": "Person",
+                "entity_type": "Person",
             },
         )

@@ -17,6 +17,10 @@ class WikipediaFilmExtractionUseCase:
             name="Wikipedia Film Extraction",
             parameters={
                 "settings": self.settings,
-                "entity": "Movie",
+                "page_links": [
+                    p
+                    for p in self.settings.mediawiki_start_pages
+                    if p.entity_type == "Movie"
+                ],
             },
         )

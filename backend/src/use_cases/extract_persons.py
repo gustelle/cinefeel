@@ -17,6 +17,10 @@ class WikipediaPersonExtractionUseCase:
             name="Wikipedia Person Extraction",
             parameters={
                 "settings": self.settings,
-                "entity": "Person",
+                "page_links": [
+                    p
+                    for p in self.settings.mediawiki_start_pages
+                    if p.entity_type == "Person"
+                ],
             },
         )

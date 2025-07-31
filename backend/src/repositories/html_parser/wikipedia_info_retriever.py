@@ -10,7 +10,7 @@ from pydantic import HttpUrl, ValidationError
 
 from src.entities.content import Media, PageLink, Section
 from src.interfaces.info_retriever import IContentParser, RetrievalError
-from src.settings import WikiTOCPageConfig
+from src.settings import WikipediaTableOfContents
 
 ORPHAN_SECTION_TITLE = "Introduction"
 INFOBOX_SECTION_TITLE = "Données clés"
@@ -127,7 +127,7 @@ class WikipediaParser(IContentParser):
             raise RetrievalError("Title not found in the HTML content.")
 
     def retrieve_inner_links(
-        self, html_content: str, config: WikiTOCPageConfig
+        self, html_content: str, config: WikipediaTableOfContents
     ) -> list[PageLink]:
         """
         Parses the given HTML content and discovers wikipedia links to Wikipedia pages.
@@ -183,8 +183,8 @@ class WikipediaParser(IContentParser):
         # discover the structure of the HTML content
         # and extract the relevant links
         roots = (
-            soup.select(config.toc_css_selector)
-            if config.toc_css_selector
+            soup.select(config.permalinks_selector)
+            if config.permalinks_selector
             else soup.find_all()
         )
 
@@ -197,7 +197,7 @@ class WikipediaParser(IContentParser):
     def _parse_structure(
         self,
         tag: Tag,
-        config: WikiTOCPageConfig,
+        config: WikipediaTableOfContents,
     ) -> Generator[PageLink, None, None]:
 
         match tag.name:
@@ -216,7 +216,7 @@ class WikipediaParser(IContentParser):
                     yield PageLink(
                         page_title=tag.get_text(strip=True),
                         page_id=linked_page_id,
-                        content_type=config.toc_content_type,
+                        entity_type=config.entity_type,
                     )
                 except Exception as e:
                     logger.error(f"Error creating WikiPageLink: {e} for tag: {tag}")

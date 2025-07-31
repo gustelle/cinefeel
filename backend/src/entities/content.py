@@ -35,7 +35,6 @@ class PageLink(BaseModel):
         examples=[
             "À Biribi, disciplinaires français",
         ],
-        repr=False,
     )
     page_id: str = Field(
         ...,
@@ -44,11 +43,10 @@ class PageLink(BaseModel):
         examples=["À_Biribi,_disciplinaires_français"],
     )
 
-    content_type: Literal["film", "person"] = Field(
+    entity_type: Literal["Movie", "Person"] = Field(
         ...,
-        description="The type of content the link refers to. This can be either 'film' or 'person'.",
-        examples=["film", "person"],
-        repr=False,
+        description="The type of content the link refers to. This can be either 'Movie' or 'Person'.",
+        examples=["Movie", "Person"],
     )
 
 
