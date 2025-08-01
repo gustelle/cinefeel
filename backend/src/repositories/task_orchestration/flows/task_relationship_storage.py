@@ -1,5 +1,6 @@
 from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
+from prefect.events import emit_event
 from prefect.futures import PrefectFuture
 from pydantic import HttpUrl
 
@@ -97,6 +98,10 @@ class RelationshipFlow(ITaskExecutor):
         # send an event to the caller to extract the entity from the web
         logger.warning(f"No entity found for name '{name}' in storage.")
 
+        emit_event(
+            event="extract.entity",
+            resource={"prefect.resource.id": permalink},
+        )
         # store the permalink onto the storage
 
     @task(

@@ -14,3 +14,6 @@ prefect config set PREFECT_DEFAULT_WORK_POOL_NAME="local-processes"
 # apply a rate limit to the work pool
 prefect work-pool set-concurrency-limit "local-processes" 10
 
+# react to events emitted 
+# prefect automation create --from-file automation.yaml
+# prefect deploy --prefect-file prefect.yaml

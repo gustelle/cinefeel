@@ -1,5 +1,4 @@
 import sys
-import time
 
 import typer
 from loguru import logger
@@ -10,44 +9,14 @@ app = typer.Typer()
 
 
 @app.command()
-def extract_movies():
+def deploy():
 
-    from src.use_cases.extract_films import WikipediaFilmExtractionUseCase
+    from src.use_cases.deploy import DeployFlowsUseCase
 
-    uc = WikipediaFilmExtractionUseCase(
+    uc = DeployFlowsUseCase(
         settings=Settings(),
     )
     uc.execute()
-
-
-@app.command()
-def extract_persons():
-
-    from src.use_cases.extract_persons import WikipediaPersonExtractionUseCase
-
-    uc = WikipediaPersonExtractionUseCase(
-        settings=Settings(),
-    )
-    uc.execute()
-
-
-@app.command()
-def enrich():
-
-    from src.use_cases.enrich import EnrichmentUseCase
-
-    start_time = time.time()
-    logger.info("Starting enrichment processing...")
-
-    uc = EnrichmentUseCase(
-        settings=Settings(),
-    )
-    uc.execute()
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-
-    logger.info("EnrichmentUseCase completed in %.2f seconds." % elapsed_time)
 
 
 if __name__ == "__main__":
