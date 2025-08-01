@@ -15,10 +15,10 @@ from src.settings import Settings
 
 @flow(log_prints=True)
 def on_permalink_not_found(
-    permalink: str,  # entity_type: Literal["Movie", "Person"]
+    permalink: str, entity_type: Literal["Movie", "Person"]
 ) -> None:
     print(
-        f"Ressource with permalink {permalink} not found in storage. Triggering extraction flow."
+        f"'{entity_type}' with permalink {permalink} not found in storage. Triggering extraction flow."
     )
 
 
