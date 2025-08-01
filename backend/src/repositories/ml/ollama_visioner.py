@@ -21,10 +21,6 @@ class OllamaVisioner(IDataMiner):
         image_path: str,
         parent: EntityComponent | None = None,
     ) -> ExtractionResult:
-        """
-        TODO:
-        - test that parent is correctly attached to the entity
-        """
 
         score = 0.0
         result: BaseModel | None = None

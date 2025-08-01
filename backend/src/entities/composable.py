@@ -94,9 +94,6 @@ class Composable(Identifiable):
         Returns:
             Composable: A new instance of the composed entity.
 
-        TODO:
-        - non regression testing of 'by_name=True'
-        - non regression testing of the part.entity.parent_uid
         """
 
         # NOTE
@@ -144,7 +141,7 @@ class Composable(Identifiable):
         # re-pass through the model validation
         # to ensure all fields are correctly populated
         # and to ensure the UID is correctly assigned
-        v = cls.model_validate(populated_entities, by_name=True)
+        v = cls.model_validate(populated_entities)
 
         logger.debug("_" * 80)
         logger.debug(f"Composed '{cls.__name__}'")

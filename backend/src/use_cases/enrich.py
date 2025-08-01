@@ -15,11 +15,6 @@ class EnrichmentUseCase:
 
     def execute(self):
 
-        # extraction_trigger = on_permalink_not_found.to_deployment(
-        #     name="On Permalink Not Found",
-        #     triggers=[permalink_no_found_trigger],
-        # )
-
         film_enrich = relationship_processor_flow.to_deployment(
             name="Film Enrichment",
             parameters={
@@ -38,4 +33,7 @@ class EnrichmentUseCase:
             cron="00 09 * * *",  # Every day at 9:00 AM
         )
 
-        serve(film_enrich, person_enrich)  # extraction_trigger)
+        serve(
+            film_enrich,
+            person_enrich,
+        )

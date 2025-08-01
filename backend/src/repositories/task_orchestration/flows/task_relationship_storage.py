@@ -1,6 +1,5 @@
 from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
-from prefect.events import emit_event
 from prefect.futures import PrefectFuture
 from pydantic import HttpUrl
 
@@ -98,14 +97,7 @@ class RelationshipFlow(ITaskExecutor):
         # send an event to the caller to extract the entity from the web
         logger.warning(f"No entity found for name '{name}' in storage.")
 
-        emit_event(
-            event="permalink.not_found",
-            resource={"prefect.resource.id": str(permalink)},
-            payload={
-                "entity_type": input_storage.entity_type.__class__.__name__,
-                "permalink": permalink,
-            },
-        )
+        # store the permalink onto the storage
 
     @task(
         task_run_name="do_enrichment-{relationship.from_entity.uid}-{relationship.to_entity.uid}",
@@ -285,7 +277,7 @@ class RelationshipFlow(ITaskExecutor):
                 try:
                     future.result(
                         raise_on_failure=True,
-                        timeout=self.settings.task_timeout,
+                        timeout=self.settings.prefect_task_timeout,
                     )
                     logger.info(
                         f"Relationship analysis completed for entity '{entity.uid}'."
@@ -332,7 +324,8 @@ class RelationshipFlow(ITaskExecutor):
             for future_storage in storage_futures + entity_futures:
                 try:
                     future_storage.result(
-                        raise_on_failure=True, timeout=self.settings.task_timeout
+                        raise_on_failure=True,
+                        timeout=self.settings.prefect_task_timeout,
                     )
                 except TimeoutError:
                     logger.warning(f"Task timed out for {future_storage.task_run_id}.")

@@ -14,7 +14,7 @@ class PersonVisualAnalysis(OllamaVisioner):
 
     def __init__(self, settings: Settings):
 
-        self.model = settings.vision_model
+        self.model = settings.ollama_vision_model
 
     def extract_entity(
         self,

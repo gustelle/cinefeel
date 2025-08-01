@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.settings import Settings, WikipediaTableOfContents
+from src.settings import Settings, TableOfContents
 from src.use_cases.extract_persons import WikipediaPersonExtractionUseCase
 
 _local_dir = Path(__file__).parent.resolve()
@@ -17,7 +17,7 @@ def test_uc_person():
     """
     # given
     mediawiki_start_pages = [
-        WikipediaTableOfContents(
+        TableOfContents(
             page_id="Liste_de_films_français_sortis_en_1907",  # Example page ID for Douglas Adams
             entity_type="person",
             permalinks_selector=".wikitable td:nth-child(2) [title='Georges Méliès']",
@@ -25,7 +25,7 @@ def test_uc_person():
     ]
     settings = Settings(
         persistence_directory=_local_dir / "data",
-        mediawiki_start_pages=mediawiki_start_pages,
+        download_start_pages=mediawiki_start_pages,
     )
     use_case = WikipediaPersonExtractionUseCase(settings=settings)
 

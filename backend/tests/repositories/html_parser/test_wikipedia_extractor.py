@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from src.interfaces.info_retriever import PageLink, RetrievalError
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
-from src.settings import WikipediaTableOfContents
+from src.settings import TableOfContents
 
 
 def test_extract_links_from_table():
@@ -39,7 +39,7 @@ def test_extract_links_from_table():
     </html>
     """
 
-    config = WikipediaTableOfContents(
+    config = TableOfContents(
         page_id="My TOC Page",
         entity_type="Movie",
         permalinks_selector=".wikitable td:nth-child(1)",
@@ -77,7 +77,7 @@ def test_extract_links_with_css_selector():
     # given
     extractor = WikipediaParser()
 
-    config = WikipediaTableOfContents(
+    config = TableOfContents(
         page_id="My TOC Page",
         entity_type="Person",
         permalinks_selector=".wikitable td:nth-child(2)",
@@ -130,7 +130,7 @@ def test_dedup_extract_links():
     # given
     extractor = WikipediaParser()
 
-    config = WikipediaTableOfContents(
+    config = TableOfContents(
         page_id="My TOC Page",
         entity_type="Person",
         permalinks_selector=".wikitable td:nth-child(2)",
@@ -178,7 +178,7 @@ def test_extract_links_with_no_links():
     # given
     extractor = WikipediaParser()
 
-    config = WikipediaTableOfContents(
+    config = TableOfContents(
         page_id="My TOC Page",
         entity_type="Person",
     )
@@ -220,7 +220,7 @@ def test_extract_links_excludes_external_links():
     # given
     extractor = WikipediaParser()
 
-    config = WikipediaTableOfContents(
+    config = TableOfContents(
         page_id="My TOC Page",
         entity_type="Movie",
     )
@@ -274,7 +274,7 @@ def test_extract_links_excludes_non_existing_pages():
     # given
     extractor = WikipediaParser()
 
-    config = WikipediaTableOfContents(
+    config = TableOfContents(
         page_id="My TOC Page",
         entity_type="Movie",
     )

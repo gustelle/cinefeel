@@ -10,7 +10,7 @@ from pydantic import HttpUrl, ValidationError
 
 from src.entities.content import Media, PageLink, Section
 from src.interfaces.info_retriever import IContentParser, RetrievalError
-from src.settings import WikipediaTableOfContents
+from src.settings import TableOfContents
 
 ORPHAN_SECTION_TITLE = "Introduction"
 INFOBOX_SECTION_TITLE = "Données clés"
@@ -127,7 +127,7 @@ class WikipediaParser(IContentParser):
             raise RetrievalError("Title not found in the HTML content.")
 
     def retrieve_inner_links(
-        self, html_content: str, config: WikipediaTableOfContents
+        self, html_content: str, config: TableOfContents
     ) -> list[PageLink]:
         """
         Parses the given HTML content and discovers wikipedia links to Wikipedia pages.
@@ -197,7 +197,7 @@ class WikipediaParser(IContentParser):
     def _parse_structure(
         self,
         tag: Tag,
-        config: WikipediaTableOfContents,
+        config: TableOfContents,
     ) -> Generator[PageLink, None, None]:
 
         match tag.name:

@@ -1,4 +1,3 @@
-
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
 from src.entities.content import Media
@@ -11,7 +10,7 @@ class ParentsTradesExctractor(IDataMiner, OllamaMessager):
 
     def __init__(self, settings: Settings):
 
-        self.model = settings.llm_model
+        self.model = settings.ollama_llm_model
 
     def extract_entity(
         self,

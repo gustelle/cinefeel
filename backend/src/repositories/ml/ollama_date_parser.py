@@ -7,7 +7,7 @@ class OllamaDateFormatter(IFormatter, OllamaMessager):
 
     def __init__(self, settings: Settings):
 
-        self.model = settings.llm_model
+        self.model = settings.ollama_llm_model
 
     def format(
         self,

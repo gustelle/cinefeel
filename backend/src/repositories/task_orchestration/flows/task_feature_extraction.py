@@ -90,7 +90,7 @@ class FeatureExtractionFlow(ITaskExecutor):
         for future_storage in storage_futures:
             try:
                 future_storage.result(
-                    raise_on_failure=True, timeout=self.settings.task_timeout
+                    raise_on_failure=True, timeout=self.settings.prefect_task_timeout
                 )
             except TimeoutError:
                 logger.warning(f"Task timed out for {future_storage.task_run_id}.")
