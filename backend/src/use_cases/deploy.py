@@ -22,7 +22,10 @@ class DeployFlowsUseCase:
                 DeploymentEventTrigger(
                     enabled=True,
                     expect={"extract.entity"},
-                    parameters={"permalink": "{{ event.resource.id }}"},
+                    parameters={
+                        "permalink": "{{ event.resource.id }}",
+                        "entity_type": "{{ event.payload.entity_type }}",
+                    },
                 )
             ],
         )
