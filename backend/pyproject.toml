@@ -45,7 +45,8 @@ package-mode = false
 [tool.poe.tasks]
 run         = "python3 main.py"
 test        = "pytest -s --tb=line"
-deploy      = "poe run"
+serve       = "poe run serve"
+deploy      = "poe run deploy"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.4.1"

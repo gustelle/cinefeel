@@ -23,7 +23,7 @@ def on_permalink_not_found(
 
 
 @flow(name="Relationship Processor Flow")
-def relationship_processor_flow(
+def relationship_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
 ) -> None:

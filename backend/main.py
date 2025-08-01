@@ -9,11 +9,22 @@ app = typer.Typer()
 
 
 @app.command()
+def serve():
+
+    from src.use_cases.serve import ServeFlowsUseCase
+
+    uc = ServeFlowsUseCase(
+        settings=Settings(),
+    )
+    uc.execute()
+
+
+@app.command()
 def deploy():
 
-    from src.use_cases.deploy import DeployFlowsUseCase
+    from src.use_cases.serve import ServeFlowsUseCase
 
-    uc = DeployFlowsUseCase(
+    uc = ServeFlowsUseCase(
         settings=Settings(),
     )
     uc.execute()

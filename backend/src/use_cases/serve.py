@@ -1,10 +1,17 @@
-from prefect import deploy, flow
+from prefect import serve
 from prefect.events import DeploymentEventTrigger
 
+from src.repositories.task_orchestration.extraction_pipeline import (
+    batch_extraction_flow,
+)
+from src.repositories.task_orchestration.relations_pipeline import (
+    on_permalink_not_found,
+    relationship_flow,
+)
 from src.settings import Settings
 
 
-class DeployFlowsUseCase:
+class ServeFlowsUseCase:
 
     settings: Settings
 
@@ -13,10 +20,7 @@ class DeployFlowsUseCase:
 
     def execute(self):
 
-        event_flow = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/relations_pipeline.py:on_permalink_not_found",
-        ).to_deployment(
+        event_flow = on_permalink_not_found.to_deployment(
             name="On Permalink Not Found",
             triggers=[
                 DeploymentEventTrigger(
@@ -27,10 +31,7 @@ class DeployFlowsUseCase:
             ],
         )
 
-        film_enrich = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/relations_pipeline.py:relationship_flow",
-        ).to_deployment(
+        film_enrich = relationship_flow.to_deployment(
             name="Film Enrichment",
             parameters={
                 "settings": self.settings,
@@ -39,10 +40,7 @@ class DeployFlowsUseCase:
             cron="00 08 * * *",  # Every day at 8:00 AM
         )
 
-        person_enrich = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/relations_pipeline.py:relationship_flow",
-        ).to_deployment(
+        person_enrich = relationship_flow.to_deployment(
             name="Person Enrichment",
             parameters={
                 "settings": self.settings,
@@ -51,10 +49,7 @@ class DeployFlowsUseCase:
             cron="00 09 * * *",  # Every day at 9:00 AM
         )
 
-        extract_movies = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/extraction_pipeline.py:batch_extraction_flow",
-        ).to_deployment(
+        extract_movies = batch_extraction_flow.to_deployment(
             name="Wikipedia Film Extraction",
             parameters={
                 "settings": self.settings,
@@ -67,10 +62,7 @@ class DeployFlowsUseCase:
             cron="0 0 * * *",  # Every day at midnight
         )
 
-        extract_persons = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/extraction_pipeline.py:batch_extraction_flow",
-        ).to_deployment(
+        extract_persons = batch_extraction_flow.to_deployment(
             name="Wikipedia Person Extraction",
             parameters={
                 "settings": self.settings,
@@ -83,4 +75,4 @@ class DeployFlowsUseCase:
             cron="0 0 * * *",  # Every day at midnight
         )
 
-        deploy(film_enrich, person_enrich, event_flow, extract_movies, extract_persons)
+        serve(film_enrich, person_enrich, event_flow, extract_movies, extract_persons)

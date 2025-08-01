@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from src.settings import Settings
-from src.use_cases.deploy import DeployFlowsUseCase
+from src.use_cases.serve import ServeFlowsUseCase
 
 _local_dir = Path(__file__).parent.resolve()
 
@@ -23,7 +23,7 @@ def test_uc_enrich():
         persistence_directory="/Users/guillaume/Dev/cinefeel/backend/data",
         db_path=local_db_path / "test.db",  # Use the local directory for the database
     )
-    use_case = DeployFlowsUseCase(settings=settings)
+    use_case = ServeFlowsUseCase(settings=settings)
 
     use_case.execute()
 
