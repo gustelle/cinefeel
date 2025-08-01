@@ -14,7 +14,7 @@ from src.settings import Settings
 
 
 @flow(log_prints=True)
-def on_event_permalink_not_found(
+def on_permalink_not_found(
     permalink: str,  # entity_type: Literal["Movie", "Person"]
 ) -> None:
     print(

@@ -45,9 +45,7 @@ package-mode = false
 [tool.poe.tasks]
 run         = "python3 main.py"
 test        = "pytest -s --tb=line"
-enrich      = "poe run enrich"
-extract_persons = "poe run extract-persons"
-extract_movies = "poe run extract-movies"
+deploy      = "poe run"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.4.1"

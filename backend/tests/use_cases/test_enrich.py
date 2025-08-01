@@ -5,12 +5,12 @@ from pathlib import Path
 import pytest
 
 from src.settings import Settings
-from src.use_cases.enrich import EnrichmentUseCase
+from src.use_cases.deploy import DeployFlowsUseCase
 
 _local_dir = Path(__file__).parent.resolve()
 
 
-@pytest.mark.e2e
+@pytest.mark.skip(reason="end-to-end test that requires a running Prefect server.")
 def test_uc_enrich():
     """
     End-to-end test on Georges Méliès
@@ -23,7 +23,7 @@ def test_uc_enrich():
         persistence_directory="/Users/guillaume/Dev/cinefeel/backend/data",
         db_path=local_db_path / "test.db",  # Use the local directory for the database
     )
-    use_case = EnrichmentUseCase(settings=settings)
+    use_case = DeployFlowsUseCase(settings=settings)
 
     use_case.execute()
 
