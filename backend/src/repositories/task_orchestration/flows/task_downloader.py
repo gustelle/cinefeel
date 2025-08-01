@@ -10,7 +10,7 @@ from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.repositories.local_storage.html_storage import LocalTextStorage
-from src.settings import Settings, WikipediaTableOfContents
+from src.settings import Settings, TableOfContents
 
 from .retry import is_task_retriable
 
@@ -88,7 +88,7 @@ class PageContentDownloader(ITaskExecutor):
     @task(cache_policy=NO_CACHE)
     def fetch_page_links(
         self,
-        config: WikipediaTableOfContents,
+        config: TableOfContents,
         link_extractor: IContentParser,
     ) -> list[PageLink]:
         """
@@ -141,7 +141,7 @@ class PageContentDownloader(ITaskExecutor):
             list[str] | None:
         """
 
-        if isinstance(page, WikipediaTableOfContents):
+        if isinstance(page, TableOfContents):
             # extract the links from the table of contents
             link_extractor = WikipediaParser()
             page_links = self.fetch_page_links(

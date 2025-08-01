@@ -71,7 +71,9 @@ class SearchUpdater(ITaskExecutor):
 
         for future in futures:
             try:
-                future.result(timeout=self.settings.task_timeout, raise_on_failure=True)
+                future.result(
+                    timeout=self.settings.prefect_task_timeout, raise_on_failure=True
+                )
             except TimeoutError:
                 logger.warning(f"Task timed out for {future.task_run_id}.")
             except Exception as e:

@@ -1,7 +1,6 @@
 from typing import Literal
 
 from prefect import flow
-from prefect.events.schemas.deployment_triggers import DeploymentEventTrigger
 
 from src.entities.film import Film
 from src.entities.person import Person
@@ -13,18 +12,9 @@ from src.repositories.task_orchestration.flows.task_relationship_storage import 
 )
 from src.settings import Settings
 
-permalink_no_found_trigger = DeploymentEventTrigger(
-    expect={"permalink.not_found"},
-    for_each={"prefect.resource.id"},
-    parameters={
-        "permalink": "{{ event.resource.id }}",
-        "entity_type": "{{event.payload.entity_type}}",
-    },
-)
-
 
 @flow(log_prints=True)
-def on_permalink_not_found(
+def on_event_permalink_not_found(
     permalink: str,  # entity_type: Literal["Movie", "Person"]
 ) -> None:
     print(

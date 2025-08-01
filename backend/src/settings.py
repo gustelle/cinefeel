@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from src.entities.content import PageLink
 
 
-class WikipediaTableOfContents(PageLink):
+class TableOfContents(PageLink):
     """Configuration for a Wikipedia Table-of-content (TOC) page.
 
     A table of content page is a page that contains a list of links to other pages.
@@ -25,7 +25,7 @@ class WikipediaTableOfContents(PageLink):
 
 
 _default_film_tocs = [
-    WikipediaTableOfContents(
+    TableOfContents(
         page_id=f"Liste_de_films_français_sortis_en_{year}",
         permalinks_selector=".wikitable td:nth-child(1)",
         entity_type="Movie",
@@ -34,7 +34,7 @@ _default_film_tocs = [
 ]
 
 _default_person_tocs = [
-    WikipediaTableOfContents(
+    TableOfContents(
         page_id=f"Liste_de_films_français_sortis_en_{year}",
         permalinks_selector=".wikitable td:nth-child(2)",
         entity_type="Person",
@@ -55,13 +55,16 @@ class Settings(BaseSettings):
         env_file=(".env", ".env.prod")
     )
 
-    crawler_use_cache: bool = Field(
+    download_cache_enabled: bool = Field(
         default=True,
         description="Whether to use the cache for the Wikipedia API",
     )
-    crawler_cache_expire_after: int = Field(
+    download_cache_expire_after: int = Field(
         default=60 * 60 * 24,
         description="The expiration time of the cache in seconds",
+    )
+    download_start_pages: list[TableOfContents] = Field(
+        default=_default_tocs,
     )
 
     mediawiki_api_key: str = Field(
@@ -76,15 +79,12 @@ class Settings(BaseSettings):
         default="Cinefeel",
         description="The user agent to use for the Wikipedia API",
     )
-    mediawiki_start_pages: list[WikipediaTableOfContents] = Field(
-        default=_default_tocs,
-    )
 
-    scraper_max_concurrent_connections: int = Field(
+    download_max_concurrency: int = Field(
         default=10,
-        description="The maximum number of concurrent connections to the Wikipedia API",
+        description="The maximum number of concurrent connections to download pages",
     )
-    scraper_user_agent: str = Field(
+    download_user_agent: str = Field(
         default="Cinefeel",
         description="The user agent to use for the Wikipedia API",
     )
@@ -109,11 +109,6 @@ class Settings(BaseSettings):
         description="The path (relative or absolute) to the dir where the scraped data will be saved",
     )
 
-    llm_model: str = Field(
-        default="mistral:latest",
-        description="The name of the LLM model to use",
-    )
-
     mistral_llm_model: str = Field(
         default="mistral-medium-latest",
     )
@@ -123,16 +118,12 @@ class Settings(BaseSettings):
         description="The API key for the Mistral API",
     )
 
-    llm_min_score: float = Field(
-        default=0.5,
-        ge=0.0,
-        le=1.0,
-        description="""
-            The minimum score confidence score for the LLM model to consider a result as valid.
-        """,
+    ollama_llm_model: str = Field(
+        default="llama3-chatqa:latest",
+        description="The name of the LLM model to use for text processing.",
     )
 
-    vision_model: str = Field(
+    ollama_vision_model: str = Field(
         default="llava:7b",
         description="""
             The name of the vision model to use for image processing.
@@ -170,7 +161,7 @@ class Settings(BaseSettings):
         """,
     )
 
-    task_timeout: int = Field(
+    prefect_task_timeout: int = Field(
         default=60,  # 1 minute
         description="The timeout for prefect tasks in seconds",
     )
@@ -201,6 +192,6 @@ class Settings(BaseSettings):
     graph_db_uri: AnyUrl | None = Field(
         ...,
         description="""
-            The URI of the database.
+            The URI of the database used to store the graph data.
         """,
     )

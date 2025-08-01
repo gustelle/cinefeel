@@ -4,7 +4,7 @@ from src.interfaces.http_client import HttpError
 from src.repositories.task_orchestration.flows.task_downloader import (
     PageContentDownloader,
 )
-from src.settings import Settings, WikipediaTableOfContents
+from src.settings import Settings, TableOfContents
 
 from .stubs.stub_http import StubSyncHttpClient
 from .stubs.stub_storage import StubStorage
@@ -24,7 +24,7 @@ def test_downloader_execute():
                 </html>
                 """
     )
-    start_page = WikipediaTableOfContents(
+    start_page = TableOfContents(
         page_id="page_id",
         entity_type="Movie",
     )
