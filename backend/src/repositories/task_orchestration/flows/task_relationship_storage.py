@@ -100,7 +100,7 @@ class RelationshipFlow(ITaskExecutor):
 
         emit_event(
             event="extract.entity",
-            resource={"prefect.resource.id": permalink},
+            resource={"prefect.resource.id": str(permalink)},
         )
         # store the permalink onto the storage
 
