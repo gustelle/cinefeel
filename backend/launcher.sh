@@ -20,6 +20,10 @@ prefect work-pool set-concurrency-limit "local-processes" 10
 
 prefect worker start --pool "local-processes" 
 
+poe deploy
+
+prefect deployment run "Relationship Processor Flow/Film Enrichment" -jv working_dir=$(pwd)
+
 # react to events emitted 
 # prefect automation create --from-file automation.yaml
 # prefect deploy --prefect-file prefect.yaml

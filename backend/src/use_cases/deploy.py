@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from prefect import deploy, flow
 from prefect.events import DeploymentEventTrigger
 
@@ -14,8 +16,8 @@ class DeployFlowsUseCase:
     def execute(self):
 
         unit_extract_flow = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/relations_pipeline.py:on_permalink_not_found",
+            source=Path(__file__).parent.parent / "repositories/task_orchestration",
+            entrypoint="relations_pipeline.py:on_permalink_not_found",
         ).to_deployment(
             name="Unit Extraction Flow",
             description="Triggers when a permalink is not found in the storage which will trigger the extraction flow.",
@@ -29,13 +31,12 @@ class DeployFlowsUseCase:
                     },
                 )
             ],
-            work_pool_name="local-processes",
             concurrency_limit=self.settings.prefect_concurrency_limit,
         )
 
         film_enrich = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/relations_pipeline.py:relationship_flow",
+            source=Path(__file__).parent.parent / "repositories/task_orchestration",
+            entrypoint="relations_pipeline.py:relationship_flow",
         ).to_deployment(
             name="Film Enrichment",
             parameters={
@@ -43,12 +44,11 @@ class DeployFlowsUseCase:
                 "entity_type": "Movie",
             },
             cron="00 08 * * *",  # Every day at 8:00 AM
-            work_pool_name="local-processes",
         )
 
         person_enrich = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/relations_pipeline.py:relationship_flow",
+            source=Path(__file__).parent.parent / "repositories/task_orchestration",
+            entrypoint="relations_pipeline.py:relationship_flow",
         ).to_deployment(
             name="Person Enrichment",
             parameters={
@@ -56,12 +56,11 @@ class DeployFlowsUseCase:
                 "entity_type": "Person",
             },
             cron="00 09 * * *",  # Every day at 9:00 AM
-            work_pool_name="local-processes",
         )
 
         extract_movies = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/extraction_pipeline.py:batch_extraction_flow",
+            source=Path(__file__).parent.parent / "repositories/task_orchestration",
+            entrypoint="extraction_pipeline.py:batch_extraction_flow",
         ).to_deployment(
             name="Wikipedia Film Extraction",
             parameters={
@@ -73,12 +72,11 @@ class DeployFlowsUseCase:
                 ],
             },
             cron="0 0 * * *",  # Every day at midnight
-            work_pool_name="local-processes",
         )
 
         extract_persons = flow.from_source(
-            source="https://github.com/gustelle/cinefeel.git",
-            entrypoint="src/repositories/task_orchestration/extraction_pipeline.py:batch_extraction_flow",
+            source=Path(__file__).parent.parent / "repositories/task_orchestration",
+            entrypoint="extraction_pipeline.py:batch_extraction_flow",
         ).to_deployment(
             name="Wikipedia Person Extraction",
             parameters={
@@ -90,7 +88,6 @@ class DeployFlowsUseCase:
                 ],
             },
             cron="0 0 * * *",  # Every day at midnight
-            work_pool_name="local-processes",
         )
 
         deploy(
@@ -99,4 +96,5 @@ class DeployFlowsUseCase:
             unit_extract_flow,
             extract_movies,
             extract_persons,
+            work_pool_name="local-processes",
         )

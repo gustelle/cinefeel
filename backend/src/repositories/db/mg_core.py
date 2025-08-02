@@ -22,10 +22,10 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
 
     def __init__(
         self,
-        settings: BaseSettings = Settings(),
+        settings: BaseSettings | None = None,
     ):
 
-        self.settings = settings
+        self.settings = settings or Settings()
         self.client: GraphDatabase = GraphDatabase.driver(
             str(self.settings.graph_db_uri),
             auth=("", ""),
