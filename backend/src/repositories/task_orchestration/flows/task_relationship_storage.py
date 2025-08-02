@@ -96,9 +96,8 @@ class RelationshipFlow(ITaskExecutor):
             return results[0]
 
         # send an event to the caller to extract the entity from the web
-        logger.warning(f"No entity found for name '{name}' in storage.")
 
-        emit_event(
+        e = emit_event(
             event="extract.entity",
             resource={"prefect.resource.id": str(permalink)},
             payload={
@@ -107,6 +106,8 @@ class RelationshipFlow(ITaskExecutor):
                 ),
             },
         )
+
+        logger.warning(f"logging event: {e}")
         # store the permalink onto the storage
 
     @task(
