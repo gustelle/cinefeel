@@ -28,6 +28,7 @@ class DeployFlowsUseCase:
                     },
                 )
             ],
+            work_pool_name="local-processes",
         )
 
         film_enrich = flow.from_source(
@@ -40,6 +41,7 @@ class DeployFlowsUseCase:
                 "entity_type": "Movie",
             },
             cron="00 08 * * *",  # Every day at 8:00 AM
+            work_pool_name="local-processes",
         )
 
         person_enrich = flow.from_source(
@@ -52,6 +54,7 @@ class DeployFlowsUseCase:
                 "entity_type": "Person",
             },
             cron="00 09 * * *",  # Every day at 9:00 AM
+            work_pool_name="local-processes",
         )
 
         extract_movies = flow.from_source(
@@ -68,6 +71,7 @@ class DeployFlowsUseCase:
                 ],
             },
             cron="0 0 * * *",  # Every day at midnight
+            work_pool_name="local-processes",
         )
 
         extract_persons = flow.from_source(
@@ -84,6 +88,7 @@ class DeployFlowsUseCase:
                 ],
             },
             cron="0 0 * * *",  # Every day at midnight
+            work_pool_name="local-processes",
         )
 
         deploy(film_enrich, person_enrich, event_flow, extract_movies, extract_persons)
