@@ -1,6 +1,6 @@
 from typing import Literal
 
-from prefect import flow
+from prefect import flow, get_run_logger
 
 from src.entities.film import Film
 from src.entities.person import Person
@@ -13,11 +13,11 @@ from src.repositories.task_orchestration.flows.task_relationship_storage import 
 from src.settings import Settings
 
 
-@flow(log_prints=True)
+@flow
 def on_permalink_not_found(
     permalink: str, entity_type: Literal["Movie", "Person"]
 ) -> None:
-    print(
+    get_run_logger().info(
         f"'{entity_type}' with permalink {permalink} not found in storage. Triggering extraction flow."
     )
 
