@@ -165,6 +165,10 @@ class Settings(BaseSettings):
         default=60,  # 1 minute
         description="The timeout for prefect tasks in seconds",
     )
+    prefect_concurrency_limit: int = Field(
+        default=10,
+        description="The maximum number of concurrent prefect tasks",
+    )
 
     # section params
     sections_max_children: int = Field(

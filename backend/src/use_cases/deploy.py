@@ -18,6 +18,7 @@ class DeployFlowsUseCase:
             entrypoint="src/repositories/task_orchestration/relations_pipeline.py:on_permalink_not_found",
         ).to_deployment(
             name="On Permalink Not Found",
+            description="Triggers when a permalink is not found in the storage which will trigger the extraction flow.",
             triggers=[
                 DeploymentEventTrigger(
                     enabled=True,
@@ -29,6 +30,7 @@ class DeployFlowsUseCase:
                 )
             ],
             work_pool_name="local-processes",
+            concurrency_limit=self.settings.prefect_concurrency_limit,
         )
 
         film_enrich = flow.from_source(
