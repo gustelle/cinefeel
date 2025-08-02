@@ -13,11 +13,11 @@ class DeployFlowsUseCase:
 
     def execute(self):
 
-        event_flow = flow.from_source(
+        unit_extract_flow = flow.from_source(
             source="https://github.com/gustelle/cinefeel.git",
             entrypoint="src/repositories/task_orchestration/relations_pipeline.py:on_permalink_not_found",
         ).to_deployment(
-            name="On Permalink Not Found",
+            name="Unit Extraction Flow",
             description="Triggers when a permalink is not found in the storage which will trigger the extraction flow.",
             triggers=[
                 DeploymentEventTrigger(
@@ -93,4 +93,10 @@ class DeployFlowsUseCase:
             work_pool_name="local-processes",
         )
 
-        deploy(film_enrich, person_enrich, event_flow, extract_movies, extract_persons)
+        deploy(
+            film_enrich,
+            person_enrich,
+            unit_extract_flow,
+            extract_movies,
+            extract_persons,
+        )
