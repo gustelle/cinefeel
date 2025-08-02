@@ -95,9 +95,8 @@ class RelationshipFlow(ITaskExecutor):
         if results:
             return results[0]
 
-        # send an event to the caller to extract the entity from the web
-
-        e = emit_event(
+        # send an event to extract the entity
+        emit_event(
             event="extract.entity",
             resource={"prefect.resource.id": str(permalink)},
             payload={
@@ -106,9 +105,6 @@ class RelationshipFlow(ITaskExecutor):
                 ),
             },
         )
-
-        logger.warning(f"logging event: {e}")
-        # store the permalink onto the storage
 
     @task(
         task_run_name="do_enrichment-{relationship.from_entity.uid}-{relationship.to_entity.uid}",

@@ -32,6 +32,9 @@ class DeployFlowsUseCase:
                 )
             ],
             concurrency_limit=self.settings.prefect_concurrency_limit,
+            job_variables={
+                "working_dir": Path(__file__).parent.parent.parent.resolve().as_posix(),
+            },
         )
 
         film_enrich = flow.from_source(
