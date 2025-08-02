@@ -20,13 +20,16 @@ class ServeFlowsUseCase:
 
     def execute(self):
 
-        event_flow = on_permalink_not_found.to_deployment(
-            name="On Permalink Not Found",
+        unit_extract_flow = on_permalink_not_found.to_deployment(
+            name="Unit Extraction Flow",
             triggers=[
                 DeploymentEventTrigger(
                     enabled=True,
                     expect={"extract.entity"},
-                    parameters={"permalink": "{{ event.resource.id }}"},
+                    parameters={
+                        "permalink": "{{ event.resource.id }}",
+                        "entity_type": "{{ event.payload.entity_type }}",
+                    },
                 )
             ],
         )
@@ -75,4 +78,10 @@ class ServeFlowsUseCase:
             cron="0 0 * * *",  # Every day at midnight
         )
 
-        serve(film_enrich, person_enrich, event_flow, extract_movies, extract_persons)
+        serve(
+            film_enrich,
+            person_enrich,
+            unit_extract_flow,
+            extract_movies,
+            extract_persons,
+        )

@@ -22,9 +22,9 @@ def serve():
 @app.command()
 def deploy():
 
-    from src.use_cases.serve import ServeFlowsUseCase
+    from src.use_cases.deploy import DeployFlowsUseCase
 
-    uc = ServeFlowsUseCase(
+    uc = DeployFlowsUseCase(
         settings=Settings(),
     )
     uc.execute()
