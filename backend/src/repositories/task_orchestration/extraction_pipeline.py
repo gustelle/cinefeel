@@ -36,7 +36,6 @@ def batch_extraction_flow(
     - index them into a search engine
     - store results in a graph database.
 
-
     Args:
         settings (Settings): The application settings.
         page_links (list[PageLink]): The list of page links to extract.
@@ -135,10 +134,11 @@ def unit_extraction_flow(
     page_id = str(permalink).split("/")[-1]  # Extract page ID from permalink
 
     page_link = PageLink(
-        page_title=None,  # Title is not used in this flow
         page_id=page_id,
         entity_type=entity_type,
     )
+
+    get_run_logger().info(f"Using settings: {settings.model_dump_json(indent=2)}")
 
     batch_extraction_flow(
         settings=settings,

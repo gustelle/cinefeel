@@ -12,13 +12,22 @@ from src.repositories.task_orchestration.flows.task_relationship_storage import 
 )
 from src.settings import Settings
 
+from .extraction_pipeline import unit_extraction_flow
+
 
 @flow
 def on_permalink_not_found(
-    permalink: str, entity_type: Literal["Movie", "Person"]
+    permalink: str, entity_type: Literal["Movie", "Person"], settings: Settings
 ) -> None:
     get_run_logger().info(
         f"'{entity_type}' with permalink {permalink} not found in storage. Triggering extraction flow."
+    )
+
+    # call the unit extraction flow
+    unit_extraction_flow(
+        settings=settings,
+        entity_type=entity_type,
+        permalink=permalink,
     )
 
 

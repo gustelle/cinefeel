@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import AnyUrl, Field, HttpUrl, SecretStr
+from pydantic import AnyUrl, Field, HttpUrl, RedisDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.entities.content import PageLink
@@ -198,4 +198,9 @@ class Settings(BaseSettings):
         description="""
             The URI of the database used to store the graph data.
         """,
+    )
+
+    redis_storage_dsn: RedisDsn = Field(
+        default="redis://localhost:6379/1",
+        description="used for storing raw data.",
     )

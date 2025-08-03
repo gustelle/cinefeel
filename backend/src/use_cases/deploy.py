@@ -28,6 +28,7 @@ class DeployFlowsUseCase:
                     parameters={
                         "permalink": "{{ event.resource.id }}",
                         "entity_type": "{{ event.payload.entity_type }}",
+                        "settings": self.settings,
                     },
                 )
             ],
@@ -37,28 +38,36 @@ class DeployFlowsUseCase:
             },
         )
 
-        film_enrich = flow.from_source(
+        enrich_movies = flow.from_source(
             source=Path(__file__).parent.parent / "repositories/task_orchestration",
             entrypoint="relations_pipeline.py:relationship_flow",
         ).to_deployment(
-            name="Film Enrichment",
+            name="Movies Enrichment",
+            description="Adds relationships between movies and persons.",
             parameters={
                 "settings": self.settings,
                 "entity_type": "Movie",
             },
             cron="00 08 * * *",  # Every day at 8:00 AM
+            job_variables={
+                "working_dir": Path(__file__).parent.parent.parent.resolve().as_posix(),
+            },
         )
 
-        person_enrich = flow.from_source(
+        enrich_persons = flow.from_source(
             source=Path(__file__).parent.parent / "repositories/task_orchestration",
             entrypoint="relations_pipeline.py:relationship_flow",
         ).to_deployment(
             name="Person Enrichment",
+            description="Adds relationships between persons and movies.",
             parameters={
                 "settings": self.settings,
                 "entity_type": "Person",
             },
             cron="00 09 * * *",  # Every day at 9:00 AM
+            job_variables={
+                "working_dir": Path(__file__).parent.parent.parent.resolve().as_posix(),
+            },
         )
 
         extract_movies = flow.from_source(
@@ -66,6 +75,7 @@ class DeployFlowsUseCase:
             entrypoint="extraction_pipeline.py:batch_extraction_flow",
         ).to_deployment(
             name="Wikipedia Film Extraction",
+            description="Extracts films from Wikipedia pages.",
             parameters={
                 "settings": self.settings,
                 "page_links": [
@@ -75,6 +85,9 @@ class DeployFlowsUseCase:
                 ],
             },
             cron="0 0 * * *",  # Every day at midnight
+            job_variables={
+                "working_dir": Path(__file__).parent.parent.parent.resolve().as_posix(),
+            },
         )
 
         extract_persons = flow.from_source(
@@ -82,6 +95,7 @@ class DeployFlowsUseCase:
             entrypoint="extraction_pipeline.py:batch_extraction_flow",
         ).to_deployment(
             name="Wikipedia Person Extraction",
+            description="Extracts persons from Wikipedia pages.",
             parameters={
                 "settings": self.settings,
                 "page_links": [
@@ -91,11 +105,14 @@ class DeployFlowsUseCase:
                 ],
             },
             cron="0 0 * * *",  # Every day at midnight
+            job_variables={
+                "working_dir": Path(__file__).parent.parent.parent.resolve().as_posix(),
+            },
         )
 
         deploy(
-            film_enrich,
-            person_enrich,
+            enrich_movies,
+            enrich_persons,
             unit_extract_flow,
             extract_movies,
             extract_persons,

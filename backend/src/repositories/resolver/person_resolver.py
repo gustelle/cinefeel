@@ -21,11 +21,11 @@ class BasicPersonResolver(AbstractResolver[Person]):
         self,
         configurations: list[ResolutionConfiguration],
         section_searcher: Processor,
-        settings: Settings = Settings(),
+        settings: Settings = None,
     ):
         self.section_searcher = section_searcher
         self.configurations = configurations
-        self.settings = settings
+        self.settings = settings or Settings()
 
     def patch_media(self, entity: Person, sections: list[Section]) -> Person:
         """

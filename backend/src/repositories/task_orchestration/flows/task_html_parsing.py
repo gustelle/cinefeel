@@ -74,6 +74,7 @@ class HtmlEntityExtractor(ITaskExecutor):
         # assemble the entity from the sections
         if self.entity_type == Film:
             return BasicFilmResolver(
+                settings=self.settings,
                 section_searcher=section_searcher,
                 configurations=[
                     ResolutionConfiguration(
@@ -116,6 +117,7 @@ class HtmlEntityExtractor(ITaskExecutor):
             )
         elif self.entity_type == Person:
             return BasicPersonResolver(
+                settings=self.settings,
                 section_searcher=section_searcher,
                 configurations=[
                     ResolutionConfiguration(
@@ -204,6 +206,7 @@ class HtmlEntityExtractor(ITaskExecutor):
             content_splitter=WikipediaAPIContentSplitter(
                 parser=WikipediaParser(),
                 pruner=HTMLSimplifier(),
+                settings=self.settings,
             ),
             post_processors=[
                 TextSectionConverter(),
