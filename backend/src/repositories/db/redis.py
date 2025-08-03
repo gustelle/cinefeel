@@ -1,21 +1,20 @@
-# TODO:
-# redis storage of html content
-from typing import Generator, Type
+from typing import Generator
 
 import redis
 from loguru import logger
+from redis.commands.json.path import Path
 
 from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
 
 
-class RedisTextStorage(IStorageHandler[str]):
+class RedisStorage[U: str | dict](IStorageHandler[U]):
     """
-    handles storage and retrieval of HTML files on disk.
+    Supports `str` and `dict` types for Redis storage.
     """
 
-    entity_type: Type[str] = str
     client: redis.Redis
+    entity_type: type[U]
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -32,16 +31,44 @@ class RedisTextStorage(IStorageHandler[str]):
             decode_responses=True,
         )
 
+    def __class_getitem__(cls, generic_type):
+        """Called when the class is indexed with a type parameter.
+        Enables to guess the type of the entity being stored.
+
+        Thanks to :
+        https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
+        """
+
+        if generic_type not in (str, dict):
+            raise TypeError(
+                "RedisStorage only supports 'str' or 'dict' types for storage."
+            )
+
+        new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
+        new_cls.entity_type = generic_type
+        return new_cls
+
     def insert(
         self,
         content_id: str,
-        content: str,
+        content: U,
     ) -> None:
         """Saves the given data to a file."""
 
         try:
-            # Store the content in Redis
-            self.client.set(content_id, content)
+            key = f"{self.entity_type.__name__}:{content_id}"
+            if self.entity_type is dict:
+                # Store the content as a JSON object in Redis
+                self.client.json().set(
+                    key,
+                    Path.root_path(),
+                    content,
+                )
+            else:
+                # Store the content in Redis
+                self.client.set(key, content)
+
+            logger.info(f"Saved '{key}' to Redis storage.")
 
         except Exception as e:
             logger.error(f"Error saving '{content_id}': {e}")
@@ -49,25 +76,27 @@ class RedisTextStorage(IStorageHandler[str]):
     def select(
         self,
         content_id: str,
-    ) -> str:
+    ) -> U | None:
         """Loads data from a file."""
 
         try:
-            return self.client.get(content_id)
+            if self.entity_type is dict:
+                # Load the content as a JSON object from Redis
+                return self.client.json().get(
+                    f"{self.entity_type.__name__}:{content_id}"
+                )
+            else:
+                return self.client.get(f"{self.entity_type.__name__}:{content_id}")
         except Exception as e:
             logger.error(f"Error loading '{content_id}': {e}")
             return None
 
-    def scan(self, file_pattern: str = "*.html") -> Generator[str, None, None]:
+    def scan(self) -> Generator[U, None, None]:
         """Scans the persistent storage and iterates over contents.
-
-        Args:
-            file_pattern (str, optional): a filename pattern to match. Defaults to `*.html`
-                This is a glob pattern, so it can be used to match multiple files.
 
         Example:
         ```python
-            for content in storage.scan("*.html"):
+            for content in storage.scan():
                 print(content)
 
             # This will match all HTML files in the storage directory.
@@ -82,9 +111,18 @@ class RedisTextStorage(IStorageHandler[str]):
 
         try:
 
-            for key in self.client.scan_iter():
-                yield self.client.get(key)
+            if self.entity_type is dict:
+                # Scan for all JSON objects in Redis
+                for key in self.client.scan_iter(
+                    match=f"{self.entity_type.__name__}:*"
+                ):
+                    yield self.client.json().get(key)
+            else:
+                for key in self.client.scan_iter(
+                    match=f"{self.entity_type.__name__}:*"
+                ):
+                    yield self.client.get(key)
 
         except Exception as e:
-            logger.error(f"Error scanning '{self.path}': {e}")
+            logger.error(f"Error scanning redis: {e}")
             return []

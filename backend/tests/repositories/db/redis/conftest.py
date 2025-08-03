@@ -10,7 +10,7 @@ mp = pytest.MonkeyPatch()
 mp.setenv("REDIS_STORAGE_DSN", "redis://localhost:6378")
 
 
-DOCKER_REDIS_IMAGE_NAME = "redis:7"
+DOCKER_REDIS_IMAGE_NAME = "redis:8"
 DOCKER_REDIS_CONTAINER_NAME = "redis_test_storage"
 
 

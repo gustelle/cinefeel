@@ -8,7 +8,7 @@ from src.entities.film import Film
 from src.entities.person import Person
 from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
-from src.repositories.db.redis import RedisTextStorage
+from src.repositories.db.redis import RedisStorage
 from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.search.meili_indexer import MeiliHandler
 from src.repositories.task_orchestration.flows.task_downloader import (
@@ -60,7 +60,7 @@ def batch_extraction_flow(
             case _:
                 raise ValueError(f"Unsupported entity type: {entity_type}")
 
-        html_storage = RedisTextStorage(settings=settings)
+        html_storage = RedisStorage[str](settings=settings)
 
         db_handler = (
             FilmGraphHandler(settings=settings)
