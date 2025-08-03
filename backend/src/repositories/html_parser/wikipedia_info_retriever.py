@@ -183,8 +183,8 @@ class WikipediaParser(IContentParser):
         # discover the structure of the HTML content
         # and extract the relevant links
         roots = (
-            soup.select(config.permalinks_selector)
-            if config.permalinks_selector
+            soup.select(config.inner_links_selector)
+            if config.inner_links_selector
             else soup.find_all()
         )
 

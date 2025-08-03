@@ -246,7 +246,7 @@ class HtmlEntityExtractor(ITaskExecutor):
             )
 
             i += 1
-            if i > self.settings.stop_after:
+            if i > self.settings.max_entities_to_process:
                 get_run_logger().info(f"Stopping analysis after processing {i} items.")
                 break
 

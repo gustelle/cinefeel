@@ -42,7 +42,7 @@ def test_extract_links_from_table():
     config = TableOfContents(
         page_id="My TOC Page",
         entity_type="Movie",
-        permalinks_selector=".wikitable td:nth-child(1)",
+        inner_links_selector=".wikitable td:nth-child(1)",
     )
 
     # Expected output
@@ -80,7 +80,7 @@ def test_extract_links_with_css_selector():
     config = TableOfContents(
         page_id="My TOC Page",
         entity_type="Person",
-        permalinks_selector=".wikitable td:nth-child(2)",
+        inner_links_selector=".wikitable td:nth-child(2)",
     )
 
     # Mock HTML content
@@ -133,7 +133,7 @@ def test_dedup_extract_links():
     config = TableOfContents(
         page_id="My TOC Page",
         entity_type="Person",
-        permalinks_selector=".wikitable td:nth-child(2)",
+        inner_links_selector=".wikitable td:nth-child(2)",
     )
 
     # Mock HTML content

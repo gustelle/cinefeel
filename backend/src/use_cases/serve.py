@@ -56,7 +56,7 @@ class ServeFlowsUseCase:
             name="Wikipedia Film Extraction",
             parameters={
                 "settings": self.settings,
-                "page_links": [
+                "pages": [
                     p
                     for p in self.settings.download_start_pages
                     if p.entity_type == "Movie"
@@ -69,7 +69,7 @@ class ServeFlowsUseCase:
             name="Wikipedia Person Extraction",
             parameters={
                 "settings": self.settings,
-                "page_links": [
+                "pages": [
                     p
                     for p in self.settings.download_start_pages
                     if p.entity_type == "Person"

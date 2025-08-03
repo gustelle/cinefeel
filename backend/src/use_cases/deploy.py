@@ -78,7 +78,7 @@ class DeployFlowsUseCase:
             description="Extracts films from Wikipedia pages.",
             parameters={
                 "settings": self.settings,
-                "page_links": [
+                "pages": [
                     p
                     for p in self.settings.download_start_pages
                     if p.entity_type == "Movie"
@@ -98,7 +98,7 @@ class DeployFlowsUseCase:
             description="Extracts persons from Wikipedia pages.",
             parameters={
                 "settings": self.settings,
-                "page_links": [
+                "pages": [
                     p
                     for p in self.settings.download_start_pages
                     if p.entity_type == "Person"

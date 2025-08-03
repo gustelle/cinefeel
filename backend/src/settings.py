@@ -14,7 +14,7 @@ class TableOfContents(PageLink):
     all the films released in 1907.
     """
 
-    permalinks_selector: str | None = Field(
+    inner_links_selector: str | None = Field(
         None,
         description="""
             The CSS selector to use to extract the (list of) links from the table of contents.
@@ -27,7 +27,7 @@ class TableOfContents(PageLink):
 _default_film_tocs = [
     TableOfContents(
         page_id=f"Liste_de_films_français_sortis_en_{year}",
-        permalinks_selector=".wikitable td:nth-child(1)",
+        inner_links_selector=".wikitable td:nth-child(1)",
         entity_type="Movie",
     )
     for year in range(1907, 1914)
@@ -36,7 +36,7 @@ _default_film_tocs = [
 _default_person_tocs = [
     TableOfContents(
         page_id=f"Liste_de_films_français_sortis_en_{year}",
-        permalinks_selector=".wikitable td:nth-child(2)",
+        inner_links_selector=".wikitable td:nth-child(2)",
         entity_type="Person",
     )
     for year in range(1907, 1914)
@@ -55,9 +55,8 @@ class Settings(BaseSettings):
         env_file=(".env", ".env.prod")
     )
 
-    stop_after: int = Field(
-        default=100,
-        description="The number of pages to process before stopping. Set to 0 to process all pages.",
+    max_entities_to_process: int = Field(
+        default=20,
     )
 
     download_cache_enabled: bool = Field(

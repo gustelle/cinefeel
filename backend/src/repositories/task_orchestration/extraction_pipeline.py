@@ -3,7 +3,6 @@ from typing import Literal
 from prefect import flow, get_run_logger
 from pydantic import HttpUrl
 
-from src.entities.content import PageLink
 from src.entities.film import Film
 from src.entities.person import Person
 from src.repositories.db.film_graph import FilmGraphHandler
@@ -21,13 +20,13 @@ from src.repositories.task_orchestration.flows.task_html_parsing import (
     HtmlEntityExtractor,
 )
 from src.repositories.task_orchestration.flows.task_indexer import SearchUpdater
-from src.settings import Settings
+from src.settings import Settings, TableOfContents
 
 
 @flow
 def batch_extraction_flow(
     settings: Settings,
-    page_links: list[PageLink],
+    pages: list[TableOfContents],
 ) -> None:
     """
     - extract films from Wikipedia
@@ -37,7 +36,7 @@ def batch_extraction_flow(
 
     Args:
         settings (Settings): The application settings.
-        page_links (list[PageLink]): The list of page links to extract.
+        page_links (list[TableOfContents]): The list of page links to extract.
     """
 
     logger = get_run_logger()
@@ -47,10 +46,14 @@ def batch_extraction_flow(
     download_flow = PageContentDownloader(settings=settings, http_client=http_client)
 
     # make them unique by page_id
-    page_links = {p.page_id: p for p in page_links}.values()
+    pages = {p.page_id: p for p in pages}.values()
 
     # for each page
-    for config in page_links:
+    for config in pages:
+
+        logger.info(
+            f"Processing '{config.__class__.__name__}' with ID '{config.page_id}'"
+        )
 
         match config.entity_type:
             case "Movie":
@@ -131,12 +134,10 @@ def unit_extraction_flow(
 
     page_id = str(permalink).split("/")[-1]  # Extract page ID from permalink
 
-    page_link = PageLink(
+    page_link = TableOfContents(
         page_id=page_id,
         entity_type=entity_type,
     )
-
-    get_run_logger().info(f"Using settings: {settings.model_dump_json(indent=2)}")
 
     batch_extraction_flow(
         settings=settings,

@@ -103,10 +103,10 @@ class PageContentDownloader(ITaskExecutor):
 
         logger = get_run_logger()
 
-        html = self.download(
+        html = self.download.submit(
             page_id=config.page_id,
             return_content=True,  # return the content
-        )
+        ).result(timeout=self.settings.prefect_task_timeout, raise_on_failure=True)
 
         if html is None:
             return []
@@ -160,6 +160,7 @@ class PageContentDownloader(ITaskExecutor):
             for page_link in page_links
             if isinstance(page_link, PageLink)
         ]
+
         # filter out None values
         content_ids = [cid for cid in content_ids if cid is not None]
 
