@@ -8,8 +8,8 @@ from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.info_retriever import IContentParser
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
+from src.repositories.db.local_storage.html_storage import LocalTextStorage
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
-from src.repositories.local_storage.html_storage import LocalTextStorage
 from src.settings import Settings, TableOfContents
 
 from .retry import is_task_retriable

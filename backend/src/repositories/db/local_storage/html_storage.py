@@ -14,14 +14,14 @@ class LocalTextStorage(IStorageHandler[str]):
     handles storage and retrieval of HTML files on disk.
     """
 
-    path: Path
+    persistence_directory: Path
 
     entity_type: type[Film | Person]
 
     def __init__(self, path: Path, entity_type: type[Film | Person]):
 
-        self.path = path / "html" / entity_type.__name__.lower()
-        self.path.mkdir(parents=True, exist_ok=True)
+        self.persistence_directory = path / "html" / entity_type.__name__.lower()
+        self.persistence_directory.mkdir(parents=True, exist_ok=True)
         self.entity_type = entity_type
 
     def insert(
@@ -32,7 +32,7 @@ class LocalTextStorage(IStorageHandler[str]):
         """Saves the given data to a file."""
 
         try:
-            path = self.path / f"{content_id}.html"
+            path = self.persistence_directory / f"{content_id}.html"
 
             # overwrite if exists
             if path.exists():
@@ -51,7 +51,7 @@ class LocalTextStorage(IStorageHandler[str]):
         """Loads data from a file."""
 
         try:
-            path = self.path / f"{content_id}.html"
+            path = self.persistence_directory / f"{content_id}.html"
             with open(path, "r") as file:
                 return file.read()
         except Exception as e:
@@ -82,11 +82,11 @@ class LocalTextStorage(IStorageHandler[str]):
 
         try:
 
-            file_path = self.path / file_pattern
+            file_path = self.persistence_directory / file_pattern
             for file in glob.glob(str(file_path)):
                 with open(file, "r") as f:
                     yield f.read()
 
         except Exception as e:
-            logger.error(f"Error scanning '{self.path}': {e}")
+            logger.error(f"Error scanning '{self.persistence_directory}': {e}")
             return []

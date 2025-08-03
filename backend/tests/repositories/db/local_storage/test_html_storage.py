@@ -1,8 +1,7 @@
 from pathlib import Path
 
-
 from src.entities.film import Film
-from src.repositories.local_storage.html_storage import LocalTextStorage
+from src.repositories.db.local_storage.html_storage import LocalTextStorage
 
 current_dir = Path(__file__).parent
 
@@ -13,7 +12,7 @@ def test_local_text_storage_init():
     storage = LocalTextStorage(path=current_dir, entity_type=Film)
 
     # When
-    storage_path = storage.path
+    storage_path = storage.persistence_directory
 
     # Then
     assert storage_path == current_dir / "html" / "film"
@@ -34,14 +33,14 @@ def test_local_text_storage_insert():
     storage.insert(content_id, content)
 
     # Then
-    path = storage.path / f"{content_id}.html"
+    path = storage.persistence_directory / f"{content_id}.html"
     assert path.exists()
     with open(path, "r") as f:
         assert f.read() == content
 
     # Teardown
     path.unlink()
-    storage.path.rmdir()
+    storage.persistence_directory.rmdir()
     Path(current_dir / "html").rmdir()
 
 
@@ -50,7 +49,7 @@ def test_local_text_storage_insert_existing_path():
     storage = LocalTextStorage(path=current_dir, entity_type=Film)
     content_id = "test"
     content = "<html><body><h1>Test</h1></body></html>"
-    path = storage.path / f"{content_id}.html"
+    path = storage.persistence_directory / f"{content_id}.html"
 
     # Create a file to simulate existing path
     with open(path, "w") as f:
@@ -66,7 +65,7 @@ def test_local_text_storage_insert_existing_path():
 
     # Teardown
     path.unlink()
-    storage.path.rmdir()
+    storage.persistence_directory.rmdir()
     Path(current_dir / "html").rmdir()
 
 
@@ -84,9 +83,9 @@ def test_local_text_storage_select():
     assert result == content
 
     # Teardown
-    path = storage.path / f"{content_id}.html"
+    path = storage.persistence_directory / f"{content_id}.html"
     path.unlink()
-    storage.path.rmdir()
+    storage.persistence_directory.rmdir()
     Path(current_dir / "html").rmdir()
 
 
@@ -102,7 +101,7 @@ def test_local_text_storage_select_non_existent():
     assert result is None
 
     # Teardown
-    storage.path.rmdir()
+    storage.persistence_directory.rmdir()
     Path(current_dir / "html").rmdir()
 
 
@@ -125,9 +124,9 @@ def test_local_text_storage_scan():
     assert content_2 in results
 
     # Teardown
-    Path(storage.path / f"{content_id_1}.html").unlink()
-    Path(storage.path / f"{content_id_2}.html").unlink()
-    storage.path.rmdir()
+    Path(storage.persistence_directory / f"{content_id_1}.html").unlink()
+    Path(storage.persistence_directory / f"{content_id_2}.html").unlink()
+    storage.persistence_directory.rmdir()
     Path(current_dir / "html").rmdir()
 
 
@@ -142,7 +141,7 @@ def test_local_text_storage_scan_no_files():
     assert len(results) == 0
 
     # Teardown
-    storage.path.rmdir()
+    storage.persistence_directory.rmdir()
     Path(current_dir / "html").rmdir()
 
 
@@ -164,7 +163,7 @@ def test_local_text_storage_scan_with_pattern():
     assert content_1 in results
 
     # Teardown
-    Path(storage.path / f"{content_id_1}.html").unlink()
-    Path(storage.path / f"{content_id_2}.html").unlink()
-    storage.path.rmdir()
+    Path(storage.persistence_directory / f"{content_id_1}.html").unlink()
+    Path(storage.persistence_directory / f"{content_id_2}.html").unlink()
+    storage.persistence_directory.rmdir()
     Path(current_dir / "html").rmdir()

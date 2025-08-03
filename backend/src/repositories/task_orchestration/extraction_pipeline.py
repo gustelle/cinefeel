@@ -8,9 +8,8 @@ from src.entities.film import Film
 from src.entities.person import Person
 from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
+from src.repositories.db.redis import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
-from src.repositories.local_storage.html_storage import LocalTextStorage
-from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
 from src.repositories.search.meili_indexer import MeiliHandler
 from src.repositories.task_orchestration.flows.task_downloader import (
     PageContentDownloader,
@@ -61,9 +60,12 @@ def batch_extraction_flow(
             case _:
                 raise ValueError(f"Unsupported entity type: {entity_type}")
 
-        html_storage = LocalTextStorage(
-            path=settings.persistence_directory,
-            entity_type=entity_type,
+        html_storage = RedisTextStorage(settings=settings)
+
+        db_handler = (
+            FilmGraphHandler(settings=settings)
+            if entity_type is Film
+            else PersonGraphHandler(settings=settings)
         )
 
         analysis_flow = HtmlEntityExtractor(
@@ -71,7 +73,7 @@ def batch_extraction_flow(
             entity_type=entity_type,
         )
 
-        json_storage = JSONEntityStorageHandler[entity_type](settings=settings)
+        # json_storage = JSONEntityStorageHandler[entity_type](settings=settings)
 
         content_ids = download_flow.execute(
             page=config,
@@ -85,7 +87,7 @@ def batch_extraction_flow(
         analysis_flow.execute(
             content_ids=content_ids,
             input_storage=html_storage,
-            output_storage=json_storage,  # persist the parsed entity
+            output_storage=db_handler,  # persist the parsed entity
         )
 
     if settings.meili_base_url:
@@ -96,23 +98,23 @@ def batch_extraction_flow(
 
         # for all pages
         search_flow.execute(
-            input_storage=json_storage,
+            input_storage=db_handler,
             output_storage=MeiliHandler[entity_type](settings=settings),
         )
 
     if settings.graph_db_uri:
-        db_handler = (
-            FilmGraphHandler(settings=settings)
-            if entity_type is Film
-            else PersonGraphHandler(settings=settings)
-        )
+        # db_handler = (
+        #     FilmGraphHandler(settings=settings)
+        #     if entity_type is Film
+        #     else PersonGraphHandler(settings=settings)
+        # )
         storage_flow = DBStorageUpdater(
             settings=settings,
             entity_type=entity_type,
         )
 
         storage_flow.execute(
-            input_storage=json_storage,
+            input_storage=db_handler,
             output_storage=db_handler,
         )
 

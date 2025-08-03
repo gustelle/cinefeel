@@ -4,7 +4,7 @@ from prefect.futures import PrefectFuture
 from src.entities.composable import Composable
 from src.entities.film import Film
 from src.interfaces.task import ITaskExecutor
-from src.repositories.local_storage.json_storage import JSONEntityStorageHandler
+from src.repositories.db.local_storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
 
