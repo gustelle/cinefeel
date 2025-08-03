@@ -103,11 +103,7 @@ def batch_extraction_flow(
         )
 
     if settings.graph_db_uri:
-        # db_handler = (
-        #     FilmGraphHandler(settings=settings)
-        #     if entity_type is Film
-        #     else PersonGraphHandler(settings=settings)
-        # )
+
         storage_flow = DBStorageUpdater(
             settings=settings,
             entity_type=entity_type,

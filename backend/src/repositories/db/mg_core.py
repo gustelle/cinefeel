@@ -309,21 +309,23 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
             self.setup()
 
         try:
+
+            q = f"""
+                MATCH (n:{self.entity_type.__name__})
+                WHERE 
+                {'n.uid > $after_uid' if after else '1=1'}
+                AND 
+                {'n.permalink = $permalink' if permalink else '1=1'}
+                RETURN n
+                ORDER BY n.{order_by} ASC
+                LIMIT $limit;
+            """
             session: Session = self.client.session()
 
             with session:
 
                 results = session.run(
-                    f"""
-                    MATCH (n:{self.entity_type.__name__})
-                    WHERE 
-                    {'n.uid n.uid > $after_uid' if after else '1=1'}
-                    AND 
-                    {'n.permalink = $permalink' if permalink else '1=1'}
-                    RETURN n
-                    ORDER BY n.{order_by} ASC
-                    LIMIT $limit;
-                """,
+                    q,
                     parameters={
                         "order_by": order_by,
                         "permalink": str(permalink) if permalink else "",
@@ -345,4 +347,15 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
 
         except Exception as e:
 
-            raise StorageError(f"Query execution error: {e}") from e
+            msg = f"""
+            Error executing query for '{self.entity_type.__name__}': {e}
+            Query: {q}
+            Parameters: {{
+                "order_by": {order_by},
+                "permalink": {permalink},
+                "after_uid": {after.uid if after else ""},
+                "limit": {limit}
+            }}
+            """
+
+            raise StorageError(msg) from e

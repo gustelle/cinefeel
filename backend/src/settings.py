@@ -30,7 +30,7 @@ _default_film_tocs = [
         permalinks_selector=".wikitable td:nth-child(1)",
         entity_type="Movie",
     )
-    for year in range(1907, 1908)
+    for year in range(1907, 1914)
 ]
 
 _default_person_tocs = [
@@ -39,7 +39,7 @@ _default_person_tocs = [
         permalinks_selector=".wikitable td:nth-child(2)",
         entity_type="Person",
     )
-    for year in range(1907, 1908)
+    for year in range(1907, 1914)
 ]
 _default_tocs = _default_film_tocs + _default_person_tocs
 
@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # `.env.prod` takes priority over `.env`
         env_file=(".env", ".env.prod")
+    )
+
+    stop_after: int = Field(
+        default=100,
+        description="The number of pages to process before stopping. Set to 0 to process all pages.",
     )
 
     download_cache_enabled: bool = Field(

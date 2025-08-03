@@ -196,3 +196,40 @@ def test_redis_scan_dict():
 
     r.json().delete(f"dict:{content_id_1}")
     r.json().delete(f"dict:{content_id_2}")
+
+
+def test_redis_query():
+    """Test the query method of RedisStorage."""
+
+    # given
+    settings = Settings()
+    storage = RedisStorage[dict](settings)
+
+    content_id_1 = "test_content_dict_1"
+    content_1 = {"name": "Alice", "permalink": "http://example.com/alice", "age": 30}
+    content_id_2 = "test_content_dict_2"
+    content_2 = {"name": "Bob", "permalink": "http://example.com/bob", "age": 40}
+    r = redis.Redis(
+        host=settings.redis_storage_dsn.host,
+        port=settings.redis_storage_dsn.port,
+        decode_responses=True,
+    )
+    r.json().delete(f"dict:{content_id_1}")
+    r.json().delete(f"dict:{content_id_2}")
+
+    # Insert the content into Redis
+    r.json().set(f"dict:{content_id_1}", Path.root_path(), content_1)
+    r.json().set(f"dict:{content_id_2}", Path.root_path(), content_2)
+
+    # Now query it
+    queried_content = storage.query(
+        permalink="http://example.com/alice",
+    )
+
+    assert len(queried_content) == 1
+    assert (
+        queried_content[0] == content_1
+    ), f"Expected {content_1}, but got {queried_content[0]}"
+
+    r.json().delete(f"dict:{content_id_1}")
+    r.json().delete(f"dict:{content_id_2}")

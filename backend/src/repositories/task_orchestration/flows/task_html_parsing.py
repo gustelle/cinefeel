@@ -1,6 +1,7 @@
 from typing import Type
 
 from prefect import get_run_logger, task
+from prefect.cache_policies import NO_CACHE
 
 from src.entities.composable import Composable
 from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
@@ -48,7 +49,7 @@ class HtmlEntityExtractor(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
 
-    @task(task_run_name="do_analysis-{content_id}")
+    @task(task_run_name="do_analysis-{content_id}", cache_policy=NO_CACHE)
     def do_analysis(
         self,
         analyzer: IContentAnalyzer,
@@ -173,16 +174,16 @@ class HtmlEntityExtractor(ITaskExecutor):
             )
             return None
 
-    @task(
-        task_run_name="to_storage-{entity.uid}",
-    )
+    @task(task_run_name="to_storage-{entity.uid}", cache_policy=NO_CACHE)
     def to_storage(self, storage: IStorageHandler, entity: Composable) -> None:
         """
         Store the film entity in the storage.
         """
 
         if entity is not None:
-            storage.insert(entity.uid, entity)
+            storage.insert_many(
+                [entity],
+            )
 
     def execute(
         self,
@@ -218,13 +219,9 @@ class HtmlEntityExtractor(ITaskExecutor):
 
         i = 0
 
-        # send concurrent tasks to analyze HTML content
-        # don't wait for the task to be completed
-        storage_futures = []
-
         # need to keep track of the futures to wait for them later
         # see: https://github.com/PrefectHQ/prefect/issues/17517
-        entity_futures = []
+        _futures = []
 
         for content_id in content_ids:
 
@@ -240,9 +237,8 @@ class HtmlEntityExtractor(ITaskExecutor):
                 html_content=file_content,
                 section_searcher=search_processor,
             )
-            entity_futures.append(future_entity)
 
-            storage_futures.append(
+            _futures.append(
                 self.to_storage.submit(
                     storage=output_storage,
                     entity=future_entity,
@@ -250,10 +246,11 @@ class HtmlEntityExtractor(ITaskExecutor):
             )
 
             i += 1
-            if i > 1:
+            if i > self.settings.stop_after:
+                get_run_logger().info(f"Stopping analysis after processing {i} items.")
                 break
 
-        for future in entity_futures + storage_futures:
+        for future in _futures:
             try:
                 future.result(
                     timeout=self.settings.prefect_task_timeout, raise_on_failure=True

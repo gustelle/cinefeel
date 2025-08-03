@@ -1,8 +1,11 @@
-from typing import Generator
+from typing import Generator, Sequence
 
 import redis
 from loguru import logger
 from redis.commands.json.path import Path
+from redis.commands.search.field import TagField
+from redis.commands.search.index_definition import IndexDefinition, IndexType
+from redis.commands.search.query import Query
 
 from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
@@ -30,6 +33,14 @@ class RedisStorage[U: str | dict](IStorageHandler[U]):
             password=settings.redis_storage_dsn.password,
             decode_responses=True,
         )
+
+        if self.entity_type is dict:
+            # create index for JSON storage
+            schema = (TagField("$.permalink", as_name="permalink"),)
+            self.client.ft("idx:entities").create_index(
+                schema,
+                definition=IndexDefinition(prefix=["dict:"], index_type=IndexType.JSON),
+            )
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -126,3 +137,36 @@ class RedisStorage[U: str | dict](IStorageHandler[U]):
         except Exception as e:
             logger.error(f"Error scanning redis: {e}")
             return []
+
+    def query(
+        self,
+        order_by: str = "uid",
+        permalink: str | None = None,
+        after: U | None = None,
+        limit: int = 100,
+    ) -> Sequence[U]:
+        """Lists entities in the persistent storage corresponding to the given criteria.
+
+        Fixed: same as `select`, we go through `model_construct` to avoid uid validation issues.
+        """
+        if self.entity_type is not dict:
+            raise NotImplementedError(
+                "RedisStorage does not support query for raw strings."
+            )
+
+        logger.info("@permalink:{" + permalink + "}")
+
+        results = (
+            self.client.ft("idx:entities")
+            .search(Query("@permalink:{http://example.com/alice}"))
+            .docs
+        )
+
+        if not results:
+            logger.warning(
+                f"No '{self.entity_type.__name__}' found matching the criteria"
+            )
+            return []
+        return [
+            self.entity_type.model_validate(dict(doc), by_name=True) for doc in results
+        ][:limit]

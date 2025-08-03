@@ -29,6 +29,23 @@ class DBStorageUpdater(ITaskExecutor):
             contents=entities,
         )
 
+    @task(cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5)
+    def query_input_storage(
+        self,
+        input_storage: IStorageHandler[Composable],
+        after: str | None = None,
+        limit: int = 100,
+        order_by: str = "uid",
+    ) -> list[Composable]:
+        """
+        Wraps the query with a task decorator to allow Prefect to manage retries.
+        """
+        return input_storage.query(
+            order_by=order_by,
+            after=after,
+            limit=limit,
+        )
+
     def execute(
         self,
         input_storage: IStorageHandler[Composable],
@@ -46,11 +63,11 @@ class DBStorageUpdater(ITaskExecutor):
 
         while has_more:
 
-            batch = input_storage.query(
-                order_by="uid",
+            batch = self.query_input_storage.submit(
+                input_storage=input_storage,
                 after=last_,
                 limit=batch_size,
-            )
+            ).result(timeout=self.settings.prefect_task_timeout, raise_on_failure=True)
 
             futures.append(self.index_batch.submit(batch, output_storage))
 
