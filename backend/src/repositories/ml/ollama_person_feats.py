@@ -6,7 +6,7 @@ from src.repositories.ml.ollama_messager import OllamaMessager
 from src.settings import Settings
 
 
-class PersonFeaturesExtractor(IDataMiner, OllamaMessager):
+class PersonFeaturesOllamaExtractor(IDataMiner, OllamaMessager):
     """
     extracts features of a Person entity using Ollama
     """

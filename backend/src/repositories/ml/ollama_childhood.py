@@ -6,7 +6,7 @@ from src.repositories.ml.ollama_messager import OllamaMessager
 from src.settings import Settings
 
 
-class ChildhoodExtractor(IDataMiner, OllamaMessager):
+class ChildhoodOllamaExtractor(IDataMiner, OllamaMessager):
 
     def __init__(self, settings: Settings):
 

@@ -19,7 +19,7 @@ class DeployFlowsUseCase:
             source=Path(__file__).parent.parent / "repositories/task_orchestration",
             entrypoint="relations_pipeline.py:on_permalink_not_found",
         ).to_deployment(
-            name="Unit Extraction Flow",
+            name="unit_extraction_flow",
             description="Triggers when a permalink is not found in the storage which will trigger the extraction flow.",
             triggers=[
                 DeploymentEventTrigger(
@@ -42,7 +42,7 @@ class DeployFlowsUseCase:
             source=Path(__file__).parent.parent / "repositories/task_orchestration",
             entrypoint="relations_pipeline.py:relationship_flow",
         ).to_deployment(
-            name="Movies Enrichment",
+            name="movies_enrichment",
             description="Adds relationships between movies and persons.",
             parameters={
                 "settings": self.settings,
@@ -58,7 +58,7 @@ class DeployFlowsUseCase:
             source=Path(__file__).parent.parent / "repositories/task_orchestration",
             entrypoint="relations_pipeline.py:relationship_flow",
         ).to_deployment(
-            name="Person Enrichment",
+            name="persons_enrichment",
             description="Adds relationships between persons and movies.",
             parameters={
                 "settings": self.settings,
@@ -74,7 +74,7 @@ class DeployFlowsUseCase:
             source=Path(__file__).parent.parent / "repositories/task_orchestration",
             entrypoint="extraction_pipeline.py:batch_extraction_flow",
         ).to_deployment(
-            name="Wikipedia Film Extraction",
+            name="wikipedia_movies_extraction",
             description="Extracts films from Wikipedia pages.",
             parameters={
                 "settings": self.settings,
@@ -94,7 +94,7 @@ class DeployFlowsUseCase:
             source=Path(__file__).parent.parent / "repositories/task_orchestration",
             entrypoint="extraction_pipeline.py:batch_extraction_flow",
         ).to_deployment(
-            name="Wikipedia Person Extraction",
+            name="wikipedia_persons_extraction",
             description="Extracts persons from Wikipedia pages.",
             parameters={
                 "settings": self.settings,

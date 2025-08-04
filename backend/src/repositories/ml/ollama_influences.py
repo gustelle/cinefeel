@@ -6,7 +6,7 @@ from src.repositories.ml.ollama_messager import OllamaMessager
 from src.settings import Settings
 
 
-class InfluenceExtractor(IDataMiner, OllamaMessager):
+class InfluenceOllamaExtractor(IDataMiner, OllamaMessager):
     """
     specialized extractor for WOAInfluence
     """

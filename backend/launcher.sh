@@ -1,5 +1,7 @@
 #!/bin/bash
 
+docker compose up -d
+
 # set API url
 prefect config set PREFECT_API_URL="http://localhost:4200/api"  
 
@@ -15,12 +17,9 @@ prefect work-pool create "local-processes" --type process
 
 prefect config set PREFECT_DEFAULT_WORK_POOL_NAME="local-processes"
 
-# apply a rate limit to the work pool
+# below 10, nothing will run
 prefect work-pool set-concurrency-limit "local-processes" 10
 
-prefect worker start --pool "local-processes" 
+prefect worker start --pool "local-processes"  
 
-poe deploy
-
-prefect deployment run "Relationship Processor Flow/Film Enrichment" -jv working_dir=$(pwd)
 

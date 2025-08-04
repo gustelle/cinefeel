@@ -28,9 +28,11 @@ from src.repositories.ml.bert_similarity import SimilarSectionSearch
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
-from src.repositories.ml.mistral_data_miner import MistralDataMiner
-from src.repositories.ml.ollama_person_feats import PersonFeaturesExtractor
-from src.repositories.ml.ollama_person_visualizer import PersonVisualAnalysis
+from src.repositories.ml.ollama_childhood import ChildhoodOllamaExtractor
+from src.repositories.ml.ollama_generic import GenericOllamaExtractor
+from src.repositories.ml.ollama_influences import InfluenceOllamaExtractor
+from src.repositories.ml.ollama_person_feats import PersonFeaturesOllamaExtractor
+from src.repositories.ml.ollama_person_visualizer import PersonOllamaVisualAnalysis
 from src.repositories.resolver.film_resolver import BasicFilmResolver
 from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.settings import Settings
@@ -79,19 +81,20 @@ class HtmlEntityExtractor(ITaskExecutor):
                 section_searcher=section_searcher,
                 configurations=[
                     ResolutionConfiguration(
-                        extractor=MistralDataMiner(settings=self.settings),
+                        # extractor=MistralDataMiner(settings=self.settings),
+                        extractor=GenericOllamaExtractor(settings=self.settings),
                         section_titles=[INFOBOX_SECTION_TITLE, "Fiche technique"],
                         extracted_type=FilmSpecifications,
                     ),
                     ResolutionConfiguration(
-                        # extractor=GenericInfoExtractor(settings=self.settings),
-                        extractor=MistralDataMiner(settings=self.settings),
+                        extractor=GenericOllamaExtractor(settings=self.settings),
+                        # extractor=MistralDataMiner(settings=self.settings),
                         section_titles=["Distribution"],
                         extracted_type=FilmActor,
                     ),
                     ResolutionConfiguration(
-                        # extractor=GenericInfoExtractor(settings=self.settings),
-                        extractor=MistralDataMiner(settings=self.settings),
+                        extractor=GenericOllamaExtractor(settings=self.settings),
+                        # extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
                             "Synopsis",
                             "Résumé",
@@ -101,8 +104,8 @@ class HtmlEntityExtractor(ITaskExecutor):
                     ),
                     # search for influences
                     ResolutionConfiguration(
-                        # extractor=InfluenceExtractor(settings=self.settings),
-                        extractor=MistralDataMiner(settings=self.settings),
+                        extractor=InfluenceOllamaExtractor(settings=self.settings),
+                        # extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
                             "Contexte",
                             "Analyse",
@@ -122,16 +125,16 @@ class HtmlEntityExtractor(ITaskExecutor):
                 section_searcher=section_searcher,
                 configurations=[
                     ResolutionConfiguration(
-                        # extractor=GenericInfoExtractor(settings=self.settings),
-                        extractor=MistralDataMiner(settings=self.settings),
+                        extractor=GenericOllamaExtractor(settings=self.settings),
+                        # extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
                             INFOBOX_SECTION_TITLE,
                         ],
                         extracted_type=Biography,
                     ),
                     ResolutionConfiguration(
-                        # extractor=ChildhoodExtractor(settings=self.settings),
-                        extractor=MistralDataMiner(settings=self.settings),
+                        extractor=ChildhoodOllamaExtractor(settings=self.settings),
+                        # extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
                             "Biographie",
                         ],
@@ -147,7 +150,7 @@ class HtmlEntityExtractor(ITaskExecutor):
                     #     extracted_type=PersonInfluence,
                     # ),
                     ResolutionConfiguration(
-                        extractor=PersonFeaturesExtractor(settings=self.settings),
+                        extractor=PersonFeaturesOllamaExtractor(settings=self.settings),
                         section_titles=[
                             ORPHAN_SECTION_TITLE,
                             "Biographie",
@@ -155,7 +158,7 @@ class HtmlEntityExtractor(ITaskExecutor):
                         extracted_type=PersonCharacteristics,
                     ),
                     ResolutionConfiguration(
-                        extractor=PersonVisualAnalysis(settings=self.settings),
+                        extractor=PersonOllamaVisualAnalysis(settings=self.settings),
                         section_titles=[INFOBOX_SECTION_TITLE],
                         extracted_type=PersonVisibleFeatures,
                         # must specify the parent type

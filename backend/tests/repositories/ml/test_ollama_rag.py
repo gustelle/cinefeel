@@ -3,7 +3,7 @@ from pydantic import HttpUrl
 from src.entities.composable import Composable
 from src.entities.ml import ExtractionResult
 from src.entities.person import Biography
-from src.repositories.ml.ollama_generic import GenericInfoExtractor
+from src.repositories.ml.ollama_generic import GenericOllamaExtractor
 from src.settings import Settings
 
 
@@ -37,7 +37,7 @@ def test_ollama_is_called_correctly(mocker):
         return_value=MockResponse(MockMessage(mock_llm_response)),
     )
 
-    parser = GenericInfoExtractor(Settings())
+    parser = GenericOllamaExtractor(Settings())
     content = "This is a test content for Ollama."
     entity_type = Biography
 

@@ -15,7 +15,7 @@ from src.settings import Settings
 from .extraction_pipeline import unit_extraction_flow
 
 
-@flow
+@flow(name="on_permalink_not_found")
 def on_permalink_not_found(
     permalink: str, entity_type: Literal["Movie", "Person"], settings: Settings
 ) -> None:
@@ -31,7 +31,7 @@ def on_permalink_not_found(
     )
 
 
-@flow(name="Relationship Processor Flow")
+@flow(name="relationship_flow")
 def relationship_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],

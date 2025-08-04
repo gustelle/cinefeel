@@ -10,7 +10,7 @@ from src.repositories.ml.ollama_visioner import OllamaVisioner
 from src.settings import Settings
 
 
-class PersonVisualAnalysis(OllamaVisioner):
+class PersonOllamaVisualAnalysis(OllamaVisioner):
 
     def __init__(self, settings: Settings):
 

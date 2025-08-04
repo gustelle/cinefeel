@@ -4,7 +4,7 @@ import pytest
 from src.entities.composable import Composable
 from src.entities.content import Media
 from src.entities.person import PersonVisibleFeatures
-from src.repositories.ml.ollama_person_visualizer import PersonVisualAnalysis
+from src.repositories.ml.ollama_person_visualizer import PersonOllamaVisualAnalysis
 from src.settings import Settings
 
 
@@ -24,7 +24,7 @@ def test_visual_analysis():
     media = [Media(uid="test_media_uid", src=src, media_type="image")]
     entity_type = PersonVisibleFeatures
 
-    extractor = PersonVisualAnalysis(settings)
+    extractor = PersonOllamaVisualAnalysis(settings)
 
     # when
     result = extractor.extract_entity(

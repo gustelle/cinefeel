@@ -6,7 +6,7 @@ from src.repositories.ml.ollama_messager import OllamaMessager
 from src.settings import Settings
 
 
-class GenericInfoExtractor(IDataMiner, OllamaMessager):
+class GenericOllamaExtractor(IDataMiner, OllamaMessager):
     """
     OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
     """

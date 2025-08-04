@@ -23,7 +23,10 @@ from src.repositories.task_orchestration.flows.task_indexer import SearchUpdater
 from src.settings import Settings, TableOfContents
 
 
-@flow
+@flow(
+    name="batch_extraction_flow",
+    description="Extract multiple entities (Film or Person) from a list of page links.",
+)
 def batch_extraction_flow(
     settings: Settings,
     pages: list[TableOfContents],
@@ -119,7 +122,7 @@ def batch_extraction_flow(
 
 
 @flow(
-    name="Unit Extraction Flow",
+    name="unit_extraction_flow",
     description="Extract a single entity (Film or Person) from a given permalink.",
 )
 def unit_extraction_flow(
