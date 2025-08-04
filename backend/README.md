@@ -1,13 +1,21 @@
-# Starting the service
+
+
+# Dependencies
+
+- Ollama or mistral.ai account
+- Redis 8 
+- Memgraph
+- Prefect
+
+# Start the service
 
 ```sh
-docker compose up -d
 
-# set prefect config
+# start prefect and all required services
 ./launcher.sh
 
-# launch the extraction of movies
-poe extract_movies
-
+# launch the extraction in another tab
+# ...
+./start.sh
 
 ```
