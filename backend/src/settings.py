@@ -166,7 +166,7 @@ class Settings(BaseSettings):
     )
 
     prefect_task_timeout: int = Field(
-        default=60,  # 1 minute
+        default=60 * 30,  # 30 minutes
         description="The timeout for prefect tasks in seconds",
     )
     prefect_concurrency_limit: int = Field(

@@ -2,14 +2,10 @@ import zipfile
 from pathlib import Path
 
 import pytest
-from neo4j import GraphDatabase
 
 from src.entities.film import Film, FilmActor, FilmMedia, FilmSpecifications
 from src.entities.person import Biography, GenderEnum, Person, PersonCharacteristics
 from src.entities.woa import WOAInfluence, WOAType
-from src.repositories.db.film_graph import FilmGraphHandler
-from src.repositories.db.person_graph import PersonGraphHandler
-from src.settings import Settings
 
 
 @pytest.fixture
@@ -54,33 +50,6 @@ def read_melies_html() -> str:
                 print(f"Extracting {file} from the zip file.")
                 with zip_ref.open(file) as html_file:
                     return html_file.read().decode("utf-8")
-
-
-@pytest.fixture(scope="module")
-def test_db_settings():
-    yield Settings(
-        graph_db_uri="bolt://localhost:7687",
-    )
-
-
-@pytest.fixture(scope="function")
-def test_person_graphdb(test_db_settings):
-    yield PersonGraphHandler(test_db_settings)
-
-
-@pytest.fixture(scope="function")
-def test_film_graphdb(test_db_settings):
-    yield FilmGraphHandler(test_db_settings)
-
-
-@pytest.fixture(scope="function")
-def test_memgraph_client(test_db_settings):
-    client = GraphDatabase.driver(
-        str(test_db_settings.graph_db_uri),
-        auth=("", ""),
-    )
-    yield client
-    client.close()
 
 
 @pytest.fixture(scope="function")
