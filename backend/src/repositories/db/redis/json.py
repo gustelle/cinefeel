@@ -7,16 +7,19 @@ from redis.commands.search.field import TagField
 from redis.commands.search.index_definition import IndexDefinition, IndexType
 from redis.commands.search.query import Query
 
+from src.entities.composable import Composable
 from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
 
 
-class RedisStorage[U: str | dict](IStorageHandler[U]):
+class RedisJsonStorage[U: Composable](IStorageHandler[U]):
     """
     Supports `str` and `dict` types for Redis storage.
     """
 
     client: redis.Redis
+    key_prefix: str = "json"
+    search_index_name: str = "idx:entities"
     entity_type: type[U]
 
     def __init__(self, settings: Settings):
@@ -34,13 +37,15 @@ class RedisStorage[U: str | dict](IStorageHandler[U]):
             decode_responses=True,
         )
 
-        if self.entity_type is dict:
-            # create index for JSON storage
-            schema = (TagField("$.permalink", as_name="permalink"),)
-            self.client.ft("idx:entities").create_index(
-                schema,
-                definition=IndexDefinition(prefix=["dict:"], index_type=IndexType.JSON),
+        try:
+            self.client.ft(self.search_index_name).create_index(
+                (TagField("$.permalink", as_name="permalink"),),
+                definition=IndexDefinition(
+                    prefix=[f"{self.key_prefix}:"], index_type=IndexType.JSON
+                ),
             )
+        except Exception as e:
+            logger.error(f"Error creating index for Redis: {e}")
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -50,14 +55,13 @@ class RedisStorage[U: str | dict](IStorageHandler[U]):
         https://stackoverflow.com/questions/57706180/generict-base-class-how-to-get-type-of-t-from-within-instance
         """
 
-        if generic_type not in (str, dict):
-            raise TypeError(
-                "RedisStorage only supports 'str' or 'dict' types for storage."
-            )
-
         new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
         new_cls.entity_type = generic_type
         return new_cls
+
+    def _get_key(self, content_id: str) -> str:
+        """Generates the Redis key for the given content ID."""
+        return f"{self.key_prefix}:{self.entity_type.__name__}-{content_id}"
 
     def insert(
         self,
@@ -67,17 +71,14 @@ class RedisStorage[U: str | dict](IStorageHandler[U]):
         """Saves the given data to a file."""
 
         try:
-            key = f"{self.entity_type.__name__}:{content_id}"
-            if self.entity_type is dict:
-                # Store the content as a JSON object in Redis
-                self.client.json().set(
-                    key,
-                    Path.root_path(),
-                    content,
-                )
-            else:
-                # Store the content in Redis
-                self.client.set(key, content)
+            key = self._get_key(content_id)
+
+            # Store the content as a JSON object in Redis
+            self.client.json().set(
+                key,
+                Path.root_path(),
+                content.model_dump(mode="json"),
+            )
 
             logger.info(f"Saved '{key}' to Redis storage.")
 
@@ -91,13 +92,10 @@ class RedisStorage[U: str | dict](IStorageHandler[U]):
         """Loads data from a file."""
 
         try:
-            if self.entity_type is dict:
-                # Load the content as a JSON object from Redis
-                return self.client.json().get(
-                    f"{self.entity_type.__name__}:{content_id}"
-                )
-            else:
-                return self.client.get(f"{self.entity_type.__name__}:{content_id}")
+
+            # Load the content as a JSON object from Redis
+            return self.client.json().get(self._get_key(content_id))
+
         except Exception as e:
             logger.error(f"Error loading '{content_id}': {e}")
             return None
@@ -122,17 +120,8 @@ class RedisStorage[U: str | dict](IStorageHandler[U]):
 
         try:
 
-            if self.entity_type is dict:
-                # Scan for all JSON objects in Redis
-                for key in self.client.scan_iter(
-                    match=f"{self.entity_type.__name__}:*"
-                ):
-                    yield self.client.json().get(key)
-            else:
-                for key in self.client.scan_iter(
-                    match=f"{self.entity_type.__name__}:*"
-                ):
-                    yield self.client.get(key)
+            for key in self.client.scan_iter(match=f"{self.key_prefix}:*"):
+                yield self.client.json().get(key)
 
         except Exception as e:
             logger.error(f"Error scanning redis: {e}")
@@ -140,25 +129,17 @@ class RedisStorage[U: str | dict](IStorageHandler[U]):
 
     def query(
         self,
-        order_by: str = "uid",
         permalink: str | None = None,
-        after: U | None = None,
         limit: int = 100,
     ) -> Sequence[U]:
         """Lists entities in the persistent storage corresponding to the given criteria.
 
-        Fixed: same as `select`, we go through `model_construct` to avoid uid validation issues.
+        Only supports querying by permalink for the time being.
         """
-        if self.entity_type is not dict:
-            raise NotImplementedError(
-                "RedisStorage does not support query for raw strings."
-            )
-
-        logger.info("@permalink:{" + permalink + "}")
 
         results = (
-            self.client.ft("idx:entities")
-            .search(Query("@permalink:{http://example.com/alice}"))
+            self.client.ft(self.search_index_name)
+            .search(Query(f"@permalink:{{'{permalink}'}}"))
             .docs
         )
 
@@ -167,6 +148,8 @@ class RedisStorage[U: str | dict](IStorageHandler[U]):
                 f"No '{self.entity_type.__name__}' found matching the criteria"
             )
             return []
+
         return [
-            self.entity_type.model_validate(dict(doc), by_name=True) for doc in results
+            self.entity_type.model_validate_json(doc.json, by_name=True)
+            for doc in results
         ][:limit]

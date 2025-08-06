@@ -7,7 +7,8 @@ from src.entities.film import Film
 from src.entities.person import Person
 from src.repositories.db.film_graph import FilmGraphHandler
 from src.repositories.db.person_graph import PersonGraphHandler
-from src.repositories.db.redis import RedisStorage
+from src.repositories.db.redis.json import RedisJsonStorage
+from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.search.meili_indexer import MeiliHandler
 from src.repositories.task_orchestration.flows.task_downloader import (
@@ -32,10 +33,7 @@ def batch_extraction_flow(
     pages: list[TableOfContents],
 ) -> None:
     """
-    - extract films from Wikipedia
-    - analyze their content
-    - index them into a search engine
-    - store results in a graph database.
+    Wikipedia > Redis (Text) > Redis (JSON) > MeiliSearch + Graph DB
 
     Args:
         settings (Settings): The application settings.
@@ -66,20 +64,14 @@ def batch_extraction_flow(
             case _:
                 raise ValueError(f"Unsupported entity type: {entity_type}")
 
-        html_storage = RedisStorage[str](settings=settings)
-
-        db_handler = (
-            FilmGraphHandler(settings=settings)
-            if entity_type is Film
-            else PersonGraphHandler(settings=settings)
-        )
+        html_storage = RedisTextStorage(settings=settings)
 
         analysis_flow = HtmlEntityExtractor(
             settings=settings,
             entity_type=entity_type,
         )
 
-        # json_storage = JSONEntityStorageHandler[entity_type](settings=settings)
+        json_storage = RedisJsonStorage[entity_type](settings=settings)
 
         content_ids = download_flow.execute(
             page=config,
@@ -93,7 +85,7 @@ def batch_extraction_flow(
         analysis_flow.execute(
             content_ids=content_ids,
             input_storage=html_storage,
-            output_storage=db_handler,  # persist the parsed entity
+            output_storage=json_storage,
         )
 
     if settings.meili_base_url:
@@ -104,7 +96,7 @@ def batch_extraction_flow(
 
         # for all pages
         search_flow.execute(
-            input_storage=db_handler,
+            input_storage=json_storage,
             output_storage=MeiliHandler[entity_type](settings=settings),
         )
 
@@ -115,8 +107,14 @@ def batch_extraction_flow(
             entity_type=entity_type,
         )
 
+        db_handler = (
+            FilmGraphHandler(settings=settings)
+            if entity_type is Film
+            else PersonGraphHandler(settings=settings)
+        )
+
         storage_flow.execute(
-            input_storage=db_handler,
+            input_storage=json_storage,
             output_storage=db_handler,
         )
 

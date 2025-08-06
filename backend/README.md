@@ -12,10 +12,10 @@
 ```sh
 
 # start prefect and all required services
-./launcher.sh
+./start-server.sh
 
 # launch the extraction in another tab
 # ...
-./start.sh
+./run-flows.sh
 
 ```

@@ -30,7 +30,7 @@ def remove_memgraph(docker_client: DockerClient):
         pass
 
 
-@pytest.fixture(scope="session", autouse=False)
+@pytest.fixture(scope="session", autouse=True)
 def launch_memgraph(request):
     """launch a docker container with mysql before testing"""
 

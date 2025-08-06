@@ -7,7 +7,8 @@ from docker import DockerClient
 # see https://stackoverflow.com/questions/46733332/how-to-monkeypatch-the-environment-using-pytest-in-conftest-py
 mp = pytest.MonkeyPatch()
 
-mp.setenv("REDIS_STORAGE_DSN", "redis://localhost:6378")
+REDIS_PORT = 6378
+mp.setenv("REDIS_STORAGE_DSN", f"redis://localhost:{REDIS_PORT}")
 
 
 DOCKER_REDIS_IMAGE_NAME = "redis:8"
@@ -44,7 +45,7 @@ def launch_redis(request):
             DOCKER_REDIS_IMAGE_NAME,
             detach=True,
             name=DOCKER_REDIS_CONTAINER_NAME,
-            ports={"6379": "6378"},
+            ports={6379: REDIS_PORT},
         )
 
         wait_for_redis = True
