@@ -85,6 +85,17 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         except Exception as e:
             logger.error(f"Error saving '{content_id}': {e}")
 
+    def insert_many(
+        self,
+        contents: Sequence[U],
+    ) -> None:
+        """Saves multiple contents to persistent storage."""
+
+        for content in contents:
+            self.insert(content_id=content.uid, content=content)
+
+        logger.info(f"Inserted {len(contents)} items into Redis storage.")
+
     def select(
         self,
         content_id: str,

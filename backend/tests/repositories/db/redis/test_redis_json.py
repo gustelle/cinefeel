@@ -162,3 +162,32 @@ def test_redis_query(test_film: Film):
 
     r.json().delete(storage._get_key(test_film_1.uid))
     r.json().delete(storage._get_key(test_film.uid))
+
+
+def test_insert_many(test_film: Film):
+    """Test the insert_many method of RedisStorage."""
+
+    # given
+    settings = Settings()
+    storage = RedisJsonStorage[Film](settings)
+
+    r = redis.Redis(
+        host=settings.redis_storage_dsn.host,
+        port=settings.redis_storage_dsn.port,
+        decode_responses=True,
+    )
+    r.json().delete(storage._get_key(test_film.uid))
+
+    # when
+    storage.insert_many([test_film])
+
+    # then
+    stored_content = r.json().get(storage._get_key(test_film.uid))
+
+    assert isinstance(stored_content, dict), "Stored content should be a dictionary"
+    assert stored_content["uid"] == test_film.uid, "UID should match the inserted film"
+    assert (
+        stored_content["title"] == test_film.title
+    ), "Title should match the inserted film"
+
+    r.json().delete(storage._get_key(test_film.uid))
