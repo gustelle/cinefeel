@@ -105,7 +105,9 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         try:
 
             # Load the content as a JSON object from Redis
-            return self.client.json().get(self._get_key(content_id))
+            body = self.client.json().get(self._get_key(content_id))
+
+            return self.entity_type.model_validate(body, by_name=True) if body else None
 
         except Exception as e:
             logger.error(f"Error loading '{content_id}': {e}")
@@ -132,7 +134,14 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         try:
 
             for key in self.client.scan_iter(match=f"{self.key_prefix}:*"):
-                yield self.client.json().get(key)
+
+                try:
+                    yield self.entity_type.model_validate(
+                        self.client.json().get(key), by_name=True
+                    )
+                except Exception as e:
+                    logger.error(f"Error parsing JSON from key '{key}': {e}")
+                    continue
 
         except Exception as e:
             logger.error(f"Error scanning redis: {e}")

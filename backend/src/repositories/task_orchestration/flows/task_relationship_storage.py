@@ -1,7 +1,7 @@
 from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 from prefect.events import emit_event
-from prefect.futures import PrefectFuture
+from prefect.futures import PrefectFuture, wait
 from pydantic import HttpUrl
 
 from src.entities.composable import Composable
@@ -296,6 +296,9 @@ class RelationshipFlow(ITaskExecutor):
 
         return entity
 
+    @task(
+        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+    )
     def execute(
         self,
         input_storage: IStorageHandler[Composable],
@@ -306,13 +309,7 @@ class RelationshipFlow(ITaskExecutor):
 
         try:
 
-            # send concurrent tasks to analyze HTML content
-            # don't wait for the task to be completed
-            storage_futures = []
-
-            # need to keep track of the futures to wait for them later
-            # see: https://github.com/PrefectHQ/prefect/issues/17517
-            entity_futures = []
+            _futures = []
 
             for entity in input_storage.scan():
 
@@ -320,24 +317,26 @@ class RelationshipFlow(ITaskExecutor):
                     f"Found entity '{entity.uid}' in json storage, launching analysis."
                 )
 
-                future_entity = self.analyze_relationships.submit(
-                    entity=entity,
-                    output_storage=output_storage,
-                )
-                entity_futures.append(future_entity)
-
-            # now wait for all tasks to complete
-            future_storage: PrefectFuture
-            for future_storage in storage_futures + entity_futures:
-                try:
-                    future_storage.result(
-                        raise_on_failure=True,
-                        timeout=self.settings.prefect_task_timeout,
+                _futures.append(
+                    self.analyze_relationships.submit(
+                        entity=entity,
+                        output_storage=output_storage,
                     )
-                except TimeoutError:
-                    logger.warning(f"Task timed out for {future_storage.task_run_id}.")
-                except Exception as e:
-                    logger.error(f"Error in task execution: {e}")
+                )
+
+            wait(_futures)
+            # now wait for all tasks to complete
+            # future_storage: PrefectFuture
+            # for future_storage in storage_futures + entity_futures:
+            #     try:
+            #         future_storage.result(
+            #             raise_on_failure=True,
+            #             timeout=self.settings.prefect_task_timeout,
+            #         )
+            #     except TimeoutError:
+            #         logger.warning(f"Task timed out for {future_storage.task_run_id}.")
+            #     except Exception as e:
+            #         logger.error(f"Error in task execution: {e}")
 
         except Exception as e:
             logger.error(f"Error executing relationship flow: {e}")

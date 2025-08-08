@@ -124,6 +124,9 @@ class PageContentDownloader(ITaskExecutor):
             logger.error(f"Error extracting list of films: {e}")
             return []
 
+    @task(
+        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+    )
     def execute(
         self,
         page: PageLink,

@@ -1,5 +1,6 @@
 from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
+from prefect.futures import wait
 
 from src.entities.composable import Composable
 from src.interfaces.storage import IStorageHandler
@@ -30,6 +31,9 @@ class SearchUpdater(ITaskExecutor):
             wait_for_completion=False,
         )
 
+    @task(
+        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+    )
     def execute(
         self,
         input_storage: IStorageHandler[Composable],
@@ -38,45 +42,24 @@ class SearchUpdater(ITaskExecutor):
 
         logger = get_run_logger()
 
-        # upsert in batches
-        last_ = None
-        has_more = True
         batch_size = 100
 
         futures = []
+        batch: list[Composable] = []
 
-        while has_more:
+        try:
 
-            batch = input_storage.query(
-                order_by="uid",
-                after=last_,
-                limit=batch_size,
-            )
+            while res := next(input_storage.scan()):
 
-            futures.append(self.index_batch.submit(batch, output_storage))
+                batch.append(res)
 
-            if batch is None or len(batch) == 0:
-                logger.info(
-                    f"Reached the last batch: {len(batch)} films, no more to process"
-                )
-                has_more = False
-            elif last_ is not None and last_.uid == batch[-1].uid:
-                logger.info(
-                    f"Reached the last batch: {len(batch)} films, no more to process"
-                )
-                has_more = False
-            else:
-                last_ = batch[-1]
-                logger.info(f"Next batch starting after '{last_.uid}'")
+                if len(batch) >= batch_size:
+                    logger.info(f"Processing batch of {len(batch)} entities")
+                    futures.append(self.index_batch.submit(batch, output_storage))
+                    batch = []
+        except StopIteration:
+            if batch:
+                logger.info(f"Processing final batch of {len(batch)} entities")
+                futures.append(self.index_batch.submit(batch, output_storage))
 
-        for future in futures:
-            try:
-                future.result(
-                    timeout=self.settings.prefect_task_timeout, raise_on_failure=True
-                )
-            except TimeoutError:
-                logger.warning(f"Task timed out for {future.task_run_id}.")
-            except Exception as e:
-                logger.error(f"Error in task execution: {e}")
-
-        logger.info("'index_films' Flow completed successfully.")
+        wait(futures)

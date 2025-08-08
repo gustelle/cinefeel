@@ -2,6 +2,7 @@ from typing import Type
 
 from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
+from prefect.futures import wait
 
 from src.entities.composable import Composable
 from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
@@ -188,6 +189,9 @@ class HtmlEntityExtractor(ITaskExecutor):
                 [entity],
             )
 
+    @task(
+        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+    )
     def execute(
         self,
         content_ids: list[str] | None,
@@ -220,8 +224,6 @@ class HtmlEntityExtractor(ITaskExecutor):
 
         search_processor = SimilarSectionSearch(settings=self.settings)
 
-        i = 0
-
         # need to keep track of the futures to wait for them later
         # see: https://github.com/PrefectHQ/prefect/issues/17517
         _futures = []
@@ -248,19 +250,4 @@ class HtmlEntityExtractor(ITaskExecutor):
                 )
             )
 
-            i += 1
-            if i > self.settings.max_entities_to_process:
-                get_run_logger().info(f"Stopping analysis after processing {i} items.")
-                break
-
-        for future in _futures:
-            try:
-                future.result(
-                    timeout=self.settings.prefect_task_timeout, raise_on_failure=True
-                )
-            except TimeoutError:
-                logger.warning(f"Task timed out for {future.task_run_id}.")
-            except Exception as e:
-                logger.error(f"Error in task execution: {e}")
-
-        logger.info("'analyze' flow completed successfully.")
+        wait(_futures)

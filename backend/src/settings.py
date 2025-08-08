@@ -30,7 +30,7 @@ _default_film_tocs = [
         inner_links_selector=".wikitable td:nth-child(1)",
         entity_type="Movie",
     )
-    for year in range(1907, 1910)
+    for year in range(1907, 2025)
 ]
 
 _default_person_tocs = [
@@ -39,7 +39,7 @@ _default_person_tocs = [
         inner_links_selector=".wikitable td:nth-child(2)",
         entity_type="Person",
     )
-    for year in range(1907, 1910)
+    for year in range(1907, 2025)
 ]
 _default_tocs = _default_film_tocs + _default_person_tocs
 
@@ -55,9 +55,9 @@ class Settings(BaseSettings):
         env_file=(".env", ".env.prod")
     )
 
-    max_entities_to_process: int = Field(
-        default=20,
-    )
+    # max_entities_to_process: int = Field(
+    #     default=None,
+    # )
 
     download_cache_enabled: bool = Field(
         default=True,

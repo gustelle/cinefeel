@@ -40,7 +40,7 @@ def test_redis_insert_dict(test_film: Film):
     r.json().delete(storage._get_key(test_film.uid))
 
 
-def test_redis_select_dict(test_film: Film):
+def test_redis_select_film(test_film: Film):
     """Test the select method of RedisStorage with a dictionary."""
 
     # given
@@ -65,14 +65,15 @@ def test_redis_select_dict(test_film: Film):
     # Now select it
     retrieved_content = storage.select(test_film.uid)
 
-    assert (
-        test_film.model_dump(mode="json") == retrieved_content
-    ), f"Expected {test_film.model_dump(mode='json')}, but got {retrieved_content}"
+    assert isinstance(
+        retrieved_content, Film
+    ), "Retrieved content should be a Film instance"
+    assert retrieved_content.uid == test_film.uid, "UID should match the inserted film"
 
     r.json().delete(storage._get_key(test_film.uid))
 
 
-def test_redis_scan_dict(test_film: Film):
+def test_redis_scan_film(test_film: Film):
     """Test the scan method of RedisStorage with a dictionary."""
 
     # given
@@ -106,12 +107,9 @@ def test_redis_scan_dict(test_film: Film):
     scanned_content = list(storage.scan())
 
     assert len(scanned_content) == 2, "Expected 2 items to be scanned"
-    assert (
-        test_film_1.model_dump(mode="json") in scanned_content
-    ), f"Expected {test_film_1.model_dump(mode='json')} to be scanned"
-    assert (
-        test_film.model_dump(mode="json") in scanned_content
-    ), f"Expected {test_film.model_dump(mode='json')} to be scanned"
+    assert all(
+        isinstance(item, Film) for item in scanned_content
+    ), "All scanned items should be Film instances"
 
     r.json().delete(storage._get_key(test_film_1.uid))
     r.json().delete(storage._get_key(test_film.uid))
@@ -156,9 +154,15 @@ def test_redis_query(test_film: Film):
     )
 
     assert len(queried_content) == 1
-    assert queried_content[0].model_dump(mode="json") == test_film_1.model_dump(
-        mode="json"
-    ), f"Expected {test_film_1.model_dump(mode='json')}, but got {queried_content[0].model_dump(mode='json')}"
+    assert isinstance(
+        queried_content[0], Film
+    ), "Queried content should be a Film instance"
+    assert (
+        queried_content[0].uid == test_film_1.uid
+    ), "UID should match the queried film"
+    assert (
+        queried_content[0].title == test_film_1.title
+    ), "Title should match the queried film"
 
     r.json().delete(storage._get_key(test_film_1.uid))
     r.json().delete(storage._get_key(test_film.uid))

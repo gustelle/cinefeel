@@ -1,5 +1,6 @@
 from prefect import get_run_logger, task
-from prefect.futures import PrefectFuture
+from prefect.cache_policies import NO_CACHE
+from prefect.futures import wait
 
 from src.entities.composable import Composable
 from src.entities.film import Film
@@ -53,50 +54,30 @@ class FeatureExtractionFlow(ITaskExecutor):
 
         return entity
 
+    @task(
+        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+    )
     def execute(
         self,
     ) -> None:
 
-        logger = get_run_logger()
+        # logger = get_run_logger()
 
         local_storage_handler = JSONEntityStorageHandler[self.entity_type](
             settings=self.settings
         )
 
-        # send concurrent tasks to analyze HTML content
-        # don't wait for the task to be completed
-        storage_futures = []
-
-        # need to keep track of the futures to wait for them later
-        # see: https://github.com/PrefectHQ/prefect/issues/17517
-        entity_futures = []
+        _futures = []
 
         for entity in local_storage_handler.scan():
 
-            future_entity = self.extract_features.submit(
-                entity=entity,
-            )
-            entity_futures.append(future_entity)
-
-            storage_futures.append(
+            _futures.append(
                 self.to_db.submit(
                     # storage=json_p_storage,
-                    entity=future_entity,
+                    entity=self.extract_features.submit(
+                        entity=entity,
+                    ),
                 )
             )
 
-        # now wait for all tasks to complete
-        future_storage: PrefectFuture
-        for future_storage in storage_futures:
-            try:
-                future_storage.result(
-                    raise_on_failure=True, timeout=self.settings.prefect_task_timeout
-                )
-            except TimeoutError:
-                logger.warning(f"Task timed out for {future_storage.task_run_id}.")
-            except Exception as e:
-                logger.error(f"Error in task execution: {e}")
-
-        # Iterate over the batch
-        # pass the batch to the graph database
-        # and insert it
+        wait(_futures)

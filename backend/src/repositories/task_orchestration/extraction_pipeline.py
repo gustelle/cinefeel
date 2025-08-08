@@ -1,6 +1,7 @@
 from typing import Literal
 
 from prefect import flow, get_run_logger
+from prefect.futures import wait
 from pydantic import HttpUrl
 
 from src.entities.film import Film
@@ -52,6 +53,8 @@ def batch_extraction_flow(
     # for each page
     for config in pages:
 
+        tasks = []
+
         logger.info(
             f"Processing '{config.__class__.__name__}' with ID '{config.page_id}'"
         )
@@ -64,59 +67,66 @@ def batch_extraction_flow(
             case _:
                 raise ValueError(f"Unsupported entity type: {entity_type}")
 
-        html_storage = RedisTextStorage(settings=settings)
-
         analysis_flow = HtmlEntityExtractor(
             settings=settings,
             entity_type=entity_type,
         )
 
-        json_storage = RedisJsonStorage[entity_type](settings=settings)
+        html_store = RedisTextStorage(settings=settings)
+        json_store = RedisJsonStorage[entity_type](settings=settings)
 
         content_ids = download_flow.execute(
             page=config,
-            storage_handler=html_storage,
+            storage_handler=html_store,
             return_results=True,  # return the list of page IDs
         )
 
         if not content_ids:
             logger.warning(f"No content found in page '{config.page_id}'")
 
-        analysis_flow.execute(
-            content_ids=content_ids,
-            input_storage=html_storage,
-            output_storage=json_storage,
+        tasks.append(
+            analysis_flow.execute.submit(
+                content_ids=content_ids,
+                input_storage=html_store,
+                output_storage=json_store,
+            )
         )
 
-    if settings.meili_base_url:
-        search_flow = SearchUpdater(
-            settings=settings,
-            entity_type=entity_type,
-        )
+        if settings.meili_base_url:
+            search_flow = SearchUpdater(
+                settings=settings,
+                entity_type=entity_type,
+            )
 
-        # for all pages
-        search_flow.execute(
-            input_storage=json_storage,
-            output_storage=MeiliHandler[entity_type](settings=settings),
-        )
+            # for all pages
+            tasks.append(
+                search_flow.execute.submit(
+                    input_storage=json_store,
+                    output_storage=MeiliHandler[entity_type](settings=settings),
+                )
+            )
 
-    if settings.graph_db_uri:
+        if settings.graph_db_uri:
 
-        storage_flow = DBStorageUpdater(
-            settings=settings,
-            entity_type=entity_type,
-        )
+            storage_flow = DBStorageUpdater(
+                settings=settings,
+                entity_type=entity_type,
+            )
 
-        db_handler = (
-            FilmGraphHandler(settings=settings)
-            if entity_type is Film
-            else PersonGraphHandler(settings=settings)
-        )
+            db_handler = (
+                FilmGraphHandler(settings=settings)
+                if entity_type is Film
+                else PersonGraphHandler(settings=settings)
+            )
 
-        storage_flow.execute(
-            input_storage=json_storage,
-            output_storage=db_handler,
-        )
+            tasks.append(
+                storage_flow.execute.submit(
+                    input_storage=json_store,
+                    output_storage=db_handler,
+                )
+            )
+
+        wait(tasks)
 
 
 @flow(
