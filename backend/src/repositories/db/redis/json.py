@@ -1,9 +1,10 @@
+import unicodedata
 from typing import Generator, Sequence
 
 import redis
 from loguru import logger
 from redis.commands.json.path import Path
-from redis.commands.search.field import TagField
+from redis.commands.search.field import NumericField, TagField, TextField
 from redis.commands.search.index_definition import IndexDefinition, IndexType
 from redis.commands.search.query import Query
 
@@ -39,7 +40,12 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
 
         try:
             self.client.ft(self.search_index_name).create_index(
-                (TagField("$.permalink", as_name="permalink"),),
+                (
+                    TagField("$.uid", as_name="uid"),
+                    TagField("$.permalink", as_name="permalink"),
+                    TextField("$.title", as_name="title"),
+                    NumericField("$.uid_hash", as_name="uid_hash"),  # used for sorting
+                ),
                 definition=IndexDefinition(
                     prefix=[f"{self.key_prefix}:"], index_type=IndexType.JSON
                 ),
@@ -63,6 +69,17 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         """Generates the Redis key for the given content ID."""
         return f"{self.key_prefix}:{self.entity_type.__name__}-{content_id}"
 
+    def _get_uid_hash(self, content: U) -> int:
+        """Generates a numeric hash for the UID of the content."""
+        # Convertir la chaîne en minuscules pour uniformiser
+        s = (
+            unicodedata.normalize("NFKD", content.uid.lower())
+            .encode("ASCII", "ignore")
+            .decode()
+        )
+        # Convertir chaque caractère en son rang dans l'alphabet
+        return int("".join(str(ord(char)) for char in s))
+
     def insert(
         self,
         content_id: str,
@@ -73,14 +90,17 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         try:
             key = self._get_key(content_id)
 
+            data = content.model_dump(mode="json")
+            data["uid_hash"] = self._get_uid_hash(content)  # Store the hash for sorting
+
             # Store the content as a JSON object in Redis
             self.client.json().set(
                 key,
                 Path.root_path(),
-                content.model_dump(mode="json"),
+                data,
             )
 
-            logger.info(f"Saved '{key}' to Redis storage.")
+            logger.debug(data)
 
         except Exception as e:
             logger.error(f"Error saving '{content_id}': {e}")
@@ -106,6 +126,8 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
 
             # Load the content as a JSON object from Redis
             body = self.client.json().get(self._get_key(content_id))
+
+            body.pop("uid_hash", None)  # Remove the hash field if it exists
 
             return self.entity_type.model_validate(body, by_name=True) if body else None
 
@@ -136,9 +158,9 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
             for key in self.client.scan_iter(match=f"{self.key_prefix}:*"):
 
                 try:
-                    yield self.entity_type.model_validate(
-                        self.client.json().get(key), by_name=True
-                    )
+                    data = self.client.json().get(key)
+                    data.pop("uid_hash", None)  # Remove the hash field if it exists
+                    yield self.entity_type.model_validate(data, by_name=True)
                 except Exception as e:
                     logger.error(f"Error parsing JSON from key '{key}': {e}")
                     continue
@@ -151,23 +173,35 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         self,
         permalink: str | None = None,
         limit: int = 100,
+        order_by: str = "uid",
+        after: U | None = None,
     ) -> Sequence[U]:
-        """Lists entities in the persistent storage corresponding to the given criteria.
+        """Lists entities in the persistent storage corresponding to the given criteria."""
 
-        Only supports querying by permalink for the time being.
-        """
+        if order_by not in ["uid", "permalink", "title"]:
+            raise ValueError(
+                f"Unsupported order_by field: {order_by}, supported fields are: uid, permalink, title"
+            )
+
+        if permalink is not None:
+            q = f"@permalink:{{'{permalink}'}}"
+
+        else:
+            if after is None:
+                q = "*"
+            else:
+                uid_hash = self._get_uid_hash(after) + 1
+                q = f"@uid_hash:[{uid_hash} +inf]"
+
+        logger.debug(f"Querying Redis with: {q}, order_by: {order_by}, limit: {limit}")
 
         results = (
             self.client.ft(self.search_index_name)
-            .search(Query(f"@permalink:{{'{permalink}'}}"))
+            .search(Query(q).sort_by(order_by, asc=True))
             .docs
         )
 
-        if not results:
-            logger.warning(
-                f"No '{self.entity_type.__name__}' found matching the criteria"
-            )
-            return []
+        logger.debug(f"Found {len(results)} results for query: {q}")
 
         return [
             self.entity_type.model_validate_json(doc.json, by_name=True)

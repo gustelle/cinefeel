@@ -145,12 +145,12 @@ def unit_extraction_flow(
 
     page_id = str(permalink).split("/")[-1]  # Extract page ID from permalink
 
-    page_link = TableOfContents(
+    page = TableOfContents(
         page_id=page_id,
         entity_type=entity_type,
     )
 
     batch_extraction_flow(
         settings=settings,
-        page_links=[page_link],  # Wrap in a list to match the expected type
+        pages=[page],  # Wrap in a list to match the expected type
     )

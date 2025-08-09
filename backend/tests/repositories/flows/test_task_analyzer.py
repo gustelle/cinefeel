@@ -34,6 +34,7 @@ def test_task_store():
 
 def test_task_analyze():
     # given
+
     flow_runner = HtmlEntityExtractor(
         settings=Settings(),  # settings are not really needed for this test
         entity_type=Film,

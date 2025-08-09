@@ -19,3 +19,11 @@ class StubStorage[T: Film | Person](IStorageHandler[T]):
         """Saves the given data to a file."""
 
         self.is_inserted = True
+
+    def insert_many(
+        self,
+        contents: list[T],
+    ) -> None:
+        """Saves multiple contents to persistent storage."""
+
+        self.is_inserted = True
