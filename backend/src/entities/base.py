@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class Identifiable(BaseModel):
     """
-    An object that can be identified by a unique identifier.
+    An object that can be identified by a unique identifier (UID).
     """
 
     uid: str | None = Field(

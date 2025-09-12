@@ -41,8 +41,8 @@ from src.settings import Settings
 
 class HtmlEntityExtractor(ITaskExecutor):
     """
-    Analyses the HTML content of a film or person page
-    and returns storable entities (i.e., Film or Person).
+    Analyses the HTML content from an input_storage
+    and creates eventually a Composable entity stored in the output_storage.
     """
 
     entity_type: type[Composable]

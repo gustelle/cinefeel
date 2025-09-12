@@ -15,9 +15,10 @@ prefect gcl create cinefeel --limit 10 --slot-decay-per-second 1.0
 # create a work pool (for flows)
 prefect work-pool create "local-processes" --type process 
 
+# default work pool
 prefect config set PREFECT_DEFAULT_WORK_POOL_NAME="local-processes"
 
-# below 10, nothing will run
+# set concurrency limit for the work pool
 prefect work-pool set-concurrency-limit "local-processes" 8
 
 # for concurrent tasks

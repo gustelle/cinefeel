@@ -14,6 +14,12 @@ from src.settings import Settings
 
 
 class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T]):
+    """
+    Base class for MemoryGraph DB storage handler.
+
+    TODO:
+    - move to the `graph` module
+    """
 
     client: GraphDatabase
     settings: Settings

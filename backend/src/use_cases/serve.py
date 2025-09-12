@@ -12,6 +12,13 @@ from src.settings import Settings
 
 
 class ServeFlowsUseCase:
+    """use the `serve` function to run flows immediately without needing to deploy them first
+    this is useful for development and testing purposes, because you don't need to run prefect server in the background
+    and you can see the logs directly in the console,
+
+    NB: this is not suitable for production as it doesn't provide the same level of reliability and scalability
+    as deploying flows properly with Prefect's deployment system.
+    """
 
     settings: Settings
 

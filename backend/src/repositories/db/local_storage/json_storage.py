@@ -12,9 +12,10 @@ from src.settings import Settings
 
 class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
     """
-    handles persistence of `Composable` objects into JSON files.
+    handles persistence of `Composable` objects into JSON files on disk.
 
-    JSON is dumped using the model's field names, not aliases, for better readability
+    This is useful for testing and local development but not for production,
+    infrastructure of production should not depend on local disk storage.
     """
 
     persistence_directory: Path

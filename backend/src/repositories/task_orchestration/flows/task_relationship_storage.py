@@ -17,10 +17,8 @@ from src.settings import Settings
 
 class RelationshipFlow(ITaskExecutor):
     """
-    flow in charge of finding relationships between entities.
-    and storing them into the graph database.
-
-    This flow starts from json files stored in the local storage.
+    finds relationships between entities.
+    and stores them into the graph database.
     """
 
     settings: Settings

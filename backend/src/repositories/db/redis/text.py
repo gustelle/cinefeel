@@ -9,7 +9,9 @@ from src.settings import Settings
 
 class RedisTextStorage(IStorageHandler[str]):
     """
-    Supports `str` and `dict` types for Redis storage.
+    Stores raw text data in Redis.
+
+    Such data keys are prefixed with `raw:`.
     """
 
     client: redis.Redis

@@ -7,11 +7,12 @@ from docker import DockerClient
 # see https://stackoverflow.com/questions/46733332/how-to-monkeypatch-the-environment-using-pytest-in-conftest-py
 mp = pytest.MonkeyPatch()
 
-REDIS_PORT = 6378
-mp.setenv("REDIS_STORAGE_DSN", f"redis://localhost:{REDIS_PORT}")
+REDIS_NATIVE_PORT = 6379
+REDIS_HOST_PORT = 6378
+mp.setenv("REDIS_STORAGE_DSN", f"redis://localhost:{REDIS_HOST_PORT}")
 
 
-DOCKER_REDIS_IMAGE_NAME = "redis:8"
+DOCKER_REDIS_IMAGE_NAME = "redis:8"  # "docker.dragonflydb.io/dragonflydb/dragonfly"
 DOCKER_REDIS_CONTAINER_NAME = "redis_test_storage"
 
 
@@ -45,7 +46,10 @@ def launch_redis(request):
             DOCKER_REDIS_IMAGE_NAME,
             detach=True,
             name=DOCKER_REDIS_CONTAINER_NAME,
-            ports={6379: REDIS_PORT},
+            ports={REDIS_NATIVE_PORT: REDIS_HOST_PORT},
+            # ulimits=[
+            #     docker.types.Ulimit(name="memlock", hard=-1, soft=-1),
+            # ],  # disable memory lock
         )
 
         wait_for_redis = True
@@ -55,7 +59,8 @@ def launch_redis(request):
             time.sleep(0.5)
             elapsed = time.time() - start_time
             print(str(logs))
-            if "Ready to accept connections tcp" in str(logs):
+            if "Ready to accept connections" in str(logs):
+                # if f"listening on 0.0.0.0:{REDIS_NATIVE_PORT}" in str(logs):
                 wait_for_redis = False
                 print(f"\r\nLaunched Redis in {round(elapsed, 2)} seconds")
                 print("--- Redis started ---")

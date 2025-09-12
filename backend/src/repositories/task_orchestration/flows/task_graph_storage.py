@@ -9,6 +9,7 @@ from src.settings import Settings
 
 
 class DBStorageUpdater(ITaskExecutor):
+    """Updates a database storage with new content."""
 
     entity_type: type[Composable]
     settings: Settings
@@ -48,7 +49,10 @@ class DBStorageUpdater(ITaskExecutor):
         )
 
     @task(
-        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+        cache_policy=NO_CACHE,
+        retries=3,
+        retry_delay_seconds=5,
+        tags=["cinefeel_tasks"],
     )
     def execute(
         self,
@@ -72,9 +76,9 @@ class DBStorageUpdater(ITaskExecutor):
                 after=last_,
                 limit=batch_size,
             )
-            # .result(timeout=self.settings.prefect_task_timeout, raise_on_failure=True)
-
-            futures.append(self.index_batch.submit(batch, output_storage))
+            batch = batch.result(
+                timeout=self.settings.prefect_task_timeout, raise_on_failure=True
+            )
 
             if batch is None or len(batch) == 0:
                 logger.info(
@@ -89,5 +93,7 @@ class DBStorageUpdater(ITaskExecutor):
             else:
                 last_ = batch[-1]
                 logger.info(f"Next batch starting after '{last_.uid}'")
+
+            futures.append(self.index_batch.submit(batch, output_storage))
 
         wait(futures)

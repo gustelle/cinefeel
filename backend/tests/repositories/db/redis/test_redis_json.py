@@ -207,6 +207,21 @@ def test_redis_query_order_by(test_film: Film):
     r.json().delete(storage._get_key(film_copy.uid))
 
 
+def test_redis_hashing_is_deterministic(test_film: Film):
+    """Test that the uid_hash is deterministic for the same UID."""
+
+    # given
+    settings = Settings()
+    storage = RedisJsonStorage[Film](settings)
+
+    # when
+    hash1 = storage._get_uid_hash(test_film)
+    hash2 = storage._get_uid_hash(test_film)
+
+    # then
+    assert hash1 == hash2, "UID hash should be deterministic and consistent"
+
+
 def test_redis_query_after(test_film: Film):
     """Test the query method of RedisStorage with 'after' parameter."""
 
@@ -226,6 +241,18 @@ def test_redis_query_after(test_film: Film):
         (str(test_film_2.permalink) + f"/{random.randint(1000, 9999)}")
     )
 
+    test_film_3 = test_film.model_copy(deep=True)
+    test_film_3.title = test_film_3.title + " 3"
+    test_film_3.permalink = HttpUrl(
+        (str(test_film_3.permalink) + f"/{random.randint(1000, 9999)}")
+    )
+
+    test_film_4 = test_film.model_copy(deep=True)
+    test_film_4.title = test_film_4.title + " 4"
+    test_film_4.permalink = HttpUrl(
+        (str(test_film_4.permalink) + f"/{random.randint(1000, 9999)}")
+    )
+
     r = redis.Redis(
         host=settings.redis_storage_dsn.host,
         port=settings.redis_storage_dsn.port,
@@ -234,26 +261,36 @@ def test_redis_query_after(test_film: Film):
     r.json().delete(storage._get_key(test_film_1.uid))
     r.json().delete(storage._get_key(test_film.uid))
     r.json().delete(storage._get_key(test_film_2.uid))
+    r.json().delete(storage._get_key(test_film_3.uid))
+    r.json().delete(storage._get_key(test_film_4.uid))
 
-    # Insert the content into Redis
-    storage.insert_many([test_film_1, test_film, test_film_2])
+    # when
+    storage.insert_many([test_film, test_film_1, test_film_2, test_film_3, test_film_4])
 
-    # Now query it
+    # then
     queried_content = storage.query(after=test_film_1)
 
-    print([m.uid for m in queried_content])
+    assert not any(
+        item.uid == test_film_1.uid for item in queried_content
+    ), "Queried content should not include the 'after' film"
 
-    assert len(queried_content) == 1
-    assert isinstance(
-        queried_content[0], Film
-    ), "Queried content should be a Film instance"
+    # query after the second-to-last film
+    queried_content = storage.query(after=queried_content[-2])
+
+    assert len(queried_content) == 1, "Expected 1 item to be queried"
+
+    # now go on querying after the last one
+    queried_content = storage.query(after=queried_content[-1])
+
     assert (
-        queried_content[0].uid == test_film_2.uid
-    ), "UID should match the queried film"
+        not queried_content
+    ), "No more content should be available after the last film"
 
     r.json().delete(storage._get_key(test_film_1.uid))
     r.json().delete(storage._get_key(test_film.uid))
     r.json().delete(storage._get_key(test_film_2.uid))
+    r.json().delete(storage._get_key(test_film_3.uid))
+    r.json().delete(storage._get_key(test_film_4.uid))
 
 
 def test_insert_many(test_film: Film):

@@ -9,6 +9,7 @@ from src.settings import Settings
 
 
 class SearchUpdater(ITaskExecutor):
+    """Updates a search index with new content."""
 
     entity_type: type[Composable]
     settings: Settings

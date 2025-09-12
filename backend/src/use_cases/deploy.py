@@ -7,6 +7,14 @@ from src.settings import Settings
 
 
 class DeployFlowsUseCase:
+    """Deploy Prefect flows to the Prefect server before running them.
+
+    Usage: called from main.py or CLI.
+
+    Example:
+        deploy_flows = DeployFlowsUseCase(settings)
+        deploy_flows.execute()
+    """
 
     settings: Settings
 

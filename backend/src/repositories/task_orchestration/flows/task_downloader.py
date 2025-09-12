@@ -16,6 +16,7 @@ from .retry import is_task_retriable
 
 
 class PageContentDownloader(ITaskExecutor):
+    """Downloads the HTML content of a page from a MediaWiki API and stores it using the provided storage handler."""
 
     settings: Settings
     http_client: IHttpClient
@@ -45,7 +46,7 @@ class PageContentDownloader(ITaskExecutor):
 
         Args:
             page_id (str): The page ID to download.
-            storage_handler (HtmlContentStorageHandler | None, optional): The storage handler to use for storing the content. Defaults to None.
+            storage_handler (LocalTextStorage | None, optional): The storage handler to use for storing the content. Defaults to None.
             return_content (bool, optional): Whether to return the content. Defaults to False, in which case the content ID is returned.
             **params: Additional parameters for the HTTP request.
 
