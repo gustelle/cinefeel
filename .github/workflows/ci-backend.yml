@@ -1,4 +1,4 @@
-name: CI # Continuous Integration
+name: CI of the backend # Continuous Integration
 
 on:
   push:
@@ -32,6 +32,7 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Unit tests 
         run: |
+          cd backend
           pip install poetry
           poetry install -v
 
