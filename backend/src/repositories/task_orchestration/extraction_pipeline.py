@@ -34,7 +34,8 @@ def batch_extraction_flow(
     pages: list[TableOfContents],
 ) -> None:
     """
-    Wikipedia > Redis (Text) > Redis (JSON) > MeiliSearch + Graph DB
+    Flow: Wikipedia >> Redis (Text)   >> Redis (JSON)   >> MeiliSearch + Graph DB
+          Source    >> Store raw HTML >> Store entities >> Index in Meili + Store in Graph DB
 
     Args:
         settings (Settings): The application settings.
@@ -131,7 +132,7 @@ def batch_extraction_flow(
 
 @flow(
     name="unit_extraction_flow",
-    description="Extract a single entity (Film or Person) from a given permalink.",
+    description="Extract a Film or Person from a given Http permalink.",
 )
 def unit_extraction_flow(
     settings: Settings,
@@ -141,6 +142,10 @@ def unit_extraction_flow(
     """
     Extract a single entity (Film or Person) from a given permalink.
     This flow will download the content, parse it, index it, and store it in the graph database.
+
+    It is quite useful when making a relationship between two entities, and one of them is not existing yet in the database.
+    typically, it is triggered on-demand by the relationship workflow.
+
     """
 
     page_id = str(permalink).split("/")[-1]  # Extract page ID from permalink

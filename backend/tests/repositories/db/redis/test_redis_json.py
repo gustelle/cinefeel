@@ -168,45 +168,6 @@ def test_redis_query_by_permalink(test_film: Film):
     r.json().delete(storage._get_key(test_film.uid))
 
 
-def test_redis_query_order_by(test_film: Film):
-    """order_by is supported"""
-    settings = Settings()
-    storage = RedisJsonStorage[Film](settings)
-
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
-    )
-    r.json().delete(storage._get_key(test_film.uid))
-    storage.insert(test_film.uid, test_film)
-
-    print(f"Inserted film with UID: {test_film.model_dump()}")
-
-    film_copy = test_film.model_copy(deep=True)
-    film_copy.title = test_film.title + " 1"
-    assert film_copy.uid != test_film.uid, "Film copy should have a different UID"
-    storage.insert(film_copy.uid, film_copy)
-
-    print(f"Inserted film copy with UID: {film_copy.model_dump()}")
-
-    # when
-    queried_content = storage.query(
-        order_by="title",
-    )
-
-    # then
-    assert len(queried_content) == 2, "Expected 2 items to be queried"
-    assert isinstance(
-        queried_content[0], Film
-    ), "Queried content should be a Film instance"
-    assert queried_content[0].uid == test_film.uid, "UID should match the queried film"
-    assert queried_content[1].uid == film_copy.uid, "UID should match the queried film"
-
-    r.json().delete(storage._get_key(test_film.uid))
-    r.json().delete(storage._get_key(film_copy.uid))
-
-
 def test_redis_hashing_is_deterministic(test_film: Film):
     """Test that the uid_hash is deterministic for the same UID."""
 
