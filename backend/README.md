@@ -3,7 +3,7 @@
 # Dependencies
 
 - Ollama or mistral.ai account
-- Redis 8 
+- Redis 8
 - Memgraph
 - Prefect
 
@@ -25,6 +25,7 @@
 
 ```sh
 
+poetry install --with dev
 poe test 
 
 ```
