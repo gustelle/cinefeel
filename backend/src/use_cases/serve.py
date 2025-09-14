@@ -41,13 +41,12 @@ class ServeUseCase:
             ],
         )
 
-        film_enrich = relationship_flow.to_deployment(
-            name="Film Enrichment",
+        movie_enrich = relationship_flow.to_deployment(
+            name="Movie Enrichment",
             parameters={
                 "settings": self.settings,
                 "entity_type": "Movie",
             },
-            cron="00 08 * * *",  # Every day at 8:00 AM
         )
 
         person_enrich = relationship_flow.to_deployment(
@@ -56,11 +55,10 @@ class ServeUseCase:
                 "settings": self.settings,
                 "entity_type": "Person",
             },
-            cron="00 09 * * *",  # Every day at 9:00 AM
         )
 
         extract_movies = batch_extraction_flow.to_deployment(
-            name="Wikipedia Film Extraction",
+            name="Wikipedia Movie Extraction",
             parameters={
                 "settings": self.settings,
                 "pages": [
@@ -69,7 +67,6 @@ class ServeUseCase:
                     if p.entity_type == "Movie"
                 ],
             },
-            cron="0 0 * * *",  # Every day at midnight
         )
 
         extract_persons = batch_extraction_flow.to_deployment(
@@ -82,11 +79,10 @@ class ServeUseCase:
                     if p.entity_type == "Person"
                 ],
             },
-            cron="0 0 * * *",  # Every day at midnight
         )
 
         serve(
-            film_enrich,
+            movie_enrich,
             person_enrich,
             unit_extract_flow,
             extract_movies,

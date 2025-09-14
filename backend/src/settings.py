@@ -30,7 +30,7 @@ _default_film_tocs = [
         inner_links_selector=".wikitable td:nth-child(1)",
         entity_type="Movie",
     )
-    for year in range(1907, 1908)
+    for year in range(1907, 2025)
 ]
 
 _default_person_tocs = [

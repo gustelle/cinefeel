@@ -42,6 +42,12 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         )
 
         try:
+            # delete if existing
+            self.client.ft(self.search_index_name).dropindex(delete_documents=False)
+        except Exception as e:
+            logger.warning(f"Error deleting index for Redis: {e}")
+
+        try:
             self.client.ft(self.search_index_name).create_index(
                 (
                     TagField("$.permalink", as_name="permalink"),

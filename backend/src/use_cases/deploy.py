@@ -83,7 +83,7 @@ class DeployFlowsUseCase:
             entrypoint="extraction_pipeline.py:batch_extraction_flow",
         ).to_deployment(
             name="wikipedia_movies_extraction",
-            description="Extracts films from Wikipedia pages.",
+            description="Extracts movies from Wikipedia pages.",
             parameters={
                 "settings": self.settings,
                 "pages": [

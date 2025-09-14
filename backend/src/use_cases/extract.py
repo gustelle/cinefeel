@@ -30,7 +30,8 @@ class ExtractUseCase:
 
             _flows.append(
                 batch_extraction_flow.to_deployment(
-                    name="Wikipedia Film Extraction",
+                    name="wikipedia_movies_extraction",
+                    description="Extracts movies from Wikipedia pages.",
                     parameters={
                         "settings": self.settings,
                         "pages": [
@@ -39,7 +40,6 @@ class ExtractUseCase:
                             if p.entity_type == "Movie"
                         ],
                     },
-                    cron="0 0 * * *",  # Every day at midnight
                 )
             )
 
@@ -47,7 +47,8 @@ class ExtractUseCase:
 
             _flows.append(
                 batch_extraction_flow.to_deployment(
-                    name="Wikipedia Person Extraction",
+                    name="wikipedia_persons_extraction",
+                    description="Extracts persons from Wikipedia pages.",
                     parameters={
                         "settings": self.settings,
                         "pages": [
@@ -56,7 +57,6 @@ class ExtractUseCase:
                             if p.entity_type == "Person"
                         ],
                     },
-                    cron="0 0 * * *",  # Every day at midnight
                 )
             )
 
