@@ -7,6 +7,14 @@
 - Memgraph
 - Prefect
 
+# Install
+
+```sh
+
+poetry install 
+
+```
+
 # Start the service
 
 ```sh
@@ -25,7 +33,6 @@
 
 ```sh
 
-poetry install --with dev
-poe test 
+pytest
 
 ```

@@ -6,8 +6,8 @@ from pydantic import HttpUrl
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.repositories.db.film_graph import FilmGraphHandler
-from src.repositories.db.person_graph import PersonGraphHandler
+from src.repositories.db.graph.film_graph import FilmGraphHandler
+from src.repositories.db.graph.person_graph import PersonGraphHandler
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient

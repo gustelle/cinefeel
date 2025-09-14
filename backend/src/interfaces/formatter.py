@@ -4,6 +4,7 @@ from src.interfaces.llm import ILLM
 
 
 class IFormatter(ILLM, Protocol):
+    """A formatter that prepares content for extraction."""
 
     def format(self, content: str) -> str:
         """

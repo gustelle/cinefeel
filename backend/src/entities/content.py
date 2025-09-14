@@ -22,7 +22,7 @@ SectionTitle = Annotated[
 
 class PageLink(BaseModel):
     """
-    A class representing a link to a film page on Wikipedia.
+    a link to a page on Wikipedia.
     """
 
     # use python-re to support lookbehind assertions
@@ -51,6 +51,11 @@ class PageLink(BaseModel):
 
 
 class Section(BaseModel):
+    """A wikipedia section, which may contain subsections and media
+
+    A section is identified by a <section> tag in the HTML, and contains optional child sections.
+    """
+
     title: SectionTitle = Field(
         ...,
         description="The title of the section. This is a required field.",
@@ -78,7 +83,7 @@ class Section(BaseModel):
 
 class Media(BaseModel):
     """
-    Represents media associated with a film or person.
+    A media is either an image, a video or an audio file
     """
 
     uid: str = Field(

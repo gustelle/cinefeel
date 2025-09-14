@@ -29,7 +29,7 @@ class IHttpClient(Protocol):
         **kwargs,
     ) -> dict | str:
         """
-        Scrape the given URL and return the data as a dictionary.
+        Calls the given URL and return the response.
 
         Args:
             url (str): The URL to scrape.

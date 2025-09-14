@@ -10,8 +10,8 @@ from src.entities.relationship import (
     Relationship,
     WOARelationshipType,
 )
-from src.repositories.db.film_graph import FilmGraphHandler
-from src.repositories.db.person_graph import PersonGraphHandler
+from src.repositories.db.graph.film_graph import FilmGraphHandler
+from src.repositories.db.graph.person_graph import PersonGraphHandler
 
 
 def test_insert_a_film(

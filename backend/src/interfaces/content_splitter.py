@@ -12,7 +12,10 @@ class SplitterError(Exception):
 
 class IContentSplitter(Protocol):
     """
-    Interface for entity resolver classes.
+    A content splitter that divides content into sections based on specific tags.
+
+    Example:
+    We want to split an HTML document into sections based on <h2> tags.
     """
 
     info_retriever: IContentParser

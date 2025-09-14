@@ -9,7 +9,7 @@ from src.interfaces.llm import ILLM
 
 class IDataMiner(ILLM, Protocol):
     """
-    Interface for entity resolver classes.
+    A data miner that extracts entities from a content
     """
 
     def extract_entity(

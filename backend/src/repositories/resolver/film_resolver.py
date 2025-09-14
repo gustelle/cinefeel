@@ -12,10 +12,6 @@ from src.settings import Settings
 
 
 class BasicFilmResolver(AbstractResolver[Film]):
-    """
-    Responsible for extracting information from sections and assembling a Person entity.
-
-    """
 
     def __init__(
         self,

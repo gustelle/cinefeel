@@ -12,7 +12,7 @@ from .woa import WOAInfluence, WOASpecifications, WOAType, WorkOfArt
 
 class FilmActor(EntityComponent):
     """
-    Représente un acteur et ses rôles dans un film.
+    An actor is a real person, playing one or more roles in a film.
     """
 
     full_name: str = Field(
@@ -36,9 +36,6 @@ class FilmActor(EntityComponent):
 
 
 class FilmSummary(EntityComponent):
-    """
-    le résumé d'un film.
-    """
 
     content: str | None = Field(
         None,
@@ -59,9 +56,6 @@ class FilmSummary(EntityComponent):
 
 
 class FilmMedia(EntityComponent):
-    """
-    représente les médias associés à un film, tels que l'affiche, les autres médias et la bande-annonce.
-    """
 
     posters: list[HttpUrl] | None = Field(
         None,

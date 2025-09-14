@@ -19,7 +19,7 @@ class MLScoredData(BaseModel):
 
 class ExtractionResult(MLScoredData):
     """
-    Base class for extracted entities.
+    The result of an extraction operation done by a machine learning model.
     """
 
     entity: EntityComponent = Field(
@@ -36,8 +36,10 @@ class ExtractionResult(MLScoredData):
 
 class FormattedResult(BaseModel):
     """
-    Base class for formatted results.
-    This class can be used to format the extracted entity into a specific format.
+    ML may be used to format data, e.g. a date in a specific format.
+    So a FormattedResult is a simple wrapper around the formatted string.
+
+    Example: we may request to format the date `Wednesday 21` as `21/03/2024`.
     """
 
     formatted: str = Field(

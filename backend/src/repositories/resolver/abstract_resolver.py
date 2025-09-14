@@ -12,9 +12,7 @@ from src.settings import Settings
 
 class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     """
-    Abstract class for resolvers.
-
-    Make it generic to allow different types of resolvers to implement their own logic.
+    A resolver assembles a `Composable` entity from provided sections.
     """
 
     entity_type: T

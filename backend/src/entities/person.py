@@ -14,7 +14,7 @@ from src.entities.woa import WOAInfluence
 
 class GenderEnum(StrEnum):
     """
-    Enum for the genre of a person.
+    the genre of a person.
     """
 
     MALE = "male"

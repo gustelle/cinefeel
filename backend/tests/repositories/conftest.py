@@ -10,8 +10,8 @@ from neo4j import GraphDatabase
 from src.entities.film import Film, FilmActor, FilmMedia, FilmSpecifications
 from src.entities.person import Biography, GenderEnum, Person, PersonCharacteristics
 from src.entities.woa import WOAInfluence, WOAType
-from src.repositories.db.film_graph import FilmGraphHandler
-from src.repositories.db.person_graph import PersonGraphHandler
+from src.repositories.db.graph.film_graph import FilmGraphHandler
+from src.repositories.db.graph.person_graph import PersonGraphHandler
 from src.settings import Settings
 
 # see https://stackoverflow.com/questions/46733332/how-to-monkeypatch-the-environment-using-pytest-in-conftest-py

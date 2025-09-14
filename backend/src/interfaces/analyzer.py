@@ -5,16 +5,14 @@ from src.entities.content import Section
 
 
 class ContentAnalysisError(Exception):
-    """
-    Custom exception for content analysis errors.
-    """
 
     pass
 
 
 class IContentAnalyzer(Protocol):
     """
-    Interface for a parser that extracts data from a given HTML content.
+    A content analyzer that extracts structured data from a given content.
+    Contents may be HTML pages, text documents, etc.
     """
 
     def process(
@@ -25,11 +23,11 @@ class IContentAnalyzer(Protocol):
         **kwargs,
     ) -> tuple[Composable, Sequence[Section]] | None:
         """
-        Extracts data from the provided HTML content and returns a structured representation.
+        Extracts data from the provided content and returns a structured representation.
 
         Args:
             content_id (str): The unique identifier for the content being analyzed.
-            html_content (str): The HTML content to parse.
+            html_content (str): The content to parse.
 
         Returns:
             Sequence[Section] | None: A list of `Section` objects representing the relevant data,

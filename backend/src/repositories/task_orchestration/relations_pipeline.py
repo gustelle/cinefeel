@@ -4,8 +4,8 @@ from prefect import flow, get_run_logger
 
 from src.entities.film import Film
 from src.entities.person import Person
-from src.repositories.db.film_graph import FilmGraphHandler
-from src.repositories.db.person_graph import PersonGraphHandler
+from src.repositories.db.graph.film_graph import FilmGraphHandler
+from src.repositories.db.graph.person_graph import PersonGraphHandler
 from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.task_orchestration.flows.task_relationship_storage import (
     RelationshipFlow,

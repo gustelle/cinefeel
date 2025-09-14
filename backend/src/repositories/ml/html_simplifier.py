@@ -9,7 +9,6 @@ from src.interfaces.nlp_processor import Processor
 class HTMLSimplifier(Processor[str]):
     """
     Simplifies the HTML content by removing unnecessary tags and attributes.
-
     """
 
     def process(

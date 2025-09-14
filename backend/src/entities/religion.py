@@ -2,9 +2,6 @@ from enum import StrEnum
 
 
 class Religion(StrEnum):
-    """
-    Enum representing the religions.
-    """
 
     PROTESTANT = "protestant"
     CATHOLIC = "catholique"

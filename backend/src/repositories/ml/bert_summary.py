@@ -8,8 +8,6 @@ from src.settings import Settings
 class SectionSummarizer(Processor[Section]):
     """
     summarize the content of a section.
-
-
     """
 
     settings: Settings

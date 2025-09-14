@@ -9,8 +9,8 @@ from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitt
 
 class Html2TextSectionsChopper(IContentAnalyzer):
     """
-    Chops HTML content into textual parts
-
+    Chops HTML content into sections, a section being identified by a given HTML tag (usually <section> or <h2>).
+    It uses a `WikipediaAPIContentSplitter` to perform the splitting.
     """
 
     content_splitter: WikipediaAPIContentSplitter
@@ -34,8 +34,8 @@ class Html2TextSectionsChopper(IContentAnalyzer):
             html_content (str): The HTML content to analyze.
 
         Returns:
-            List[BaseModel] | None: A list of `BaseModel` objects representing the extracted data,
-            or None if the parsing fails or the content is not relevant.
+            tuple[Composable, list[Section]] | None: A tuple containing the base information of the `Composable`
+                and the sections belonging to the content, or None if processing fails.
         """
 
         if html_content is None or len(html_content) == 0:

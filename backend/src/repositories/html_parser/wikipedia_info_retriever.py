@@ -18,7 +18,8 @@ INFOBOX_SECTION_TITLE = "Données clés"
 
 class WikipediaParser(IContentParser):
     """
-    This class is responsible for extracting Wikipedia data from a given HTML content.
+    Extracts Wikipedia data from a given HTML content, like title, permalink, orphan paragraphs,
+    infobox data, internal links to other Wikipedia pages, and media (images, videos, audios).
 
     """
 

@@ -23,7 +23,6 @@ class RelationshipType(StrEnum):
 
 
 class PeopleRelationshipType(RelationshipType):
-    """An enumeration of possible relationship types."""
 
     # people
     DIRECTED_BY = "DIRECTED_BY"

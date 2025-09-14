@@ -11,7 +11,7 @@ from src.interfaces.storage import IStorageHandler
 
 class LocalTextStorage(IStorageHandler[str]):
     """
-    handles storage and retrieval of HTML files on disk.
+    handles storage and retrieval of files on disk.
     This is useful for testing and local development but not for production,
     infrastructure of production should not depend on local disk storage.
     """

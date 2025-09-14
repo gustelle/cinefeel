@@ -5,10 +5,9 @@ from pydantic import BaseModel, Field
 from src.entities.component import EntityComponent
 
 
-
 class WOAType(StrEnum):
     """
-    Enum representing the type of work of art.
+    the type of a work of art.
     """
 
     PAINTING = "painting"

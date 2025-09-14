@@ -1,4 +1,4 @@
-from src.interfaces.formater import IFormatter
+from src.interfaces.formatter import IFormatter
 from src.repositories.ml.ollama_messager import OllamaMessager
 from src.settings import Settings
 
