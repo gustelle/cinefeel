@@ -34,7 +34,7 @@ jobs:
         run: |
           cd backend
           pip install poetry
-          poetry install -v
+          poetry install --with dev 
 
           # see https://github.com/orgs/python-poetry/discussions/3526
           source $(poetry env info --path)/bin/activate
