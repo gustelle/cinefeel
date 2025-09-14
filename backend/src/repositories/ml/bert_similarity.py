@@ -14,7 +14,7 @@ from .exceptions import SimilaritySearchError
 
 class SimilarSectionSearch(Processor[Section]):
     """
-    Class to handle BERT similarity calculations.
+    Computes BERT similarity between a given title and a list of sections to find the most similar section.
     """
 
     settings: Settings
