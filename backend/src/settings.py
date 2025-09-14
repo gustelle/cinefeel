@@ -30,7 +30,7 @@ _default_film_tocs = [
         inner_links_selector=".wikitable td:nth-child(1)",
         entity_type="Movie",
     )
-    for year in range(1907, 2025)
+    for year in range(1907, 1908)
 ]
 
 _default_person_tocs = [
@@ -54,10 +54,6 @@ class Settings(BaseSettings):
         # `.env.prod` takes priority over `.env`
         env_file=(".env", ".env.prod")
     )
-
-    # max_entities_to_process: int = Field(
-    #     default=None,
-    # )
 
     download_cache_enabled: bool = Field(
         default=True,
@@ -205,6 +201,10 @@ class Settings(BaseSettings):
     )
 
     redis_storage_dsn: RedisDsn = Field(
-        default="redis://localhost:6379/1",
-        description="used for storing raw data.",
+        default="redis://localhost:6379/0",
+        description="""
+            used for storing html and JSON contents temporarily, before processing them into the Graph DB.
+            NB: only the /0 database is supported because we are using RedisSearch module which does not support logical DBs.
+            @see https://stackoverflow.com/questions/72116930/redisearch-cannot-create-index-on-db-0
+        """,
     )

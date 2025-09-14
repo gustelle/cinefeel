@@ -71,12 +71,12 @@ class DBStorageUpdater(ITaskExecutor):
 
         while has_more:
 
-            batch = self.query_input_storage.submit(
+            batch_promise = self.query_input_storage.submit(
                 input_storage=input_storage,
                 after=last_,
                 limit=batch_size,
             )
-            batch = batch.result(
+            batch = batch_promise.result(
                 timeout=self.settings.prefect_task_timeout, raise_on_failure=True
             )
 

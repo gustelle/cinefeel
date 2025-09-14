@@ -23,7 +23,7 @@ poetry install
 ./start-server.sh
 
 # launch the flows in another tab
-./run-flows.sh
+./deploy-and-run.sh
 
 # eventually vizualise the running flows on http://localhost:4200/
 

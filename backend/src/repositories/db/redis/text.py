@@ -33,6 +33,9 @@ class RedisTextStorage(IStorageHandler[str]):
             password=settings.redis_storage_dsn.password,
             decode_responses=True,
         )
+        logger.info(
+            f"Connected to Redis at {settings.redis_storage_dsn.host}:{settings.redis_storage_dsn.port}, db={settings.redis_storage_dsn.path.lstrip('/') if settings.redis_storage_dsn.path else 0}"
+        )
 
     def _get_key(self, content_id: str) -> str:
         """Constructs the Redis key for the given content ID."""

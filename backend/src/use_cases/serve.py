@@ -11,7 +11,7 @@ from src.repositories.task_orchestration.relations_pipeline import (
 from src.settings import Settings
 
 
-class ServeFlowsUseCase:
+class ServeUseCase:
     """use the `serve` function to run flows immediately without needing to deploy them first
     this is useful for development and testing purposes, because you don't need to run prefect server in the background
     and you can see the logs directly in the console,

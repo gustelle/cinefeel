@@ -47,6 +47,7 @@ run         = "python3 main.py"
 test        = "pytest -s --tb=line"
 serve       = "poe run serve"
 deploy      = "poe run deploy"
+extract     = "poe run extract"
 
 [tool.poetry.group.dev.dependencies]
 poethepoet = "^0.36.0"
