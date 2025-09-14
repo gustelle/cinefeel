@@ -4,6 +4,7 @@ from prefect import flow, get_run_logger
 from prefect.futures import wait
 from pydantic import HttpUrl
 
+from src.entities.content import TableOfContents
 from src.entities.film import Film
 from src.entities.person import Person
 from src.repositories.db.graph.film_graph import FilmGraphHandler
@@ -22,7 +23,7 @@ from src.repositories.task_orchestration.flows.task_html_parsing import (
     HtmlEntityExtractor,
 )
 from src.repositories.task_orchestration.flows.task_indexer import SearchUpdater
-from src.settings import Settings, TableOfContents
+from src.settings import Settings
 
 
 @flow(

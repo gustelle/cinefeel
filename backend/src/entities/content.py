@@ -50,6 +50,25 @@ class PageLink(BaseModel):
     )
 
 
+class TableOfContents(PageLink):
+    """Configuration for a Wikipedia Table-of-content (TOC) page.
+
+    A table of content page is a page that contains a list of links to other pages.
+    For example, the page "Liste de films français sortis en 1907" contains a list of links to
+    all the films released in 1907.
+    """
+
+    inner_links_selector: str | None = Field(
+        None,
+        description="""
+            The CSS selector to use to extract the (list of) links from the table of contents.
+            The selector should return a list of links to the pages to download.
+        """,
+        examples=[".wikitable td:nth-child(1)"],
+        validation_alias="link_selector",
+    )
+
+
 class Section(BaseModel):
     """A wikipedia section, which may contain subsections and media
 

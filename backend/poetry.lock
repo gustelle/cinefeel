@@ -4324,6 +4324,27 @@ toml = ["tomli (>=2.0.1)"]
 yaml = ["pyyaml (>=6.0.1)"]
 
 [[package]]
+name = "pydantic-yaml"
+version = "1.6.0"
+description = "YAML reading/writing for Pydantic models"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "pydantic_yaml-1.6.0-py3-none-any.whl", hash = "sha256:02cb800b455b68daeeb74ad736c252a94a0b203da5fbbeef02539d468e1d98f8"},
+    {file = "pydantic_yaml-1.6.0.tar.gz", hash = "sha256:ce5f10b65d95ca45846a36ea8dae54e550fa3058e7d6218e0179184d9bf6f660"},
+]
+
+[package.dependencies]
+pydantic = ">=1.8"
+"ruamel.yaml" = ">=0.17.0,<0.19.0"
+typing-extensions = ">=4.5.0"
+
+[package.extras]
+dev = ["mypy (==1.17.1)", "pre-commit (==4.2.0)", "pytest (==8.4.1)", "ruff (==0.12.8)", "setuptools (>=61.0.0)", "setuptools-scm[toml] (>=6.2)"]
+docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "pygments", "pymdown-extensions", "types-setuptools"]
+
+[[package]]
 name = "pygments"
 version = "2.19.2"
 description = "Pygments is a syntax highlighting package written in Python."
@@ -6852,4 +6873,4 @@ cffi = ["cffi (>=1.17) ; python_version >= \"3.13\" and platform_python_implemen
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "c5b44a672bf119c6b45e7730b12aa6991cfe1490cfe0cee7e9d7a1ee50a25201"
+content-hash = "f6d8c29c4e302fb0c6554e0fefd3056fe1791ae843f79c5cbd76c09a7c6463b8"

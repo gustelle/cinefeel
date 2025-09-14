@@ -50,12 +50,15 @@ class SearchUpdater(ITaskExecutor):
 
         try:
 
+            logger.info(
+                f"Starting indexing for entity type {self.entity_type.__name__}; input storage: {input_storage.__class__.__name__}"
+            )
+
             while res := next(input_storage.scan()):
 
                 batch.append(res)
 
                 if len(batch) >= batch_size:
-                    logger.info(f"Processing batch of {len(batch)} entities")
                     futures.append(self.index_batch.submit(batch, output_storage))
                     batch = []
         except StopIteration:

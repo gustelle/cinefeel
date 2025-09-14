@@ -1,47 +1,11 @@
 from pathlib import Path
+from typing import Self
 
-from pydantic import AnyUrl, Field, HttpUrl, RedisDsn, SecretStr
+from pydantic import AnyUrl, Field, HttpUrl, RedisDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_yaml import parse_yaml_raw_as
 
-from src.entities.content import PageLink
-
-
-class TableOfContents(PageLink):
-    """Configuration for a Wikipedia Table-of-content (TOC) page.
-
-    A table of content page is a page that contains a list of links to other pages.
-    For example, the page "Liste de films français sortis en 1907" contains a list of links to
-    all the films released in 1907.
-    """
-
-    inner_links_selector: str | None = Field(
-        None,
-        description="""
-            The CSS selector to use to extract the (list of) links from the table of contents.
-            The selector should return a list of links to the pages to download.
-        """,
-        examples=[".wikitable td:nth-child(1)"],
-    )
-
-
-_default_film_tocs = [
-    TableOfContents(
-        page_id=f"Liste_de_films_français_sortis_en_{year}",
-        inner_links_selector=".wikitable td:nth-child(1)",
-        entity_type="Movie",
-    )
-    for year in range(1907, 2025)
-]
-
-_default_person_tocs = [
-    TableOfContents(
-        page_id=f"Liste_de_films_français_sortis_en_{year}",
-        inner_links_selector=".wikitable td:nth-child(2)",
-        entity_type="Person",
-    )
-    for year in range(1907, 2025)
-]
-_default_tocs = _default_film_tocs + _default_person_tocs
+from src.entities.content import TableOfContents
 
 
 class Settings(BaseSettings):
@@ -63,8 +27,17 @@ class Settings(BaseSettings):
         default=60 * 60 * 24,
         description="The expiration time of the cache in seconds",
     )
-    download_start_pages: list[TableOfContents] = Field(
-        default=_default_tocs,
+    download_start_pages: list[TableOfContents] | None = Field(
+        None,
+        description="Will be set through the start pages config file",
+    )
+
+    start_pages_config: Path | None = Field(
+        ...,
+        description="""
+            The path to the YAML configuration file for the start pages,
+            must be provided in the .env file as `START_PAGES_CONFIG`.
+        """,
     )
 
     mediawiki_api_key: str = Field(
@@ -208,3 +181,17 @@ class Settings(BaseSettings):
             @see https://stackoverflow.com/questions/72116930/redisearch-cannot-create-index-on-db-0
         """,
     )
+
+    @model_validator(mode="after")
+    def on_after_init(self) -> Self:
+
+        if not self.start_pages_config or not self.start_pages_config.exists():
+            raise ValueError(
+                f"start_pages_config is not set or the file does not exist: {self.start_pages_config}"
+            )
+
+        with open(self.start_pages_config, "r") as f:
+            list_of_tocs = parse_yaml_raw_as(list[TableOfContents], f.read())
+            self.download_start_pages = list_of_tocs
+
+        return self

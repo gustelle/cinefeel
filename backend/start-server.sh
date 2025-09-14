@@ -19,10 +19,10 @@ prefect work-pool create "local-processes" --type process
 prefect config set PREFECT_DEFAULT_WORK_POOL_NAME="local-processes"
 
 # set concurrency limit for the work pool
-prefect work-pool set-concurrency-limit "local-processes" 8
+prefect work-pool set-concurrency-limit "local-processes" 8 
 
 # for concurrent tasks
-prefect concurrency-limit create cinefeel_tasks 5
+prefect concurrency-limit create cinefeel_tasks 8 
 
 #prefect worker start --pool "local-processes" #--work-queue "local-queue"
 

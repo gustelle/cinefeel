@@ -3,14 +3,14 @@ from __future__ import annotations
 from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 
-from src.entities.content import PageLink
+from src.entities.content import PageLink, TableOfContents
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.info_retriever import IContentParser
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.db.local_storage.html_storage import LocalTextStorage
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
-from src.settings import Settings, TableOfContents
+from src.settings import Settings
 
 from .retry import is_task_retriable
 

@@ -4,9 +4,9 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
+from src.entities.content import TableOfContents
 from src.interfaces.info_retriever import PageLink, RetrievalError
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
-from src.settings import TableOfContents
 
 
 def test_extract_links_from_table():
