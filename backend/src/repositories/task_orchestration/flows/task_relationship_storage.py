@@ -11,7 +11,7 @@ from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.relation_manager import IRelationshipHandler
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
-from src.repositories.db.person_graph import PersonGraphHandler
+from src.repositories.db.graph.person_graph import PersonGraphHandler
 from src.settings import Settings
 
 
