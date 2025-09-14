@@ -1,13 +1,3 @@
-# genere un fichier yaml avec les pages de demarrage
-# chaque page a un page_id, un selecteur css pour les liens
-# et un entity_type de page (Person, Movie, etc) 
-
-# exemple:
-# - page_id: "Liste_de_films_français_sortis_en_1907"
-#   link_selector: ".wikitable td:nth-child(1)"
-#   entity_type: "Movie"  
-# toutes les pages sont sur ce modèle, de 1907 à 2025
-
 
 - page_id: "Liste_de_films_français_sortis_en_1907"
   link_selector: ".wikitable td:nth-child(1)"
@@ -367,7 +357,6 @@
   link_selector: ".wikitable td:nth-child(1)"
   entity_type: "Movie"
 
-# dans la liste ci-dessous, remplace "Movie" par "Person" pour les pages de Personnes (partout où c'est pertinent)
 - page_id: "Liste_de_films_français_sortis_en_1907"
   link_selector: ".wikitable td:nth-child(2)"
   entity_type: "Person"

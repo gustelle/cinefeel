@@ -118,6 +118,8 @@ def test_extract_links_with_css_selector():
     # Call the function to test
     result = extractor.retrieve_inner_links(html_content, config)
 
+    print(result)
+
     # Assert the result
     assert all(
         item in result for item in expected_output
@@ -375,6 +377,25 @@ def test_retrieve_infobox_section_title(read_beethoven_html):
 
     # then
     assert info_box.title == "Données clés"
+
+
+def test_retrieve_infobox_format_list_raises(read_not_enough_cols_infobox):
+
+    # given
+    semantic = WikipediaParser()
+
+    # when / then
+    with pytest.raises(RetrievalError, match="cannot parse"):
+        semantic.retrieve_infobox(read_not_enough_cols_infobox)
+
+
+def test_retrieve_infobox_format_table_no_content_raises(read_defective_table_infobox):
+    # given
+    semantic = WikipediaParser()
+
+    # when / then
+    with pytest.raises(RetrievalError, match="Infobox table not found"):
+        semantic.retrieve_infobox(read_defective_table_infobox, format_as="table")
 
 
 def test_retrieve_permalink_from_canonical(read_beethoven_html):

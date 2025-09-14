@@ -58,6 +58,8 @@ class TableOfContents(PageLink):
     all the films released in 1907.
     """
 
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
+
     inner_links_selector: str | None = Field(
         None,
         description="""
@@ -65,7 +67,7 @@ class TableOfContents(PageLink):
             The selector should return a list of links to the pages to download.
         """,
         examples=[".wikitable td:nth-child(1)"],
-        validation_alias="link_selector",
+        alias="link_selector",
     )
 
 

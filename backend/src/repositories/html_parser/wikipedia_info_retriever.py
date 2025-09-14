@@ -134,9 +134,6 @@ class WikipediaParser(IContentParser):
         Parses the given HTML content and discovers wikipedia links to Wikipedia pages.
         A wikipedia link starts with `./` and is followed by the page ID.
 
-        - When no `attrs` are provided, the function will look for all links in the HTML content,
-        - If `attrs` are provided, it will look for links within the specified HTML structure.
-
         Example:
         - https://api.wikimedia.org/core/v1/wikipedia/fr/page/Liste_de_films_fran%C3%A7ais_sortis_en_1907/html
 
@@ -161,13 +158,13 @@ class WikipediaParser(IContentParser):
             links = extractor.retrieve_inner_links(
                 html_content,
                 config=WikiTOCPageConfig(
-                    toc_css_selector=".wikitable td:nth-child(2)",
-                    toc_content_type="person",
+                    inner_links_selector=".wikitable td:nth-child(2)",
+                    entity_type="Person",
 
                 )
             )
             # links = [
-            #     PageLink(page_title="Lucien Nonguet", page_id="Lucien_Nonguet", content_type="person"),
+            #     PageLink(page_title="Lucien Nonguet", page_id="Lucien_Nonguet", content_type="Person"),
             # ]
         ```
 
@@ -251,7 +248,8 @@ class WikipediaParser(IContentParser):
         self, html_content: str, format_as: Literal["table", "list"] = "list"
     ) -> Section | None:
         """
-        Extracts the information table from the HTML content.
+        Extracts the information table (aka infobox) from a wikipedia HTML content and returns parsed data as a `Section` object.
+        The infobox is usually located on the right side of the page and contains key information about the subject.
 
         Args:
             html_content (str): The HTML content to parse.
@@ -259,36 +257,55 @@ class WikipediaParser(IContentParser):
                 Defaults to "list". If "table", returns a the raw HTML table, otherwise returns an HTML list.
 
         Returns:
-            list[Section] | None: A list of `Section` objects representing the infobox elements,
-            or None if no infobox is found or if the table is empty.
+            Section | None: A `Section` representing the infobox elements
+            or None if no infobox is found or if it is empty.
+
+        Example:
+        ```
+        <div class="infobox_v3 infobox infobox--frwiki noarchive large">
+           ...
+        </div>
+        ```
         """
         soup = BeautifulSoup(html_content, "html.parser")
         content = soup.find("div", attrs={"class": "infobox"})
 
-        # get the media from the original HTML content
-        media = self.retrieve_media(str(content))
-
         if not content:
             return None
 
+        # get the media from the original HTML content
+        media = self.retrieve_media(str(content))
+
         # convert the HTML to text
         # using pandas
-        df = pd.read_html(StringIO(content.find("table").prettify()))[0]
-        if df.empty:
-            return None
+        try:
+            df = pd.read_html(StringIO(content.find("table").decode()))[0]
+            if df.empty:
+                raise RetrievalError("Infobox table is empty.")
+            if df.shape[1] < 2:
+                raise RetrievalError(
+                    "Infobox table has less than 2 columns, cannot parse key-value pairs."
+                )
+        except ValueError as e:
+            raise RetrievalError("Infobox table not found or malformed.") from e
 
         if format_as == "table":
             # return the raw HTML table
-            content = content.find("table").prettify()
+            content = content.find("table").decode()
+            if not content:
+                raise RetrievalError("Infobox table not found in the HTML content.")
 
         else:
             # format the DataFrame as a list of values
             # split by a colon (:) and return as a Section object
-            content = f"""
-            <ul>
-                {'\n'.join(f'<li>{row[0]}: {row[1]}</li>' for row in df.values)}
-            </ul>
-            """
+            try:
+                content = f"""
+                <ul>
+                    {'\n'.join(f'<li>{row[0]}: {row[1]}</li>' for row in df.values)}
+                </ul>
+                """
+            except Exception as e:
+                raise RetrievalError("Error formatting infobox as list.") from e
 
         # convert the DataFrame to a list of Section objects
         info_table = Section(

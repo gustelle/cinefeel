@@ -78,6 +78,35 @@ def read_melies_html() -> str:
                     return html_file.read().decode("utf-8")
 
 
+@pytest.fixture
+def read_not_enough_cols_infobox() -> str:
+    """
+    case where the infobox list cannot be parsed correctly
+    """
+    return """
+    <div class="infobox_v3 infobox infobox--frwiki noarchive large">
+        <table>
+            <tr class="">
+                <td>Something</td>
+            </tr>
+        </table>
+    </div>
+    """
+
+
+@pytest.fixture
+def read_defective_table_infobox() -> str:
+    """
+    case where the infobox table is malformed and cannot be parsed correctly
+    """
+    return """
+    <div class="infobox_v3 infobox infobox--frwiki noarchive large">
+        <table>
+        </table>
+    </div>
+    """
+
+
 @pytest.fixture(scope="function")
 def test_film():
     film = Film(
