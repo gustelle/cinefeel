@@ -32,7 +32,9 @@ def test_retrieve_infobox_is_processed_correctly(
 
     analyzer = Html2TextSectionsChopper(
         content_splitter=WikipediaAPIContentSplitter(
-            parser=retriever, pruner=DoNothingPruner()
+            parser=retriever,
+            pruner=DoNothingPruner(),
+            settings=settings,
         ),
         post_processors=[
             text_converter,
@@ -65,7 +67,7 @@ def test_process_complex_page(read_melies_html, test_db_settings: Settings):
 
     analyzer = Html2TextSectionsChopper(
         content_splitter=WikipediaAPIContentSplitter(
-            parser=retriever, pruner=DoNothingPruner()
+            parser=retriever, pruner=DoNothingPruner(), settings=settings
         ),
         post_processors=[
             html_cleaner,

@@ -40,13 +40,13 @@ def test_split_subsections(
     assert sections[0].children[0].children[0].title == "Origines et enfance"
 
 
-def test_split_complex_page(read_beethoven_html):
+def test_split_complex_page(read_beethoven_html, test_db_settings: Settings):
     """
     Test the split_sections method of the HtmlSemantic class.
     """
     # given
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(), pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when
@@ -118,11 +118,13 @@ def test_split_with_root_tag(read_beethoven_html, test_db_settings: Settings):
     ), "Should contain 'Biographie' section with children"
 
 
-def test_split_ignores_non_significant_sections(read_beethoven_html):
+def test_split_ignores_non_significant_sections(
+    read_beethoven_html, test_db_settings: Settings
+):
 
     # given
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(), pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when
@@ -138,7 +140,7 @@ def test_split_ignores_non_significant_sections(read_beethoven_html):
     assert all("voir aussi" not in section.title.lower() for section in sections)
 
 
-def test_split_sections_no_title():
+def test_split_sections_no_title(read_beethoven_html, test_db_settings: Settings):
 
     # given
     # an valid html file with a section that has no title
@@ -147,7 +149,7 @@ def test_split_sections_no_title():
     info_retriever = WikipediaParser()
 
     semantic = WikipediaAPIContentSplitter(
-        parser=info_retriever, pruner=DoNothingPruner()
+        parser=info_retriever, pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when
@@ -160,14 +162,16 @@ def test_split_sections_no_title():
     assert sections[0].title == ORPHAN_SECTION_TITLE
 
 
-def test_split_sections_void_section():
+def test_split_sections_void_section(
+    test_db_settings: Settings,
+):
 
     # given
     html_file = current_dir / "test_html/void_section.html"
     html_content = html_file.read_text(encoding="utf-8")
 
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(), pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when
@@ -180,7 +184,9 @@ def test_split_sections_void_section():
     assert len(sections) == 0
 
 
-def test_split_title_is_not_pure_text():
+def test_split_title_is_not_pure_text(
+    test_db_settings: Settings,
+):
     # given
     html_content = """
     <html>
@@ -198,7 +204,7 @@ def test_split_title_is_not_pure_text():
     </html>
     """
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(), pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when
@@ -210,7 +216,9 @@ def test_split_title_is_not_pure_text():
     assert len(sections) == 1
 
 
-def test_split_title_is_removed_from_content():
+def test_split_title_is_removed_from_content(
+    test_db_settings: Settings,
+):
     # given
     html_content = """
     <html>
@@ -228,7 +236,7 @@ def test_split_title_is_removed_from_content():
     <html>
     """
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(), pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when
@@ -240,7 +248,9 @@ def test_split_title_is_removed_from_content():
     assert len(sections) == 1
 
 
-def test_split_sections_no_title_and_no_content():
+def test_split_sections_no_title_and_no_content(
+    test_db_settings: Settings,
+):
     "A section with no title and no content should still be created as 'orphan'"
 
     # given
@@ -258,7 +268,9 @@ def test_split_sections_no_title_and_no_content():
     </html>
     """
     retriever = WikipediaParser()
-    semantic = WikipediaAPIContentSplitter(parser=retriever, pruner=DoNothingPruner())
+    semantic = WikipediaAPIContentSplitter(
+        parser=retriever, pruner=DoNothingPruner(), settings=test_db_settings
+    )
 
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -364,13 +376,17 @@ def test_split_nested_sections_with_div(
     assert sections[0].children[1].title == "Nested Section 1.2"
 
 
-def test_pruner_is_called():
+def test_pruner_is_called(
+    test_db_settings: Settings,
+):
     # given
     html_file = current_dir / "test_html/nested_sections.html"
     html_content = html_file.read_text(encoding="utf-8")
     pruner = DoNothingPruner()
 
-    semantic = WikipediaAPIContentSplitter(parser=WikipediaParser(), pruner=pruner)
+    semantic = WikipediaAPIContentSplitter(
+        parser=WikipediaParser(), pruner=pruner, settings=test_db_settings
+    )
 
     # when
     semantic.split("1", html_content)
@@ -435,7 +451,9 @@ def test_empty_sections_are_filtered(
     assert len(sections) == 0, "No sections should be returned for empty sections"
 
 
-def test_small_sections_are_merged():
+def test_small_sections_are_merged(
+    test_db_settings: Settings,
+):
     """
     Test that small sections are merged correctly,
     for instance small sections are merged into their parent section
@@ -462,7 +480,7 @@ def test_small_sections_are_merged():
     </html>
     """
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(), pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when
@@ -475,7 +493,9 @@ def test_small_sections_are_merged():
     ), "Section titles should be merged"
 
 
-def test_small_children_sections_are_merged_into_their_parent():
+def test_small_children_sections_are_merged_into_their_parent(
+    test_db_settings: Settings,
+):
     """
     Test that small sections are merged correctly,
     for instance children sections are merged into their parent section
@@ -501,7 +521,7 @@ def test_small_children_sections_are_merged_into_their_parent():
     </html>
     """
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(), pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when
@@ -516,7 +536,9 @@ def test_small_children_sections_are_merged_into_their_parent():
     ), "Content of subsection should be merged into parent section"
 
 
-def test_flags_and_icons_are_excluded_from_media():
+def test_flags_and_icons_are_excluded_from_media(
+    test_db_settings: Settings,
+):
     """
     Test that flags and icons are excluded from media.
     """
@@ -538,7 +560,7 @@ def test_flags_and_icons_are_excluded_from_media():
     </html>
     """
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(), pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when
