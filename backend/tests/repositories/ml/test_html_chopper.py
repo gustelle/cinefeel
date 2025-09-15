@@ -134,7 +134,9 @@ def test_analyze_summarizer_is_called():
     assert summarizer.is_called
 
 
-def test_analyze_simplifier_is_called():
+def test_analyze_simplifier_is_called(
+    test_db_settings: Settings,
+):
     # given
     content_id = "test_simplifier_called"
     html_content = "<html><body>Content to be simplified.</body></html>"
@@ -143,6 +145,7 @@ def test_analyze_simplifier_is_called():
     splitter = WikipediaAPIContentSplitter(
         parser=retriever,
         pruner=StubSimplifier(),
+        settings=test_db_settings,
     )
     summarizer = StubSummarizer()
     pruner = StubPruner()
