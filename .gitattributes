@@ -1,0 +1,3 @@
+# exclude from linguist analysis
+backend/tests/**/*.html linguist-vendored
+backend/tests/**/*.json linguist-vendored
