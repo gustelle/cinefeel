@@ -10,14 +10,9 @@
 ## Vendor Conventions ##
 
 # fixtures
-- (^|/)test_data/
-- *\.html
+- test_data
+- .+\.html
 
 # GitHub.com
 - (^|/)\.github/
 
-# obsidian.md settings
-- (^|/)\.obsidian/
-
-# teamcity CI configuration
-- (^|/)\.teamcity/
