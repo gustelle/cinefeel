@@ -4,11 +4,14 @@ from src.entities.content import Section
 from src.entities.person import Biography, Person
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.person_resolver import BasicPersonResolver
+from src.settings import Settings
 from tests.repositories.resolver.stubs.stub_extractor import StubExtractor
 from tests.repositories.resolver.stubs.stub_similarity import StubSimilaritySearch
 
 
-def test_resolve_person_patch_media():
+def test_resolve_person_patch_media(
+    test_db_settings: Settings,
+):
     # Given a film with no media
     p = Person(
         uid="12345",
@@ -81,6 +84,7 @@ def test_resolve_person_patch_media():
                 extracted_type=Person,
             ),
         ],
+        settings=test_db_settings,
     )
 
     # When patching media
@@ -103,7 +107,9 @@ def test_resolve_person_patch_media():
     # )
 
 
-def test_resolve_person_validate_nationalities():
+def test_resolve_person_validate_nationalities(
+    test_db_settings: Settings,
+):
     # Given a person with valid nationalities
     p = Person(
         title="The Great Person",
@@ -126,6 +132,7 @@ def test_resolve_person_validate_nationalities():
                 extracted_type=Biography,
             ),
         ],
+        settings=test_db_settings,
     )
 
     # When validating the person
@@ -137,7 +144,9 @@ def test_resolve_person_validate_nationalities():
 
 
 @pytest.mark.skip(reason="requires Ollama to be running")
-def test_resolve_person_validate_birth_date():
+def test_resolve_person_validate_birth_date(
+    test_db_settings: Settings,
+):
     # Given a person with a valid birth date
     p = Person(
         title="The Great Person",
@@ -159,6 +168,7 @@ def test_resolve_person_validate_birth_date():
                 extracted_type=Biography,
             ),
         ],
+        settings=test_db_settings,
     )
 
     # When validating the person

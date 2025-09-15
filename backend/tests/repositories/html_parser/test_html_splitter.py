@@ -402,7 +402,9 @@ def test_sections_are_enriched_with_media(test_db_settings: Settings):
     ), "Grand Children sections should have media"
 
 
-def test_empty_sections_are_filtered():
+def test_empty_sections_are_filtered(
+    test_db_settings: Settings,
+):
     """
     Test that empty sections are filtered out.
     """
@@ -423,7 +425,7 @@ def test_empty_sections_are_filtered():
     </html>
     """
     semantic = WikipediaAPIContentSplitter(
-        parser=WikipediaParser(), pruner=DoNothingPruner()
+        parser=WikipediaParser(), pruner=DoNothingPruner(), settings=test_db_settings
     )
 
     # when

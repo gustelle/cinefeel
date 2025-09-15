@@ -3,12 +3,15 @@ from src.entities.content import Section
 from src.entities.film import Film, FilmSpecifications
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.film_resolver import BasicFilmResolver
+from src.settings import Settings
 
 from .stubs.stub_extractor import StubExtractor
 from .stubs.stub_similarity import ExactTitleSimilaritySearch, StubSimilaritySearch
 
 
-def test_BasicFilmResolver_nominal_case():
+def test_BasicFilmResolver_nominal_case(
+    test_db_settings: Settings,
+):
     # Given a film specifications and summary
     title = "The Great Film"
     permalink = "https://example.com/the-great-film"
@@ -38,6 +41,7 @@ def test_BasicFilmResolver_nominal_case():
                 extracted_type=FilmSpecifications,
             ),
         ],
+        settings=test_db_settings,
     )
 
     # When resolving the film
@@ -49,7 +53,9 @@ def test_BasicFilmResolver_nominal_case():
     assert str(film.permalink) == permalink
 
 
-def test_resolve_film_patch_media():
+def test_resolve_film_patch_media(
+    test_db_settings: Settings,
+):
     # Given a film with no media
     film = Film(
         uid="12345",
@@ -123,6 +129,7 @@ def test_resolve_film_patch_media():
                 extracted_type=FilmSpecifications,
             ),
         ],
+        settings=test_db_settings,
     )
 
     # When patching media
@@ -140,7 +147,9 @@ def test_resolve_film_patch_media():
     )
 
 
-def test_validate_iso_duration():
+def test_validate_iso_duration(
+    test_db_settings: Settings,
+):
     # Given a film with a valid duration
     film = Film(
         title="The Great Film",
@@ -163,6 +172,7 @@ def test_validate_iso_duration():
                 extracted_type=FilmSpecifications,
             ),
         ],
+        settings=test_db_settings,
     )
 
     # When validating the duration
@@ -172,7 +182,9 @@ def test_validate_iso_duration():
     assert film.specifications.duration == "01:30:02"
 
 
-def test_validate_duration_by_regex_no_hour():
+def test_validate_duration_by_regex_no_hour(
+    test_db_settings: Settings,
+):
     # Given a film with an invalid duration
     film = Film(
         title="The Great Film",
@@ -195,6 +207,7 @@ def test_validate_duration_by_regex_no_hour():
                 extracted_type=FilmSpecifications,
             ),
         ],
+        settings=test_db_settings,
     )
 
     # When validating the duration
@@ -206,7 +219,9 @@ def test_validate_duration_by_regex_no_hour():
     )  # Assuming the resolver converts it to a valid format
 
 
-def test_validate_duration_by_regex_with_hour():
+def test_validate_duration_by_regex_with_hour(
+    test_db_settings: Settings,
+):
     # Given a film with an invalid duration
     film = Film(
         title="The Great Film",
@@ -229,6 +244,7 @@ def test_validate_duration_by_regex_with_hour():
                 extracted_type=FilmSpecifications,
             ),
         ],
+        settings=test_db_settings,
     )
 
     # When validating the duration
