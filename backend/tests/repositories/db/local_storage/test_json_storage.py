@@ -15,14 +15,16 @@ from src.settings import Settings
 current_dir = Path(__file__).parent
 
 
-def test_dir_is_created():
+def test_dir_is_created(test_db_settings: Settings):
     """
     Test if the directory is created when the JSONEntityStorageHandler is initialized.
     """
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
 
     # when
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
@@ -40,11 +42,13 @@ def test_dir_is_created():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_when_dir_already_exists():
+def test_when_dir_already_exists(test_db_settings: Settings):
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     existing_dir = local_path / "films"
     existing_dir.mkdir()
 
@@ -60,11 +64,13 @@ def test_when_dir_already_exists():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_insert_film():
+def test_insert_film(test_db_settings: Settings):
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     content = {
@@ -91,11 +97,13 @@ def test_insert_film():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_insert_person():
+def test_insert_person(test_db_settings: Settings):
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
     # when
@@ -128,11 +136,13 @@ def test_insert_person():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_insert_bad_type():
+def test_insert_bad_type(test_db_settings: Settings):
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
     # when
@@ -157,11 +167,13 @@ def test_insert_bad_type():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_select_film():
+def test_select_film(test_db_settings: Settings):
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     content_id = "test_film"
@@ -200,11 +212,13 @@ def test_select_film():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_select_non_existing_film():
+def test_select_non_existing_film(test_db_settings: Settings):
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     # when
@@ -230,11 +244,13 @@ def test_select_non_existing_film():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_select_corrupt_entity():
+def test_select_corrupt_entity(test_db_settings: Settings):
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     # when
@@ -268,12 +284,14 @@ def test_select_corrupt_entity():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_query_person():
+def test_query_person(test_db_settings: Settings):
     """verify nested objects are correctly deserialized."""
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
     person = Person(
@@ -306,10 +324,12 @@ def test_query_person():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_query_person_by_permalink():
+def test_query_person_by_permalink(test_db_settings: Settings):
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
     permalink = "http://example.com/test-person"
@@ -341,10 +361,12 @@ def test_query_person_by_permalink():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_query_no_files():
+def test_query_no_files(test_db_settings: Settings):
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     # when
@@ -357,10 +379,12 @@ def test_query_no_files():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_query_corrupt_file():
+def test_query_corrupt_file(test_db_settings: Settings):
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     content_id = "test_film"
@@ -393,10 +417,12 @@ def test_query_corrupt_file():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_query_validation_err():
+def test_query_validation_err(test_db_settings: Settings):
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     content_id = "test_film"
@@ -429,10 +455,12 @@ def test_query_validation_err():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_scan_film():
+def test_scan_film(test_db_settings: Settings):
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     content_id = "test_film"
@@ -460,10 +488,12 @@ def test_scan_film():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_scan_film_object_is_deeply_rebuilt():
+def test_scan_film_object_is_deeply_rebuilt(test_db_settings: Settings):
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     content = {
@@ -494,14 +524,16 @@ def test_scan_film_object_is_deeply_rebuilt():
     storage_handler.persistence_directory.rmdir()
 
 
-def test_query_thread_safety():
+def test_query_thread_safety(test_db_settings: Settings):
     """
     verify that the query method is thread-safe and can be called concurrently.
     """
 
     # given
     local_path = current_dir
-    test_settings = Settings(persistence_directory=local_path)
+    test_settings = test_db_settings.model_copy(
+        update={"persistence_directory": local_path}
+    )
     storage_handler = JSONEntityStorageHandler[Film](test_settings)
 
     uids = []

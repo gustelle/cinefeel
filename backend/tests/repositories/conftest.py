@@ -242,9 +242,18 @@ def test_db_settings(launch_memgraph):  #
 
     time.sleep(2)  # wait a bit to ensure the container is ready
 
-    yield Settings(
+    path = Path(__file__).parent / "start-pages-test.yml"
+
+    print(f"Using start pages config at: {path}")
+
+    settings = Settings(
         graph_db_uri=GRAPHDB_URI,
+        start_pages_config=path,
     )
+
+    print(f"Using settings: {settings.model_dump_json(indent=2)}")
+
+    yield settings
 
 
 @pytest.fixture(scope="function")

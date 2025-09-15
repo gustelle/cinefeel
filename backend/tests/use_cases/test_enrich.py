@@ -11,7 +11,9 @@ _local_dir = Path(__file__).parent.resolve()
 
 
 @pytest.mark.skip(reason="end-to-end test that requires a running Prefect server.")
-def test_uc_enrich():
+def test_uc_enrich(
+    test_db_settings: Settings,
+):
     """
     End-to-end test on Georges Méliès
     """
@@ -19,9 +21,12 @@ def test_uc_enrich():
 
     local_db_path = _local_dir / ".db"
 
-    settings = Settings(
-        persistence_directory="/Users/guillaume/Dev/cinefeel/backend/data",
-        db_path=local_db_path / "test.db",  # Use the local directory for the database
+    settings = test_db_settings.model_copy(
+        update={
+            "persistence_directory": "/Users/guillaume/Dev/cinefeel/backend/data",
+            "db_path": local_db_path
+            / "test.db",  # Use the local directory for the database
+        }
     )
     use_case = ServeUseCase(settings=settings)
 

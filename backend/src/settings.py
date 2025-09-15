@@ -4,15 +4,10 @@ from typing import Self
 from pydantic import AnyUrl, Field, HttpUrl, RedisDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_yaml import parse_yaml_raw_as
-
 from src.entities.content import TableOfContents
 
 
 class Settings(BaseSettings):
-    """
-    TODO:
-    - rename some configs to be more explicit (crawler_use_cache -> http_cache_enabled, meili_ -> search_, etc.)
-    """
 
     model_config = SettingsConfigDict(
         # `.env.prod` takes priority over `.env`

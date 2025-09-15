@@ -3,14 +3,16 @@ from src.repositories.ml.bert_similarity import SimilarSectionSearch, SimilarVal
 from src.settings import Settings
 
 
-def test_bert_similarity_search():
+def test_bert_similarity_search(
+    test_db_settings: Settings,
+):
     """
     Test the BERT similarity search.
     """
 
     # given
     # Initialize the BERT similarity search
-    bert_similarity_search = SimilarSectionSearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
     # Define a query and a corpus
     query = "film"
@@ -29,13 +31,15 @@ def test_bert_similarity_search():
     assert most_similar_section_title == "film"
 
 
-def test_most_similar_section():
+def test_most_similar_section(
+    test_db_settings: Settings,
+):
     """
     Test the most similar section method.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
     # Define a title and sections
     title = "film"
@@ -54,13 +58,13 @@ def test_most_similar_section():
     assert most_similar_section.content == "This is a film."
 
 
-def test_most_similar_section_empty():
+def test_most_similar_section_empty(test_db_settings: Settings):
     """
     Test the most similar section method with an empty list of sections.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
     # Define a title and an empty list of sections
     title = "film"
@@ -73,13 +77,13 @@ def test_most_similar_section_empty():
     assert most_similar_section is None
 
 
-def test_most_similar_section_no_match():
+def test_most_similar_section_no_match(test_db_settings: Settings):
     """
     Test the most similar section method with no matching sections.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
     # Define a title and sections with no match
     title = "nonexistent"
@@ -97,9 +101,9 @@ def test_most_similar_section_no_match():
     assert most_similar_section is None
 
 
-def test_most_similar_section_with_empty_title():
+def test_most_similar_section_with_empty_title(test_db_settings: Settings):
     # given
-    bert_similarity_search = SimilarSectionSearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
     title = ""
     sections = [
@@ -119,9 +123,9 @@ def test_most_similar_section_with_empty_title():
     assert most_similar_section.content == "This is a film."
 
 
-def test_most_similar_section_with_title_none():
+def test_most_similar_section_with_title_none(test_db_settings: Settings):
     # given
-    bert_similarity_search = SimilarSectionSearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
     title = None
     sections = [
@@ -141,13 +145,15 @@ def test_most_similar_section_with_title_none():
     assert most_similar_section.content == "This is a film."
 
 
-def test_most_similar_section_children_are_returned_in_section():
+def test_most_similar_section_children_are_returned_in_section(
+    test_db_settings: Settings,
+):
     """
     Test that the most similar section returns children sections.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
     # Define a title and sections with children
     title = "film"
@@ -176,13 +182,13 @@ def test_most_similar_section_children_are_returned_in_section():
     assert most_similar_section.children[1].title == "cast"
 
 
-def test_media_are_provided_in_similar_section():
+def test_media_are_provided_in_similar_section(test_db_settings: Settings):
     """
     Test that media are preserved in the section.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(Settings())
+    bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
     # Define a title and sections with media
     title = "film"
@@ -213,13 +219,13 @@ def test_media_are_provided_in_similar_section():
     assert len(most_similar_section.media) == 1
 
 
-def test_similar_value_search():
+def test_similar_value_search(test_db_settings: Settings):
     """
     Test the SimilarValueSearch class.
     """
 
     # given
-    settings = Settings()
+    settings = test_db_settings
 
     # Define a query and a corpus
     query = "française"

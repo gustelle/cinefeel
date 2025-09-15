@@ -32,11 +32,11 @@ def test_task_store():
     assert stub_storage.is_inserted, "Film was not inserted into the storage."
 
 
-def test_task_analyze():
+def test_task_analyze(test_db_settings: Settings):
     # given
 
     flow_runner = HtmlEntityExtractor(
-        settings=Settings(),  # settings are not really needed for this test
+        settings=test_db_settings,
         entity_type=Film,
     )
     analyzer = StubAnalyzer()

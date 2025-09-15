@@ -3,13 +3,13 @@ from src.repositories.ml.phonetics import PhoneticSearch
 from src.settings import Settings
 
 
-def test_similar_nationality_search():
+def test_similar_nationality_search(test_db_settings: Settings):
     """
     Test the SimilaritySearch for nationalities.
     """
 
     # given
-    settings = Settings()
+    settings = test_db_settings
     similar_value_search = PhoneticSearch(settings, NATIONALITIES["FR"])
 
     # Define a query

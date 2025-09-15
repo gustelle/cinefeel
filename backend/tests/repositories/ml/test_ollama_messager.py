@@ -5,7 +5,7 @@ from src.repositories.ml.ollama_generic import GenericOllamaExtractor
 from src.settings import Settings
 
 
-def test_parent_uid_is_attached_to_entity(mocker):
+def test_parent_uid_is_attached_to_entity(mocker, test_db_settings: Settings):
     # given
     base_info = Composable(
         title="Test Title",
@@ -34,7 +34,7 @@ def test_parent_uid_is_attached_to_entity(mocker):
         return_value=MockResponse(MockMessage(mock_llm_response)),
     )
 
-    parser = GenericOllamaExtractor(Settings())
+    parser = GenericOllamaExtractor(test_db_settings)
     entity_type = Biography
 
     # when

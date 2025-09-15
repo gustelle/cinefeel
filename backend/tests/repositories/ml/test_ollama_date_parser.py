@@ -7,9 +7,9 @@ from src.settings import Settings
 @pytest.mark.skip(
     reason="This test requires Ollama to be running and the model to be available."
 )
-def test_ollama_date_formatter():
+def test_ollama_date_formatter(test_db_settings: Settings):
 
-    formatter = OllamaDateFormatter(settings=Settings())
+    formatter = OllamaDateFormatter(settings=test_db_settings)
     birth_date = "25 octobre 1852"
     resp = formatter.format(
         content=birth_date,

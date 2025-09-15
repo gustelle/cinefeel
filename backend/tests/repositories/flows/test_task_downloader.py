@@ -10,11 +10,13 @@ from .stubs.stub_http import StubSyncHttpClient
 from .stubs.stub_storage import StubStorage
 
 
-def test_download_page_return_page_id():
+def test_download_page_return_page_id(
+    test_db_settings: Settings,
+):
 
     # given
 
-    settings = Settings()
+    settings = test_db_settings
     client = StubSyncHttpClient(response="<html>Test Content</html>")
     runner = PageContentDownloader(settings=settings, http_client=client)
     storage_handler = StubStorage()
@@ -31,10 +33,10 @@ def test_download_page_return_page_id():
     assert storage_handler.is_inserted is True
 
 
-def test_download_page_using_storage_return_content():
+def test_download_page_using_storage_return_content(test_db_settings: Settings):
 
     # given
-    settings = Settings()
+    settings = test_db_settings
     client = StubSyncHttpClient(response="<html>Test Content</html>")
     storage_handler = StubStorage()
     runner = PageContentDownloader(settings=settings, http_client=client)
@@ -51,11 +53,11 @@ def test_download_page_using_storage_return_content():
     assert storage_handler.is_inserted is True
 
 
-def test_download_page_using_storage_dont_return_content():
+def test_download_page_using_storage_dont_return_content(test_db_settings: Settings):
 
     # given
 
-    settings = Settings()
+    settings = test_db_settings
     client = StubSyncHttpClient(response="<html>Test Content</html>")
     storage_handler = StubStorage()
     runner = PageContentDownloader(settings=settings, http_client=client)
@@ -72,11 +74,11 @@ def test_download_page_using_storage_dont_return_content():
     assert storage_handler.is_inserted is True
 
 
-def test_download_page_http_error():
+def test_download_page_http_error(test_db_settings: Settings):
 
     # given
 
-    settings = Settings()
+    settings = test_db_settings
     client = StubSyncHttpClient(
         response="<html>Test Content</html>",
         raise_exc=HttpError("Boom", status_code=503),

@@ -5,7 +5,7 @@ from src.repositories.ml.mistral_data_miner import MistralDataMiner
 from src.settings import Settings
 
 
-def test_parent_uid_is_attached_to_entity(mocker):
+def test_parent_uid_is_attached_to_entity(mocker, test_db_settings: Settings):
     # given
     base_info = Composable(
         title="Test Title",
@@ -56,7 +56,7 @@ def test_parent_uid_is_attached_to_entity(mocker):
         return_value=MockResponse(mock_llm_response),
     )
 
-    parser = MistralDataMiner(Settings())
+    parser = MistralDataMiner(test_db_settings)
     entity_type = Biography
 
     # when

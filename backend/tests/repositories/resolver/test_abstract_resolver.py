@@ -1,4 +1,3 @@
-
 from src.entities.content import Section
 from src.entities.film import Film, FilmMedia
 from src.entities.ml import ExtractionResult
@@ -77,7 +76,7 @@ def test_extract_entities_with_children():
     assert all(isinstance(entity.entity, FilmMedia) for entity in extracted_entities)
 
 
-def test_extracted_entities_uid_is_assigned():
+def test_extracted_entities_uid_is_assigned(test_db_settings: Settings):
     """
     Test that the extracted entities have their UID assigned correctly.
     this is a major requirement for the resolver to work properly
@@ -129,7 +128,7 @@ def test_extracted_entities_uid_is_assigned():
     assert len(results) == 2
 
 
-def test_sections_max_children():
+def test_sections_max_children(test_db_settings: Settings):
     # given
 
     # a section withe lots of children
@@ -154,8 +153,10 @@ def test_sections_max_children():
             self.configurations = {
                 FilmMedia: ["Section 1", "Section 2"],
             }
-            self.settings = Settings(
-                sections_max_children=5,  # Limit to 5 children per section
+            self.settings = test_db_settings.model_copy(
+                update={
+                    "sections_max_children": 5,  # Limit to 5 children per section
+                }
             )
 
         def assemble(self, *args, **kwargs):
@@ -178,7 +179,7 @@ def test_sections_max_children():
     assert len(filtered_sections[0].children) == 5
 
 
-def test_sections_max_per_page():
+def test_sections_max_per_page(test_db_settings: Settings):
     # given
     # lots of sections, more than the max per page
     sections = [
@@ -195,8 +196,10 @@ def test_sections_max_per_page():
             self.configurations = {
                 FilmMedia: ["Section 1", "Section 2"],
             }
-            self.settings = Settings(
-                sections_max_per_page=100,  # Limit to 100 sections per page
+            self.settings = test_db_settings.model_copy(
+                update={
+                    "sections_max_per_page": 100,  # Limit to 100 sections per page
+                }
             )
 
         def assemble(self, *args, **kwargs):

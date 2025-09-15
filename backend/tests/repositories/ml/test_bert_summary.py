@@ -1,10 +1,9 @@
-
 from src.interfaces.content_splitter import Section
 from src.repositories.ml.bert_summary import SectionSummarizer
 from src.settings import Settings
 
 
-def test_bert_summary():
+def test_bert_summary(test_db_settings: Settings):
 
     # Test the summarize method with a sample text
     sample_text = """
@@ -72,7 +71,7 @@ Feuillade consacre l’année 1924 tout entière à sa jeune vedette dont René 
     """
     section = Section(title="Test Section", content=sample_text)
 
-    summarize = SectionSummarizer(Settings())
+    summarize = SectionSummarizer(test_db_settings)
 
     # when
     section = summarize.process(section)
@@ -82,7 +81,7 @@ Feuillade consacre l’année 1924 tout entière à sa jeune vedette dont René 
     assert len(section.content) <= len(sample_text)
 
 
-def test_children_are_summarized():
+def test_children_are_summarized(test_db_settings: Settings):
     # given
     sample_text = """
     Les débuts
@@ -98,7 +97,7 @@ Issu d’une famille de courtiers en vins du Languedoc, après des études à Br
         children=[Section(title="Child Section", content=child_text)],
     )
 
-    summarize = SectionSummarizer(Settings())
+    summarize = SectionSummarizer(test_db_settings)
 
     # when
     section = summarize.process(section)
@@ -108,7 +107,7 @@ Issu d’une famille de courtiers en vins du Languedoc, après des études à Br
     assert len(section.children[0].content) <= len(child_text)
 
 
-def test_media_are_preserved_in_summarized_section():
+def test_media_are_preserved_in_summarized_section(test_db_settings: Settings):
     # given
     sample_text = "This is a sample text with media."
     media = [
@@ -116,7 +115,7 @@ def test_media_are_preserved_in_summarized_section():
     ]
     section = Section(title="Test Section", content=sample_text, media=media)
 
-    summarize = SectionSummarizer(Settings())
+    summarize = SectionSummarizer(test_db_settings)
 
     # when
     summarized = summarize.process(section)
@@ -124,7 +123,9 @@ def test_media_are_preserved_in_summarized_section():
     assert summarized.media == section.media  # Check if media is preserved
 
 
-def test_media_in_children_are_preserved_in_summarized_section():
+def test_media_in_children_are_preserved_in_summarized_section(
+    test_db_settings: Settings,
+):
     # given
     sample_text = "This is a sample text with media."
     media = [
@@ -142,7 +143,7 @@ def test_media_in_children_are_preserved_in_summarized_section():
         ],
     )
 
-    summarize = SectionSummarizer(Settings())
+    summarize = SectionSummarizer(test_db_settings)
 
     # when
     summarized = summarize.process(section)

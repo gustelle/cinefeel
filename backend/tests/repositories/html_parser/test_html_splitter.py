@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 from src.entities.composable import Composable
 from src.repositories.html_parser.html_splitter import (
     Section,
@@ -17,15 +16,15 @@ from .stubs.stub_pruner import DoNothingPruner
 current_dir = Path(__file__).parent
 
 
-def test_split_subsections():
+def test_split_subsections(
+    test_db_settings: Settings,
+):
 
     # given
     html_file = current_dir / "test_html/nested_sections.html"
     html_content = html_file.read_text(encoding="utf-8")
     pruner = DoNothingPruner()
-    settings = Settings(
-        sections_min_length=1,  # Set to 1 to ensure all sections are processed
-    )
+    settings = test_db_settings.model_copy(update={"sections_min_length": 1})
 
     semantic = WikipediaAPIContentSplitter(
         parser=WikipediaParser(), pruner=pruner, settings=settings
@@ -63,7 +62,7 @@ def test_split_complex_page(read_beethoven_html):
     ), "All sections should be of type HtmlSection"
 
 
-def test_split_melies_page(read_melies_html):
+def test_split_melies_page(read_melies_html, test_db_settings: Settings):
     """
     Test the split_sections method of the HtmlSemantic class.
     """
@@ -71,9 +70,7 @@ def test_split_melies_page(read_melies_html):
     semantic = WikipediaAPIContentSplitter(
         parser=WikipediaParser(),
         pruner=DoNothingPruner(),
-        settings=Settings(
-            sections_min_length=1  # Set to 1 to ensure all sections are processed
-        ),
+        settings=test_db_settings.model_copy(update={"sections_min_length": 1}),
     )
 
     # when
@@ -97,15 +94,13 @@ def test_split_melies_page(read_melies_html):
             break
 
 
-def test_split_with_root_tag(read_beethoven_html):
+def test_split_with_root_tag(read_beethoven_html, test_db_settings: Settings):
 
     # given
     semantic = WikipediaAPIContentSplitter(
         parser=WikipediaParser(),
         pruner=DoNothingPruner(),
-        settings=Settings(
-            sections_min_length=1  # Set to 1 to ensure all sections are processed
-        ),
+        settings=test_db_settings.model_copy(update={"sections_min_length": 1}),
     )
 
     # when
@@ -274,7 +269,9 @@ def test_split_sections_no_title_and_no_content():
     assert len(sections) == 0
 
 
-def test_split_preserve_hierarchy():
+def test_split_preserve_hierarchy(
+    test_db_settings: Settings,
+):
     # given
     html_content = """
     <html>
@@ -302,7 +299,7 @@ def test_split_preserve_hierarchy():
     semantic = WikipediaAPIContentSplitter(
         parser=WikipediaParser(),
         pruner=DoNothingPruner(),
-        settings=Settings(sections_min_length=1),
+        settings=test_db_settings.model_copy(update={"sections_min_length": 1}),
     )
     # when
     base_info, sections = semantic.split("1", html_content)
@@ -317,7 +314,9 @@ def test_split_preserve_hierarchy():
     assert sections[0].children[1].title == "Nested Section 1.2"
 
 
-def test_split_nested_sections_with_div():
+def test_split_nested_sections_with_div(
+    test_db_settings: Settings,
+):
     # given
     html_content = """
     <html>
@@ -345,7 +344,7 @@ def test_split_nested_sections_with_div():
     semantic = WikipediaAPIContentSplitter(
         parser=WikipediaParser(),
         pruner=DoNothingPruner(),
-        settings=Settings(sections_min_length=1),
+        settings=test_db_settings.model_copy(update={"sections_min_length": 1}),
     )
 
     # when
@@ -380,7 +379,7 @@ def test_pruner_is_called():
     assert pruner.is_called, "Pruner should be called during the split process"
 
 
-def test_sections_are_enriched_with_media():
+def test_sections_are_enriched_with_media(test_db_settings: Settings):
     # given
     # a valid HTML file with sections that should be enriched with media
     html_file = current_dir / "test_html/sections_with_media.html"
@@ -388,9 +387,7 @@ def test_sections_are_enriched_with_media():
     semantic = WikipediaAPIContentSplitter(
         parser=WikipediaParser(),
         pruner=DoNothingPruner(),
-        settings=Settings(
-            sections_min_length=1  # Set to 1 to ensure all sections are processed
-        ),
+        settings=test_db_settings.model_copy(update={"sections_min_length": 1}),
     )
 
     # when

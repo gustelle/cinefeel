@@ -9,11 +9,11 @@ from src.repositories.db.redis.json import RedisJsonStorage
 from src.settings import Settings
 
 
-def test_redis_insert_dict(test_film: Film):
+def test_redis_insert_dict(test_film: Film, test_db_settings: Settings):
     """Test the insert method of RedisStorage with a dictionary."""
 
     # given
-    settings = Settings()
+    settings = test_db_settings
     storage = RedisJsonStorage[Film](settings)
 
     r = redis.Redis(
@@ -40,11 +40,11 @@ def test_redis_insert_dict(test_film: Film):
     r.json().delete(storage._get_key(test_film.uid))
 
 
-def test_redis_select_film(test_film: Film):
+def test_redis_select_film(test_film: Film, test_db_settings: Settings):
     """Test the select method of RedisStorage with a dictionary."""
 
     # given
-    settings = Settings()
+    settings = test_db_settings
     storage = RedisJsonStorage[Film](settings)
 
     r = redis.Redis(
@@ -73,11 +73,11 @@ def test_redis_select_film(test_film: Film):
     r.json().delete(storage._get_key(test_film.uid))
 
 
-def test_redis_scan_film(test_film: Film):
+def test_redis_scan_film(test_film: Film, test_db_settings: Settings):
     """Test the scan method of RedisStorage with a dictionary."""
 
     # given
-    settings = Settings()
+    settings = test_db_settings
     storage = RedisJsonStorage[Film](settings)
 
     test_film_1 = test_film.model_copy(deep=True)
@@ -115,11 +115,11 @@ def test_redis_scan_film(test_film: Film):
     r.json().delete(storage._get_key(test_film.uid))
 
 
-def test_redis_query_by_permalink(test_film: Film):
+def test_redis_query_by_permalink(test_film: Film, test_db_settings: Settings):
     """Test the query method of RedisStorage."""
 
     # given
-    settings = Settings()
+    settings = test_db_settings
     storage = RedisJsonStorage[Film](settings)
 
     test_film_1 = test_film.model_copy(deep=True)
@@ -168,11 +168,11 @@ def test_redis_query_by_permalink(test_film: Film):
     r.json().delete(storage._get_key(test_film.uid))
 
 
-def test_redis_hashing_is_deterministic(test_film: Film):
+def test_redis_hashing_is_deterministic(test_film: Film, test_db_settings: Settings):
     """Test that the uid_hash is deterministic for the same UID."""
 
     # given
-    settings = Settings()
+    settings = test_db_settings
     storage = RedisJsonStorage[Film](settings)
 
     # when
@@ -183,11 +183,11 @@ def test_redis_hashing_is_deterministic(test_film: Film):
     assert hash1 == hash2, "UID hash should be deterministic and consistent"
 
 
-def test_redis_query_after(test_film: Film):
+def test_redis_query_after(test_film: Film, test_db_settings: Settings):
     """Test the query method of RedisStorage with 'after' parameter."""
 
     # given
-    settings = Settings()
+    settings = test_db_settings
     storage = RedisJsonStorage[Film](settings)
 
     test_film_1 = test_film.model_copy(deep=True)
@@ -254,11 +254,11 @@ def test_redis_query_after(test_film: Film):
     r.json().delete(storage._get_key(test_film_4.uid))
 
 
-def test_insert_many(test_film: Film):
+def test_insert_many(test_film: Film, test_db_settings: Settings):
     """Test the insert_many method of RedisStorage."""
 
     # given
-    settings = Settings()
+    settings = test_db_settings
     storage = RedisJsonStorage[Film](settings)
 
     r = redis.Redis(

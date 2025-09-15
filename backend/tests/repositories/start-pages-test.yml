@@ -1,0 +1,5 @@
+
+- page_id: "test"
+  link_selector: ".wikitable td:nth-child(1)"
+  entity_type: "Movie"
+  
