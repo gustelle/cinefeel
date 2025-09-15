@@ -194,22 +194,10 @@ class HtmlEntityExtractor(ITaskExecutor):
     )
     def execute(
         self,
+        content_id: str,
         content: str,
-        content_ids: list[str] | None,
-        input_storage: IStorageHandler[str],
         output_storage: IStorageHandler[Composable],
     ) -> None:
-        """
-
-        Args:
-            content_ids (list[str] | None): List of content IDs to analyze.
-            input_storage (IStorageHandler[str]): Storage handler for input HTML content downloaded.
-            output_storage (IStorageHandler[Composable]): Storage handler for output entities extracted from the HTML content.
-        """
-
-        logger = get_run_logger()
-
-        logger.info("'analyze' flow started with content IDs: %s", content_ids)
 
         analyzer = Html2TextSectionsChopper(
             content_splitter=WikipediaAPIContentSplitter(
@@ -229,27 +217,18 @@ class HtmlEntityExtractor(ITaskExecutor):
         # see: https://github.com/PrefectHQ/prefect/issues/17517
         _futures = []
 
-        for content_id in content_ids:
+        future_entity = self.do_analysis.submit(
+            analyzer=analyzer,
+            content_id=content_id,
+            html_content=content,
+            section_searcher=search_processor,
+        )
 
-            # file_content = input_storage.select(content_id)
-
-            # if file_content is None:
-            #     logger.warning(f"Content with ID '{content_id}' not found in storage.")
-            #     continue
-
-            future_entity = self.do_analysis.submit(
-                analyzer=analyzer,
-                content_id=content_id,
-                # html_content=file_content,
-                html_content=content,
-                section_searcher=search_processor,
+        _futures.append(
+            self.to_storage.submit(
+                storage=output_storage,
+                entity=future_entity,
             )
-
-            _futures.append(
-                self.to_storage.submit(
-                    storage=output_storage,
-                    entity=future_entity,
-                )
-            )
+        )
 
         wait(_futures)
