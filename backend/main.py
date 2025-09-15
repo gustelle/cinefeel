@@ -5,9 +5,23 @@ import typer
 from loguru import logger
 
 from src.settings import Settings
+from src.use_cases.db_storage import StorageType
 from src.use_cases.extract import ExtractionType
+from src.use_cases.scrape import ScrapingType
 
 app = typer.Typer()
+
+
+@app.command()
+def scrape(type: Optional[ScrapingType] = None):
+
+    from src.use_cases.scrape import ScrapingUseCase
+
+    uc = ScrapingUseCase(
+        settings=Settings(),
+        types=[type.value] if type else list(ScrapingType),
+    )
+    uc.execute()
 
 
 @app.command()
@@ -20,9 +34,9 @@ def extract(type: Optional[ExtractionType] = None):
         python main.py extract # runs both types
     """
 
-    from src.use_cases.extract import ExtractUseCase
+    from src.use_cases.extract import EntityExtractionUseCase
 
-    uc = ExtractUseCase(
+    uc = EntityExtractionUseCase(
         settings=Settings(),
         types=[type.value] if type else list(ExtractionType),
     )
@@ -30,25 +44,37 @@ def extract(type: Optional[ExtractionType] = None):
 
 
 @app.command()
-def serve():
+def store(type: Optional[StorageType] = None):
 
-    from src.use_cases.serve import ServeUseCase
+    from src.use_cases.db_storage import DBStorageUseCase
 
-    uc = ServeUseCase(
+    uc = DBStorageUseCase(
         settings=Settings(),
+        types=[type.value] if type else list(StorageType),
     )
     uc.execute()
 
 
-@app.command()
-def deploy():
+# @app.command()
+# def serve():
 
-    from src.use_cases.deploy import DeployFlowsUseCase
+#     from src.use_cases.serve import ServeUseCase
 
-    uc = DeployFlowsUseCase(
-        settings=Settings(),
-    )
-    uc.execute()
+#     uc = ServeUseCase(
+#         settings=Settings(),
+#     )
+#     uc.execute()
+
+
+# @app.command()
+# def deploy():
+
+#     from src.use_cases.deploy import DeployFlowsUseCase
+
+#     uc = DeployFlowsUseCase(
+#         settings=Settings(),
+#     )
+#     uc.execute()
 
 
 if __name__ == "__main__":

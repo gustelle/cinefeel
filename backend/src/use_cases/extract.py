@@ -1,10 +1,8 @@
 from enum import StrEnum
+from pathlib import Path
 
-from prefect import serve
+from prefect import deploy, flow
 
-from src.repositories.orchestration.pipelines.extraction_pipeline import (
-    batch_extraction_flow,
-)
 from src.settings import Settings
 
 
@@ -13,8 +11,8 @@ class ExtractionType(StrEnum):
     persons = "persons"
 
 
-class ExtractUseCase:
-    """for debugging purposes, to run the extraction flow directly without needing to deploy it first"""
+class EntityExtractionUseCase:
+    """Handles the scraping of Wikipedia pages for specific entity types."""
 
     settings: Settings
     _types: list[ExtractionType]
@@ -29,16 +27,22 @@ class ExtractUseCase:
         if "movies" in self._types:
 
             _flows.append(
-                batch_extraction_flow.to_deployment(
-                    name="wikipedia_movies_extraction",
-                    description="Extracts movies from Wikipedia pages.",
+                flow.from_source(
+                    source=Path(__file__).parent.parent
+                    / "repositories/orchestration/flows",
+                    entrypoint="entities_extraction.py:extract_entities_flow",
+                ).to_deployment(
+                    name="movies_extraction",
+                    description="Extracts movies from HTML content.",
                     parameters={
                         "settings": self.settings,
-                        "pages": [
-                            p
-                            for p in self.settings.download_start_pages
-                            if p.entity_type == "Movie"
-                        ],
+                        "entity_type": "Movie",
+                    },
+                    cron="0 0 * * *",  # Every day at midnight
+                    job_variables={
+                        "working_dir": Path(__file__)
+                        .parent.parent.parent.resolve()
+                        .as_posix(),
                     },
                 )
             )
@@ -46,20 +50,27 @@ class ExtractUseCase:
         if "persons" in self._types:
 
             _flows.append(
-                batch_extraction_flow.to_deployment(
-                    name="wikipedia_persons_extraction",
-                    description="Extracts persons from Wikipedia pages.",
+                flow.from_source(
+                    source=Path(__file__).parent.parent
+                    / "repositories/orchestration/flows",
+                    entrypoint="entities_extraction.py:extract_entities_flow",
+                ).to_deployment(
+                    name="persons_extraction",
+                    description="Extracts persons from HTML content.",
                     parameters={
                         "settings": self.settings,
-                        "pages": [
-                            p
-                            for p in self.settings.download_start_pages
-                            if p.entity_type == "Person"
-                        ],
+                        "entity_type": "Person",
+                    },
+                    cron="0 0 * * *",  # Every day at midnight
+                    job_variables={
+                        "working_dir": Path(__file__)
+                        .parent.parent.parent.resolve()
+                        .as_posix(),
                     },
                 )
             )
 
-        serve(
+        deploy(
             *_flows,
+            work_pool_name="local-processes",
         )

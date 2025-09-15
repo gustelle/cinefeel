@@ -194,6 +194,7 @@ class HtmlEntityExtractor(ITaskExecutor):
     )
     def execute(
         self,
+        content: str,
         content_ids: list[str] | None,
         input_storage: IStorageHandler[str],
         output_storage: IStorageHandler[Composable],
@@ -230,16 +231,17 @@ class HtmlEntityExtractor(ITaskExecutor):
 
         for content_id in content_ids:
 
-            file_content = input_storage.select(content_id)
+            # file_content = input_storage.select(content_id)
 
-            if file_content is None:
-                logger.warning(f"Content with ID '{content_id}' not found in storage.")
-                continue
+            # if file_content is None:
+            #     logger.warning(f"Content with ID '{content_id}' not found in storage.")
+            #     continue
 
             future_entity = self.do_analysis.submit(
                 analyzer=analyzer,
                 content_id=content_id,
-                html_content=file_content,
+                # html_content=file_content,
+                html_content=content,
                 section_searcher=search_processor,
             )
 
