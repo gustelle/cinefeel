@@ -2,7 +2,7 @@ from enum import StrEnum
 
 from prefect import serve
 
-from src.repositories.task_orchestration.extraction_pipeline import (
+from src.repositories.orchestration.pipelines.extraction_pipeline import (
     batch_extraction_flow,
 )
 from src.settings import Settings

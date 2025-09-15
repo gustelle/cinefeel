@@ -1,10 +1,10 @@
 from prefect import serve
 from prefect.events import DeploymentEventTrigger
 
-from src.repositories.task_orchestration.extraction_pipeline import (
+from src.repositories.orchestration.pipelines.extraction_pipeline import (
     batch_extraction_flow,
 )
-from src.repositories.task_orchestration.relations_pipeline import (
+from src.repositories.orchestration.pipelines.relations_pipeline import (
     on_permalink_not_found,
     relationship_flow,
 )

@@ -12,17 +12,11 @@ from src.repositories.db.graph.person_graph import PersonGraphHandler
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
+from src.repositories.orchestration.tasks.task_downloader import PageContentDownloader
+from src.repositories.orchestration.tasks.task_graph_storage import DBStorageUpdater
+from src.repositories.orchestration.tasks.task_html_parsing import HtmlEntityExtractor
+from src.repositories.orchestration.tasks.task_indexer import SearchUpdater
 from src.repositories.search.meili_indexer import MeiliHandler
-from src.repositories.task_orchestration.flows.task_downloader import (
-    PageContentDownloader,
-)
-from src.repositories.task_orchestration.flows.task_graph_storage import (
-    DBStorageUpdater,
-)
-from src.repositories.task_orchestration.flows.task_html_parsing import (
-    HtmlEntityExtractor,
-)
-from src.repositories.task_orchestration.flows.task_indexer import SearchUpdater
 from src.settings import Settings
 
 

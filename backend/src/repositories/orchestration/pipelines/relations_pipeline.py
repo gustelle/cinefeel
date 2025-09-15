@@ -7,7 +7,7 @@ from src.entities.person import Person
 from src.repositories.db.graph.film_graph import FilmGraphHandler
 from src.repositories.db.graph.person_graph import PersonGraphHandler
 from src.repositories.http.sync_http import SyncHttpClient
-from src.repositories.task_orchestration.flows.task_relationship_storage import (
+from src.repositories.orchestration.tasks.task_relationship_storage import (
     RelationshipFlow,
 )
 from src.settings import Settings

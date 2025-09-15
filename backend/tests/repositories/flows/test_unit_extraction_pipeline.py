@@ -6,7 +6,9 @@ import pytest
 from neo4j import GraphDatabase
 
 from src.repositories.db.graph.person_graph import PersonGraphHandler
-from src.repositories.task_orchestration.extraction_pipeline import unit_extraction_flow
+from src.repositories.orchestration.pipelines.extraction_pipeline import (
+    unit_extraction_flow,
+)
 from src.settings import Settings
 
 

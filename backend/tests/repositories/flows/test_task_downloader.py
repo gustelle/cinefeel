@@ -1,9 +1,7 @@
 import pytest
 
 from src.interfaces.http_client import HttpError
-from src.repositories.task_orchestration.flows.task_downloader import (
-    PageContentDownloader,
-)
+from src.repositories.orchestration.tasks.task_downloader import PageContentDownloader
 from src.settings import Settings
 
 from .stubs.stub_http import StubSyncHttpClient
