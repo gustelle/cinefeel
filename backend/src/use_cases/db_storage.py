@@ -1,22 +1,23 @@
 from enum import StrEnum
+from pathlib import Path
 
-from prefect import serve
+from prefect import deploy, flow
 
-from src.repositories.orchestration.flows.db_storage import db_storage_flow
 from src.settings import Settings
 
 
-class StorageType(StrEnum):
+class DBStorageType(StrEnum):
     movies = "movies"
     persons = "persons"
 
 
 class DBStorageUseCase:
+    """Handles the storage of entity data into the database."""
 
     settings: Settings
-    _types: list[StorageType]
+    _types: list[DBStorageType]
 
-    def __init__(self, settings: Settings, types: list[StorageType]):
+    def __init__(self, settings: Settings, types: list[DBStorageType]):
         self.settings = settings
         self._types = types
 
@@ -26,12 +27,22 @@ class DBStorageUseCase:
         if "movies" in self._types:
 
             _flows.append(
-                db_storage_flow.to_deployment(
+                flow.from_source(
+                    source=Path(__file__).parent.parent
+                    / "repositories/orchestration/flows",
+                    entrypoint="db_storage.py:db_storage_flow",
+                ).to_deployment(
                     name="movies_storage",
-                    description="Stores movies in the database.",
+                    description="Stores movies into the database.",
                     parameters={
                         "settings": self.settings,
                         "entity_type": "Movie",
+                    },
+                    cron="0 0 * * *",  # Every day at midnight
+                    job_variables={
+                        "working_dir": Path(__file__)
+                        .parent.parent.parent.resolve()
+                        .as_posix(),
                     },
                 )
             )
@@ -39,16 +50,27 @@ class DBStorageUseCase:
         if "persons" in self._types:
 
             _flows.append(
-                db_storage_flow.to_deployment(
+                flow.from_source(
+                    source=Path(__file__).parent.parent
+                    / "repositories/orchestration/flows",
+                    entrypoint="db_storage.py:db_storage_flow",
+                ).to_deployment(
                     name="persons_storage",
-                    description="Stores persons in the database.",
+                    description="Stores persons into the database.",
                     parameters={
                         "settings": self.settings,
                         "entity_type": "Person",
                     },
+                    cron="0 0 * * *",  # Every day at midnight
+                    job_variables={
+                        "working_dir": Path(__file__)
+                        .parent.parent.parent.resolve()
+                        .as_posix(),
+                    },
                 )
             )
 
-        serve(
+        deploy(
             *_flows,
+            work_pool_name="local-processes",
         )

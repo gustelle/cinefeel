@@ -5,7 +5,7 @@ import typer
 from loguru import logger
 
 from src.settings import Settings
-from src.use_cases.db_storage import StorageType
+from src.use_cases.db_storage import DBStorageType
 from src.use_cases.extract import ExtractionType
 from src.use_cases.scrape import ScrapingType
 
@@ -44,37 +44,15 @@ def extract(type: Optional[ExtractionType] = None):
 
 
 @app.command()
-def store(type: Optional[StorageType] = None):
+def store(type: Optional[DBStorageType] = None):
 
     from src.use_cases.db_storage import DBStorageUseCase
 
     uc = DBStorageUseCase(
         settings=Settings(),
-        types=[type.value] if type else list(StorageType),
+        types=[type.value] if type else list(DBStorageType),
     )
     uc.execute()
-
-
-# @app.command()
-# def serve():
-
-#     from src.use_cases.serve import ServeUseCase
-
-#     uc = ServeUseCase(
-#         settings=Settings(),
-#     )
-#     uc.execute()
-
-
-# @app.command()
-# def deploy():
-
-#     from src.use_cases.deploy import DeployFlowsUseCase
-
-#     uc = DeployFlowsUseCase(
-#         settings=Settings(),
-#     )
-#     uc.execute()
 
 
 if __name__ == "__main__":
