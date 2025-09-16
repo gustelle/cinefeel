@@ -47,25 +47,39 @@ class HtmlEntityExtractor(ITaskExecutor):
 
     entity_type: type[Composable]
     settings: Settings
+    analyzer: IContentAnalyzer
+    search_processor: SimilarSectionSearch
 
     def __init__(self, settings: Settings, entity_type: Type[Composable]):
         self.settings = settings
         self.entity_type = entity_type
 
+        self.analyzer = Html2TextSectionsChopper(
+            content_splitter=WikipediaAPIContentSplitter(
+                parser=WikipediaParser(),
+                pruner=HTMLSimplifier(),
+                settings=self.settings,
+            ),
+            post_processors=[
+                TextSectionConverter(),
+                SectionSummarizer(settings=self.settings),
+            ],
+        )
+
+        self.search_processor = SimilarSectionSearch(settings=self.settings)
+
     @task(task_run_name="do_analysis-{content_id}", cache_policy=NO_CACHE)
     def do_analysis(
         self,
-        analyzer: IContentAnalyzer,
         content_id: str,
         html_content: str,
-        section_searcher: SimilarSectionSearch,
     ) -> Composable | None:
         """
         Analyze the content and return a storable entity.
 
         """
         logger = get_run_logger()
-        result = analyzer.process(content_id, html_content)
+        result = self.analyzer.process(content_id, html_content)
 
         if result is None:
             logger.warning(
@@ -79,7 +93,7 @@ class HtmlEntityExtractor(ITaskExecutor):
         if self.entity_type == Film:
             return BasicFilmResolver(
                 settings=self.settings,
-                section_searcher=section_searcher,
+                section_searcher=self.search_processor,
                 configurations=[
                     ResolutionConfiguration(
                         # extractor=MistralDataMiner(settings=self.settings),
@@ -123,7 +137,7 @@ class HtmlEntityExtractor(ITaskExecutor):
         elif self.entity_type == Person:
             return BasicPersonResolver(
                 settings=self.settings,
-                section_searcher=section_searcher,
+                section_searcher=self.search_processor,
                 configurations=[
                     ResolutionConfiguration(
                         extractor=GenericOllamaExtractor(settings=self.settings),
@@ -199,29 +213,13 @@ class HtmlEntityExtractor(ITaskExecutor):
         output_storage: IStorageHandler[Composable],
     ) -> None:
 
-        analyzer = Html2TextSectionsChopper(
-            content_splitter=WikipediaAPIContentSplitter(
-                parser=WikipediaParser(),
-                pruner=HTMLSimplifier(),
-                settings=self.settings,
-            ),
-            post_processors=[
-                TextSectionConverter(),
-                SectionSummarizer(settings=self.settings),
-            ],
-        )
-
-        search_processor = SimilarSectionSearch(settings=self.settings)
-
         # need to keep track of the futures to wait for them later
         # see: https://github.com/PrefectHQ/prefect/issues/17517
         _futures = []
 
         future_entity = self.do_analysis.submit(
-            analyzer=analyzer,
             content_id=content_id,
             html_content=content,
-            section_searcher=search_processor,
         )
 
         _futures.append(

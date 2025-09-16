@@ -12,7 +12,7 @@ from src.repositories.orchestration.tasks.task_html_parsing import HtmlEntityExt
 from src.settings import Settings
 
 
-def hash_content(content: str) -> str:
+def compute_uid(content: str) -> str:
 
     sha1 = hashlib.sha1()
     sha1.update(str.encode(content))
@@ -27,30 +27,37 @@ def extract_entities_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
 ) -> None:
+    """
+    Extract entities (Film or Person) from HTML contents
+
+    for technical reasons (Prefect serialization) we use "Movie" and "Person" as entity_type
+    but they map to the Film and Person classes respectively.
+    """
 
     tasks = []
+    _ent_type = None
 
     match entity_type:
         case "Movie":
-            entity_type = Film
+            _ent_type = Film
         case "Person":
-            entity_type = Person
+            _ent_type = Person
         case _:
             raise ValueError(f"Unsupported entity type: {entity_type}")
 
     analysis_flow = HtmlEntityExtractor(
         settings=settings,
-        entity_type=entity_type,
+        entity_type=_ent_type,
     )
 
     html_store = RedisTextStorage(settings=settings)
-    json_store = RedisJsonStorage[entity_type](settings=settings)
+    json_store = RedisJsonStorage[_ent_type](settings=settings)
 
     # iterate over all HTML contents in Redis
     for content in html_store.scan():
 
         # compute a unique content_id for the content
-        content_id = hash_content(content)
+        content_id = compute_uid(content)
 
         tasks.append(
             analysis_flow.execute.submit(
@@ -59,5 +66,6 @@ def extract_entities_flow(
                 output_storage=json_store,
             )
         )
+        break  # --- REMOVE ---
 
     wait(tasks)
