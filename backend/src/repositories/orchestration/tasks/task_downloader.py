@@ -142,7 +142,8 @@ class PageContentDownloader(ITaskExecutor):
             return_results (bool, optional): Defaults to False.
 
         Returns:
-            list[str] | None:
+            list[str] | None: a list of `page_id` stored into the storage backend
+                if `return_results` is set to True, else None
         """
 
         if isinstance(page, TableOfContents):

@@ -1,8 +1,7 @@
 from prefect import flow, get_run_logger
+from prefect.futures import wait
 
 from src.entities.content import TableOfContents
-from src.entities.film import Film
-from src.entities.person import Person
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.orchestration.tasks.task_downloader import PageContentDownloader
@@ -11,7 +10,7 @@ from src.settings import Settings
 
 @flow(
     name="scrape_flow",
-    description="Scrapes Wikipedia pages and stores them into a storage backend.",
+    description="Scrapes Wikipedia pages and stores HTML contents into Redis",
 )
 def scraping_flow(
     settings: Settings,
@@ -27,6 +26,10 @@ def scraping_flow(
     # make them unique by page_id
     pages = {p.page_id: p for p in pages}.values()
 
+    html_store = RedisTextStorage(settings=settings)
+
+    tasks = []
+
     # for each page
     for config in pages:
 
@@ -34,18 +37,12 @@ def scraping_flow(
             f"Processing '{config.__class__.__name__}' with ID '{config.page_id}'"
         )
 
-        match config.entity_type:
-            case "Movie":
-                entity_type = Film
-            case "Person":
-                entity_type = Person
-            case _:
-                raise ValueError(f"Unsupported entity type: {entity_type}")
-
-        html_store = RedisTextStorage(settings=settings)
-
-        download_flow.execute.submit(
-            page=config,
-            storage_handler=html_store,
-            return_results=False,
+        tasks.append(
+            download_flow.execute.submit(
+                page=config,
+                storage_handler=html_store,
+                return_results=False,
+            )
         )
+
+    wait(tasks)
