@@ -15,6 +15,7 @@ from src.entities.person import (
 )
 from src.entities.woa import WOAInfluence
 from src.interfaces.analyzer import IContentAnalyzer
+from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import ResolutionConfiguration
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
@@ -50,11 +51,19 @@ class HtmlEntityExtractor(ITaskExecutor):
     analyzer: IContentAnalyzer
     search_processor: SimilarSectionSearch
 
-    def __init__(self, settings: Settings, entity_type: Type[Composable]):
+    def __init__(
+        self,
+        settings: Settings,
+        entity_type: Type[Composable],
+        # for testing,
+        # enable injection of dependencies
+        analyzer: IContentAnalyzer = None,
+        search_processor: Processor = None,
+    ):
         self.settings = settings
         self.entity_type = entity_type
 
-        self.analyzer = Html2TextSectionsChopper(
+        self.analyzer = analyzer or Html2TextSectionsChopper(
             content_splitter=WikipediaAPIContentSplitter(
                 parser=WikipediaParser(),
                 pruner=HTMLSimplifier(),
@@ -66,7 +75,9 @@ class HtmlEntityExtractor(ITaskExecutor):
             ],
         )
 
-        self.search_processor = SimilarSectionSearch(settings=self.settings)
+        self.search_processor = search_processor or SimilarSectionSearch(
+            settings=self.settings
+        )
 
     @task(task_run_name="do_analysis-{content_id}", cache_policy=NO_CACHE)
     def do_analysis(

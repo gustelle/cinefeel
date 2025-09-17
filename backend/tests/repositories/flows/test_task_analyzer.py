@@ -9,12 +9,12 @@ from .stubs.stub_section_search import StubSectionSearch
 from .stubs.stub_storage import StubStorage
 
 
-def test_task_store():
+def test_task_store(test_db_settings: Settings):
 
     # given
     stub_storage = StubStorage()
     flow_runner = HtmlEntityExtractor(
-        settings=None,  # Assuming settings are not needed for this test
+        settings=test_db_settings,
         entity_type=Film,
     )
     entity = Film(
@@ -33,22 +33,23 @@ def test_task_store():
 def test_task_analyze(test_db_settings: Settings):
     # given
 
+    analyzer = StubAnalyzer()
+    section_searcher = StubSectionSearch()
+
     flow_runner = HtmlEntityExtractor(
         settings=test_db_settings,
         entity_type=Film,
+        analyzer=analyzer,
+        search_processor=section_searcher,
     )
-    analyzer = StubAnalyzer()
-    section_searcher = StubSectionSearch()
 
     content_id = "test_content_id"
     html_content = "<html><body>Test Content</body></html>"
 
     # when
     result = flow_runner.do_analysis(
-        analyzer=analyzer,
         content_id=content_id,
         html_content=html_content,
-        section_searcher=section_searcher,
     )
 
     # then

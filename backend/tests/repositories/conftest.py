@@ -244,14 +244,14 @@ def test_db_settings(launch_memgraph):  #
 
     path = Path(__file__).parent / "start-pages-test.yml"
 
-    print(f"Using start pages config at: {path}")
+    # print(f"Using start pages config at: {path}")
 
     settings = Settings(
         graph_db_uri=GRAPHDB_URI,
         start_pages_config=path,
     )
 
-    print(f"Using settings: {settings.model_dump_json(indent=2)}")
+    # print(f"Using settings: {settings.model_dump_json(indent=2)}")
 
     yield settings
 
