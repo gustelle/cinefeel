@@ -1,3 +1,4 @@
+import hashlib
 from typing import Type
 
 from prefect import get_run_logger, task
@@ -99,6 +100,10 @@ class HtmlEntityExtractor(ITaskExecutor):
             return None
 
         base_info, sections = result
+
+        logger.info(
+            f"Extracting '{self.entity_type.__name__}' for content '{str(base_info.permalink)}'"
+        )
 
         # assemble the entity from the sections
         if self.entity_type == Film:
@@ -214,12 +219,16 @@ class HtmlEntityExtractor(ITaskExecutor):
                 [entity],
             )
 
+    def compute_uid(self, content: str) -> str:
+        sha1 = hashlib.sha1()
+        sha1.update(str.encode(content))
+        return sha1.hexdigest()
+
     @task(
         cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
     )
     def execute(
         self,
-        content_id: str,
         content: str,
         output_storage: IStorageHandler[Composable],
     ) -> None:
@@ -227,6 +236,8 @@ class HtmlEntityExtractor(ITaskExecutor):
         # need to keep track of the futures to wait for them later
         # see: https://github.com/PrefectHQ/prefect/issues/17517
         _futures = []
+
+        content_id = self.compute_uid(content)
 
         future_entity = self.do_analysis.submit(
             content_id=content_id,

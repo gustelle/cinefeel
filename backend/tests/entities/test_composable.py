@@ -2,7 +2,7 @@ from enum import StrEnum
 from string import ascii_letters, digits, punctuation, whitespace
 
 import pytest
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
@@ -317,3 +317,36 @@ def test_construct_fine_grained_assembly_in_case_of_list():
             "some_other_value_2",
         ]
     )  # merged fields
+
+
+def test_compose_parts_by_name():
+    """
+    - parts are loaded by name, not by alias
+
+    """
+
+    class MyStorable(EntityComponent):
+        some_field: str
+
+    class MyComposable(Composable):
+        field1: MyStorable = Field(..., validation_alias="field1_alias")
+
+    base_info = Composable(
+        title="My Storable",
+        permalink="http://example.com/mystorable_1",
+    )
+
+    parts = [
+        ExtractionResult(
+            entity=MyStorable(some_field="some_field_value", parent_uid=base_info.uid),
+            score=0.9,
+        ),
+    ]
+
+    # when
+    instance = MyComposable.compose(
+        base_info.uid, base_info.title, base_info.permalink, parts=parts
+    )
+
+    # then
+    assert instance.field1 is not None

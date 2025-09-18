@@ -108,6 +108,10 @@ class Composable(Identifiable):
 
         for part in parts:
 
+            logger.trace(
+                f"Processing part for entity composition: {part.model_dump_json(indent=2)}"
+            )
+
             # only parts that are directly related to the entity
             # are considered for composition
             if part.entity is not None and part.entity.parent_uid != uid:
@@ -118,6 +122,10 @@ class Composable(Identifiable):
                 continue
 
             for root_field_name, root_field_definition in cls.model_fields.items():
+
+                logger.trace(
+                    f"Processing field '{root_field_name}' of type '{root_field_definition.annotation}'"
+                )
 
                 # fetch the field correctly from `extraction_result`,
                 # merging the field values if it is already populated
@@ -138,10 +146,14 @@ class Composable(Identifiable):
 
                     break
 
+        logger.debug(
+            f"Populated entities before final validation: {populated_entities}"
+        )
+
         # re-pass through the model validation
         # to ensure all fields are correctly populated
         # and to ensure the UID is correctly assigned
-        v = cls.model_validate(populated_entities)
+        v = cls.model_validate(populated_entities, by_alias=False, by_name=True)
 
         logger.debug("_" * 80)
         logger.debug(f"Composed '{cls.__name__}'")

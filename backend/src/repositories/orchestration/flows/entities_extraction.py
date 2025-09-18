@@ -1,4 +1,3 @@
-import hashlib
 from typing import Literal
 
 from prefect import flow
@@ -10,13 +9,6 @@ from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.orchestration.tasks.task_html_parsing import HtmlEntityExtractor
 from src.settings import Settings
-
-
-def compute_uid(content: str) -> str:
-
-    sha1 = hashlib.sha1()
-    sha1.update(str.encode(content))
-    return sha1.hexdigest()
 
 
 @flow(
@@ -56,12 +48,8 @@ def extract_entities_flow(
     # iterate over all HTML contents in Redis
     for content in html_store.scan():
 
-        # compute a unique content_id for the content
-        content_id = compute_uid(content)
-
         tasks.append(
             analysis_flow.execute.submit(
-                content_id=content_id,
                 content=content,
                 output_storage=json_store,
             )

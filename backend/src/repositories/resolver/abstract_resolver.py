@@ -130,6 +130,7 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                 section = self.section_searcher.process(title=title, sections=sections)
 
                 if section is None:
+                    logger.trace(f"No section found for title: '{title}'")
                     continue
 
                 try:
@@ -141,6 +142,10 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
                         media=section.media,
                         entity_type=config.extracted_type,
                         parent=base_info,
+                    )
+
+                    logger.trace(
+                        f"Extracted entity from section '{section.title}' : {result.model_dump_json(indent=2)}"
                     )
 
                     if result.entity is None:

@@ -7,6 +7,19 @@ from src.interfaces.nlp_processor import Processor
 
 class TextSectionConverter(Processor[Section]):
 
+    def _preprocess(self, content: str) -> str:
+        """
+        clean up the string before transformation.
+        Indeed sometimes, titles start with dashes or new lines.
+        """
+        # remove new lines
+        content = content.lstrip().lstrip("-")
+
+        # remove multiple spaces
+        content = " ".join(content.split())
+
+        return content
+
     def _transform(self, content: str) -> str:
         """
         Initializes the HTML to text transformer with specific settings.
@@ -23,7 +36,6 @@ class TextSectionConverter(Processor[Section]):
         val = html_to_text_transformer.handle(content)
 
         return val.strip()
-        # return " ".join([c.strip() for c in val.split() if len(c.strip()) > 0])
 
     def process(self, section: Section) -> Section:
         """
@@ -49,7 +61,7 @@ class TextSectionConverter(Processor[Section]):
         """
 
         content = self._transform(section.content)
-        title = self._transform(section.title)
+        title = self._transform(self._preprocess(section.title))
 
         if not content:
             return Section(title=title, content="", children=[], media=[])

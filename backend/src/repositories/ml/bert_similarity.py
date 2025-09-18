@@ -32,6 +32,10 @@ class SimilarSectionSearch(Processor[Section]):
             settings.bert_similarity_model,
         )
 
+        logger.debug(
+            f"Initialized BERT model '{settings.bert_similarity_model}' for similarity search"
+        )
+
     def _most_similar_text(self, query: str, corpus: list[str]) -> str | None:
         """
         Find the most similar phrase to the given query within the corpus using BERT embeddings.
@@ -93,6 +97,9 @@ class SimilarSectionSearch(Processor[Section]):
             score = hits[0][0]["score"]
 
             if score < self.settings.bert_similarity_threshold:
+                logger.trace(
+                    f"No similar section title found for '{query}' (best score: {score})"
+                )
                 return None
 
             return most_similar_section_title

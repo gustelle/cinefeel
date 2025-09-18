@@ -219,3 +219,16 @@ def test_transformation_does_not_impact_future_transformations():
     assert section1.title == "Le mythe beethovénien"
     assert section2.content.strip() == "L’œuvre de Beethoven"
     assert section2.title.strip() == "L’œuvre de Beethoven"
+
+
+def test_title_transformation_does_not_add_preceding_backslash():
+    # given
+    html_title = "- Fiche technique"
+    pruner = TextSectionConverter()
+    section = Section(title=html_title, content="Some content")
+
+    # when
+    new_section = pruner.process(section)
+
+    # then
+    assert new_section.title[0] != "\\"  # no preceding backslash
