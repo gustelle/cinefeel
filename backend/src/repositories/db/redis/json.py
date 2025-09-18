@@ -142,6 +142,8 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
     def scan(self) -> Generator[U, None, None]:
         """Scans the persistent storage and iterates over contents.
 
+        TODO: inmfinite loop to be fixed
+
         Returns:
             Generator[U, None, None]: a generator of documents of type U
         """
@@ -154,13 +156,13 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
                     data = self.client.json().get(key)
                     data.pop("uid_hash", None)  # Remove the hash field if it exists
                     yield self.entity_type.model_validate(data, by_name=True)
+
                 except Exception as e:
                     logger.error(f"Error parsing JSON from key '{key}': {e}")
                     continue
 
         except Exception as e:
-            logger.error(f"Error scanning redis: {e}")
-            return []
+            raise StopIteration from e
 
     def query(
         self,

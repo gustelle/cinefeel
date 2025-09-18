@@ -27,25 +27,25 @@ def db_storage_flow(
 
     match entity_type:
         case "Movie":
-            entity_type = Film
+            _entity_type = Film
         case "Person":
-            entity_type = Person
+            _entity_type = Person
         case _:
             raise ValueError(f"Unsupported entity type: {entity_type}")
 
-    json_store = RedisJsonStorage[entity_type](settings=settings)
+    json_store = RedisJsonStorage[_entity_type](settings=settings)
 
     if settings.meili_base_url:
         search_flow = SearchUpdater(
             settings=settings,
-            entity_type=entity_type,
+            entity_type=_entity_type,
         )
 
         # for all pages
         tasks.append(
             search_flow.execute.submit(
                 input_storage=json_store,
-                output_storage=MeiliHandler[entity_type](settings=settings),
+                output_storage=MeiliHandler[_entity_type](settings=settings),
             )
         )
 
@@ -53,12 +53,12 @@ def db_storage_flow(
 
         storage_flow = DBStorageUpdater(
             settings=settings,
-            entity_type=entity_type,
+            entity_type=_entity_type,
         )
 
         db_handler = (
             FilmGraphHandler(settings=settings)
-            if entity_type is Film
+            if _entity_type is Film
             else PersonGraphHandler(settings=settings)
         )
 

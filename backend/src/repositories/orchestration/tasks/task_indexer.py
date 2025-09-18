@@ -50,11 +50,7 @@ class SearchUpdater(ITaskExecutor):
 
         try:
 
-            logger.info(
-                f"Starting indexing for entity type {self.entity_type.__name__}; input storage: {input_storage.__class__.__name__}"
-            )
-
-            while res := next(input_storage.scan()):
+            for res in input_storage.scan():
 
                 batch.append(res)
 
