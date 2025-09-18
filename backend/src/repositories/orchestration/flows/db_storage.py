@@ -22,6 +22,11 @@ def db_storage_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
 ) -> None:
+    """
+    TODO:
+    - mark entities as "processed" to avoid re-processing them
+    - pass a param to re-process all entities if needed (a bit like a "force" flag)
+    """
 
     tasks = []
 

@@ -24,6 +24,10 @@ def extract_entities_flow(
 
     for technical reasons (Prefect serialization) we use "Movie" and "Person" as entity_type
     but they map to the Film and Person classes respectively.
+
+    TODO:
+    - mark entities as "processed" to avoid re-processing them
+    - pass a param to re-process all entities if needed (a bit like a "force" flag)
     """
 
     tasks = []

@@ -311,10 +311,6 @@ class RelationshipFlow(ITaskExecutor):
 
             for entity in input_storage.scan():
 
-                logger.info(
-                    f"Found entity '{entity.uid}' in json storage, launching analysis."
-                )
-
                 _futures.append(
                     self.analyze_relationships.submit(
                         entity=entity,
@@ -323,18 +319,6 @@ class RelationshipFlow(ITaskExecutor):
                 )
 
             wait(_futures)
-            # now wait for all tasks to complete
-            # future_storage: PrefectFuture
-            # for future_storage in storage_futures + entity_futures:
-            #     try:
-            #         future_storage.result(
-            #             raise_on_failure=True,
-            #             timeout=self.settings.prefect_task_timeout,
-            #         )
-            #     except TimeoutError:
-            #         logger.warning(f"Task timed out for {future_storage.task_run_id}.")
-            #     except Exception as e:
-            #         logger.error(f"Error in task execution: {e}")
 
         except Exception as e:
             logger.error(f"Error executing relationship flow: {e}")

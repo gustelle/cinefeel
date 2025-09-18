@@ -5,6 +5,7 @@ import typer
 from loguru import logger
 
 from src.settings import Settings
+from src.use_cases.connect import EntityType
 from src.use_cases.db_storage import DBStorageType
 from src.use_cases.extract import ExtractionType
 from src.use_cases.scrape import ScrapingType
@@ -51,6 +52,18 @@ def store(type: Optional[DBStorageType] = None):
     uc = DBStorageUseCase(
         settings=Settings(),
         types=[type.value] if type else list(DBStorageType),
+    )
+    uc.execute()
+
+
+@app.command()
+def connect(type: Optional[EntityType] = None):
+
+    from src.use_cases.connect import EntitiesConnectionUseCase
+
+    uc = EntitiesConnectionUseCase(
+        settings=Settings(),
+        types=[type.value] if type else list(EntityType),
     )
     uc.execute()
 
