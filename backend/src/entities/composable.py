@@ -108,10 +108,6 @@ class Composable(Identifiable):
 
         for part in parts:
 
-            logger.trace(
-                f"Processing part for entity composition: {part.model_dump_json(indent=2)}"
-            )
-
             # only parts that are directly related to the entity
             # are considered for composition
             if part.entity is not None and part.entity.parent_uid != uid:

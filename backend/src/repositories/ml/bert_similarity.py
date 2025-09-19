@@ -196,6 +196,10 @@ class SimilarValueSearch(Processor[str]):
         self.corpus = corpus
         self.corpus_embeddings = self.embedder.encode(corpus, convert_to_tensor=True)
 
+        logger.debug(
+            f"Initialized BERT model '{settings.bert_similarity_model}' for similarity search with corpus of size {len(corpus)}"
+        )
+
     def process(self, query: str) -> str | None:
         """
         Find the most similar value to the given query within the corpus.

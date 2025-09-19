@@ -4,6 +4,7 @@ from typing import Self
 from pydantic import AnyUrl, Field, HttpUrl, RedisDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_yaml import parse_yaml_raw_as
+
 from src.entities.content import TableOfContents
 
 
@@ -99,7 +100,7 @@ class Settings(BaseSettings):
     )
 
     bert_similarity_model: str = Field(
-        default="Lajavaness/sentence-camembert-base",
+        default="BAAI/bge-m3",
         description="""
             The name of the BERT model to use for similarity search
         """,
