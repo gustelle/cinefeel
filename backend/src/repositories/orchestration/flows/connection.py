@@ -17,8 +17,6 @@ from src.repositories.orchestration.tasks.task_relationship_storage import (
 )
 from src.settings import Settings
 
-from .db_storage import db_storage_flow
-from .entities_extraction import extract_entities_flow
 from .scraping import scraping_flow
 
 
@@ -53,55 +51,56 @@ def unit_extraction_flow(
 
     logger.info(f"Downloading '{entity_type}' from permalink: {permalink}")
 
-    scraping_flow(
+    task()(scraping_flow).submit(
         settings=settings,
         pages=[page],
-    )
-
-    logger.info(
-        f"Downloaded '{entity_type}' with page ID '{page_id}', now running the extraction flow."
-    )
-
-    task()(extract_entities_flow).submit(
-        settings=settings,
-        entity_type=entity_type,
     ).wait()
 
-    logger.info(
-        f"Extracted '{entity_type}' with page ID '{page_id}', now running the storage flow."
-    )
+    # logger.info(
+    #     f"Downloaded '{entity_type}' with page ID '{page_id}', now running the extraction flow."
+    # )
 
-    task()(db_storage_flow).submit(
-        settings=settings,
-        entity_type=entity_type,
-    ).wait()
+    # task()(extract_entities_flow).submit(
+    #     settings=settings,
+    #     entity_type=entity_type,
+    # ).wait()
 
-    logger.info(
-        f"Entity '{entity_type}' with page ID '{page_id}' has been processed. Now entering the connection flow."
-    )
+    # logger.info(
+    #     f"Extracted '{entity_type}' with page ID '{page_id}', now running the storage flow."
+    # )
 
-    task()(connection_flow).submit(
-        settings=settings,
-        entity_type=entity_type,
-    ).wait()
+    # task()(db_storage_flow).submit(
+    #     settings=settings,
+    #     entity_type=entity_type,
+    # ).wait()
 
-    logger.info(f"Entity '{entity_type}' with page ID '{page_id}' has been connected.")
+    # logger.info(
+    #     f"Entity '{entity_type}' with page ID '{page_id}' has been processed. Now entering the connection flow."
+    # )
+
+    # task()(connection_flow).submit(
+    #     settings=settings,
+    #     entity_type=entity_type,
+    # ).wait()
+
+    # logger.info(f"Entity '{entity_type}' with page ID '{page_id}' has been connected.")
 
 
 @flow(name="on_permalink_not_found")
 def on_permalink_not_found(
     permalink: str, entity_type: Literal["Movie", "Person"], settings: Settings
 ) -> None:
+
     get_run_logger().info(
         f"'{entity_type}' with permalink {permalink} not found in storage. Triggering extraction flow."
     )
 
     # call the unit extraction flow
-    unit_extraction_flow(
+    task()(unit_extraction_flow).submit(
         settings=settings,
         entity_type=entity_type,
         permalink=permalink,
-    )
+    ).wait()
 
 
 @flow(name="connection_flow")
@@ -143,7 +142,7 @@ def connection_flow(
     RelationshipFlow(
         settings=settings,
         http_client=http_client,
-    ).execute(
+    ).execute.submit(
         input_storage=db_storage,
         output_storage=db_storage,
-    )
+    ).wait()
