@@ -5,30 +5,26 @@ import typer
 from loguru import logger
 
 from src.settings import Settings
-from src.use_cases.connect import EntityType
-from src.use_cases.db_storage import DBStorageType
-from src.use_cases.extract import ExtractionType
-from src.use_cases.scrape import ScrapingType
+from src.use_cases.uc_types import EntityType
 
 app = typer.Typer()
 
 
 @app.command()
-def scrape(type: Optional[ScrapingType] = None):
+def scrape(type: Optional[EntityType] = None):
 
     from src.use_cases.scrape import ScrapingUseCase
 
     uc = ScrapingUseCase(
         settings=Settings(),
-        types=[type.value] if type else list(ScrapingType),
+        types=[type.value] if type else list(EntityType),
     )
     uc.execute()
 
 
 @app.command()
-def extract(type: Optional[ExtractionType] = None):
-    """for debugging only, to run the extraction flow directly without needing to deploy it first
-
+def extract(type: Optional[EntityType] = None):
+    """
     Example usage:
         python main.py extract --type movies
         python main.py extract --type persons
@@ -39,25 +35,43 @@ def extract(type: Optional[ExtractionType] = None):
 
     uc = EntityExtractionUseCase(
         settings=Settings(),
-        types=[type.value] if type else list(ExtractionType),
+        types=[type.value] if type else list(EntityType),
     )
     uc.execute()
 
 
 @app.command()
-def store(type: Optional[DBStorageType] = None):
+def store(type: Optional[EntityType] = None):
+    """Store extracted entities in the database.
+
+    Args:
+        type (Optional[EntityType], optional): The type of entities to store. Defaults to None.
+
+    Example usage:
+        python main.py store --type movies
+        python main.py store --type persons
+        python main.py store # runs both types
+    """
 
     from src.use_cases.db_storage import DBStorageUseCase
 
     uc = DBStorageUseCase(
         settings=Settings(),
-        types=[type.value] if type else list(DBStorageType),
+        types=[type.value] if type else list(EntityType),
     )
     uc.execute()
 
 
 @app.command()
 def connect(type: Optional[EntityType] = None):
+    """Connect entities in the database.
+    Args:
+        type (Optional[EntityType], optional): The type of entities to connect. Defaults to None.
+    Example usage:
+        python main.py connect --type movies
+        python main.py connect --type persons
+        python main.py connect # runs both types
+    """
 
     from src.use_cases.connect import EntitiesConnectionUseCase
 

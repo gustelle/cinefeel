@@ -22,8 +22,18 @@ poetry install
 # start prefect and all required services
 ./start-server.sh
 
-# launch the flows in another tab
-./deploy-and-run.sh
+# then open a new tab 
+# 1. scrape data
+./scrape.sh
+
+# 2. extract entities (movies, persons)
+./extract.sh
+
+# 3. store extracted entities into the graph DB & meili
+./store.sh
+
+# 4. connect entities between them
+./connect.sh
 
 # eventually vizualise the running flows on http://localhost:4200/
 

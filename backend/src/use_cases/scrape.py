@@ -1,23 +1,19 @@
-from enum import StrEnum
 from pathlib import Path
 
 from prefect import deploy, flow
 
 from src.settings import Settings
 
-
-class ScrapingType(StrEnum):
-    movies = "movies"
-    persons = "persons"
+from .uc_types import EntityType
 
 
 class ScrapingUseCase:
     """Handles the scraping of Wikipedia pages for specific entity types."""
 
     settings: Settings
-    _types: list[ScrapingType]
+    _types: list[EntityType]
 
-    def __init__(self, settings: Settings, types: list[ScrapingType]):
+    def __init__(self, settings: Settings, types: list[EntityType]):
         self.settings = settings
         self._types = types
 

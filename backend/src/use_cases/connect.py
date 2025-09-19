@@ -1,4 +1,3 @@
-from enum import StrEnum
 from pathlib import Path
 
 from prefect import deploy, flow
@@ -6,10 +5,7 @@ from prefect.events import DeploymentEventTrigger
 
 from src.settings import Settings
 
-
-class EntityType(StrEnum):
-    movies = "movies"
-    persons = "persons"
+from .uc_types import EntityType
 
 
 class EntitiesConnectionUseCase:

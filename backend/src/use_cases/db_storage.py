@@ -1,23 +1,19 @@
-from enum import StrEnum
 from pathlib import Path
 
 from prefect import deploy, flow
 
 from src.settings import Settings
 
-
-class DBStorageType(StrEnum):
-    movies = "movies"
-    persons = "persons"
+from .uc_types import EntityType
 
 
 class DBStorageUseCase:
     """Handles the storage of entity data into the database."""
 
     settings: Settings
-    _types: list[DBStorageType]
+    _types: list[EntityType]
 
-    def __init__(self, settings: Settings, types: list[DBStorageType]):
+    def __init__(self, settings: Settings, types: list[EntityType]):
         self.settings = settings
         self._types = types
 
