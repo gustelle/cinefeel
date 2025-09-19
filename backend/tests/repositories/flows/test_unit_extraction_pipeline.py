@@ -6,7 +6,7 @@ import pytest
 from neo4j import GraphDatabase
 
 from src.repositories.db.graph.person_graph import PersonGraphHandler
-from src.repositories.orchestration.flows.connection import unit_extraction_flow
+from src.repositories.orchestration.flows.connection import process_entity_extraction
 from src.settings import Settings
 
 
@@ -61,7 +61,7 @@ def test_unit_extraction_pipeline(
         return_value=None,
     )
 
-    unit_extraction_flow(
+    process_entity_extraction(
         settings=settings,
         entity_type="Person",
         permalink=permalink,

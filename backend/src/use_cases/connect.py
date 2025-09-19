@@ -23,16 +23,16 @@ class EntitiesConnectionUseCase:
             flow.from_source(
                 source=Path(__file__).parent.parent
                 / "repositories/orchestration/flows",
-                entrypoint="connection.py:on_permalink_not_found",
+                entrypoint="connection.py:process_entity_extraction",
             ).to_deployment(
-                name="unit_extraction_flow",
-                description="Triggers when a permalink is not found in the storage which will trigger the extraction flow.",
+                name="process_entity_extraction",
+                description="Triggers when an entity is not found in the storage which will trigger the extraction flow.",
                 triggers=[
                     DeploymentEventTrigger(
                         enabled=True,
                         expect={"extract.entity"},
                         parameters={
-                            "permalink": "{{ event.resource.id }}",
+                            "page_id": "{{ event.resource.id }}",
                             "entity_type": "{{ event.payload.entity_type }}",
                             "settings": self.settings,
                         },

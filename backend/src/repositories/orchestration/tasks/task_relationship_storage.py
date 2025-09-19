@@ -32,13 +32,15 @@ class RelationshipFlow(ITaskExecutor):
         self.settings = settings
         self.http_client = http_client
 
-    def get_permalink_by_name(
+    def _retrieve_page_id(
         self,
         name: str,
-    ) -> HttpUrl | None:
+    ) -> str | None:
         """
+        verifies that a page exists on Wikipedia and retrieves its page ID.
+
         Returns:
-            HttpUrl | None: the permalink of the person on Wikipedia, or None if not found.
+            str | None: the page ID of the page on Wikipedia, or None if not found.
         """
 
         try:
@@ -47,8 +49,7 @@ class RelationshipFlow(ITaskExecutor):
                 url=endpoint,
                 response_type="json",
             )
-            page_id = response["key"]
-            return HttpUrl(f"https://fr.wikipedia.org/wiki/{page_id}")
+            return response["key"]
         except KeyError:
             return None
         except HttpError as e:
@@ -56,6 +57,17 @@ class RelationshipFlow(ITaskExecutor):
                 get_run_logger().warning(f"Page not found for name '{name}'")
                 return None
             raise
+
+    def _build_permalink(self, page_id: str) -> HttpUrl:
+        """
+        builds a permalink from a given page ID.
+
+        Args:
+            page_id (str): The page ID to build the permalink from.
+        Returns:
+            HttpUrl: The constructed permalink.
+        """
+        return HttpUrl(f"https://fr.wikipedia.org/wiki/{page_id}")
 
     @task(
         cache_policy=NO_CACHE,
@@ -77,26 +89,29 @@ class RelationshipFlow(ITaskExecutor):
         """
         logger = get_run_logger()
 
-        permalink = self.get_permalink_by_name(name=name)
+        page_id = self._retrieve_page_id(name=name)
 
-        if permalink is None:
+        if page_id is None:
             logger.warning(
-                f"Could not find permalink for name '{name}'. Skipping relationship storage."
+                f"Could not find page ID for name '{name}'. Skipping relationship storage."
             )
             return None
 
         results = input_storage.query(
-            permalink=permalink,
+            permalink=self._build_permalink(page_id=page_id),
             limit=1,
         )
 
         if results:
             return results[0]
 
-        # send an event to extract the entity
+        # send an event to scrape the entity if not found in storage
+        logger.info(
+            f"Entity with page ID '{page_id}' not found in storage. Triggering extraction flow."
+        )
         emit_event(
             event="extract.entity",
-            resource={"prefect.resource.id": str(permalink)},
+            resource={"prefect.resource.id": page_id},
             payload={
                 "entity_type": (
                     "Movie" if input_storage.entity_type is Film else "Person"

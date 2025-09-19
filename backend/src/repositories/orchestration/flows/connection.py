@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import re
 from typing import Literal
 
 from prefect import flow, get_run_logger, task
-from pydantic import HttpUrl
 
 from src.entities.content import TableOfContents
 from src.entities.film import Film
@@ -12,22 +10,21 @@ from src.entities.person import Person
 from src.repositories.db.graph.film_graph import FilmGraphHandler
 from src.repositories.db.graph.person_graph import PersonGraphHandler
 from src.repositories.http.sync_http import SyncHttpClient
+from src.repositories.orchestration.flows.scraping import scraping_flow
 from src.repositories.orchestration.tasks.task_relationship_storage import (
     RelationshipFlow,
 )
 from src.settings import Settings
 
-from .scraping import scraping_flow
-
 
 @flow(
-    name="unit_extraction_flow",
-    description="Extract a Film or Person from a given Http permalink.",
+    name="process_entity_extraction",
+    description="Based on the entity type and page_id, this flow will extract the entity and store it in the database.",
 )
-def unit_extraction_flow(
+def process_entity_extraction(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
-    permalink: HttpUrl,
+    page_id: str,
 ) -> None:
     """
     Extract a single entity (Film or Person) from a given permalink.
@@ -39,22 +36,22 @@ def unit_extraction_flow(
     """
     logger = get_run_logger()
 
-    page_id = str(permalink).split("/")[-1]  # Extract page ID from permalink
+    # page_id = permalink.split("/")[-1]  # Extract page ID from permalink
 
     page = TableOfContents(
         page_id=page_id,
         entity_type=entity_type,
     )
 
-    # sanitize page_id to be used as a filename
-    page_id = re.sub(r"[^a-zA-Z0-9_-]", "_", page_id)
-
-    logger.info(f"Downloading '{entity_type}' from permalink: {permalink}")
+    logger.info(f"Downloading '{entity_type}' for page_id: {page_id}")
 
     task()(scraping_flow).submit(
         settings=settings,
         pages=[page],
     ).wait()
+
+    # sanitize page_id to be used as a filename
+    # page_id = re.sub(r"[^a-zA-Z0-9_-]", "_", page_id)
 
     # logger.info(
     #     f"Downloaded '{entity_type}' with page ID '{page_id}', now running the extraction flow."
@@ -86,21 +83,21 @@ def unit_extraction_flow(
     # logger.info(f"Entity '{entity_type}' with page ID '{page_id}' has been connected.")
 
 
-@flow(name="on_permalink_not_found")
-def on_permalink_not_found(
-    permalink: str, entity_type: Literal["Movie", "Person"], settings: Settings
-) -> None:
+# @flow(name="on_permalink_not_found")
+# def on_permalink_not_found(
+#     permalink: str, entity_type: Literal["Movie", "Person"], settings: Settings
+# ) -> None:
 
-    get_run_logger().info(
-        f"'{entity_type}' with permalink {permalink} not found in storage. Triggering extraction flow."
-    )
+#     get_run_logger().info(
+#         f"'{entity_type}' with permalink {permalink} not found in storage. Triggering extraction flow."
+#     )
 
-    # call the unit extraction flow
-    task()(unit_extraction_flow).submit(
-        settings=settings,
-        entity_type=entity_type,
-        permalink=permalink,
-    ).wait()
+#     # call the unit extraction flow
+#     task()(process_entity_extraction).submit(
+#         settings=settings,
+#         entity_type=entity_type,
+#         permalink=permalink,
+#     ).wait()
 
 
 @flow(name="connection_flow")
