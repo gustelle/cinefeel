@@ -34,7 +34,7 @@ class ScrapingUseCase:
                         "settings": self.settings,
                         "pages": [
                             p
-                            for p in self.settings.download_start_pages
+                            for p in self.settings.scraping_start_pages
                             if p.entity_type == "Movie"
                         ],
                     },
@@ -61,7 +61,7 @@ class ScrapingUseCase:
                         "settings": self.settings,
                         "pages": [
                             p
-                            for p in self.settings.download_start_pages
+                            for p in self.settings.scraping_start_pages
                             if p.entity_type == "Person"
                         ],
                     },

@@ -22,14 +22,14 @@ class MeiliHandler[T: Film | Person](IStorageHandler[T]):
     ):
 
         self.client = meilisearch.Client(
-            str(settings.meili_base_url), settings.meili_api_key
+            str(settings.search_base_url), settings.search_api_key
         )
         self.settings = settings
 
         if self.entity_type == Film:
-            self.index = self._init_index(self.settings.meili_films_index_name)
+            self.index = self._init_index(self.settings.search_films_index_name)
         else:
-            self.index = self._init_index(self.settings.meili_persons_index_name)
+            self.index = self._init_index(self.settings.search_persons_index_name)
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.

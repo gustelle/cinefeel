@@ -41,7 +41,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
             )
 
         self.persistence_directory = (
-            settings.persistence_directory / f"{self.entity_type.__name__.lower()}s"
+            settings.local_storage_directory / f"{self.entity_type.__name__.lower()}s"
         )
         self.persistence_directory.mkdir(parents=True, exist_ok=True)
 

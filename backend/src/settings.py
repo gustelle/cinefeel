@@ -15,25 +15,26 @@ class Settings(BaseSettings):
         env_file=(".env", ".env.prod")
     )
 
-    download_cache_enabled: bool = Field(
-        default=True,
-        description="Whether to use the cache for the Wikipedia API",
-    )
-    download_cache_expire_after: int = Field(
+    scraping_cache_expire_after: int = Field(
         default=60 * 60 * 24,
         description="The expiration time of the cache in seconds",
     )
-    download_start_pages: list[TableOfContents] | None = Field(
+    scraping_start_pages: list[TableOfContents] | None = Field(
         None,
         description="Will be set through the start pages config file",
     )
 
-    start_pages_config: Path | None = Field(
+    scraping_config_file: Path | None = Field(
         ...,
         description="""
             The path to the YAML configuration file for the start pages,
             must be provided in the .env file as `START_PAGES_CONFIG`.
         """,
+    )
+
+    scraping_max_concurrency: int = Field(
+        default=10,
+        description="The maximum number of concurrent connections to download pages",
     )
 
     mediawiki_api_key: str = Field(
@@ -48,32 +49,27 @@ class Settings(BaseSettings):
         default="Cinefeel",
         description="The user agent to use for the Wikipedia API",
     )
-
-    download_max_concurrency: int = Field(
-        default=10,
-        description="The maximum number of concurrent connections to download pages",
-    )
-    download_user_agent: str = Field(
+    mediawiki_user_agent: str = Field(
         default="Cinefeel",
         description="The user agent to use for the Wikipedia API",
     )
 
-    meili_base_url: HttpUrl | None = Field(
+    search_base_url: HttpUrl | None = Field(
         default="http://localhost:7700",
         description="The base URL of the MeiliSearch API",
     )
-    meili_api_key: str = Field(
+    search_api_key: str = Field(
         default="cinefeel",
         description="The API key for the MeiliSearch API",
     )
-    meili_films_index_name: str = Field(
+    search_films_index_name: str = Field(
         default="films",
     )
-    meili_persons_index_name: str = Field(
+    search_persons_index_name: str = Field(
         default="persons",
     )
 
-    persistence_directory: Path = Field(
+    local_storage_directory: Path = Field(
         default=Path("./data"),
         description="The path (relative or absolute) to the dir where the scraped data will be saved",
     )
@@ -99,30 +95,14 @@ class Settings(BaseSettings):
             """,
     )
 
-    bert_similarity_model: str = Field(
+    similarity_model: str = Field(
         default="sentence-transformers/nli-mpnet-base-v2",
         description="""
             The name of the BERT model to use for similarity search
         """,
     )
 
-    bert_summary_model: str = Field(
-        default="sshleifer/distilbart-cnn-12-6",
-        description="""
-            The model to use for summarizing contents.
-        """,
-    )
-
-    bert_summary_max_length: int = Field(
-        default=512,
-        description="""
-            The maximum length of the summary generated from a section content.
-            If the content is longer than this value, it will be truncated.
-            Too short summaries would lead to poor results.
-        """,
-    )
-
-    bert_similarity_threshold: float = Field(
+    similarity_min_score: float = Field(
         default=0.7,
         ge=0,
         le=1,
@@ -130,6 +110,22 @@ class Settings(BaseSettings):
             The threshold for the similarity score.
             If the score is below this value, the result will be considered as not found.
             Be careful, the threshold is really dependent on the model used.
+        """,
+    )
+
+    summary_model: str = Field(
+        default="sshleifer/distilbart-cnn-12-6",
+        description="""
+            The model to use for summarizing contents.
+        """,
+    )
+
+    summary_max_length: int = Field(
+        default=512,
+        description="""
+            The maximum length of the summary generated from a section content.
+            If the content is longer than this value, it will be truncated.
+            Too short summaries would lead to poor results.
         """,
     )
 
@@ -184,13 +180,13 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def on_after_init(self) -> Self:
 
-        if not self.start_pages_config or not self.start_pages_config.exists():
+        if not self.scraping_config_file or not self.scraping_config_file.exists():
             raise ValueError(
-                f"start_pages_config is not set or the file does not exist: {self.start_pages_config}"
+                f"start_pages_config is not set or the file does not exist: {self.scraping_config_file}"
             )
 
-        with open(self.start_pages_config, "r") as f:
+        with open(self.scraping_config_file, "r") as f:
             list_of_tocs = parse_yaml_raw_as(list[TableOfContents], f.read())
-            self.download_start_pages = list_of_tocs
+            self.scraping_start_pages = list_of_tocs
 
         return self

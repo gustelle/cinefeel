@@ -245,9 +245,9 @@ def test_db_settings(launch_memgraph):  #
 
     settings = Settings(
         graph_db_uri=GRAPHDB_URI,
-        start_pages_config=path,
-        bert_similarity_threshold=0.7,
-        bert_summary_max_length=512,
+        scraping_config_file=path,
+        similarity_min_score=0.7,
+        summary_max_length=512,
     )
 
     # print(f"Using settings: {settings.model_dump_json(indent=2)}")

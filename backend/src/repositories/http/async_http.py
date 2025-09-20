@@ -17,23 +17,23 @@ class AsyncHttpClient(IHttpClient):
         settings: Settings,
     ):
         self.settings = settings
-        limits = httpx.Limits(max_connections=settings.download_max_concurrency)
+        limits = httpx.Limits(max_connections=settings.scraping_max_concurrency)
 
         self.client = hishel.AsyncCacheClient(
             storage=hishel.AsyncFileStorage(
                 base_path=".crawler_cache",
-                ttl=settings.download_cache_expire_after,
+                ttl=settings.scraping_cache_expire_after,
             ),
             limits=limits,
             follow_redirects=True,
             headers={
-                "User-Agent": self.settings.download_user_agent,
+                "User-Agent": self.settings.mediawiki_user_agent,
                 "Authorization": f"Bearer {self.settings.mediawiki_api_key}",
             },
         )
 
         logger.info(
-            f"AsyncHttpClient initialized with {settings.download_max_concurrency} connections"
+            f"AsyncHttpClient initialized with {settings.scraping_max_concurrency} connections"
         )
 
     async def send(

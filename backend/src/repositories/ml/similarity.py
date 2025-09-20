@@ -21,10 +21,10 @@ class SimilarSectionSearch(Processor[Section]):
     def __init__(self, settings: Settings):
 
         self.settings = settings
-        self.embedder = Embeddings(path=settings.bert_similarity_model)
+        self.embedder = Embeddings(path=settings.similarity_model)
 
         logger.debug(
-            f"Initialized BERT model '{settings.bert_similarity_model}' for similarity search"
+            f"Initialized BERT model '{settings.similarity_model}' for similarity search"
         )
 
     def _most_similar_text(self, query: str, corpus: list[str]) -> str | None:
@@ -78,9 +78,9 @@ class SimilarSectionSearch(Processor[Section]):
 
             most_similar_section_title = corpus[uid]
 
-            if score < self.settings.bert_similarity_threshold:
+            if score < self.settings.similarity_min_score:
                 logger.debug(
-                    f"No relevant section title found for '{query}' (best is '{most_similar_section_title}' with score {score}, min score is {self.settings.bert_similarity_threshold})"
+                    f"No relevant section title found for '{query}' (best is '{most_similar_section_title}' with score {score}, min score is {self.settings.similarity_min_score})"
                 )
                 return None
 

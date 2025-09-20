@@ -18,10 +18,10 @@ def test_load_tocs_from_yml():
     with patch("builtins.open", mock_open(read_data=mock_yml_content)):
         # when
         start_pages_config = Path("./start-pages-dev.yml")
-        settings = Settings(start_pages_config=start_pages_config)
+        settings = Settings(scraping_config_file=start_pages_config)
 
         # then
         assert all(
-            isinstance(toc, TableOfContents) for toc in settings.download_start_pages
+            isinstance(toc, TableOfContents) for toc in settings.scraping_start_pages
         )
-        assert len(settings.download_start_pages) == 2
+        assert len(settings.scraping_start_pages) == 2

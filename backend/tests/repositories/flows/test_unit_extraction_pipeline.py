@@ -33,8 +33,8 @@ def test_unit_extraction_pipeline(
     permalink = "https://en.wikipedia.org/wiki/Test_Person"
 
     settings = test_db_settings.model_copy(deep=True)
-    settings.persistence_directory = test_path
-    settings.meili_base_url = None  # do not index for this test, it's not relevant
+    settings.local_storage_directory = test_path
+    settings.search_base_url = None  # do not index for this test, it's not relevant
 
     mocker.patch(
         "src.repositories.task_orchestration.extraction_pipeline.PageContentDownloader.execute",

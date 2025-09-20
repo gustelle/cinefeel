@@ -25,19 +25,19 @@ class SyncHttpClient(IHttpClient):
         settings: Settings,
     ):
         self.settings = settings
-        limits = httpx.Limits(max_connections=settings.download_max_concurrency)
+        limits = httpx.Limits(max_connections=settings.scraping_max_concurrency)
 
         pwd = self.settings.mediawiki_api_key
 
         self.client = hishel.CacheClient(
             storage=hishel.FileStorage(
                 base_path=".crawler_cache",
-                ttl=settings.download_cache_expire_after,
+                ttl=settings.scraping_cache_expire_after,
             ),
             limits=limits,
             follow_redirects=True,
             headers={
-                "User-Agent": self.settings.download_user_agent,
+                "User-Agent": self.settings.mediawiki_user_agent,
                 "Authorization": f"Bearer {pwd}",
             },
         )

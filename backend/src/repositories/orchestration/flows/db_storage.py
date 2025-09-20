@@ -40,7 +40,7 @@ def db_storage_flow(
 
     json_store = RedisJsonStorage[_entity_type](settings=settings)
 
-    if settings.meili_base_url:
+    if settings.search_base_url:
         search_flow = SearchUpdater(
             settings=settings,
             entity_type=_entity_type,

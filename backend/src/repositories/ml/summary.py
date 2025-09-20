@@ -21,7 +21,7 @@ class SectionSummarizer(Processor[Section]):
             model_name (str): The name of the BERT model to use.
         """
         self.settings = settings
-        self.summarizer = Summary(path=settings.bert_summary_model)  #
+        self.summarizer = Summary(path=settings.summary_model)  #
 
     def process(self, section: Section) -> Section | None:
         """
@@ -61,10 +61,10 @@ class SectionSummarizer(Processor[Section]):
         new_content = section.content
         title = section.title
 
-        if len(section.content) > self.settings.bert_summary_max_length:
+        if len(section.content) > self.settings.summary_max_length:
             new_content = self.summarizer(
                 section.content,
-                maxlength=self.settings.bert_summary_max_length,
+                maxlength=self.settings.summary_max_length,
                 minlength=256,
             )
 
