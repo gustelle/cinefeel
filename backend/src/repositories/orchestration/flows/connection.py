@@ -10,6 +10,10 @@ from src.entities.person import Person
 from src.repositories.db.graph.film_graph import FilmGraphHandler
 from src.repositories.db.graph.person_graph import PersonGraphHandler
 from src.repositories.http.sync_http import SyncHttpClient
+from src.repositories.orchestration.flows.db_storage import db_storage_flow
+from src.repositories.orchestration.flows.entities_extraction import (
+    extract_entities_flow,
+)
 from src.repositories.orchestration.flows.scraping import scraping_flow
 from src.repositories.orchestration.tasks.task_relationship_storage import (
     RelationshipFlow,
@@ -53,51 +57,35 @@ def process_entity_extraction(
     # sanitize page_id to be used as a filename
     # page_id = re.sub(r"[^a-zA-Z0-9_-]", "_", page_id)
 
-    # logger.info(
-    #     f"Downloaded '{entity_type}' with page ID '{page_id}', now running the extraction flow."
-    # )
+    logger.info(
+        f"Downloaded '{entity_type}' with page ID '{page_id}', now running the extraction flow."
+    )
 
-    # task()(extract_entities_flow).submit(
-    #     settings=settings,
-    #     entity_type=entity_type,
-    # ).wait()
+    task()(extract_entities_flow).submit(
+        settings=settings,
+        entity_type=entity_type,
+        page_id=page_id,
+    ).wait()
 
-    # logger.info(
-    #     f"Extracted '{entity_type}' with page ID '{page_id}', now running the storage flow."
-    # )
+    logger.info(
+        f"Extracted '{entity_type}' with page ID '{page_id}', now running the storage flow."
+    )
 
-    # task()(db_storage_flow).submit(
-    #     settings=settings,
-    #     entity_type=entity_type,
-    # ).wait()
+    task()(db_storage_flow).submit(
+        settings=settings,
+        entity_type=entity_type,
+    ).wait()
 
-    # logger.info(
-    #     f"Entity '{entity_type}' with page ID '{page_id}' has been processed. Now entering the connection flow."
-    # )
+    logger.info(
+        f"Entity '{entity_type}' with page ID '{page_id}' has been processed. Now entering the connection flow."
+    )
 
-    # task()(connection_flow).submit(
-    #     settings=settings,
-    #     entity_type=entity_type,
-    # ).wait()
+    task()(connection_flow).submit(
+        settings=settings,
+        entity_type=entity_type,
+    ).wait()
 
-    # logger.info(f"Entity '{entity_type}' with page ID '{page_id}' has been connected.")
-
-
-# @flow(name="on_permalink_not_found")
-# def on_permalink_not_found(
-#     permalink: str, entity_type: Literal["Movie", "Person"], settings: Settings
-# ) -> None:
-
-#     get_run_logger().info(
-#         f"'{entity_type}' with permalink {permalink} not found in storage. Triggering extraction flow."
-#     )
-
-#     # call the unit extraction flow
-#     task()(process_entity_extraction).submit(
-#         settings=settings,
-#         entity_type=entity_type,
-#         permalink=permalink,
-#     ).wait()
+    logger.info(f"Entity '{entity_type}' with page ID '{page_id}' has been connected.")
 
 
 @flow(name="connection_flow")

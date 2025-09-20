@@ -6,8 +6,8 @@ from src.repositories.html_parser.wikipedia_info_retriever import (
     INFOBOX_SECTION_TITLE,
     WikipediaParser,
 )
-from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_to_text import TextSectionConverter
+from src.repositories.ml.summary import SectionSummarizer
 from src.settings import Settings
 
 from .stubs.stub_pruner import DoNothingPruner

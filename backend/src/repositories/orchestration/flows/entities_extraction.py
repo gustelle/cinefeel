@@ -18,6 +18,7 @@ from src.settings import Settings
 def extract_entities_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
+    page_id: str | None = None,
 ) -> None:
     """
     Extract entities (Film or Person) from HTML contents
@@ -25,9 +26,7 @@ def extract_entities_flow(
     for technical reasons (Prefect serialization) we use "Movie" and "Person" as entity_type
     but they map to the Film and Person classes respectively.
 
-    TODO:
-    - mark entities as "processed" to avoid re-processing them
-    - pass a param to re-process all entities if needed (a bit like a "force" flag)
+    If page_id is provided, only that specific page will be processed. If not, all pages in the HTML storage will be processed.
     """
 
     tasks = []
@@ -49,15 +48,26 @@ def extract_entities_flow(
     html_store = RedisTextStorage(settings=settings)
     json_store = RedisJsonStorage[_ent_type](settings=settings)
 
-    # iterate over all HTML contents in Redis
-    for content in html_store.scan():
-
-        tasks.append(
-            analysis_flow.execute.submit(
-                content=content,
-                output_storage=json_store,
+    if page_id:
+        content = html_store.select(page_id=page_id)
+        if content:
+            tasks.append(
+                analysis_flow.execute.submit(
+                    content=content,
+                    output_storage=json_store,
+                )
             )
-        )
-        break  # --- REMOVE ---
+        else:
+            raise ValueError(f"No HTML content found for page_id: {page_id}")
+    else:
+        # iterate over all HTML contents in Redis
+        for content in html_store.scan():
+            tasks.append(
+                analysis_flow.execute.submit(
+                    content=content,
+                    output_storage=json_store,
+                )
+            )
+            break  # for testing, process only one
 
     wait(tasks)

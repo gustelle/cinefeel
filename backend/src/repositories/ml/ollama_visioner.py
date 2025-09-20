@@ -8,6 +8,10 @@ from src.interfaces.extractor import IDataMiner
 
 from .response_formater import create_response_model
 
+# TODO:
+# go through txtai to capture text from the image
+# see https://github.com/neuml/txtai/blob/master/examples/13_Similarity_search_with_images.ipynb
+
 
 class OllamaVisioner(IDataMiner):
 

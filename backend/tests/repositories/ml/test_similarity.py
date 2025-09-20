@@ -1,37 +1,60 @@
+import pytest
+
 from src.interfaces.content_splitter import Section
-from src.repositories.ml.bert_similarity import SimilarSectionSearch, SimilarValueSearch
+from src.repositories.ml.similarity import SimilarSectionSearch
 from src.settings import Settings
 
 
-def test_bert_similarity_search(
+@pytest.mark.parametrize(
+    "input,expected",
+    [
+        ("film", "film"),
+        ("cinema", "cinema"),
+        ("personne", "personne"),
+        ("française", "Français"),
+        ("données clés", "Données clés"),
+        ("fiche technique", "Fiche technique"),
+    ],
+)
+def test_similarity_search(
     test_db_settings: Settings,
+    input: str,
+    expected: str,
 ):
     """
     Test the BERT similarity search.
     """
 
     # given
-    # Initialize the BERT similarity search
-    bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
-    # Define a query and a corpus
-    query = "film"
+    bert_similarity_search = SimilarSectionSearch(test_db_settings)
     corpus = [
         "film",
         "cinema",
         "personne",
+        "Français",
+        "Allemand",
+        "Finlandais",
+        "Données clés",
+        "Biographie",
+        "Synopsis",
+        "Fiche technique",
+        "Récompenses",
+        "Biographie",
+        "Introduction",
+        "Distribution",
     ]
 
-    # Perform the similarity search
+    # when
     most_similar_section_title = bert_similarity_search._most_similar_text(
-        query, corpus
+        input, corpus
     )
 
-    # Check that the most similar section title is correct
-    assert most_similar_section_title == "film"
+    # then
+    assert most_similar_section_title == expected
 
 
-def test_most_similar_section(
+def test_similarity_most_similar_section(
     test_db_settings: Settings,
 ):
     """
@@ -58,7 +81,7 @@ def test_most_similar_section(
     assert most_similar_section.content == "This is a film."
 
 
-def test_most_similar_section_empty(test_db_settings: Settings):
+def test_similarity_most_similar_section_empty(test_db_settings: Settings):
     """
     Test the most similar section method with an empty list of sections.
     """
@@ -77,7 +100,7 @@ def test_most_similar_section_empty(test_db_settings: Settings):
     assert most_similar_section is None
 
 
-def test_most_similar_section_no_match(test_db_settings: Settings):
+def test_similarity_most_similar_section_no_match(test_db_settings: Settings):
     """
     Test the most similar section method with no matching sections.
     """
@@ -101,7 +124,7 @@ def test_most_similar_section_no_match(test_db_settings: Settings):
     assert most_similar_section is None
 
 
-def test_most_similar_section_with_empty_title(test_db_settings: Settings):
+def test_similarity_most_similar_section_with_empty_title(test_db_settings: Settings):
     # given
     bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
@@ -123,7 +146,7 @@ def test_most_similar_section_with_empty_title(test_db_settings: Settings):
     assert most_similar_section.content == "This is a film."
 
 
-def test_most_similar_section_with_title_none(test_db_settings: Settings):
+def test_similaritymost_similar_section_with_title_none(test_db_settings: Settings):
     # given
     bert_similarity_search = SimilarSectionSearch(test_db_settings)
 
@@ -145,7 +168,7 @@ def test_most_similar_section_with_title_none(test_db_settings: Settings):
     assert most_similar_section.content == "This is a film."
 
 
-def test_most_similar_section_children_are_returned_in_section(
+def test_similarity_most_similar_section_children_are_returned_in_section(
     test_db_settings: Settings,
 ):
     """
@@ -182,7 +205,7 @@ def test_most_similar_section_children_are_returned_in_section(
     assert most_similar_section.children[1].title == "cast"
 
 
-def test_media_are_provided_in_similar_section(test_db_settings: Settings):
+def test_similarity_media_are_provided_in_similar_section(test_db_settings: Settings):
     """
     Test that media are preserved in the section.
     """
@@ -217,27 +240,3 @@ def test_media_are_provided_in_similar_section(test_db_settings: Settings):
     assert most_similar_section.title == "film"
     assert most_similar_section.content == "This is a film."
     assert len(most_similar_section.media) == 1
-
-
-def test_similar_value_search(test_db_settings: Settings):
-    """
-    Test the SimilarValueSearch class.
-    """
-
-    # given
-    settings = test_db_settings
-
-    # Define a query and a corpus
-    query = "française"
-    corpus = [
-        "français",
-        "allemand",
-        "anglais",
-    ]
-    similar_value_search = SimilarValueSearch(settings, corpus=corpus)
-
-    # Perform the similarity search
-    most_similar_value = similar_value_search.process(query)
-
-    # Check that the most similar value is correct
-    assert most_similar_value == "français"

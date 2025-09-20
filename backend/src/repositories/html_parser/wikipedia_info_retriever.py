@@ -120,11 +120,10 @@ class WikipediaParser(IContentParser):
         Returns:
             str: The extracted title from the HTML content.
 
-        TODO:
-        - on https://fr.wikipedia.org/wiki/Le_Sorcier_arabe, the section title is '\\ - Fiche technique' which is not ideal
         """
         soup = BeautifulSoup(html_content, "html.parser")
         title_tag = soup.find("title")
+
         if title_tag:
             return title_tag.get_text(strip=True)
         else:

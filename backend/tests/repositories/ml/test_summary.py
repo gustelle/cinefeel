@@ -1,9 +1,9 @@
 from src.interfaces.content_splitter import Section
-from src.repositories.ml.bert_summary import SectionSummarizer
+from src.repositories.ml.summary import SectionSummarizer
 from src.settings import Settings
 
 
-def test_bert_summary(test_db_settings: Settings):
+def test_summary(test_db_settings: Settings):
 
     # Test the summarize method with a sample text
     sample_text = """
@@ -81,7 +81,7 @@ Feuillade consacre l’année 1924 tout entière à sa jeune vedette dont René 
     assert len(section.content) <= len(sample_text)
 
 
-def test_children_are_summarized(test_db_settings: Settings):
+def test_summary_children_are_summarized(test_db_settings: Settings):
     # given
     sample_text = """
     Les débuts
@@ -107,7 +107,7 @@ Issu d’une famille de courtiers en vins du Languedoc, après des études à Br
     assert len(section.children[0].content) <= len(child_text)
 
 
-def test_media_are_preserved_in_summarized_section(test_db_settings: Settings):
+def test_summary_media_are_preserved_in_summarized_section(test_db_settings: Settings):
     # given
     sample_text = "This is a sample text with media."
     media = [
@@ -123,7 +123,7 @@ def test_media_are_preserved_in_summarized_section(test_db_settings: Settings):
     assert summarized.media == section.media  # Check if media is preserved
 
 
-def test_media_in_children_are_preserved_in_summarized_section(
+def test_summary_media_in_children_are_preserved_in_summarized_section(
     test_db_settings: Settings,
 ):
     # given

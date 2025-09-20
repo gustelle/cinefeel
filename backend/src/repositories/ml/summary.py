@@ -1,4 +1,4 @@
-from summarizer.sbert import SBertSummarizer
+from txtai.pipeline import Summary
 
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
@@ -11,7 +11,7 @@ class SectionSummarizer(Processor[Section]):
     """
 
     settings: Settings
-    summarizer: SBertSummarizer
+    summarizer: Summary
 
     def __init__(self, settings: Settings):
         """
@@ -21,7 +21,7 @@ class SectionSummarizer(Processor[Section]):
             model_name (str): The name of the BERT model to use.
         """
         self.settings = settings
-        self.summarizer = SBertSummarizer(settings.bert_summary_model)
+        self.summarizer = Summary(path=settings.bert_summary_model)  #
 
     def process(self, section: Section) -> Section | None:
         """
@@ -62,9 +62,10 @@ class SectionSummarizer(Processor[Section]):
         title = section.title
 
         if len(section.content) > self.settings.bert_summary_max_length:
-            # logger.debug(f"section '{section.title}' is too long, summarizing it")
-            new_content = self.summarizer.run(
-                section.content, max_length=self.settings.bert_summary_max_length
+            new_content = self.summarizer(
+                section.content,
+                maxlength=self.settings.bert_summary_max_length,
+                minlength=256,
             )
 
         children = None

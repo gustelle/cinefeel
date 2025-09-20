@@ -27,8 +27,6 @@ from src.repositories.html_parser.wikipedia_info_retriever import (
     ORPHAN_SECTION_TITLE,
     WikipediaParser,
 )
-from src.repositories.ml.bert_similarity import SimilarSectionSearch
-from src.repositories.ml.bert_summary import SectionSummarizer
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
 from src.repositories.ml.ollama_childhood import ChildhoodOllamaExtractor
@@ -36,6 +34,8 @@ from src.repositories.ml.ollama_generic import GenericOllamaExtractor
 from src.repositories.ml.ollama_influences import InfluenceOllamaExtractor
 from src.repositories.ml.ollama_person_feats import PersonFeaturesOllamaExtractor
 from src.repositories.ml.ollama_person_visualizer import PersonOllamaVisualAnalysis
+from src.repositories.ml.similarity import SimilarSectionSearch
+from src.repositories.ml.summary import SectionSummarizer
 from src.repositories.resolver.film_resolver import BasicFilmResolver
 from src.repositories.resolver.person_resolver import BasicPersonResolver
 from src.settings import Settings

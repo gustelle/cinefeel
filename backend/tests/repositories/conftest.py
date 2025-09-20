@@ -207,7 +207,6 @@ def launch_memgraph(request):
             name=DOCKER_MEMGRAPH_CONTAINER_NAME,
             ports={
                 GRAPHDB_NATIVE_PORT: GRAPHDB_HOST_PORT,
-                7444: 7444,
             },
         )
 
@@ -244,11 +243,11 @@ def test_db_settings(launch_memgraph):  #
 
     path = Path(__file__).parent / "start-pages-test.yml"
 
-    # print(f"Using start pages config at: {path}")
-
     settings = Settings(
         graph_db_uri=GRAPHDB_URI,
         start_pages_config=path,
+        bert_similarity_threshold=0.7,
+        bert_summary_max_length=512,
     )
 
     # print(f"Using settings: {settings.model_dump_json(indent=2)}")
