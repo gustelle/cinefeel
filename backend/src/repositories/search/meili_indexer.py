@@ -3,18 +3,18 @@ import meilisearch.errors
 import meilisearch.index
 from loguru import logger
 
-from src.entities.film import Film
+from src.entities.movie import Movie
 from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
 
 
-class MeiliHandler[T: Film | Person](IStorageHandler[T]):
+class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
 
     client: meilisearch.Client
     index: meilisearch.index.Index
     settings: Settings
-    entity_type: type[Film | Person]
+    entity_type: type[Movie | Person]
 
     def __init__(
         self,
@@ -26,8 +26,8 @@ class MeiliHandler[T: Film | Person](IStorageHandler[T]):
         )
         self.settings = settings
 
-        if self.entity_type == Film:
-            self.index = self._init_index(self.settings.search_films_index_name)
+        if self.entity_type == Movie:
+            self.index = self._init_index(self.settings.search_movies_index_name)
         else:
             self.index = self._init_index(self.settings.search_persons_index_name)
 
@@ -56,7 +56,7 @@ class MeiliHandler[T: Film | Person](IStorageHandler[T]):
                 self.client.wait_for_task(t.task_uid)
                 self.index = self.client.index(index_name)
 
-                if self.entity_type == Film:
+                if self.entity_type == Movie:
                     self.index.update_searchable_attributes(
                         ["title", "summary", "info"]
                     )

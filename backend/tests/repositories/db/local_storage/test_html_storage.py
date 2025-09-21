@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.entities.film import Film
+from src.entities.movie import Movie
 from src.repositories.db.local_storage.html_storage import LocalTextStorage
 
 current_dir = Path(__file__).parent
@@ -9,13 +9,13 @@ current_dir = Path(__file__).parent
 def test_local_text_storage_init():
     # Given
 
-    storage = LocalTextStorage(path=current_dir, entity_type=Film)
+    storage = LocalTextStorage(path=current_dir, entity_type=Movie)
 
     # When
     storage_path = storage.persistence_directory
 
     # Then
-    assert storage_path == current_dir / "html" / "film"
+    assert storage_path == current_dir / "html" / "movie"
     assert storage_path.exists()
 
     # Teardown
@@ -25,7 +25,7 @@ def test_local_text_storage_init():
 
 def test_local_text_storage_insert():
     # Given
-    storage = LocalTextStorage(path=current_dir, entity_type=Film)
+    storage = LocalTextStorage(path=current_dir, entity_type=Movie)
     content_id = "test"
     content = "<html><body><h1>Test</h1></body></html>"
 
@@ -46,7 +46,7 @@ def test_local_text_storage_insert():
 
 def test_local_text_storage_insert_existing_path():
     # Given
-    storage = LocalTextStorage(path=current_dir, entity_type=Film)
+    storage = LocalTextStorage(path=current_dir, entity_type=Movie)
     content_id = "test"
     content = "<html><body><h1>Test</h1></body></html>"
     path = storage.persistence_directory / f"{content_id}.html"
@@ -71,7 +71,7 @@ def test_local_text_storage_insert_existing_path():
 
 def test_local_text_storage_select():
     # Given
-    storage = LocalTextStorage(path=current_dir, entity_type=Film)
+    storage = LocalTextStorage(path=current_dir, entity_type=Movie)
     content_id = "test"
     content = "<html><body><h1>Test</h1></body></html>"
     storage.insert(content_id, content)
@@ -91,7 +91,7 @@ def test_local_text_storage_select():
 
 def test_local_text_storage_select_non_existent():
     # Given
-    storage = LocalTextStorage(path=current_dir, entity_type=Film)
+    storage = LocalTextStorage(path=current_dir, entity_type=Movie)
     content_id = "non_existent"
 
     # When
@@ -107,7 +107,7 @@ def test_local_text_storage_select_non_existent():
 
 def test_local_text_storage_scan():
     # Given
-    storage = LocalTextStorage(path=current_dir, entity_type=Film)
+    storage = LocalTextStorage(path=current_dir, entity_type=Movie)
     content_id_1 = "test1"
     content_1 = "<html><body><h1>Test 1</h1></body></html>"
     content_id_2 = "test2"
@@ -132,7 +132,7 @@ def test_local_text_storage_scan():
 
 def test_local_text_storage_scan_no_files():
     # Given
-    storage = LocalTextStorage(path=current_dir, entity_type=Film)
+    storage = LocalTextStorage(path=current_dir, entity_type=Movie)
 
     # When
     results = list(storage.scan())
@@ -147,7 +147,7 @@ def test_local_text_storage_scan_no_files():
 
 def test_local_text_storage_scan_with_pattern():
     # Given
-    storage = LocalTextStorage(path=current_dir, entity_type=Film)
+    storage = LocalTextStorage(path=current_dir, entity_type=Movie)
     content_id_1 = "test1"
     content_1 = "<html><body><h1>Test 1</h1></body></html>"
     content_id_2 = "haha"

@@ -122,7 +122,7 @@ class PageContentDownloader(ITaskExecutor):
             return _links
 
         except Exception as e:
-            logger.error(f"Error extracting list of films: {e}")
+            logger.error(f"Error extracting list of movies: {e}")
             return []
 
     @task(

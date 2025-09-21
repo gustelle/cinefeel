@@ -4,14 +4,14 @@ import re
 from loguru import logger
 
 from src.entities.content import Section
-from src.entities.film import Film, FilmMedia
+from src.entities.movie import FilmMedia, Movie
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.abstract_resolver import AbstractResolver
 from src.settings import Settings
 
 
-class BasicFilmResolver(AbstractResolver[Film]):
+class MovieResolver(AbstractResolver[Movie]):
 
     def __init__(
         self,
@@ -24,7 +24,7 @@ class BasicFilmResolver(AbstractResolver[Film]):
         self.configurations = configurations
         self.settings = settings or Settings()
 
-    def patch_media(self, entity: Film, sections: list[Section]) -> Film:
+    def patch_media(self, entity: Movie, sections: list[Section]) -> Movie:
         """
         Patches the media of the Film entity with the media extracted from sections.
 
@@ -71,7 +71,7 @@ class BasicFilmResolver(AbstractResolver[Film]):
 
         return entity
 
-    def validate_entity(self, entity: Film) -> Film:
+    def validate_entity(self, entity: Movie) -> Movie:
 
         # validate the duration format
         duration = None

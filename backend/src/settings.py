@@ -62,8 +62,8 @@ class Settings(BaseSettings):
         default="cinefeel",
         description="The API key for the MeiliSearch API",
     )
-    search_films_index_name: str = Field(
-        default="films",
+    search_movies_index_name: str = Field(
+        default="movies",
     )
     search_persons_index_name: str = Field(
         default="persons",
@@ -114,7 +114,7 @@ class Settings(BaseSettings):
     )
 
     summary_model: str = Field(
-        default="sshleifer/distilbart-cnn-12-6",
+        default="facebook/bart-large-cnn",
         description="""
             The model to use for summarizing contents.
         """,
@@ -125,6 +125,15 @@ class Settings(BaseSettings):
         description="""
             The maximum length of the summary generated from a section content.
             If the content is longer than this value, it will be truncated.
+            Too short summaries would lead to poor results.
+        """,
+    )
+
+    summary_min_length: int = Field(
+        default=256,
+        description="""
+            The minimum length of the summary generated from a section content.
+            If the content is shorter than this value, it will be ignored.
             Too short summaries would lead to poor results.
         """,
     )

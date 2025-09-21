@@ -93,7 +93,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
                 woa = self.entity_type.model_validate_json(file.read(), by_name=True)
                 return woa
         except Exception as e:
-            logger.exception(f"Error loading film from {path}: {e}")
+            logger.exception(f"Error loading movie from {path}: {e}")
             return None
 
     def query(

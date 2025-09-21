@@ -3,18 +3,18 @@ from typing import Sequence
 from loguru import logger
 from neo4j import Session
 
-from src.entities.person import Person
+from src.entities.movie import Movie
 
 from .mg_core import AbstractMemGraph
 
 
-class PersonGraphHandler(AbstractMemGraph[Person]):
+class MovieGraphRepository(AbstractMemGraph[Movie]):
 
     def insert_many(
         self,
-        contents: Sequence[Person],
+        contents: Sequence[Movie],
     ) -> int:
-        """only interesting person props are retained in the database,
+        """only interesting film props are retained in the database,
         i.e. title, permalink, uid, directed_by, media, influences, specifications, actors
 
         NB: when storing in DB, serialization aliases are not used (useless for DB),
@@ -48,15 +48,15 @@ class PersonGraphHandler(AbstractMemGraph[Person]):
                 result = session.run(
                     """
                     UNWIND $rows AS o
-                    MERGE (n:Person {uid: o.uid})
-                    ON CREATE SET
+                    MERGE (n:Movie {uid: o.uid})
+                    ON CREATE SET   
                             n.title = o.title, n.permalink = o.permalink,
-                            n.media = o.media, n.biography = o.biography,
-                            n.characteristics = o.characteristics, n.influences = o.influences
+                            n.media = o.media, n.influences = o.influences,
+                            n.specifications = o.specifications, n.actors = o.actors
                     ON MATCH SET 
                             n.title = o.title, n.permalink = o.permalink,
-                            n.media = o.media, n.biography = o.biography,
-                            n.characteristics = o.characteristics, n.influences = o.influences
+                            n.media = o.media, n.influences = o.influences,
+                            n.specifications = o.specifications, n.actors = o.actors
                     RETURN count(n) AS count;
                     """,
                     parameters={"rows": rows},
@@ -68,5 +68,5 @@ class PersonGraphHandler(AbstractMemGraph[Person]):
 
         except Exception as e:
 
-            logger.error(f"Error inserting persons: {e}")
+            logger.error(f"Error inserting movies: {e}")
             return 0

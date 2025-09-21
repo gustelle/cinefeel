@@ -144,7 +144,7 @@ class FilmSpecifications(WOASpecifications):
         return None
 
 
-class Film(Composable, WorkOfArt):
+class Movie(Composable, WorkOfArt):
 
     summary: FilmSummary | None = Field(
         None,
@@ -170,7 +170,7 @@ class Film(Composable, WorkOfArt):
         validation_alias="acteurs",
     )
 
-    woa_type: WOAType = WOAType.FILM
+    woa_type: WOAType = WOAType.MOVIE
 
     @field_serializer("actors")
     def serialize_dt(self, value: Any):

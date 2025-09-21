@@ -81,7 +81,7 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
     def _get_uid_hash(self, content: U) -> int:
         """Generates a numeric hash for the UID of the content.
 
-        nevermind the value of the hash compared to the film title, it's just a way to have a sortable numeric value.
+        nevermind the value of the hash compared to the movie title, it's just a way to have a sortable numeric value.
         The uid_hash must only be stable and unique for each uid.
         """
 

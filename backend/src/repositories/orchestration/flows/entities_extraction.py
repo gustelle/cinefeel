@@ -3,7 +3,7 @@ from typing import Literal
 from prefect import flow
 from prefect.futures import wait
 
-from src.entities.film import Film
+from src.entities.movie import Movie
 from src.entities.person import Person
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.db.redis.text import RedisTextStorage
@@ -13,7 +13,7 @@ from src.settings import Settings
 
 @flow(
     name="extract_entities",
-    description="Extract entities (Film or Person) from HTML contents",
+    description="Extract entities (Movie or Person) from HTML contents",
 )
 def extract_entities_flow(
     settings: Settings,
@@ -21,10 +21,10 @@ def extract_entities_flow(
     page_id: str | None = None,
 ) -> None:
     """
-    Extract entities (Film or Person) from HTML contents
+    Extract entities (Movie or Person) from HTML contents
 
     for technical reasons (Prefect serialization) we use "Movie" and "Person" as entity_type
-    but they map to the Film and Person classes respectively.
+    but they map to the Movie and Person classes respectively.
 
     If page_id is provided, only that specific page will be processed. If not, all pages in the HTML storage will be processed.
     """
@@ -34,7 +34,7 @@ def extract_entities_flow(
 
     match entity_type:
         case "Movie":
-            _ent_type = Film
+            _ent_type = Movie
         case "Person":
             _ent_type = Person
         case _:

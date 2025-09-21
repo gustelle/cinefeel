@@ -1,4 +1,4 @@
-from txtai.pipeline import Summary
+from summarizer.sbert import SBertSummarizer
 
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
@@ -11,17 +11,12 @@ class SectionSummarizer(Processor[Section]):
     """
 
     settings: Settings
-    summarizer: Summary
+    _summarizer: SBertSummarizer
 
     def __init__(self, settings: Settings):
-        """
-        Initialize the BERT similarity model.
 
-        Args:
-            model_name (str): The name of the BERT model to use.
-        """
         self.settings = settings
-        self.summarizer = Summary(path=settings.summary_model)  #
+        self._summarizer = SBertSummarizer("paraphrase-MiniLM-L6-v2")
 
     def process(self, section: Section) -> Section | None:
         """
@@ -62,10 +57,11 @@ class SectionSummarizer(Processor[Section]):
         title = section.title
 
         if len(section.content) > self.settings.summary_max_length:
-            new_content = self.summarizer(
+
+            new_content = self._summarizer(
                 section.content,
-                maxlength=self.settings.summary_max_length,
-                minlength=256,
+                max_length=self.settings.summary_max_length,
+                min_length=self.settings.summary_min_length,
             )
 
         children = None

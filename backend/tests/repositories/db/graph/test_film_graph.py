@@ -3,28 +3,28 @@ import uuid
 from neo4j import GraphDatabase
 from neo4j.graph import Node
 
-from src.entities.film import Film, FilmSpecifications
+from src.entities.movie import FilmSpecifications, Movie
 from src.entities.person import Person
 from src.entities.relationship import (
     PeopleRelationshipType,
     Relationship,
     WOARelationshipType,
 )
-from src.repositories.db.graph.film_graph import FilmGraphHandler
-from src.repositories.db.graph.person_graph import PersonGraphHandler
+from src.repositories.db.graph.mg_movie import MovieGraphRepository
+from src.repositories.db.graph.mg_person import PersonGraphRepository
 
 
 def test_insert_a_film(
     test_memgraph_client: GraphDatabase,
-    test_film_graphdb: FilmGraphHandler,
-    test_film: Film,
+    test_film_graphdb: MovieGraphRepository,
+    test_film: Movie,
 ):
     """assert the data type is correct when inserting a film"""
 
     # given
     # drop all existing data
 
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
     # when
     count = test_film_graphdb.insert_many([test_film])
@@ -35,7 +35,7 @@ def test_insert_a_film(
     # select the film to verify its type
     records, _, _ = test_memgraph_client.execute_query(
         f"""
-        MATCH (n:Film {{uid: '{test_film.uid}'}})
+        MATCH (n:Movie {{uid: '{test_film.uid}'}})
         RETURN n LIMIT 1;
         """
     )
@@ -79,23 +79,23 @@ def test_insert_a_film(
             )
 
     # tear down the database
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
 
 def test_insert_several_films(
     test_memgraph_client: GraphDatabase,
-    test_film_graphdb: FilmGraphHandler,
-    test_film: Film,
+    test_film_graphdb: MovieGraphRepository,
+    test_film: Movie,
 ):
     """assert several films can be inserted at once"""
 
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
     dict_film = test_film.model_dump()
     dict_film["title"] = f"{test_film.title} Copy"
 
-    other_film = Film(**dict_film)
+    other_film = Movie(**dict_film)
 
     # when
     count = test_film_graphdb.insert_many([test_film, other_film])
@@ -104,18 +104,18 @@ def test_insert_several_films(
     assert count == 2  # Two films should be inserted
 
     # tear down the database
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
 
 def test_update_a_film(
     test_memgraph_client: GraphDatabase,
-    test_film_graphdb: FilmGraphHandler,
-    test_film: Film,
+    test_film_graphdb: MovieGraphRepository,
+    test_film: Movie,
 ):
     """assert a film can be updated if it already exists in the database"""
 
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
     test_film_graphdb.insert_many([test_film])
 
     # when
@@ -128,7 +128,7 @@ def test_update_a_film(
     # check if the film was updated
     records, _, _ = test_memgraph_client.execute_query(
         f"""
-        MATCH (n:Film {{uid: '{updated_film.uid}'}})
+        MATCH (n:Movie {{uid: '{updated_film.uid}'}})
         RETURN n LIMIT 1;
         """
     )
@@ -137,16 +137,16 @@ def test_update_a_film(
     assert film_data.get("title") == "Inception (Updated)"
 
     # tear down the database
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
 
 def test_insert_film_deduplication(
     test_memgraph_client: GraphDatabase,
-    test_film_graphdb: FilmGraphHandler,
-    test_film: Film,
+    test_film_graphdb: MovieGraphRepository,
+    test_film: Movie,
 ):
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
     # when
     count = test_film_graphdb.insert_many([test_film, test_film])
@@ -156,16 +156,16 @@ def test_insert_film_deduplication(
     assert count == 1  # Only one film should be inserted
 
     # tear down the database
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
 
 def test_get_nominal(
-    test_film_graphdb: FilmGraphHandler,
-    test_film: Film,
+    test_film_graphdb: MovieGraphRepository,
+    test_film: Movie,
     test_memgraph_client: GraphDatabase,
 ):
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
     test_film_graphdb.insert_many([test_film])
 
     # when
@@ -181,10 +181,10 @@ def test_get_nominal(
     assert retrieved_film.specifications == test_film.specifications
     assert retrieved_film.actors == test_film.actors
 
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
 
-def test_get_non_existent(test_film_graphdb: FilmGraphHandler):
+def test_get_non_existent(test_film_graphdb: MovieGraphRepository):
     # given
 
     non_existent_uid = uuid.uuid4().hex
@@ -198,13 +198,13 @@ def test_get_non_existent(test_film_graphdb: FilmGraphHandler):
 
 def test_get_bad_data(
     test_memgraph_client: GraphDatabase,
-    test_film_graphdb: FilmGraphHandler,
+    test_film_graphdb: MovieGraphRepository,
 ):
     # given
     # insert bad data
     test_memgraph_client.execute_query(
         """
-        CREATE (node:Film {property: 42})
+        CREATE (node:Movie {property: 42})
         """
     )
 
@@ -214,18 +214,18 @@ def test_get_bad_data(
     assert result is None
 
     # tear down the database
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
 
 def test_add_relationship_to_person(
     test_memgraph_client: GraphDatabase,
-    test_film_graphdb: FilmGraphHandler,
-    test_film: Film,
-    test_person_graphdb: PersonGraphHandler,
+    test_film_graphdb: MovieGraphRepository,
+    test_film: Movie,
+    test_person_graphdb: PersonGraphRepository,
     test_person: Person,
 ):
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
     test_film_graphdb.insert_many([test_film])
     test_person_graphdb.insert_many([test_person])
 
@@ -242,7 +242,7 @@ def test_add_relationship_to_person(
     # verify the relationship was created
     results, _, _ = test_memgraph_client.execute_query(
         f"""
-        MATCH (n:Film {{uid: $from_uid}})-[r:{str(PeopleRelationshipType.DIRECTED_BY)}]->(m:Person {{uid: $to_uid}})
+        MATCH (n:Movie {{uid: $from_uid}})-[r:{str(PeopleRelationshipType.DIRECTED_BY)}]->(m:Person {{uid: $to_uid}})
         RETURN r
         """,
         from_uid=test_film.uid,
@@ -251,21 +251,21 @@ def test_add_relationship_to_person(
 
     assert len(results) == 1
 
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
 
 def test_add_relationship_to_film(
     test_memgraph_client: GraphDatabase,
-    test_film_graphdb: FilmGraphHandler,
-    test_film: Film,
+    test_film_graphdb: MovieGraphRepository,
+    test_film: Movie,
 ):
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
     dict_film = test_film.model_dump()
     dict_film["title"] = "Inception Copy"
 
-    film_copy = Film(**dict_film)
+    film_copy = Movie(**dict_film)
 
     assert film_copy.uid != test_film.uid  # Ensure it's a different instance
     test_film_graphdb.insert_many([test_film, film_copy])
@@ -283,7 +283,7 @@ def test_add_relationship_to_film(
     # verify the relationship was created
     results, _, _ = test_memgraph_client.execute_query(
         f"""
-        MATCH (n:Film {{uid: $from_uid}})-[r:{str(WOARelationshipType.INSPIRED_BY)}]->(m:Film {{uid: $to_uid}})
+        MATCH (n:Movie {{uid: $from_uid}})-[r:{str(WOARelationshipType.INSPIRED_BY)}]->(m:Movie {{uid: $to_uid}})
         RETURN r
         """,
         from_uid=test_film.uid,
@@ -292,16 +292,16 @@ def test_add_relationship_to_film(
 
     assert len(results) == 1
 
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
 
 def test_select_film(
-    test_film_graphdb: FilmGraphHandler,
+    test_film_graphdb: MovieGraphRepository,
     test_memgraph_client: GraphDatabase,
 ):
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
-    film = Film(
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
+    film = Movie(
         title="Inception",
         permalink="https://example.com/inception",
     )
@@ -327,18 +327,18 @@ def test_select_film(
     assert retrieved_film.specifications.genres == specifications.genres
     assert retrieved_film.specifications.written_by == specifications.written_by
 
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
 
 def test_get_related(
-    test_film_graphdb: FilmGraphHandler,
+    test_film_graphdb: MovieGraphRepository,
     test_memgraph_client: GraphDatabase,
-    test_person_graphdb: PersonGraphHandler,
-    test_film: Film,
+    test_person_graphdb: PersonGraphRepository,
+    test_film: Movie,
     test_person: Person,
 ):
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
     film_copy = test_film.model_copy(deep=True)
     film_copy.title = "Inception Copy"
@@ -380,19 +380,19 @@ def test_get_related(
         for rel in related
     )
 
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
 
 def test_get_related_with_relation_type(
-    test_film_graphdb: FilmGraphHandler,
+    test_film_graphdb: MovieGraphRepository,
     test_memgraph_client: GraphDatabase,
-    test_person_graphdb: PersonGraphHandler,
-    test_film: Film,
+    test_person_graphdb: PersonGraphRepository,
+    test_film: Movie,
     test_person: Person,
 ):
 
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
     film_copy = test_film.model_copy(deep=True)
     film_copy.title = "Inception Copy"
@@ -430,19 +430,19 @@ def test_get_related_with_relation_type(
         for rel in related
     )
 
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
 
 def test_graph_scan(
-    test_film_graphdb: FilmGraphHandler,
+    test_film_graphdb: MovieGraphRepository,
     test_memgraph_client: GraphDatabase,
-    test_person_graphdb: PersonGraphHandler,
-    test_film: Film,
+    test_person_graphdb: PersonGraphRepository,
+    test_film: Movie,
     test_person: Person,
 ):
 
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
     films = [test_film]
 
@@ -469,21 +469,21 @@ def test_graph_scan(
 
     assert len(results) == 6  # 1 original + 5 copies
     assert all(
-        isinstance(film, Film) for film in results
+        isinstance(film, Movie) for film in results
     )  # there is no person in the scan
 
-    test_memgraph_client.execute_query("MATCH (n:Film), (m:Person) DETACH DELETE n, m")
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
 
 def test_query_graph_by_permalink(
-    test_film_graphdb: FilmGraphHandler,
+    test_film_graphdb: MovieGraphRepository,
     test_memgraph_client: GraphDatabase,
-    test_person_graphdb: PersonGraphHandler,
-    test_film: Film,
+    test_person_graphdb: PersonGraphRepository,
+    test_film: Movie,
     test_person: Person,
 ):
     # given
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
     films = [test_film]
 
@@ -510,8 +510,8 @@ def test_query_graph_by_permalink(
 
     # then
     assert len(results) == 1
-    assert isinstance(results[0], Film)
+    assert isinstance(results[0], Movie)
     assert results[0].uid == test_film.uid
 
     # tear down the database
-    test_memgraph_client.execute_query("MATCH (n:Film) DETACH DELETE n")
+    test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")

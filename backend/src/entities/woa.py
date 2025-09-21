@@ -15,7 +15,7 @@ class WOAType(StrEnum):
     DRAWING = "drawing"
     PHOTOGRAPHY = "photography"
     PERFORMANCE = "performance"
-    FILM = "film"
+    MOVIE = "movie"
     SERIES = "series"
     DOCUMENTARY = "documentary"
     ANIMATION = "animation"

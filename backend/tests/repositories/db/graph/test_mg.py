@@ -2,12 +2,12 @@ from src.repositories.db.graph.mg_core import AbstractMemGraph
 from src.settings import Settings
 
 
-def test_setup(test_db_settings: Settings):
+def test_setup(test_settings: Settings):
 
     # given
 
     test_film_handler = AbstractMemGraph(
-        settings=test_db_settings,
+        settings=test_settings,
     )
 
     # when

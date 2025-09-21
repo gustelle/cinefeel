@@ -2,12 +2,12 @@ from neo4j import GraphDatabase
 from neo4j.graph import Node
 
 from src.entities.person import Biography, Person
-from src.repositories.db.graph.person_graph import PersonGraphHandler
+from src.repositories.db.graph.mg_person import PersonGraphRepository
 
 
 def test_insert_a_person(
     test_memgraph_client: GraphDatabase,
-    test_person_graphdb: PersonGraphHandler,
+    test_person_graphdb: PersonGraphRepository,
     test_person: Person,
 ):
     """assert the data type is correct when inserting a person"""
@@ -50,7 +50,7 @@ def test_insert_a_person(
 
 
 def test_select_person(
-    test_person_graphdb: PersonGraphHandler, test_memgraph_client: GraphDatabase
+    test_person_graphdb: PersonGraphRepository, test_memgraph_client: GraphDatabase
 ):
     # given
 

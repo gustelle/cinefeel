@@ -6,7 +6,7 @@ from prefect.cache_policies import NO_CACHE
 from prefect.futures import wait
 
 from src.entities.composable import Composable
-from src.entities.film import Film, FilmActor, FilmSpecifications, FilmSummary
+from src.entities.movie import FilmActor, FilmSpecifications, FilmSummary, Movie
 from src.entities.person import (
     Biography,
     ChildHoodConditions,
@@ -36,8 +36,8 @@ from src.repositories.ml.ollama_person_feats import PersonFeaturesOllamaExtracto
 from src.repositories.ml.ollama_person_visualizer import PersonOllamaVisualAnalysis
 from src.repositories.ml.similarity import SimilarSectionSearch
 from src.repositories.ml.summary import SectionSummarizer
-from src.repositories.resolver.film_resolver import BasicFilmResolver
-from src.repositories.resolver.person_resolver import BasicPersonResolver
+from src.repositories.resolver.movie_resolver import MovieResolver
+from src.repositories.resolver.person_resolver import PersonResolver
 from src.settings import Settings
 
 
@@ -106,8 +106,8 @@ class HtmlEntityExtractor(ITaskExecutor):
         )
 
         # assemble the entity from the sections
-        if self.entity_type == Film:
-            return BasicFilmResolver(
+        if self.entity_type == Movie:
+            return MovieResolver(
                 settings=self.settings,
                 section_searcher=self.search_processor,
                 configurations=[
@@ -151,7 +151,7 @@ class HtmlEntityExtractor(ITaskExecutor):
                 sections=sections,
             )
         elif self.entity_type == Person:
-            return BasicPersonResolver(
+            return PersonResolver(
                 settings=self.settings,
                 section_searcher=self.search_processor,
                 configurations=[

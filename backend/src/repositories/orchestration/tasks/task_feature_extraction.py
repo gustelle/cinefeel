@@ -3,7 +3,7 @@ from prefect.cache_policies import NO_CACHE
 from prefect.futures import wait
 
 from src.entities.composable import Composable
-from src.entities.film import Film
+from src.entities.movie import Movie
 from src.interfaces.task import ITaskExecutor
 from src.repositories.db.local_storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
@@ -47,7 +47,7 @@ class FeatureExtractionFlow(ITaskExecutor):
         logger = get_run_logger()
         logger.info(f"Extracting features for '{entity.uid}'")
 
-        if self.entity_type == Film:
+        if self.entity_type == Movie:
             # extract features from the poster
             # e.g. if the poster contains a black person or not
             ...

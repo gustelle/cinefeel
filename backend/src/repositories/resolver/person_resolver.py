@@ -12,7 +12,7 @@ from src.repositories.resolver.abstract_resolver import AbstractResolver
 from src.settings import Settings
 
 
-class BasicPersonResolver(AbstractResolver[Person]):
+class PersonResolver(AbstractResolver[Person]):
 
     def __init__(
         self,

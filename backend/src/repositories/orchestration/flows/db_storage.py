@@ -3,10 +3,10 @@ from typing import Literal
 from prefect import flow
 from prefect.futures import wait
 
-from src.entities.film import Film
+from src.entities.movie import Movie
 from src.entities.person import Person
-from src.repositories.db.graph.film_graph import FilmGraphHandler
-from src.repositories.db.graph.person_graph import PersonGraphHandler
+from src.repositories.db.graph.mg_movie import MovieGraphRepository
+from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.orchestration.tasks.task_graph_storage import DBStorageUpdater
 from src.repositories.orchestration.tasks.task_indexer import SearchUpdater
@@ -32,7 +32,7 @@ def db_storage_flow(
 
     match entity_type:
         case "Movie":
-            _entity_type = Film
+            _entity_type = Movie
         case "Person":
             _entity_type = Person
         case _:
@@ -62,9 +62,9 @@ def db_storage_flow(
         )
 
         db_handler = (
-            FilmGraphHandler(settings=settings)
-            if _entity_type is Film
-            else PersonGraphHandler(settings=settings)
+            MovieGraphRepository(settings=settings)
+            if _entity_type is Movie
+            else PersonGraphRepository(settings=settings)
         )
 
         tasks.append(

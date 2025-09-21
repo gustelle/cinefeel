@@ -3,14 +3,14 @@ import pytest
 from src.entities.content import Section
 from src.entities.person import Biography, Person
 from src.interfaces.resolver import ResolutionConfiguration
-from src.repositories.resolver.person_resolver import BasicPersonResolver
+from src.repositories.resolver.person_resolver import PersonResolver
 from src.settings import Settings
 from tests.repositories.resolver.stubs.stub_extractor import StubExtractor
 from tests.repositories.resolver.stubs.stub_similarity import StubSimilaritySearch
 
 
 def test_resolve_person_patch_media(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # Given a film with no media
     p = Person(
@@ -75,7 +75,7 @@ def test_resolve_person_patch_media(
     # this stub will return the first section
     stub_similarity = StubSimilaritySearch(return_value=sections[0])
 
-    resolver = BasicPersonResolver(
+    resolver = PersonResolver(
         section_searcher=stub_similarity,
         configurations=[
             ResolutionConfiguration(
@@ -84,7 +84,7 @@ def test_resolve_person_patch_media(
                 extracted_type=Person,
             ),
         ],
-        settings=test_db_settings,
+        settings=test_settings,
     )
 
     # When patching media
@@ -108,7 +108,7 @@ def test_resolve_person_patch_media(
 
 
 def test_resolve_person_validate_nationalities(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # Given a person with valid nationalities
     p = Person(
@@ -121,7 +121,7 @@ def test_resolve_person_validate_nationalities(
         parent_uid=p.uid,
     )
 
-    resolver = BasicPersonResolver(
+    resolver = PersonResolver(
         section_searcher=StubSimilaritySearch(
             return_value=Section(title="Biography", content="")
         ),
@@ -132,7 +132,7 @@ def test_resolve_person_validate_nationalities(
                 extracted_type=Biography,
             ),
         ],
-        settings=test_db_settings,
+        settings=test_settings,
     )
 
     # When validating the person
@@ -145,7 +145,7 @@ def test_resolve_person_validate_nationalities(
 
 @pytest.mark.skip(reason="requires Ollama to be running")
 def test_resolve_person_validate_birth_date(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # Given a person with a valid birth date
     p = Person(
@@ -157,7 +157,7 @@ def test_resolve_person_validate_birth_date(
         full_name="John Doe",
         birth_date="28 décembre 1861 à Paris",  # Valid date
     )
-    resolver = BasicPersonResolver(
+    resolver = PersonResolver(
         section_searcher=StubSimilaritySearch(
             return_value=Section(title="Biography", content="")
         ),
@@ -168,7 +168,7 @@ def test_resolve_person_validate_birth_date(
                 extracted_type=Biography,
             ),
         ],
-        settings=test_db_settings,
+        settings=test_settings,
     )
 
     # When validating the person

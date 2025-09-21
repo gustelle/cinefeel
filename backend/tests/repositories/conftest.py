@@ -7,11 +7,11 @@ import pytest
 from docker import DockerClient
 from neo4j import GraphDatabase
 
-from src.entities.film import Film, FilmActor, FilmMedia, FilmSpecifications
+from src.entities.movie import FilmActor, FilmMedia, FilmSpecifications, Movie
 from src.entities.person import Biography, GenderEnum, Person, PersonCharacteristics
 from src.entities.woa import WOAInfluence, WOAType
-from src.repositories.db.graph.film_graph import FilmGraphHandler
-from src.repositories.db.graph.person_graph import PersonGraphHandler
+from src.repositories.db.graph.mg_movie import MovieGraphRepository
+from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.settings import Settings
 
 # see https://stackoverflow.com/questions/46733332/how-to-monkeypatch-the-environment-using-pytest-in-conftest-py
@@ -109,14 +109,14 @@ def read_defective_table_infobox() -> str:
 
 @pytest.fixture(scope="function")
 def test_film():
-    film = Film(
+    film = Movie(
         title="Inception",
         permalink="https://example.com/inception",
     )
     film.influences = [
         WOAInfluence(
             parent_uid=film.uid,
-            type=WOAType.FILM,
+            type=WOAType.MOVIE,
             persons=["Christopher Nolan"],
         ),
     ]
@@ -232,7 +232,7 @@ def launch_memgraph(request):
 
 
 @pytest.fixture(scope="module")
-def test_db_settings(launch_memgraph):  #
+def test_settings(launch_memgraph):  #
 
     # we call launch_memgraph fixture to ensure the Memgraph container is running
     # before we create the settings object
@@ -256,19 +256,19 @@ def test_db_settings(launch_memgraph):  #
 
 
 @pytest.fixture(scope="function")
-def test_person_graphdb(test_db_settings):
-    yield PersonGraphHandler(test_db_settings)
+def test_person_graphdb(test_settings):
+    yield PersonGraphRepository(test_settings)
 
 
 @pytest.fixture(scope="function")
-def test_film_graphdb(test_db_settings):
-    yield FilmGraphHandler(test_db_settings)
+def test_film_graphdb(test_settings):
+    yield MovieGraphRepository(test_settings)
 
 
 @pytest.fixture(scope="function")
-def test_memgraph_client(test_db_settings: Settings):
+def test_memgraph_client(test_settings: Settings):
     client = GraphDatabase.driver(
-        str(test_db_settings.graph_db_uri),
+        str(test_settings.graph_db_uri),
         auth=("", ""),
     )
     yield client

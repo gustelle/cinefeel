@@ -1,8 +1,8 @@
 from src.entities.composable import Composable
 from src.entities.content import Section
-from src.entities.film import Film, FilmSpecifications
+from src.entities.movie import FilmSpecifications, Movie
 from src.interfaces.resolver import ResolutionConfiguration
-from src.repositories.resolver.film_resolver import BasicFilmResolver
+from src.repositories.resolver.movie_resolver import MovieResolver
 from src.settings import Settings
 
 from .stubs.stub_extractor import StubExtractor
@@ -10,7 +10,7 @@ from .stubs.stub_similarity import ExactTitleSimilaritySearch, StubSimilaritySea
 
 
 def test_BasicFilmResolver_nominal_case(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # Given a film specifications and summary
     title = "The Great Film"
@@ -31,7 +31,7 @@ def test_BasicFilmResolver_nominal_case(
     # this stub will return the first section
     stub_similarity = ExactTitleSimilaritySearch()
 
-    resolver = BasicFilmResolver(
+    resolver = MovieResolver(
         section_searcher=stub_similarity,
         configurations=[
             # Extracting film specifications
@@ -41,7 +41,7 @@ def test_BasicFilmResolver_nominal_case(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_db_settings,
+        settings=test_settings,
     )
 
     # When resolving the film
@@ -54,10 +54,10 @@ def test_BasicFilmResolver_nominal_case(
 
 
 def test_resolve_film_patch_media(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # Given a film with no media
-    film = Film(
+    film = Movie(
         uid="12345",
         title="The Great Film",
         permalink="https://example.com/the-great-film",
@@ -119,7 +119,7 @@ def test_resolve_film_patch_media(
     # this stub will return the first section
     stub_similarity = ExactTitleSimilaritySearch()
 
-    resolver = BasicFilmResolver(
+    resolver = MovieResolver(
         section_searcher=stub_similarity,
         configurations=[
             # Extracting film specifications
@@ -129,7 +129,7 @@ def test_resolve_film_patch_media(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_db_settings,
+        settings=test_settings,
     )
 
     # When patching media
@@ -148,10 +148,10 @@ def test_resolve_film_patch_media(
 
 
 def test_validate_iso_duration(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # Given a film with a valid duration
-    film = Film(
+    film = Movie(
         title="The Great Film",
         permalink="https://example.com/the-great-film",
     )
@@ -161,7 +161,7 @@ def test_validate_iso_duration(
         duration="01:30:02",  # ISO 8601 duration format
     )
 
-    resolver = BasicFilmResolver(
+    resolver = MovieResolver(
         section_searcher=StubSimilaritySearch(
             return_value=Section(title="Fiche technique", content="Some content")
         ),
@@ -172,7 +172,7 @@ def test_validate_iso_duration(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_db_settings,
+        settings=test_settings,
     )
 
     # When validating the duration
@@ -183,10 +183,10 @@ def test_validate_iso_duration(
 
 
 def test_validate_duration_by_regex_no_hour(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # Given a film with an invalid duration
-    film = Film(
+    film = Movie(
         title="The Great Film",
         permalink="https://example.com/the-great-film",
     )
@@ -196,7 +196,7 @@ def test_validate_duration_by_regex_no_hour(
         parent_uid=film.uid,
     )
 
-    resolver = BasicFilmResolver(
+    resolver = MovieResolver(
         section_searcher=StubSimilaritySearch(
             return_value=Section(title="Fiche technique", content="Some content")
         ),
@@ -207,7 +207,7 @@ def test_validate_duration_by_regex_no_hour(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_db_settings,
+        settings=test_settings,
     )
 
     # When validating the duration
@@ -220,10 +220,10 @@ def test_validate_duration_by_regex_no_hour(
 
 
 def test_validate_duration_by_regex_with_hour(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # Given a film with an invalid duration
-    film = Film(
+    film = Movie(
         title="The Great Film",
         permalink="https://example.com/the-great-film",
     )
@@ -233,7 +233,7 @@ def test_validate_duration_by_regex_with_hour(
         parent_uid=film.uid,
     )
 
-    resolver = BasicFilmResolver(
+    resolver = MovieResolver(
         section_searcher=StubSimilaritySearch(
             return_value=Section(title="Fiche technique", content="Some content")
         ),
@@ -244,7 +244,7 @@ def test_validate_duration_by_regex_with_hour(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_db_settings,
+        settings=test_settings,
     )
 
     # When validating the duration

@@ -1,6 +1,6 @@
 from src.entities.content import Section
-from src.entities.film import Film, FilmMedia
 from src.entities.ml import ExtractionResult
+from src.entities.movie import FilmMedia, Movie
 from src.entities.person import Person, PersonCharacteristics, PersonVisibleFeatures
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.abstract_resolver import AbstractResolver
@@ -17,7 +17,7 @@ def test_extract_entities_with_children():
 
     # given
 
-    base_info = Film(
+    base_info = Movie(
         uid="test_uid",
         title="Test Film",
         permalink="http://example.com/test-film",
@@ -36,7 +36,7 @@ def test_extract_entities_with_children():
     sections = [Section(**section) for section in sections_dict]
 
     # Dummy resolver for testing
-    class TestResolver(AbstractResolver[Film]):
+    class TestResolver(AbstractResolver[Movie]):
 
         def __init__(
             self,
@@ -76,7 +76,7 @@ def test_extract_entities_with_children():
     assert all(isinstance(entity.entity, FilmMedia) for entity in extracted_entities)
 
 
-def test_extracted_entities_uid_is_assigned(test_db_settings: Settings):
+def test_extracted_entities_uid_is_assigned(test_settings: Settings):
     """
     Test that the extracted entities have their UID assigned correctly.
     this is a major requirement for the resolver to work properly
@@ -84,7 +84,7 @@ def test_extracted_entities_uid_is_assigned(test_db_settings: Settings):
     """
 
     # given
-    base_info = Film(
+    base_info = Movie(
         uid="test_uid",
         title="Test Film",
         permalink="http://example.com/test-film",
@@ -96,7 +96,7 @@ def test_extracted_entities_uid_is_assigned(test_db_settings: Settings):
     ]
 
     # Dummy resolver for testing
-    class TestResolver(AbstractResolver[Film]):
+    class TestResolver(AbstractResolver[Movie]):
 
         def __init__(self):
 
@@ -128,7 +128,7 @@ def test_extracted_entities_uid_is_assigned(test_db_settings: Settings):
     assert len(results) == 2
 
 
-def test_sections_max_children(test_db_settings: Settings):
+def test_sections_max_children(test_settings: Settings):
     # given
 
     # a section withe lots of children
@@ -145,7 +145,7 @@ def test_sections_max_children(test_db_settings: Settings):
     ]
 
     # Dummy resolver for testing
-    class TestResolver(AbstractResolver[Film]):
+    class TestResolver(AbstractResolver[Movie]):
 
         def __init__(self):
             self.entity_extractor = StubExtractor()
@@ -153,7 +153,7 @@ def test_sections_max_children(test_db_settings: Settings):
             self.configurations = {
                 FilmMedia: ["Section 1", "Section 2"],
             }
-            self.settings = test_db_settings.model_copy(
+            self.settings = test_settings.model_copy(
                 update={
                     "sections_max_children": 5,  # Limit to 5 children per section
                 }
@@ -179,7 +179,7 @@ def test_sections_max_children(test_db_settings: Settings):
     assert len(filtered_sections[0].children) == 5
 
 
-def test_sections_max_per_page(test_db_settings: Settings):
+def test_sections_max_per_page(test_settings: Settings):
     # given
     # lots of sections, more than the max per page
     sections = [
@@ -188,7 +188,7 @@ def test_sections_max_per_page(test_db_settings: Settings):
     ]
 
     # Dummy resolver for testing
-    class TestResolver(AbstractResolver[Film]):
+    class TestResolver(AbstractResolver[Movie]):
 
         def __init__(self):
             self.entity_extractor = StubExtractor()
@@ -196,7 +196,7 @@ def test_sections_max_per_page(test_db_settings: Settings):
             self.configurations = {
                 FilmMedia: ["Section 1", "Section 2"],
             }
-            self.settings = test_db_settings.model_copy(
+            self.settings = test_settings.model_copy(
                 update={
                     "sections_max_per_page": 100,  # Limit to 100 sections per page
                 }
@@ -228,7 +228,7 @@ def test_extract_entities_calls_extractor_with_parent_arg():
     """
 
     # given
-    base_info = Film(
+    base_info = Movie(
         title="Test Film",
         permalink="http://example.com/test-film",
     )
@@ -240,7 +240,7 @@ def test_extract_entities_calls_extractor_with_parent_arg():
     extractor = StubExtractor()
 
     # Dummy resolver for testing
-    class TestResolver(AbstractResolver[Film]):
+    class TestResolver(AbstractResolver[Movie]):
 
         def __init__(self):
             self.section_searcher = ExactTitleSimilaritySearch()

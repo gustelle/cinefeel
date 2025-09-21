@@ -135,7 +135,7 @@ def test_analyze_summarizer_is_called():
 
 
 def test_analyze_simplifier_is_called(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # given
     content_id = "test_simplifier_called"
@@ -145,7 +145,7 @@ def test_analyze_simplifier_is_called(
     splitter = WikipediaAPIContentSplitter(
         parser=retriever,
         pruner=StubSimplifier(),
-        settings=test_db_settings,
+        settings=test_settings,
     )
     summarizer = StubSummarizer()
     pruner = StubPruner()
@@ -163,7 +163,7 @@ def test_analyze_simplifier_is_called(
 
 
 def test_analyze_no_permalink_found(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # given
     content_id = "test_no_permalink"
@@ -172,7 +172,7 @@ def test_analyze_no_permalink_found(
     splitter = WikipediaAPIContentSplitter(
         parser=NoPermakinRetriever(),
         pruner=StubSimplifier(),
-        settings=test_db_settings,
+        settings=test_settings,
     )
     summarizer = StubSummarizer()
     pruner = StubPruner()
@@ -190,7 +190,7 @@ def test_analyze_no_permalink_found(
 
 
 def test_analyze_no_title_found(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     # given
     content_id = "test_no_title"
@@ -199,7 +199,7 @@ def test_analyze_no_title_found(
     splitter = WikipediaAPIContentSplitter(
         parser=NoTitleRetriever(),
         pruner=StubSimplifier(),
-        settings=test_db_settings,
+        settings=test_settings,
     )
     summarizer = StubSummarizer()
     pruner = StubPruner()

@@ -5,13 +5,13 @@ from prefect.futures import PrefectFuture, wait
 from pydantic import HttpUrl
 
 from src.entities.composable import Composable
-from src.entities.film import Film
+from src.entities.movie import Movie
 from src.entities.relationship import PeopleRelationshipType, Relationship
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.relation_manager import IRelationshipHandler
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
-from src.repositories.db.graph.person_graph import PersonGraphHandler
+from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.settings import Settings
 
 
@@ -114,7 +114,7 @@ class RelationshipFlow(ITaskExecutor):
             resource={"prefect.resource.id": page_id},
             payload={
                 "entity_type": (
-                    "Movie" if input_storage.entity_type is Film else "Person"
+                    "Movie" if input_storage.entity_type is Movie else "Person"
                 ),
             },
         )
@@ -162,7 +162,7 @@ class RelationshipFlow(ITaskExecutor):
 
         _futures = []
 
-        if isinstance(entity, Film):
+        if isinstance(entity, Movie):
 
             if (
                 entity.specifications is not None
@@ -173,7 +173,7 @@ class RelationshipFlow(ITaskExecutor):
 
                     related_entity: Composable = self.load_entity_by_name(
                         name=name,
-                        input_storage=PersonGraphHandler(
+                        input_storage=PersonGraphRepository(
                             settings=self.settings,
                         ),
                     )
@@ -202,7 +202,7 @@ class RelationshipFlow(ITaskExecutor):
 
                     related_entity: Composable = self.load_entity_by_name(
                         name=name,
-                        input_storage=PersonGraphHandler(
+                        input_storage=PersonGraphRepository(
                             settings=self.settings,
                         ),
                     )
@@ -231,7 +231,7 @@ class RelationshipFlow(ITaskExecutor):
 
                     related_entity: Composable = self.load_entity_by_name(
                         name=name,
-                        input_storage=PersonGraphHandler(
+                        input_storage=PersonGraphRepository(
                             settings=self.settings,
                         ),
                     )
@@ -259,7 +259,7 @@ class RelationshipFlow(ITaskExecutor):
 
                             related_entity: Composable = self.load_entity_by_name(
                                 name=name,
-                                input_storage=PersonGraphHandler(
+                                input_storage=PersonGraphRepository(
                                     settings=self.settings,
                                 ),
                             )

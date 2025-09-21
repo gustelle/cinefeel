@@ -1,7 +1,7 @@
 from src.entities.composable import Composable
 from src.entities.content import Media
-from src.entities.film import FilmActor, FilmMedia, FilmSpecifications, FilmSummary
 from src.entities.ml import ExtractionResult
+from src.entities.movie import FilmActor, FilmMedia, FilmSpecifications, FilmSummary
 from src.interfaces.extractor import IDataMiner
 
 

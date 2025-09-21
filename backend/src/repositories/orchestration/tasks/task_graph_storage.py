@@ -82,12 +82,12 @@ class DBStorageUpdater(ITaskExecutor):
 
             if batch is None or len(batch) == 0:
                 logger.info(
-                    f"Reached the last batch: {len(batch)} films, no more to process"
+                    f"Reached the last batch: {len(batch)} movies, no more to process"
                 )
                 has_more = False
             elif last_ is not None and last_.uid == batch[-1].uid:
                 logger.info(
-                    f"Reached the last batch: {len(batch)} films, no more to process"
+                    f"Reached the last batch: {len(batch)} movies, no more to process"
                 )
                 has_more = False
             else:

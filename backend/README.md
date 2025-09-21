@@ -46,3 +46,8 @@ poetry install
 pytest
 
 ```
+
+# About the stack used
+
+We have tried various techniques and frameworks for NLP tasks like summarization and similarity search.
+For similarity search, `txtai` is OK in terms of results and performance, but for summarization we preferred to use [Bert Extractive Summarizer](https://pypi.org/project/bert-extractive-summarizer/) which has much better quality/perf ratio than `BART`, the performance of which makes it unusable on a simple Macbook M2 with a decent RAM config.

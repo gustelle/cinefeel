@@ -4,10 +4,10 @@ from src.repositories.db.redis.text import RedisTextStorage
 from src.settings import Settings
 
 
-def test_redis_insert_string(test_db_settings: Settings):
+def test_redis_insert_string(test_settings: Settings):
     """Test the insert method of RedisTextStorage."""
 
-    settings = test_db_settings
+    settings = test_settings
     storage = RedisTextStorage(settings)
 
     content_id = "test_content"
@@ -35,11 +35,11 @@ def test_redis_insert_string(test_db_settings: Settings):
     r.delete(storage._get_key(content_id))
 
 
-def test_redis_select(test_db_settings: Settings):
+def test_redis_select(test_settings: Settings):
     """Test the select method of RedisTextStorage."""
 
     # given
-    settings = test_db_settings
+    settings = test_settings
     storage = RedisTextStorage(settings)
 
     content_id = "test_content"
@@ -64,11 +64,11 @@ def test_redis_select(test_db_settings: Settings):
     r.delete(storage._get_key(content_id))
 
 
-def test_redis_scan(test_db_settings: Settings):
+def test_redis_scan(test_settings: Settings):
     """Test the scan method of RedisTextStorage."""
 
     # given
-    settings = test_db_settings
+    settings = test_settings
     storage = RedisTextStorage(settings)
 
     content_id_1 = "test_content_1"

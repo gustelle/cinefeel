@@ -16,7 +16,7 @@ class IStorageHandler[U](Protocol):
     persistence_directory: Path
 
     # the type of the entity being stored
-    # e.g. Film or Person
+    # e.g. Movie or Person
     entity_type: U
 
     def insert(self, content_id: str, content: U, *args, **kwargs) -> None:

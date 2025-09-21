@@ -4,7 +4,7 @@ from typing import Generator
 
 from loguru import logger
 
-from src.entities.film import Film
+from src.entities.movie import Movie
 from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler
 
@@ -18,9 +18,9 @@ class LocalTextStorage(IStorageHandler[str]):
 
     persistence_directory: Path
 
-    entity_type: type[Film | Person]
+    entity_type: type[Movie | Person]
 
-    def __init__(self, path: Path, entity_type: type[Film | Person]):
+    def __init__(self, path: Path, entity_type: type[Movie | Person]):
 
         self.persistence_directory = path / "html" / entity_type.__name__.lower()
         self.persistence_directory.mkdir(parents=True, exist_ok=True)

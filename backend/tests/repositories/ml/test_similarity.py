@@ -17,7 +17,7 @@ from src.settings import Settings
     ],
 )
 def test_similarity_search(
-    test_db_settings: Settings,
+    test_settings: Settings,
     input: str,
     expected: str,
 ):
@@ -27,7 +27,7 @@ def test_similarity_search(
 
     # given
 
-    bert_similarity_search = SimilarSectionSearch(test_db_settings)
+    bert_similarity_search = SimilarSectionSearch(test_settings)
     corpus = [
         "film",
         "cinema",
@@ -55,14 +55,14 @@ def test_similarity_search(
 
 
 def test_similarity_most_similar_section(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     """
     Test the most similar section method.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(test_db_settings)
+    bert_similarity_search = SimilarSectionSearch(test_settings)
 
     # Define a title and sections
     title = "film"
@@ -81,13 +81,13 @@ def test_similarity_most_similar_section(
     assert most_similar_section.content == "This is a film."
 
 
-def test_similarity_most_similar_section_empty(test_db_settings: Settings):
+def test_similarity_most_similar_section_empty(test_settings: Settings):
     """
     Test the most similar section method with an empty list of sections.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(test_db_settings)
+    bert_similarity_search = SimilarSectionSearch(test_settings)
 
     # Define a title and an empty list of sections
     title = "film"
@@ -100,13 +100,13 @@ def test_similarity_most_similar_section_empty(test_db_settings: Settings):
     assert most_similar_section is None
 
 
-def test_similarity_most_similar_section_no_match(test_db_settings: Settings):
+def test_similarity_most_similar_section_no_match(test_settings: Settings):
     """
     Test the most similar section method with no matching sections.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(test_db_settings)
+    bert_similarity_search = SimilarSectionSearch(test_settings)
 
     # Define a title and sections with no match
     title = "nonexistent"
@@ -124,9 +124,9 @@ def test_similarity_most_similar_section_no_match(test_db_settings: Settings):
     assert most_similar_section is None
 
 
-def test_similarity_most_similar_section_with_empty_title(test_db_settings: Settings):
+def test_similarity_most_similar_section_with_empty_title(test_settings: Settings):
     # given
-    bert_similarity_search = SimilarSectionSearch(test_db_settings)
+    bert_similarity_search = SimilarSectionSearch(test_settings)
 
     title = ""
     sections = [
@@ -146,9 +146,9 @@ def test_similarity_most_similar_section_with_empty_title(test_db_settings: Sett
     assert most_similar_section.content == "This is a film."
 
 
-def test_similaritymost_similar_section_with_title_none(test_db_settings: Settings):
+def test_similaritymost_similar_section_with_title_none(test_settings: Settings):
     # given
-    bert_similarity_search = SimilarSectionSearch(test_db_settings)
+    bert_similarity_search = SimilarSectionSearch(test_settings)
 
     title = None
     sections = [
@@ -169,14 +169,14 @@ def test_similaritymost_similar_section_with_title_none(test_db_settings: Settin
 
 
 def test_similarity_most_similar_section_children_are_returned_in_section(
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     """
     Test that the most similar section returns children sections.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(test_db_settings)
+    bert_similarity_search = SimilarSectionSearch(test_settings)
 
     # Define a title and sections with children
     title = "film"
@@ -205,13 +205,13 @@ def test_similarity_most_similar_section_children_are_returned_in_section(
     assert most_similar_section.children[1].title == "cast"
 
 
-def test_similarity_media_are_provided_in_similar_section(test_db_settings: Settings):
+def test_similarity_media_are_provided_in_similar_section(test_settings: Settings):
     """
     Test that media are preserved in the section.
     """
 
     # given
-    bert_similarity_search = SimilarSectionSearch(test_db_settings)
+    bert_similarity_search = SimilarSectionSearch(test_settings)
 
     # Define a title and sections with media
     title = "film"

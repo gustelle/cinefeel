@@ -16,7 +16,7 @@ from .stubs.stub_pruner import DoNothingPruner
 def test_retrieve_infobox_is_processed_correctly(
     # given
     read_beethoven_html,
-    test_db_settings: Settings,
+    test_settings: Settings,
 ):
     """
     Test that the infobox is retrieved before the content simplification.
@@ -24,7 +24,7 @@ def test_retrieve_infobox_is_processed_correctly(
     """
 
     # given
-    settings = test_db_settings
+    settings = test_settings
     retriever = WikipediaParser()
 
     text_converter = TextSectionConverter()
@@ -54,13 +54,13 @@ def test_retrieve_infobox_is_processed_correctly(
     assert any(section.title == INFOBOX_SECTION_TITLE for section in sections)
 
 
-def test_process_complex_page(read_melies_html, test_db_settings: Settings):
+def test_process_complex_page(read_melies_html, test_settings: Settings):
     """
     Test the process method of the HtmlChopper class with a complex HTML page.
     """
 
     # given
-    settings = test_db_settings
+    settings = test_settings
     retriever = WikipediaParser()
     html_cleaner = TextSectionConverter()
     section_summarizer = SectionSummarizer(settings=settings)

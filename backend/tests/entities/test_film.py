@@ -1,7 +1,7 @@
 import numpy
 import pytest
 
-from src.entities.film import Film, FilmActor
+from src.entities.movie import FilmActor, Movie
 
 
 @pytest.mark.skip
@@ -17,7 +17,7 @@ def test_serialize_roles_as_ndarray():
         full_name="John Doe",
         roles=numpy.ndarray(["Director", "Writer"]),
     )
-    film = Film(
+    film = Movie(
         uid="film-1",
         title="Test Film",
         permalink="http://example.com/test-film",
@@ -38,7 +38,7 @@ def test_load_from_json():
 
     # given
     json_data = {
-        "woa_type": "film",
+        "woa_type": "movie",
         "uid": "abiribidisciplinairesfrancais",
         "title": "À Biribi, disciplinaires français",
         "permalink": "https://fr.wikipedia.org/wiki/%C3%80_Biribi%2C_disciplinaires_fran%C3%A7ais",
@@ -64,7 +64,7 @@ def test_load_from_json():
     }
 
     # when
-    film = Film.model_validate(json_data, by_name=True)
+    film = Movie.model_validate(json_data, by_name=True)
 
     # then
     assert film.uid == json_data["uid"]

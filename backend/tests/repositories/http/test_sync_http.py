@@ -5,12 +5,12 @@ from src.interfaces.http_client import HttpError
 from src.settings import Settings
 
 
-def test_sync_get_as_json(httpx_mock: HTTPXMock, test_db_settings: Settings):
+def test_sync_get_as_json(httpx_mock: HTTPXMock, test_settings: Settings):
 
     # given
     from src.repositories.http.sync_http import SyncHttpClient
 
-    settings = test_db_settings
+    settings = test_settings
     http_client = SyncHttpClient(settings=settings)
 
     name = "Lucien Nonguet"
@@ -28,12 +28,12 @@ def test_sync_get_as_json(httpx_mock: HTTPXMock, test_db_settings: Settings):
     assert isinstance(response, dict)
 
 
-def test_sync_get_as_text(httpx_mock: HTTPXMock, test_db_settings: Settings):
+def test_sync_get_as_text(httpx_mock: HTTPXMock, test_settings: Settings):
 
     # given
     from src.repositories.http.sync_http import SyncHttpClient
 
-    settings = test_db_settings
+    settings = test_settings
     http_client = SyncHttpClient(settings=settings)
 
     url = "https://fr.wikipedia.org/w/rest.php/v1/page/Lucien_Nonguet/bare"
@@ -49,12 +49,12 @@ def test_sync_get_as_text(httpx_mock: HTTPXMock, test_db_settings: Settings):
     assert len(response) > 0
 
 
-def test_sync_get_404(httpx_mock: HTTPXMock, test_db_settings: Settings):
+def test_sync_get_404(httpx_mock: HTTPXMock, test_settings: Settings):
 
     # given
     from src.repositories.http.sync_http import SyncHttpClient
 
-    settings = test_db_settings
+    settings = test_settings
     http_client = SyncHttpClient(settings=settings)
 
     url = "https://fr.wikipedia.org/404"
@@ -69,7 +69,7 @@ def test_sync_get_404(httpx_mock: HTTPXMock, test_db_settings: Settings):
     assert e.value.status_code == 404
 
 
-def test_sync_get_multiple_requests(httpx_mock: HTTPXMock, test_db_settings: Settings):
+def test_sync_get_multiple_requests(httpx_mock: HTTPXMock, test_settings: Settings):
     """
     the client remains open between requests
     """
@@ -77,7 +77,7 @@ def test_sync_get_multiple_requests(httpx_mock: HTTPXMock, test_db_settings: Set
     # given
     from src.repositories.http.sync_http import SyncHttpClient
 
-    settings = test_db_settings
+    settings = test_settings
     http_client = SyncHttpClient(settings=settings)
 
     name = "Lucien Nonguet"

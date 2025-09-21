@@ -1,4 +1,4 @@
-from .film import Film
+from .movie import Movie
 from .person import Person
 
-__all__ = ["Person", "Film"]
+__all__ = ["Person", "Movie"]

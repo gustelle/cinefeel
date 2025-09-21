@@ -5,10 +5,10 @@ from typing import Literal
 from prefect import flow, get_run_logger, task
 
 from src.entities.content import TableOfContents
-from src.entities.film import Film
+from src.entities.movie import Movie
 from src.entities.person import Person
-from src.repositories.db.graph.film_graph import FilmGraphHandler
-from src.repositories.db.graph.person_graph import PersonGraphHandler
+from src.repositories.db.graph.mg_movie import MovieGraphRepository
+from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.orchestration.flows.db_storage import db_storage_flow
 from src.repositories.orchestration.flows.entities_extraction import (
@@ -31,7 +31,7 @@ def process_entity_extraction(
     page_id: str,
 ) -> None:
     """
-    Extract a single entity (Film or Person) from a given permalink.
+    Extract a single entity (Movie or Person) from a given permalink.
     This flow will download the content, parse it, index it, and store it in the graph database.
 
     It is quite useful when making a relationship between two entities, and one of them is not existing yet in the database.
@@ -94,7 +94,7 @@ def connection_flow(
     entity_type: Literal["Movie", "Person"],
 ) -> None:
     """
-    Reads Entities (Film or Person) from the storage,
+    Reads Entities (Movie or Person) from the storage,
     and analyzes their content to identify connections between them.
 
     TODO:
@@ -104,7 +104,7 @@ def connection_flow(
 
     match entity_type:
         case "Movie":
-            _entity_type = Film
+            _entity_type = Movie
         case "Person":
 
             _entity_type = Person
@@ -115,11 +115,11 @@ def connection_flow(
 
     # where to store the relationships
     db_storage = (
-        FilmGraphHandler(
+        MovieGraphRepository(
             settings=settings,
         )
-        if _entity_type is Film
-        else PersonGraphHandler(
+        if _entity_type is Movie
+        else PersonGraphRepository(
             settings=settings,
         )
     )

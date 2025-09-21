@@ -5,7 +5,7 @@ import orjson
 import pytest
 from neo4j import GraphDatabase
 
-from src.repositories.db.graph.person_graph import PersonGraphHandler
+from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.orchestration.flows.connection import process_entity_extraction
 from src.settings import Settings
 
@@ -14,10 +14,10 @@ from src.settings import Settings
 @pytest.mark.skip(reason="flaky test, needs investigation")
 def test_unit_extraction_pipeline(
     prefect_harness,
-    test_person_graphdb: PersonGraphHandler,
+    test_person_graphdb: PersonGraphRepository,
     test_memgraph_client: GraphDatabase,
     read_melies_html: str,
-    test_db_settings: Settings,
+    test_settings: Settings,
     mocker,
 ):
     """we'll mock lots of things here, so we can focus on the extraction pipeline logic"""
@@ -32,7 +32,7 @@ def test_unit_extraction_pipeline(
 
     permalink = "https://en.wikipedia.org/wiki/Test_Person"
 
-    settings = test_db_settings.model_copy(deep=True)
+    settings = test_settings.model_copy(deep=True)
     settings.local_storage_directory = test_path
     settings.search_base_url = None  # do not index for this test, it's not relevant
 
