@@ -1,3 +1,4 @@
+import tempfile
 import time
 import zipfile
 from pathlib import Path
@@ -243,19 +244,22 @@ def test_settings(launch_memgraph):  #
 
     path = Path(__file__).parent / "start-pages-test.yml"
 
-    cur_path = Path(__file__).parent.resolve()
+    # create a temporary directory for local storage
+    # which does not depend on the infrastructure of the machine running the tests
+    # because on github actions, we don't have control over the file system
+    with tempfile.TemporaryDirectory() as tmpdirname:
 
-    settings = Settings(
-        local_storage_directory=cur_path / "data",
-        graph_db_uri=GRAPHDB_URI,
-        scraping_config_file=path,
-        similarity_min_score=0.7,
-        summary_max_length=512,
-    )
+        settings = Settings(
+            local_storage_directory=Path(tmpdirname) / "data",
+            graph_db_uri=GRAPHDB_URI,
+            scraping_config_file=path,
+            similarity_min_score=0.7,
+            summary_max_length=512,
+        )
 
-    # print(f"Using settings: {settings.model_dump_json(indent=2)}")
+        # print(f"Using settings: {settings.model_dump_json(indent=2)}")
 
-    yield settings
+        yield settings
 
 
 @pytest.fixture(scope="function")
