@@ -44,6 +44,9 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
             settings.local_storage_directory / f"{self.entity_type.__name__.lower()}s"
         )
         self.persistence_directory.mkdir(parents=True, exist_ok=True)
+        logger.debug(
+            f"Initialized JSONEntityStorageHandler for {self.entity_type.__name__} at '{self.persistence_directory}'"
+        )
 
     def insert(
         self,
@@ -66,6 +69,8 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
                     f"Expected {self.entity_type}."
                 )
 
+            logger.trace(f"Saving content '{content_id}' to '{path}'")
+
             # overwrite if exists
             if path.exists():
                 path.unlink()
@@ -74,8 +79,8 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
                 file.write(content.model_dump_json(exclude_none=True, indent=2))
 
         except Exception as e:
-            logger.exception(f"Error saving content {content_id}: {e}")
-            raise StorageError(f"Error saving {self.entity_type} to {path}") from e
+            logger.exception(f"Error saving content '{content_id}': {e}")
+            raise StorageError(f"Error saving {self.entity_type} to '{path}'") from e
 
     def select(self, content_id: str) -> T | None:
         """Loads data from a file.
@@ -124,6 +129,8 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
                 .order(order_by)
                 .to_df()
             )
+
+            logger.trace(f"Query returned {len(results)} results")
 
             if results.empty:
                 logger.warning(

@@ -1,7 +1,6 @@
 import random
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 
 import orjson
 import pytest
@@ -13,20 +12,27 @@ from src.interfaces.storage import StorageError
 from src.repositories.db.local_storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 
-current_dir = Path(__file__).parent
-
 
 @pytest.fixture(scope="function", autouse=True)
-def teardown():
+def teardown(test_settings: Settings):
 
     # remove any contents of the directory
     # this may occur if the test is run multiple times
-    local_path = current_dir
+    local_path = test_settings.local_storage_directory
     movies_directory = local_path / "movies"
     movies_directory.mkdir(exist_ok=True)
 
     persons_directory = local_path / "persons"
     persons_directory.mkdir(exist_ok=True)
+
+    # teardown
+    # remove any contents of the directory
+    # this may occur if the test is run multiple times
+    for file in movies_directory.iterdir():
+        file.unlink()
+
+    for file in persons_directory.iterdir():
+        file.unlink()
 
     yield
 
@@ -53,12 +59,6 @@ def test_dir_is_created(test_settings: Settings):
     Test if the directory is created when the JSONEntityStorageHandler is initialized.
     """
 
-    # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
-
     # when
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
@@ -68,12 +68,6 @@ def test_dir_is_created(test_settings: Settings):
 
 
 def test_when_dir_already_exists(test_settings: Settings):
-
-    # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
 
     # when
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
@@ -86,11 +80,6 @@ def test_when_dir_already_exists(test_settings: Settings):
 
 def test_insert_film(test_settings: Settings):
 
-    # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     content = {
@@ -114,11 +103,6 @@ def test_insert_film(test_settings: Settings):
 
 def test_insert_person(test_settings: Settings):
 
-    # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
     # when
@@ -149,11 +133,6 @@ def test_insert_person(test_settings: Settings):
 
 def test_insert_bad_type(test_settings: Settings):
 
-    # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
     # when
@@ -177,11 +156,6 @@ def test_insert_bad_type(test_settings: Settings):
 
 def test_select_film(test_settings: Settings):
 
-    # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     content_id = "test_film"
@@ -218,11 +192,6 @@ def test_select_film(test_settings: Settings):
 
 def test_select_non_existing_film(test_settings: Settings):
 
-    # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     # when
@@ -239,11 +208,6 @@ def test_select_non_existing_film(test_settings: Settings):
 
 def test_select_corrupt_entity(test_settings: Settings):
 
-    # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     # when
@@ -273,14 +237,9 @@ def test_select_corrupt_entity(test_settings: Settings):
     assert storage_handler.select(film.uid) is None
 
 
-def test_query_person(test_settings: Settings):
-    """verify nested objects are correctly deserialized."""
-
+def test_query_person_nominal(test_settings: Settings):
     # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
+
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
     person = Person(
@@ -303,18 +262,72 @@ def test_query_person(test_settings: Settings):
     # then
     assert len(results) == 1
     assert results[0].uid == person.uid
-    assert isinstance(results[0].biography, Biography)
-    assert results[0].biography.full_name == "Test Person Biography"
-    assert isinstance(results[0].media, PersonMedia)
-    assert str(results[0].media.photos[0]) == "http://example.com/test-person-poster"
+
+
+def test_query_person_after(test_settings: Settings):
+
+    storage_handler = JSONEntityStorageHandler[Person](test_settings)
+
+    person = Person(
+        title="Test Person Title 1",
+        permalink=HttpUrl("http://example.com/test-person-1"),
+    )
+    person.biography = Biography(
+        nom_complet="Test Person Biography", parent_uid=person.uid
+    )
+    person.media = PersonMedia(
+        photos=["http://example.com/test-person-poster"],
+        parent_uid=person.uid,
+    )
+    other_person = Person(
+        title="Test Person Title 2",
+        permalink=HttpUrl("http://example.com/test-person-2"),
+    )
+
+    storage_handler.insert(person.uid, person)
+    storage_handler.insert(other_person.uid, other_person)
+
+    # when
+    results = storage_handler.query(after=person)
+
+    for result in results:
+        print(result.model_dump_json(indent=2))
+
+    # then
+    assert not any(r.uid == person.uid for r in results)
+    assert any(r.uid == other_person.uid for r in results)
+
+
+def test_query_person_limit(test_settings: Settings):
+
+    # given
+
+    storage_handler = JSONEntityStorageHandler[Person](test_settings)
+
+    person = Person(
+        title="Test Person Title",
+        permalink=HttpUrl("http://example.com/test-person"),
+    )
+    person.biography = Biography(
+        nom_complet="Test Person Biography", parent_uid=person.uid
+    )
+    person.media = PersonMedia(
+        photos=["http://example.com/test-person-poster"],
+        parent_uid=person.uid,
+    )
+
+    storage_handler.insert(person.uid, person)
+
+    # when
+    results = storage_handler.query(limit=1)
+
+    # then
+    assert len(results) == 1
 
 
 def test_query_person_by_permalink(test_settings: Settings):
     # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
+
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
     permalink = "http://example.com/test-person"
@@ -343,10 +356,7 @@ def test_query_person_by_permalink(test_settings: Settings):
 
 def test_query_no_files(test_settings: Settings):
     # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
+
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     # when
@@ -358,10 +368,7 @@ def test_query_no_files(test_settings: Settings):
 
 def test_query_corrupt_file(test_settings: Settings):
     # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
+
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     content_id = "test_film"
@@ -392,10 +399,7 @@ def test_query_corrupt_file(test_settings: Settings):
 
 def test_query_validation_err(test_settings: Settings):
     # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
+
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     content_id = "test_film"
@@ -426,10 +430,7 @@ def test_query_validation_err(test_settings: Settings):
 
 def test_scan_film(test_settings: Settings):
     # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
+
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     content_id = "test_film"
@@ -455,10 +456,7 @@ def test_scan_film(test_settings: Settings):
 
 def test_scan_film_object_is_deeply_rebuilt(test_settings: Settings):
     # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
+
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     content = {
@@ -491,10 +489,7 @@ def test_query_thread_safety(test_settings: Settings):
     """
 
     # given
-    local_path = current_dir
-    test_settings = test_settings.model_copy(
-        update={"persistence_directory": local_path}
-    )
+
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
     uids = []

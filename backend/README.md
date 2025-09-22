@@ -24,16 +24,16 @@ poetry install
 
 # then open a new tab 
 # 1. scrape data
-./scrape.sh
+./1_scrape.sh
 
 # 2. extract entities (movies, persons)
-./extract.sh
+./2_extract.sh
 
 # 3. store extracted entities into the graph DB & meili
-./store.sh
+./3_store.sh
 
 # 4. connect entities between them
-./connect.sh
+./4_connect.sh
 
 # eventually vizualise the running flows on http://localhost:4200/
 

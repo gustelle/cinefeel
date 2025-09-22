@@ -243,7 +243,10 @@ def test_settings(launch_memgraph):  #
 
     path = Path(__file__).parent / "start-pages-test.yml"
 
+    cur_path = Path(__file__).parent.resolve()
+
     settings = Settings(
+        local_storage_directory=cur_path / "data",
         graph_db_uri=GRAPHDB_URI,
         scraping_config_file=path,
         similarity_min_score=0.7,

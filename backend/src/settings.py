@@ -10,6 +10,12 @@ from src.entities.content import TableOfContents
 
 class Settings(BaseSettings):
 
+    # TODO:
+    # - refactor the settings, merging mistral_xxx and ollama_xxx into LLSettings
+    # - refactor the settings, merging mediawiki_base_url and mediawiki_api_key into MediaWikiSettings
+    # - refactor the settings, merging search_xxx into SearchSettings
+    # - refactor the settings, merging graph_db_xxx, meili and redis_xxx into StorageSettings
+
     model_config = SettingsConfigDict(
         # `.env.prod` takes priority over `.env`
         env_file=(".env", ".env.prod")
