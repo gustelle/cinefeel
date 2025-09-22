@@ -232,32 +232,23 @@ def launch_memgraph(request):
         remove_memgraph(docker_client)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def test_settings(launch_memgraph):  #
-
-    # we call launch_memgraph fixture to ensure the Memgraph container is running
-    # before we create the settings object
-
-    import time
-
-    time.sleep(2)  # wait a bit to ensure the container is ready
 
     path = Path(__file__).parent / "start-pages-test.yml"
 
     # create a temporary directory for local storage
     # which does not depend on the infrastructure of the machine running the tests
     # because on github actions, we don't have control over the file system
-    with tempfile.TemporaryDirectory() as tmpdirname:
+    with tempfile.TemporaryDirectory() as tmpdir:
 
         settings = Settings(
-            local_storage_directory=Path(tmpdirname) / "data",
+            local_storage_directory=Path(tmpdir) / "data",
             graph_db_uri=GRAPHDB_URI,
             scraping_config_file=path,
             similarity_min_score=0.7,
             summary_max_length=512,
         )
-
-        # print(f"Using settings: {settings.model_dump_json(indent=2)}")
 
         yield settings
 

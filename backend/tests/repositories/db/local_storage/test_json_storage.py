@@ -20,10 +20,10 @@ def teardown(test_settings: Settings):
     # this may occur if the test is run multiple times
     local_path = test_settings.local_storage_directory
     movies_directory = local_path / "movies"
-    movies_directory.mkdir(exist_ok=True)
+    movies_directory.mkdir(exist_ok=True, parents=True)
 
     persons_directory = local_path / "persons"
-    persons_directory.mkdir(exist_ok=True)
+    persons_directory.mkdir(exist_ok=True, parents=True)
 
     # teardown
     # remove any contents of the directory
