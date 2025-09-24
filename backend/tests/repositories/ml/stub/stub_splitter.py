@@ -6,9 +6,6 @@ from src.interfaces.nlp_processor import Processor
 
 
 class StubHtmlSplitter(IContentSplitter):
-    """
-    A stub implementation of the IContentSplitter interface for testing purposes.
-    """
 
     is_called = False
 

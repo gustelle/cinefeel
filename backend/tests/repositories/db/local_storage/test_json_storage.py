@@ -247,7 +247,7 @@ def test_query_person_nominal(test_settings: Settings):
         permalink=HttpUrl("http://example.com/test-person"),
     )
     person.biography = Biography(
-        nom_complet="Test Person Biography", parent_uid=person.uid
+        full_name="Test Person Biography", parent_uid=person.uid
     )
     person.media = PersonMedia(
         photos=["http://example.com/test-person-poster"],
@@ -273,7 +273,7 @@ def test_query_person_after(test_settings: Settings):
         permalink=HttpUrl("http://example.com/test-person-1"),
     )
     person.biography = Biography(
-        nom_complet="Test Person Biography", parent_uid=person.uid
+        full_name="Test Person Biography", parent_uid=person.uid
     )
     person.media = PersonMedia(
         photos=["http://example.com/test-person-poster"],
@@ -309,7 +309,7 @@ def test_query_person_limit(test_settings: Settings):
         permalink=HttpUrl("http://example.com/test-person"),
     )
     person.biography = Biography(
-        nom_complet="Test Person Biography", parent_uid=person.uid
+        full_name="Test Person Biography", parent_uid=person.uid
     )
     person.media = PersonMedia(
         photos=["http://example.com/test-person-poster"],

@@ -6,6 +6,8 @@ from src.entities.person import Biography
 from src.repositories.ml.ollama_generic import GenericOllamaExtractor
 from src.settings import Settings
 
+from .stub.stub_llm import OllamaMessage, StubOllama
+
 
 def test_ollama_is_called_correctly(mocker, test_settings: Settings):
 
@@ -16,25 +18,12 @@ def test_ollama_is_called_correctly(mocker, test_settings: Settings):
         permalink=HttpUrl("http://example.com/test"),
     )
 
-    class MockMessage:
-        content: str
-
-        def __init__(self, content):
-            self.content = content
-
-    class MockResponse:
-
-        message: MockMessage
-
-        def __init__(self, message):
-            self.message = message
-
-    mock_llm_response = '{"nom_complet": "Quentin Jerome Tarantino", "uid": "123", "score": 0.95, "parent_uid": "test_uid"}'
+    mock_llm_response = '{"full_name": "Quentin Jerome Tarantino", "uid": "123", "score": 0.95, "parent_uid": "test_uid"}'
 
     # suppose Ollama chat responds with a JSON string
     mocker.patch(
         "src.repositories.ml.ollama_messager.ollama.chat",
-        return_value=MockResponse(MockMessage(mock_llm_response)),
+        return_value=StubOllama(OllamaMessage(mock_llm_response)),
     )
 
     parser = GenericOllamaExtractor(test_settings)

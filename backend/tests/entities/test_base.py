@@ -1,4 +1,5 @@
 import orjson
+import pytest
 from pydantic import Field
 
 from src.entities.component import EntityComponent
@@ -15,6 +16,7 @@ def test_uid_is_assigned():
     assert storable.uid != my_uid  # UID should be modified by the model_validator
 
 
+@pytest.mark.skip(reason="This test is no longer relevant after removing aliasing")
 def test_serialize_by_alias_is_default_behavior():
 
     # given
@@ -35,6 +37,7 @@ def test_serialize_by_alias_is_default_behavior():
     assert "coucou" in orjson.loads(serialized)
 
 
+@pytest.mark.skip(reason="This test is no longer relevant after removing aliasing")
 def test_load_model_from_json_with_alias():
 
     # given

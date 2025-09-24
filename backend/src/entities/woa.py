@@ -37,16 +37,10 @@ class WOASpecifications(EntityComponent):
     )
     other_titles: list[str] | None = Field(
         None,
-        repr=False,
-        serialization_alias="autres_titres",
-        validation_alias="autres_titres",
     )
     release_date: str | None = Field(
         None,
         examples=["2023-10-01", "2023-10-02"],
-        repr=False,
-        serialization_alias="date_sortie",
-        validation_alias="date_sortie",
     )
 
 
@@ -59,7 +53,6 @@ class WorkOfArt(BaseModel):
         None,
         description="The type of the work of art. ",
         examples=[str(woa_type) for woa_type in WOAType],
-        repr=False,
     )
 
 
@@ -71,15 +64,9 @@ class WOAInfluence(EntityComponent):
     persons: list[str] | None = Field(
         None,
         description="les personnes qui ont influencé l'oeuvre d'art actuelle.",
-        repr=False,
-        serialization_alias="personnes_influentes",
-        validation_alias="personnes_influentes",
     )
 
     work_of_arts: list[str] | None = Field(
         None,
         description="les autres oeuvres d'art qui ont influencé l'oeuvre d'art actuelle.",
-        repr=False,
-        serialization_alias="oeuvres_influentes",
-        validation_alias="oeuvres_influentes",
     )

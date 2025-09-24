@@ -39,9 +39,6 @@ class ChildHoodConditions(EntityComponent):
     parents_trades: list[ParentTrade] | None = Field(
         None,
         examples=["charpentier", "banquier"],
-        repr=False,
-        serialization_alias="metiers_parents",
-        validation_alias="metiers_parents",
     )
 
 
@@ -49,26 +46,18 @@ class Biography(EntityComponent):
 
     full_name: str = Field(
         ...,
-        serialization_alias="nom_complet",
-        validation_alias="nom_complet",
     )
     nicknames: list[str] | None = Field(
         None,
-        serialization_alias="surnoms",
-        validation_alias="surnoms",
     )
     genre: GenderEnum | None = Field(
         None,
         description="homme, femme, non-binaire ou inconnu.",
-        serialization_alias="genre",
-        validation_alias="genre",
     )
     nationalities: list[str] | None = Field(
         None,
         description="les nationalités de la personne",
         examples=["français", "américain", "canadien"],
-        serialization_alias="nationalites",
-        validation_alias="nationalites",
     )
     religion: Religion | None = Field(
         None,
@@ -76,28 +65,20 @@ class Biography(EntityComponent):
     birth_date: str | None = Field(
         None,
         examples=["2023-10-01"],
-        serialization_alias="date_naissance",
-        validation_alias="date_naissance",
         description="La date de naissance de la personne au format ISO 8601 (YYYY-MM-DD).",
     )
     death_date: str | None = Field(
         None,
         examples=["2023-10-01"],
-        serialization_alias="date_deces",
-        validation_alias="date_deces",
         description="La date de décès de la personne au format ISO 8601 (YYYY-MM-DD).",
     )
 
     education: list[str] | None = Field(
         None,
-        serialization_alias="formations",
-        validation_alias="formations",
         description="Liste des formations de la personne, par exemple 'Harvard University', 'MIT'.",
     )
     childhood_conditions: ChildHoodConditions | None = Field(
         None,
-        serialization_alias="conditions_enfance",
-        validation_alias="conditions_enfance",
     )
 
     @field_validator("birth_date", "death_date", mode="before")
@@ -122,13 +103,9 @@ class PersonMedia(EntityComponent):
 
     photos: list[HttpUrl] | None = Field(
         None,
-        serialization_alias="photos",
-        validation_alias="photos",
     )
     other_medias: list[HttpUrl] | None = Field(
         None,
-        serialization_alias="autres_contenus",
-        validation_alias="autres_contenus",
     )
 
 
@@ -140,35 +117,25 @@ class PersonVisibleFeatures(EntityComponent):
     skin_color: SkinColor | None = Field(
         None,
         description="La couleur de peau de la personne, par exemple 'claire', 'mate', 'foncée'.",
-        serialization_alias="couleur_peau",
-        validation_alias="couleur_peau",
     )
     is_obese: bool | None = Field(
         None,
         description="Indique si la personne est obèse.",
-        serialization_alias="est_obese",
-        validation_alias="est_obese",
         examples=[True, False],
     )
     is_dwarf: bool | None = Field(
         None,
         description="Indique si la personne est naine.",
-        serialization_alias="est_naine",
-        validation_alias="est_naine",
         examples=[True, False],
     )
     is_disabled: bool | None = Field(
         None,
         description="Indique si la personne est handicapée.",
-        serialization_alias="est_handicapee",
-        validation_alias="est_handicapee",
         examples=[True, False],
     )
     gender: GenderEnum | None = Field(
         None,
         description="Le genre de la personne: homme, femme, non-binaire ou inconnu.",
-        serialization_alias="genre",
-        validation_alias="genre",
     )
 
 
@@ -179,8 +146,6 @@ class PersonCharacteristics(PersonVisibleFeatures):
 
     sexual_orientation: SexualOrientation | None = Field(
         None,
-        serialization_alias="orientation_sexuelle",
-        validation_alias="orientation_sexuelle",
         description="par exemple 'hétérosexuel', 'homosexuel', 'bisexuel', 'autre'.",
     )
 
@@ -201,6 +166,4 @@ class Person(Composable):
 
     influences: list[WOAInfluence] | None = Field(
         None,
-        serialization_alias="influences",
-        validation_alias="influences",
     )
