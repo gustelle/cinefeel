@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Iterable, Protocol
 
 from pydantic import HttpUrl
 
@@ -38,6 +38,11 @@ class IContentParser(Protocol):
     def retrieve_permalink(self, html_content: str, *args, **kwargs) -> HttpUrl:
         """
         Extracts the permalink from the given HTML content.
+        The permalink is a URL that points to the canonical location of the content.
+
+        Example:
+            In Wikipedia, the permalink is the URL that points to the specific version of a page.
+            >> see https://en.wikipedia.org/wiki/Permalink
 
         Args:
             html_content (str): The HTML content to parse.
@@ -71,9 +76,9 @@ class IContentParser(Protocol):
 
     def retrieve_inner_links(
         self, html_content: str, *args, **kwargs
-    ) -> list[PageLink]:
+    ) -> Iterable[PageLink]:
         """
-        Parses the given HTML content and returns a list of `~T` objects.
+        Parses the given HTML content and returns a collection of `~PageLink` objects.
 
         Args:
             html_content (str): The HTML content to parse.
@@ -81,8 +86,7 @@ class IContentParser(Protocol):
             **kwargs: Additional keyword arguments to pass to the parser.
 
         Returns:
-            list[PageLink]: A list of `PageLink` objects representing the extracted links.
-
+            Iterable[PageLink]: A collection of `PageLink` objects representing the extracted links.
 
         Raises:
             RetrievalError: if inner links cannot be found in the HTML content.
@@ -95,7 +99,7 @@ class IContentParser(Protocol):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
-    def retrieve_media(self, html_content: str, *args, **kwargs) -> list[Media]:
+    def retrieve_media(self, html_content: str, *args, **kwargs) -> Iterable[Media]:
         """
         Retrieves media links from the HTML content.
 
@@ -105,7 +109,7 @@ class IContentParser(Protocol):
             **kwargs: Additional keyword arguments to pass to the parser.
 
         Returns:
-            list[str]: A list of media links extracted from the HTML content.
+            Iterable[str]: A collection of media links extracted from the HTML content.
 
         Raises:
             RetrievalError: if media links cannot be found in the HTML content.

@@ -8,8 +8,8 @@ from src.entities.person import Person
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.db.redis.json import RedisJsonStorage
-from src.repositories.orchestration.tasks.task_graph_storage import DBStorageUpdater
-from src.repositories.orchestration.tasks.task_indexer import SearchUpdater
+from src.repositories.orchestration.tasks.task_graph_storage import DBStorageTask
+from src.repositories.orchestration.tasks.task_indexer import SearchIndexerTask
 from src.repositories.search.meili_indexer import MeiliHandler
 from src.settings import Settings
 
@@ -41,7 +41,7 @@ def db_storage_flow(
     json_store = RedisJsonStorage[_entity_type](settings=settings)
 
     if settings.search_base_url:
-        search_flow = SearchUpdater(
+        search_flow = SearchIndexerTask(
             settings=settings,
             entity_type=_entity_type,
         )
@@ -56,7 +56,7 @@ def db_storage_flow(
 
     if settings.graph_db_uri:
 
-        storage_flow = DBStorageUpdater(
+        storage_flow = DBStorageTask(
             settings=settings,
             entity_type=_entity_type,
         )

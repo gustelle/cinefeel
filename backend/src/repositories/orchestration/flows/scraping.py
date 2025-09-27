@@ -4,7 +4,7 @@ from prefect.futures import wait
 from src.entities.content import TableOfContents
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
-from src.repositories.orchestration.tasks.task_downloader import PageContentDownloader
+from src.repositories.orchestration.tasks.task_downloader import ContentDownloaderTask
 from src.settings import Settings
 
 
@@ -21,7 +21,7 @@ def scraping_flow(
 
     http_client = SyncHttpClient(settings=settings)
 
-    download_flow = PageContentDownloader(settings=settings, http_client=http_client)
+    download_flow = ContentDownloaderTask(settings=settings, http_client=http_client)
 
     # make them unique by page_id
     pages = {p.page_id: p for p in pages}.values()

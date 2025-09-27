@@ -9,7 +9,7 @@ from src.repositories.db.local_storage.json_storage import JSONEntityStorageHand
 from src.settings import Settings
 
 
-class FeatureExtractionFlow(ITaskExecutor):
+class FeatureExtractionTask(ITaskExecutor):
     """
     flow in charge of setting flags on entities, e.g. to indicate
     if a poster contains a black person or not....
@@ -22,7 +22,7 @@ class FeatureExtractionFlow(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
 
-    @task(task_run_name="to_db-{entity.uid}")
+    @task(task_run_name="to_db-{entity.uid}", tags=["cinefeel_tasks"])
     def to_db(self, entity: Composable) -> Composable:
         """
         Analyze the relationships of a single entity.
@@ -37,7 +37,7 @@ class FeatureExtractionFlow(ITaskExecutor):
         # and then store the results back into the graph database.
         return entity
 
-    @task(task_run_name="extract_features-{entity.uid}")
+    @task(task_run_name="extract_features-{entity.uid}", tags=["cinefeel_tasks"])
     def extract_features(self, entity: Composable) -> Composable:
         """
         Analyze the relationships of a single entity.

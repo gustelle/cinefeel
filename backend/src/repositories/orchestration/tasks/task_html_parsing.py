@@ -41,7 +41,7 @@ from src.repositories.resolver.person_resolver import PersonResolver
 from src.settings import Settings
 
 
-class HtmlEntityExtractor(ITaskExecutor):
+class HtmlDataParserTask(ITaskExecutor):
     """
     Analyses the HTML content from an input_storage
     and creates eventually a Composable entity stored in the output_storage.
@@ -80,7 +80,11 @@ class HtmlEntityExtractor(ITaskExecutor):
             settings=self.settings
         )
 
-    @task(task_run_name="do_analysis-{content_id}", cache_policy=NO_CACHE)
+    @task(
+        task_run_name="do_analysis-{content_id}",
+        cache_policy=NO_CACHE,
+        tags=["cinefeel_tasks"],
+    )
     def do_analysis(
         self,
         content_id: str,
@@ -208,7 +212,11 @@ class HtmlEntityExtractor(ITaskExecutor):
             )
             return None
 
-    @task(task_run_name="to_storage-{entity.uid}", cache_policy=NO_CACHE)
+    @task(
+        task_run_name="to_storage-{entity.uid}",
+        cache_policy=NO_CACHE,
+        tags=["cinefeel_tasks"],
+    )
     def to_storage(self, storage: IStorageHandler, entity: Composable) -> None:
         """
         Store the film entity in the storage.

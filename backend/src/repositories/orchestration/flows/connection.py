@@ -16,7 +16,7 @@ from src.repositories.orchestration.flows.entities_extraction import (
 )
 from src.repositories.orchestration.flows.scraping import scraping_flow
 from src.repositories.orchestration.tasks.task_relationship_storage import (
-    RelationshipFlow,
+    EntityRelationshipTask,
 )
 from src.settings import Settings
 
@@ -124,7 +124,7 @@ def connection_flow(
         )
     )
 
-    RelationshipFlow(
+    EntityRelationshipTask(
         settings=settings,
         http_client=http_client,
     ).execute.submit(

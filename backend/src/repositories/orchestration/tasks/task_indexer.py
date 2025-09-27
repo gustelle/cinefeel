@@ -8,7 +8,7 @@ from src.interfaces.task import ITaskExecutor
 from src.settings import Settings
 
 
-class SearchUpdater(ITaskExecutor):
+class SearchIndexerTask(ITaskExecutor):
     """Updates a search index with new content."""
 
     entity_type: type[Composable]
@@ -18,7 +18,7 @@ class SearchUpdater(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
 
-    @task(cache_policy=NO_CACHE)
+    @task(cache_policy=NO_CACHE, tags=["cinefeel_tasks"])
     def index_batch(
         self,
         entities: list[Composable],

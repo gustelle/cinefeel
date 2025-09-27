@@ -120,7 +120,7 @@ class Settings(BaseSettings):
     )
 
     summary_model: str = Field(
-        default="facebook/bart-large-cnn",
+        default="paraphrase-MiniLM-L6-v2",
         description="""
             The model to use for summarizing contents.
         """,

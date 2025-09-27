@@ -5,10 +5,11 @@ class StubAsyncHttpClient(IHttpClient):
 
     is_called = False
     raise_exc = Exception
+    _response: dict | str = None
 
     def __init__(
         self,
-        response: dict | str,
+        response: dict | str = None,
         raise_exc: Exception = None,
     ):
         """

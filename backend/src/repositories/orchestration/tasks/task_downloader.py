@@ -12,27 +12,33 @@ from src.repositories.db.local_storage.html_storage import LocalTextStorage
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.settings import Settings
 
-from .retry import is_task_retriable
+from .retry import RETRY_ATTEMPTS, RETRY_DELAY_SECONDS, is_task_retriable
 
 
-class PageContentDownloader(ITaskExecutor):
+class ContentDownloaderTask(ITaskExecutor):
     """Downloads the HTML content of a page from a MediaWiki API and stores it using the provided storage handler."""
 
     settings: Settings
     http_client: IHttpClient
-    page_endpoint: str
+
+    # the endpoint to download the page content
+    # ex: https://en.wikipedia.org/api/rest_v1/page/{page_id}/html
+    _endpoint_template: str
 
     def __init__(self, settings: Settings, http_client: IHttpClient):
         self.settings = settings
         self.http_client = http_client
-        self.page_endpoint = f"{self.settings.mediawiki_base_url}/page/{{page_id}}/html"
+        self._endpoint_template = (
+            f"{self.settings.mediawiki_base_url}/page/{{page_id}}/html"
+        )
 
     @task(
         task_run_name="download-{page_id}",
-        retries=3,
-        retry_delay_seconds=[1, 2, 5],
+        retries=RETRY_ATTEMPTS,
+        retry_delay_seconds=RETRY_DELAY_SECONDS,
         retry_condition_fn=is_task_retriable,
         cache_policy=NO_CACHE,
+        tags=["cinefeel_tasks"],
     )
     def download(
         self,
@@ -42,7 +48,7 @@ class PageContentDownloader(ITaskExecutor):
         **params,
     ) -> str | None:
         """
-        Pre-requisite: The class `http_client` provided must be synchronous.
+        Pre-requisite: The class `http_client` provided must be synchronous (async not supported yet).
 
         Args:
             page_id (str): The page ID to download.
@@ -54,7 +60,7 @@ class PageContentDownloader(ITaskExecutor):
             str | None: The content ID if the download was successful, None otherwise.
         """
 
-        endpoint = self.page_endpoint.format(page_id=page_id)
+        endpoint = self._endpoint_template.format(page_id=page_id)
 
         get_run_logger().info(f">> Downloading '{endpoint}'")
 
@@ -71,9 +77,7 @@ class PageContentDownloader(ITaskExecutor):
                 )
                 return None
             else:
-                get_run_logger().error(
-                    f"Server error while downloading '{endpoint}': {e.status_code}"
-                )
+                # force a retry for other HTTP errors
                 raise
 
         if html is not None and storage_handler is not None:
@@ -86,8 +90,8 @@ class PageContentDownloader(ITaskExecutor):
 
         return page_id if html is not None else None
 
-    @task(cache_policy=NO_CACHE)
-    def fetch_page_links(
+    @task(cache_policy=NO_CACHE, tags=["cinefeel_tasks"])
+    def extract_page_links(
         self,
         config: TableOfContents,
         link_extractor: IContentParser,
@@ -104,10 +108,10 @@ class PageContentDownloader(ITaskExecutor):
 
         logger = get_run_logger()
 
-        html = self.download.submit(
+        html = self.download(
             page_id=config.page_id,
             return_content=True,  # return the content
-        ).result(timeout=self.settings.prefect_task_timeout, raise_on_failure=True)
+        )
 
         if html is None:
             return []
@@ -132,13 +136,20 @@ class PageContentDownloader(ITaskExecutor):
         self,
         page: PageLink,
         storage_handler: IStorageHandler,
+        link_extractor: IContentParser | None = WikipediaParser(),
         return_results: bool = False,
     ) -> list[str] | None:
         """
+        runs the task to download the HTML content of a page and store it using the provided storage handler.
+        - If the `page` is a `TableOfContents`, it will first extract the links from the table of contents
+        and then download each linked page.
+        - If the `page` is a `PageLink`, it will directly download the page.
 
         Args:
             page (PageLink): The permalink to the page to be downloaded.
             storage_handler (IStorageHandler): the storage handler to use for storing the content that is downloaded.
+            link_extractor (IContentParser | None, optional): The link extractor to use for extracting links from a table of contents.
+                Defaults to WikipediaParser().
             return_results (bool, optional): Defaults to False.
 
         Returns:
@@ -148,8 +159,7 @@ class PageContentDownloader(ITaskExecutor):
 
         if isinstance(page, TableOfContents):
             # extract the links from the table of contents
-            link_extractor = WikipediaParser()
-            page_links = self.fetch_page_links(
+            page_links = self.extract_page_links(
                 config=page,
                 link_extractor=link_extractor,
             )

@@ -61,7 +61,7 @@ class EntitiesConnectionUseCase:
                         "settings": self.settings,
                         "entity_type": "Movie",
                     },
-                    cron="00 08 * * *",  # Every day at 8:00 AM
+                    # cron="00 08 * * *",  # Every day at 8:00 AM
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()
@@ -84,7 +84,7 @@ class EntitiesConnectionUseCase:
                         "settings": self.settings,
                         "entity_type": "Person",
                     },
-                    cron="00 09 * * *",  # Every day at 9:00 AM
+                    # cron="00 09 * * *",  # Every day at 9:00 AM
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()

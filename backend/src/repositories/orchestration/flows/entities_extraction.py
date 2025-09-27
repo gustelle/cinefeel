@@ -7,7 +7,7 @@ from src.entities.movie import Movie
 from src.entities.person import Person
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.db.redis.text import RedisTextStorage
-from src.repositories.orchestration.tasks.task_html_parsing import HtmlEntityExtractor
+from src.repositories.orchestration.tasks.task_html_parsing import HtmlDataParserTask
 from src.settings import Settings
 
 
@@ -40,7 +40,7 @@ def extract_entities_flow(
         case _:
             raise ValueError(f"Unsupported entity type: {entity_type}")
 
-    analysis_flow = HtmlEntityExtractor(
+    analysis_flow = HtmlDataParserTask(
         settings=settings,
         entity_type=_ent_type,
     )

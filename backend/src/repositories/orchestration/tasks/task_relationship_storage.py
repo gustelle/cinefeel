@@ -15,7 +15,7 @@ from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.settings import Settings
 
 
-class RelationshipFlow(ITaskExecutor):
+class EntityRelationshipTask(ITaskExecutor):
     """
     finds relationships between entities.
     and stores them into the graph database.
@@ -69,9 +69,7 @@ class RelationshipFlow(ITaskExecutor):
         """
         return HttpUrl(f"https://fr.wikipedia.org/wiki/{page_id}")
 
-    @task(
-        cache_policy=NO_CACHE,
-    )
+    @task(cache_policy=NO_CACHE, tags=["cinefeel_tasks"])
     def load_entity_by_name(
         self, name: str, input_storage: IStorageHandler[Composable]
     ) -> Composable | None:
@@ -124,6 +122,7 @@ class RelationshipFlow(ITaskExecutor):
         cache_policy=NO_CACHE,
         retries=3,
         retry_delay_seconds=[2, 5, 10],
+        tags=["cinefeel_tasks"],
     )
     def do_enrichment(
         self,
@@ -143,7 +142,11 @@ class RelationshipFlow(ITaskExecutor):
 
         return result
 
-    @task(task_run_name="analyze_relationships-{entity.uid}", cache_policy=NO_CACHE)
+    @task(
+        task_run_name="analyze_relationships-{entity.uid}",
+        cache_policy=NO_CACHE,
+        tags=["cinefeel_tasks"],
+    )
     def analyze_relationships(
         self,
         entity: Composable,

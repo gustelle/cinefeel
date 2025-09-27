@@ -38,7 +38,7 @@ class ScrapingUseCase:
                             if p.entity_type == "Movie"
                         ],
                     },
-                    cron="0 0 * * *",  # Every day at midnight
+                    # cron="0 0 * * *",  # Every day at midnight
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()
@@ -65,7 +65,7 @@ class ScrapingUseCase:
                             if p.entity_type == "Person"
                         ],
                     },
-                    cron="0 0 * * *",  # Every day at midnight
+                    # cron="0 0 * * *",  # Every day at midnight
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()

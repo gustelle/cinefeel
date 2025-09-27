@@ -1,4 +1,6 @@
+from spacy.lang.fr import French
 from summarizer.sbert import SBertSummarizer
+from summarizer.text_processors.sentence_handler import SentenceHandler
 
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
@@ -16,7 +18,9 @@ class SectionSummarizer(Processor[Section]):
     def __init__(self, settings: Settings):
 
         self.settings = settings
-        self._summarizer = SBertSummarizer("paraphrase-MiniLM-L6-v2")
+        self._summarizer = SBertSummarizer(
+            model=settings.summary_model, sentence_handler=SentenceHandler(French)
+        )
 
     def process(self, section: Section) -> Section | None:
         """

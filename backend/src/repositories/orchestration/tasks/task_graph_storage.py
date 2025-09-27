@@ -8,7 +8,7 @@ from src.interfaces.task import ITaskExecutor
 from src.settings import Settings
 
 
-class DBStorageUpdater(ITaskExecutor):
+class DBStorageTask(ITaskExecutor):
     """Updates a database storage with new content."""
 
     entity_type: type[Composable]
@@ -18,7 +18,7 @@ class DBStorageUpdater(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
 
-    @task(cache_policy=NO_CACHE)
+    @task(cache_policy=NO_CACHE, tags=["cinefeel_tasks"])
     def index_batch(
         self,
         entities: list[Composable],
@@ -31,7 +31,9 @@ class DBStorageUpdater(ITaskExecutor):
             contents=entities,
         )
 
-    @task(cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5)
+    @task(
+        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+    )
     def query_input_storage(
         self,
         input_storage: IStorageHandler[Composable],

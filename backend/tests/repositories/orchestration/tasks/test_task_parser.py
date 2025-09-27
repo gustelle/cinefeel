@@ -1,7 +1,7 @@
 from pydantic import HttpUrl
 
 from src.entities.movie import Movie
-from src.repositories.orchestration.tasks.task_html_parsing import HtmlEntityExtractor
+from src.repositories.orchestration.tasks.task_html_parsing import HtmlDataParserTask
 from src.settings import Settings
 
 from .stubs.stub_analyzer import StubAnalyzer
@@ -13,7 +13,7 @@ def test_task_store(test_settings: Settings):
 
     # given
     stub_storage = StubStorage()
-    flow_runner = HtmlEntityExtractor(
+    flow_runner = HtmlDataParserTask(
         settings=test_settings,
         entity_type=Movie,
     )
@@ -36,7 +36,7 @@ def test_task_analyze(test_settings: Settings):
     analyzer = StubAnalyzer()
     section_searcher = StubSectionSearch()
 
-    flow_runner = HtmlEntityExtractor(
+    flow_runner = HtmlDataParserTask(
         settings=test_settings,
         entity_type=Movie,
         analyzer=analyzer,
