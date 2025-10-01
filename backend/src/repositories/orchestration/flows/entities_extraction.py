@@ -31,10 +31,11 @@ def extract_entities_flow(
     """
     Extract entities (Movie or Person) from HTML contents
 
-    for technical reasons (Prefect serialization) we use "Movie" and "Person" as entity_type
-    but they map to the Movie and Person classes respectively.
+    for technical reasons (Prefect serialization) we use `Literal["Movie", "Person"]` as entity_type
+    they are just mapped to the Movie and Person classes respectively.
 
     If page_id is provided, only that specific page will be processed. If not, all pages in the HTML storage will be processed.
+    Other params are injected for testing purposes.
 
     Args:
         settings (Settings): Application settings.
@@ -72,17 +73,19 @@ def extract_entities_flow(
         if content:
             tasks.append(
                 parser_task.execute.submit(
+                    content_id=page_id,
                     content=content,
                     output_storage=json_store,
                 )
             )
         else:
-            raise ValueError(f"No HTML content found for page_id: {page_id}")
+            raise ValueError(f"No HTML content found for page_id: '{page_id}'")
     else:
         # iterate over all HTML contents in Redis
         for content_id, content in html_store.scan():
             tasks.append(
                 parser_task.execute.submit(
+                    content_id=content_id,
                     content=content,
                     output_storage=json_store,
                 )

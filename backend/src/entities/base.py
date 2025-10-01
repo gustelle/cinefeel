@@ -12,4 +12,5 @@ class Identifiable(BaseModel):
         None,
         description="A unique identifier for the object.",
         examples=["12345", "abcde"],
+        frozen=True,  # make the field immutable after creation
     )

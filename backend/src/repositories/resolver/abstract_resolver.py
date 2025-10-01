@@ -204,5 +204,9 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
 
     @abc.abstractmethod
     def validate_entity(self, entity: T) -> T:
-        """Validate the entity after it has been extracted and assembled."""
+        """Entity-specific validation logic
+
+        for instance we can find here checks on mandatory fields,
+        normalization of certain fields, etc.
+        """
         raise NotImplementedError("This method should be implemented by subclasses.")

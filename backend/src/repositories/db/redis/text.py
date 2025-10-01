@@ -77,8 +77,6 @@ class RedisTextStorage(IStorageHandler[str]):
     def scan(self) -> Generator[tuple[str, str], None, None]:
         """Scans the persistent storage and iterates over contents.
 
-        TODO:
-        - testing of the key retrieval
 
         Example:
         ```python

@@ -17,6 +17,20 @@ class NoPermakinRetriever(IContentParser):
         """
         return "Test Page Title"
 
+    def retrieve_orphan_paragraphs(self, html_content, *args, **kwargs):
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def retrieve_inner_links(
+        self, html_content: str, entity_type: Type, *args, **kwargs
+    ) -> list[PageLink]:
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def retrieve_infobox(self, *args, **kwargs) -> Section | None:
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def retrieve_media(self, html_content, *args, **kwargs):
+        raise NotImplementedError("Subclasses must implement this method.")
+
 
 class NoTitleRetriever(IContentParser):
 
@@ -26,14 +40,34 @@ class NoTitleRetriever(IContentParser):
     def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
         raise RetrievalError("Failed to retrieve title")
 
+    def retrieve_orphan_paragraphs(self, html_content, *args, **kwargs):
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def retrieve_inner_links(
+        self, html_content: str, entity_type: Type, *args, **kwargs
+    ) -> list[PageLink]:
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def retrieve_infobox(self, *args, **kwargs) -> Section | None:
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def retrieve_media(self, html_content, *args, **kwargs):
+        raise NotImplementedError("Subclasses must implement this method.")
+
 
 class StubHtmlRetriever(IContentParser):
 
     infoxbox_elements: list[Section] | None = None
+    orphan_paragraphs: Section | None = None
 
-    def __init__(self, infoxbox_elements: list[Section] | None = None):
+    def __init__(
+        self,
+        infoxbox_elements: list[Section] | None = None,
+        orphan_paragraphs: Section | None = None,
+    ):
 
         self.infoxbox_elements = infoxbox_elements
+        self.orphan_paragraphs = orphan_paragraphs
 
     def retrieve_permalink(self, html_content, *args, **kwargs):
         return HttpUrl("https://example.com/test-page")
@@ -54,3 +88,11 @@ class StubHtmlRetriever(IContentParser):
     def retrieve_infobox(self, *args, **kwargs) -> Section | None:
 
         return self.infoxbox_elements[0] if self.infoxbox_elements is not None else None
+
+    def retrieve_media(self, html_content, *args, **kwargs):
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def retrieve_orphan_paragraphs(
+        self, html_content, *args, **kwargs
+    ) -> Section | None:
+        return self.orphan_paragraphs

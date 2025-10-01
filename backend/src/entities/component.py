@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Self
+from typing import Any, Self
 
 from loguru import logger
 from pydantic import ConfigDict, Field, model_validator
@@ -10,7 +10,7 @@ from src.entities.base import Identifiable
 
 class EntityComponent(Identifiable):
     """
-    An object that can be used to compose other objects.
+    An object that can be used to compose other objects (for instance `Composable` entities).
     """
 
     model_config = ConfigDict(serialize_by_alias=True, populate_by_name=True)
@@ -27,17 +27,20 @@ class EntityComponent(Identifiable):
         """,
     )
 
-    @model_validator(mode="after")
-    def assign_uid(self) -> Self:
+    @model_validator(mode="before")
+    @classmethod
+    def assign_uid(cls, data: dict[str, Any]) -> dict[str, Any]:
         """
         UID assignment is crucial for the entity merging process.
-        It is important that the UID assignment is deterministic
-        and consistent across different instances of the same component.
+        It is important to control how the UID is generated
         """
 
-        self.uid = f"{self.parent_uid}_{self.__class__.__name__.casefold()}"
+        if not data.get("parent_uid", None):
+            raise ValueError("parent_uid is required to generate UID.")
 
-        return self
+        data["uid"] = f"{cls.__name__}:{data.get('parent_uid')}"
+
+        return data
 
     def update(
         self,

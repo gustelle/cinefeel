@@ -376,6 +376,30 @@ def test_split_nested_sections_with_div(
     assert sections[0].children[1].title == "Nested Section 1.2"
 
 
+def test_split_page_with_no_title(test_settings: Settings):
+
+    # given
+    # an valid html file with a section that has no title
+    html_file = current_dir / "test_html/no_page_title.html"
+    html_content = html_file.read_text(encoding="utf-8")
+    info_retriever = WikipediaParser()
+
+    semantic = WikipediaAPIContentSplitter(
+        parser=info_retriever, pruner=DoNothingPruner(), settings=test_settings
+    )
+    uid = "some-unique-id"
+
+    # when
+    base_info, _ = semantic.split(uid, html_content)
+
+    # then
+    assert base_info is not None
+    assert isinstance(base_info, Composable)
+    assert (
+        base_info.uid == f"Composable:{uid}"
+    )  # the UID is used as title fallback to generate the UID
+
+
 def test_pruner_is_called(
     test_settings: Settings,
 ):

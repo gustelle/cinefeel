@@ -2,7 +2,7 @@ from enum import StrEnum
 from string import ascii_letters, digits, punctuation, whitespace
 
 import pytest
-from pydantic import Field, field_validator
+from pydantic import Field, ValidationError, field_validator
 
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
@@ -98,6 +98,20 @@ def test_uid_generation_from_child_class():
 
     # Then
     assert storable.uid.startswith("MyComposable:")
+
+
+def test_uid_is_frozen():
+    # given
+    title = "Some Title"
+
+    # when
+    instance = Composable(title=title, permalink="http://example.com/test")
+
+    # then
+    with pytest.raises(ValidationError) as exc_info:
+        instance.uid = "new-uid"
+
+    assert "is frozen" in str(exc_info.value)
 
 
 def test_permalink_is_mandatory():

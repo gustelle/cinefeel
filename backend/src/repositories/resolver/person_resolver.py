@@ -132,6 +132,7 @@ class PersonResolver(AbstractResolver[Person]):
                 full_name=entity.title,
                 parent_uid=entity.uid,
             )
+
             return entity
 
         return entity.model_copy(

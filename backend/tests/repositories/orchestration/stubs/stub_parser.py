@@ -28,3 +28,9 @@ class StubContentParser(IContentParser):
     ) -> list[PageLink]:
         self._is_called = True
         return self.inner_links
+
+    def retrieve_infobox(self, html_content, *args, **kwargs):
+        raise NotImplementedError()
+
+    def retrieve_media(self, html_content, *args, **kwargs):
+        raise NotImplementedError()

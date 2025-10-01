@@ -95,17 +95,6 @@ def test_resolve_person_patch_media(
     assert len(patched_person.media.photos) == 2
     assert len(patched_person.media.other_medias) == 3
 
-    # assert str(patched_film.media.posters[0]) == "https://example.com/Poster1.jpg"
-    # assert str(patched_film.media.posters[1]) == "https://example.com/Poster2.jpg"
-    # assert str(patched_film.media.other_media[0]) == "https://example.com/Trailer.mp4"
-    # assert (
-    #     str(patched_film.media.other_media[1])
-    #     == "https://example.com/BehindTheScenes.mp4"
-    # )
-    # assert (
-    #     str(patched_film.media.other_media[2]) == "https://example.com/Soundtrack.mp3"
-    # )
-
 
 def test_resolve_person_validate_nationalities(
     test_settings: Settings,
@@ -139,7 +128,7 @@ def test_resolve_person_validate_nationalities(
     p = resolver.validate_entity(p)
 
     # Then the person should be valid
-    assert resolver.validate_entity(p) is not None
+    assert p is not None
     assert p.biography.nationalities == ["français"]
 
 
@@ -175,5 +164,35 @@ def test_resolve_person_validate_birth_date(
     p = resolver.validate_entity(p)
 
     # Then the person should be valid
-    assert resolver.validate_entity(p) is not None
+    assert p is not None
     assert p.biography.birth_date == "1861-12-28"
+
+
+def test_resolve_person_validate_entity(
+    test_settings: Settings,
+):
+    # Given a person with valid nationalities
+    p = Person(
+        title="The Great Person",
+        permalink="https://example.com/the-great-person",
+    )
+
+    resolver = PersonResolver(
+        section_searcher=StubSimilaritySearch(
+            return_value=Section(title="Biography", content="")
+        ),
+        configurations=[
+            ResolutionConfiguration(
+                extractor=StubExtractor(),
+                section_titles=["Biography"],
+                extracted_type=Biography,
+            ),
+        ],
+        settings=test_settings,
+    )
+
+    # When validating the person
+    p = resolver.validate_entity(p)
+
+    # Then the person should be valid
+    assert p.biography is not None

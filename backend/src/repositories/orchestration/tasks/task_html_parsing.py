@@ -1,4 +1,3 @@
-import hashlib
 from typing import Type
 
 from prefect import get_run_logger, task
@@ -101,10 +100,6 @@ class HtmlDataParserTask(ITaskExecutor):
         """
         logger = get_run_logger()
 
-        logger.info(
-            f"Processing analysis of content ID '{content_id}' ([{html_content[:30]}...])"
-        )
-
         result = self.analyzer.process(content_id, html_content)
 
         if result is None:
@@ -116,7 +111,7 @@ class HtmlDataParserTask(ITaskExecutor):
         base_info, sections = result
 
         logger.info(
-            f"Extracting '{self.entity_type.__name__}' for content '{str(base_info.permalink)}'"
+            f"Extracting '{self.entity_type.__name__}' for content with ID '{content_id}'"
         )
 
         # assemble the entity from the sections
@@ -237,11 +232,6 @@ class HtmlDataParserTask(ITaskExecutor):
                 [entity],
             )
 
-    def compute_uid(self, content: str) -> str:
-        sha1 = hashlib.sha1()
-        sha1.update(str.encode(content))
-        return sha1.hexdigest()
-
     @task(
         cache_policy=NO_CACHE,
         retries=RETRY_ATTEMPTS,
@@ -251,18 +241,17 @@ class HtmlDataParserTask(ITaskExecutor):
     )
     def execute(
         self,
+        content_id: str,
         content: str,
         output_storage: IStorageHandler[Composable],
     ) -> None:
 
         logger = get_run_logger()
-        logger.debug(f">> Processing HtmlDataParserTask with content {content[:30]}...")
+        logger.debug(f">> Processing HtmlDataParserTask for content ID '{content_id}'")
 
         # need to keep track of the futures to wait for them later
         # see: https://github.com/PrefectHQ/prefect/issues/17517
         _futures = []
-
-        content_id = self.compute_uid(content)
 
         future_entity = self.do_analysis.submit(
             content_id=content_id,

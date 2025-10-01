@@ -454,6 +454,7 @@ def test_retrieve_title(read_beethoven_html):
 
 
 def test_retrieve_title_raises():
+
     # given
     current_dir = Path(__file__).parent
     html_file = current_dir / "test_html/no_page_title.html"

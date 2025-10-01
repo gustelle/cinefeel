@@ -30,7 +30,9 @@ class Composable(Identifiable):
 
     title: str = Field(
         ...,
-        description="The title of the information entity.",
+        description="""
+            The title of the entity is quite important, as it is used to generate the UID.
+        """,
         examples=["Stanley Kubrick", "The Shining"],
     )
 

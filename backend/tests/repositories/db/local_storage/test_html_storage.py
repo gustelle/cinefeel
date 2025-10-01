@@ -137,6 +137,22 @@ def test_local_text_storage_scan():
     assert (content_id_2, content_2) in results
 
 
+def test_local_text_storage_scan_returns_correct_content_id():
+    # Given
+    storage = LocalTextStorage(path=current_dir, entity_type=Movie)
+    content_id_1 = "test1"
+    content_1 = "<html><body><h1>Test 1</h1></body></html>"
+    storage.insert(content_id_1, content_1)
+
+    # When
+    results = list(storage.scan())
+
+    # Then
+    assert len(results) == 1
+    assert results[0][0] == content_id_1
+    assert results[0][1] == content_1
+
+
 def test_local_text_storage_scan_no_files():
     # Given
     storage = LocalTextStorage(path=current_dir, entity_type=Movie)

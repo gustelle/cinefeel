@@ -27,3 +27,18 @@ class StubStorage[T: Movie | Person](IStorageHandler[T]):
         """Saves multiple contents to persistent storage."""
 
         self.is_inserted = True
+
+    def scan(
+        self,
+        *args,
+    ) -> list[tuple[str, T]]:
+        raise NotImplementedError
+
+    def select(self, content_id, *args, **kwargs):
+        raise NotImplementedError
+
+    def query(self, *args, **kwargs) -> list[T]:
+        raise NotImplementedError
+
+    def update(self, content: T, *args, **kwargs) -> T:
+        raise NotImplementedError

@@ -1,10 +1,11 @@
 import re
 
 from bs4 import BeautifulSoup, Tag
+from loguru import logger
 
 from src.entities.composable import Composable
 from src.interfaces.content_splitter import IContentSplitter, Section
-from src.interfaces.info_retriever import IContentParser
+from src.interfaces.info_retriever import IContentParser, RetrievalError
 from src.interfaces.nlp_processor import Processor
 from src.settings import Settings
 
@@ -56,50 +57,34 @@ class WikipediaAPIContentSplitter(IContentSplitter):
         root_tag_name: str = "body",
     ) -> tuple[Composable, list[Section]] | None:
         """
-        Splits the HTML content into sections based on the specified tags.
-
+        Extracts the base information of the composable and splits the HTML content into sections.
 
         Args:
-            uid (str): The unique identifier for the content.
+            uid (str): a unique identifier.
+                Most of the time, this is not going to be the entity_id,
+                it is only used as fallback when the title cannot be retrieved from the HTML content.
             html_content (str): The HTML content to be processed.
             section_tag_name (str): The tag used to identify sections in the HTML content. Defaults to "section"
             root_tag_name (str): The tag used to identify the root of the HTML content. Defaults to "body".
-
-        Example:
-            ```python
-            # example with nested sections:
-            html_content = "<section><h2>Main Section</h2><p>Content of the main section.</p><section><h3>Subsection</h3><p>Content of the subsection.</p></section></section>"
-            splitter = WikipediaAPIContentSplitter()
-            sections = splitter.split(html_content, flatten=False)
-            # would return:
-            [
-                Section(
-                    title="Main Section",
-                    content="Content of the main section.",
-                    children=[
-                        Section(
-                            title="Subsection",
-                            content="Content of the subsection.",
-                            children=[]
-                        )
-                    ]
-                )
-            ]
-
-            ```
 
         Returns:
             tuple[Composable, list[Section]] | None: A tuple containing the base content and a list of sections.
         """
 
         # retrieve permalink and title before content simplification
-        permakink = self.parser.retrieve_permalink(html_content)
-        title = self.parser.retrieve_title(html_content)
+        permalink = self.parser.retrieve_permalink(html_content)
+
+        try:
+            title = self.parser.retrieve_title(html_content)
+        except RetrievalError:
+            logger.error(f"Error retrieving title for uid '{uid}', using UID as title")
+            title = uid
+
+        logger.info(f"Splitting HTML content for uid '{uid}', permalink: '{permalink}'")
 
         base_content = Composable(
-            uid=uid,
             title=title,
-            permalink=permakink,
+            permalink=permalink,
         )
 
         sections: list[Section] = []
