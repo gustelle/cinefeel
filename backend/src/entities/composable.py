@@ -184,7 +184,7 @@ class Composable(Identifiable):
                 item.score = extraction_result.score
             return e
 
-        except ValidationError:
+        except (ValidationError, TypeError, AttributeError):
 
             # 3. case where the entity is not valid as a list
             # we try to validate it as a single item
@@ -195,7 +195,7 @@ class Composable(Identifiable):
                 # save the score for the single entity
                 e.score = extraction_result.score
                 return e
-            except ValidationError:
+            except (ValidationError, TypeError, AttributeError):
                 pass
 
             return None

@@ -35,6 +35,10 @@ class EntityComponent(Identifiable):
         It is important to control how the UID is generated
         """
 
+        # avoid bad data
+        if not isinstance(data, dict):
+            raise ValueError("Data must be a dictionary to generate UID.")
+
         if not data.get("parent_uid", None):
             raise ValueError("parent_uid is required to generate UID.")
 

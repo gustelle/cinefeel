@@ -1,6 +1,14 @@
+import os
 from typing import List
 
 import pytest
+
+
+def pytest_generate_tests(metafunc):
+    """avoid warning :
+    The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks
+    """
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

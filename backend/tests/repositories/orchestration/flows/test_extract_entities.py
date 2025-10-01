@@ -1,4 +1,3 @@
-import os
 import uuid
 
 import pytest
@@ -56,7 +55,6 @@ def test_extract_entities_flow_for_given_page_id(
     """extract entities from an existing page"""
 
     # given
-    os.environ["TOKENIZERS_PARALLELISM"] = "false"  # use a different Redis DB for tests
     page_id = "some_page_id"
 
     # insert the HTML content into the HTML storage
