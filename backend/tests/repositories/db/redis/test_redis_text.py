@@ -1,10 +1,31 @@
+import pytest
 import redis
 
 from src.repositories.db.redis.text import RedisTextStorage
 from src.settings import Settings
 
 
-def test_redis_insert_string(test_settings: Settings):
+@pytest.fixture(scope="function", autouse=True)
+def cleanup_redis(test_settings: Settings):
+    """Cleans up the Redis database used for testing."""
+    r = redis.Redis(
+        host=test_settings.redis_storage_dsn.host,
+        port=test_settings.redis_storage_dsn.port,
+        db=(
+            test_settings.redis_storage_dsn.path.lstrip("/")
+            if test_settings.redis_storage_dsn.path
+            else 0
+        ),
+        username=test_settings.redis_storage_dsn.username,
+        password=test_settings.redis_storage_dsn.password,
+        decode_responses=True,
+    )
+    r.flushdb()
+    yield
+    r.flushdb()
+
+
+def test_redis_text_insert_string(test_settings: Settings):
     """Test the insert method of RedisTextStorage."""
 
     settings = test_settings
@@ -19,9 +40,6 @@ def test_redis_insert_string(test_settings: Settings):
         port=settings.redis_storage_dsn.port,
         decode_responses=True,
     )
-    r.delete(
-        storage._get_key(content_id)
-    )  # Clear any existing content with the same ID
 
     # when
     storage.insert(content_id, content)
@@ -32,10 +50,9 @@ def test_redis_insert_string(test_settings: Settings):
     assert (
         stored_content == content
     ), f"Expected '{content}', but got '{stored_content}'"
-    r.delete(storage._get_key(content_id))
 
 
-def test_redis_select(test_settings: Settings):
+def test_redis_text_select(test_settings: Settings):
     """Test the select method of RedisTextStorage."""
 
     # given
@@ -50,8 +67,6 @@ def test_redis_select(test_settings: Settings):
         decode_responses=True,
     )
 
-    r.delete(storage._get_key(content_id))
-
     # Insert the content into Redis
     r.set(storage._get_key(content_id), content)
 
@@ -61,10 +76,9 @@ def test_redis_select(test_settings: Settings):
     assert (
         retrieved_content == content
     ), f"Expected '{content}', but got '{retrieved_content}'"
-    r.delete(storage._get_key(content_id))
 
 
-def test_redis_scan(test_settings: Settings):
+def test_redis_text_scan(test_settings: Settings):
     """Test the scan method of RedisTextStorage."""
 
     # given
@@ -80,8 +94,6 @@ def test_redis_scan(test_settings: Settings):
         port=settings.redis_storage_dsn.port,
         decode_responses=True,
     )
-    r.delete(storage._get_key(content_id_1))
-    r.delete(storage._get_key(content_id_2))
 
     # Insert the content into Redis
     r.set(storage._get_key(content_id_1), content_1)
@@ -91,7 +103,11 @@ def test_redis_scan(test_settings: Settings):
     scanned_content = list(storage.scan())
 
     assert len(scanned_content) == 2, "Expected 2 items to be scanned"
-    assert content_1 in scanned_content, f"Expected '{content_1}' to be scanned"
-    assert content_2 in scanned_content, f"Expected '{content_2}' to be scanned"
-    r.delete(storage._get_key(content_id_1))
-    r.delete(storage._get_key(content_id_2))
+    assert (
+        content_id_1,
+        content_1,
+    ) in scanned_content, f"Expected '{content_id_1}' to be scanned"
+    assert (
+        content_id_2,
+        content_2,
+    ) in scanned_content, f"Expected '{content_id_2}' to be scanned"

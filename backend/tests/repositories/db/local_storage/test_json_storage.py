@@ -54,7 +54,7 @@ def teardown(test_settings: Settings):
         pass
 
 
-def test_dir_is_created(test_settings: Settings):
+def test_json_storage_dir_is_created(test_settings: Settings):
     """
     Test if the directory is created when the JSONEntityStorageHandler is initialized.
     """
@@ -67,7 +67,7 @@ def test_dir_is_created(test_settings: Settings):
     assert storage_handler.persistence_directory.is_dir()
 
 
-def test_when_dir_already_exists(test_settings: Settings):
+def test_json_storage_when_dir_already_exists(test_settings: Settings):
 
     # when
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
@@ -78,7 +78,7 @@ def test_when_dir_already_exists(test_settings: Settings):
     assert storage_handler.persistence_directory.is_dir()
 
 
-def test_insert_film(test_settings: Settings):
+def test_json_storage_insert_film(test_settings: Settings):
 
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
@@ -101,7 +101,7 @@ def test_insert_film(test_settings: Settings):
     ) == film.model_dump(mode="json", exclude_none=True)
 
 
-def test_insert_person(test_settings: Settings):
+def test_json_storage_insert_person(test_settings: Settings):
 
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
@@ -131,7 +131,7 @@ def test_insert_person(test_settings: Settings):
     ) == person.model_dump(mode="json", exclude_none=True)
 
 
-def test_insert_bad_type(test_settings: Settings):
+def test_json_storage_insert_bad_type(test_settings: Settings):
 
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
@@ -154,7 +154,7 @@ def test_insert_bad_type(test_settings: Settings):
     assert "Error saving" in str(e.value)
 
 
-def test_select_film(test_settings: Settings):
+def test_json_storage_select_film(test_settings: Settings):
 
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
@@ -190,7 +190,7 @@ def test_select_film(test_settings: Settings):
     assert result.specifications.directed_by == content["directors"]
 
 
-def test_select_non_existing_film(test_settings: Settings):
+def test_json_storage_select_non_existing_film(test_settings: Settings):
 
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
@@ -206,7 +206,7 @@ def test_select_non_existing_film(test_settings: Settings):
     assert storage_handler.select(uid) is None
 
 
-def test_select_corrupt_entity(test_settings: Settings):
+def test_json_storage_select_corrupt_entity(test_settings: Settings):
 
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
 
@@ -237,7 +237,7 @@ def test_select_corrupt_entity(test_settings: Settings):
     assert storage_handler.select(film.uid) is None
 
 
-def test_query_person_nominal(test_settings: Settings):
+def test_json_storage_query_person_nominal(test_settings: Settings):
     # given
 
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
@@ -264,7 +264,7 @@ def test_query_person_nominal(test_settings: Settings):
     assert results[0].uid == person.uid
 
 
-def test_query_person_after(test_settings: Settings):
+def test_json_storage_query_person_after(test_settings: Settings):
 
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
 
@@ -298,7 +298,7 @@ def test_query_person_after(test_settings: Settings):
     assert any(r.uid == other_person.uid for r in results)
 
 
-def test_query_person_limit(test_settings: Settings):
+def test_json_storage_query_person_limit(test_settings: Settings):
 
     # given
 
@@ -325,7 +325,7 @@ def test_query_person_limit(test_settings: Settings):
     assert len(results) == 1
 
 
-def test_query_person_by_permalink(test_settings: Settings):
+def test_json_storage_query_person_by_permalink(test_settings: Settings):
     # given
 
     storage_handler = JSONEntityStorageHandler[Person](test_settings)
@@ -354,7 +354,7 @@ def test_query_person_by_permalink(test_settings: Settings):
     assert results[0].uid == person.uid
 
 
-def test_query_no_files(test_settings: Settings):
+def test_json_storage_query_no_files(test_settings: Settings):
     # given
 
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
@@ -366,7 +366,7 @@ def test_query_no_files(test_settings: Settings):
     assert len(results) == 0
 
 
-def test_query_corrupt_file(test_settings: Settings):
+def test_json_storage_query_corrupt_file(test_settings: Settings):
     # given
 
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
@@ -397,7 +397,7 @@ def test_query_corrupt_file(test_settings: Settings):
     assert "Error validating data" in str(e.value)
 
 
-def test_query_validation_err(test_settings: Settings):
+def test_json_storage_query_validation_err(test_settings: Settings):
     # given
 
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
@@ -428,7 +428,7 @@ def test_query_validation_err(test_settings: Settings):
     assert "Error validating data" in str(e.value)
 
 
-def test_scan_film(test_settings: Settings):
+def test_json_storage_scan_film(test_settings: Settings):
     # given
 
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
@@ -451,10 +451,12 @@ def test_scan_film(test_settings: Settings):
 
     # then
     assert len(results) == 1
-    assert results[0].uid == film.uid
+    assert results[0][0] == film.uid
+    assert isinstance(results[0][1], Movie)
+    assert results[0][1].uid == film.uid
 
 
-def test_scan_film_object_is_deeply_rebuilt(test_settings: Settings):
+def test_json_storage_scan_film_object_is_deeply_rebuilt(test_settings: Settings):
     # given
 
     storage_handler = JSONEntityStorageHandler[Movie](test_settings)
@@ -479,11 +481,11 @@ def test_scan_film_object_is_deeply_rebuilt(test_settings: Settings):
     results = list(storage_handler.scan())
 
     # then
-    assert isinstance(results[0].specifications, FilmSpecifications)
-    assert results[0].specifications.directed_by == ["John Doe"]
+    assert isinstance(results[0][1].specifications, FilmSpecifications)
+    assert results[0][1].specifications.directed_by == ["John Doe"]
 
 
-def test_query_thread_safety(test_settings: Settings):
+def test_json_storage_query_thread_safety(test_settings: Settings):
     """
     verify that the query method is thread-safe and can be called concurrently.
     """

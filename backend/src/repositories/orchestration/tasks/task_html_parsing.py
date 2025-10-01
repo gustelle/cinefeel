@@ -40,6 +40,8 @@ from src.repositories.resolver.movie_resolver import MovieResolver
 from src.repositories.resolver.person_resolver import PersonResolver
 from src.settings import Settings
 
+from .retry import RETRY_ATTEMPTS, RETRY_DELAY_SECONDS, is_task_retriable
+
 
 class HtmlDataParserTask(ITaskExecutor):
     """
@@ -82,6 +84,9 @@ class HtmlDataParserTask(ITaskExecutor):
 
     @task(
         task_run_name="do_analysis-{content_id}",
+        retries=RETRY_ATTEMPTS,
+        retry_delay_seconds=RETRY_DELAY_SECONDS,
+        retry_condition_fn=is_task_retriable,
         cache_policy=NO_CACHE,
         tags=["cinefeel_tasks"],
     )
@@ -95,6 +100,11 @@ class HtmlDataParserTask(ITaskExecutor):
 
         """
         logger = get_run_logger()
+
+        logger.info(
+            f"Processing analysis of content ID '{content_id}' ([{html_content[:30]}...])"
+        )
+
         result = self.analyzer.process(content_id, html_content)
 
         if result is None:
@@ -233,13 +243,20 @@ class HtmlDataParserTask(ITaskExecutor):
         return sha1.hexdigest()
 
     @task(
-        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+        cache_policy=NO_CACHE,
+        retries=RETRY_ATTEMPTS,
+        retry_delay_seconds=RETRY_DELAY_SECONDS,
+        retry_condition_fn=is_task_retriable,
+        tags=["cinefeel_tasks"],
     )
     def execute(
         self,
         content: str,
         output_storage: IStorageHandler[Composable],
     ) -> None:
+
+        logger = get_run_logger()
+        logger.debug(f">> Processing HtmlDataParserTask with content {content[:30]}...")
 
         # need to keep track of the futures to wait for them later
         # see: https://github.com/PrefectHQ/prefect/issues/17517

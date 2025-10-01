@@ -463,13 +463,11 @@ def test_graph_scan(
     test_person_graphdb.insert_many(persons)
 
     # when
-    film_scan = test_film_graphdb.scan()
-
-    results = list(film_scan)
+    results = list(test_film_graphdb.scan())
 
     assert len(results) == 6  # 1 original + 5 copies
     assert all(
-        isinstance(film, Movie) for film in results
+        isinstance(item[1], Movie) for item in results
     )  # there is no person in the scan
 
     test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")

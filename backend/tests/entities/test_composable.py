@@ -49,12 +49,12 @@ def test_validate_assignment():
     assert instance.some_field == "modified-new value"
 
 
-def test_uid_validation():
+def test_uid_generation():
     # given
     quotes = "\"'"
     accents = "àâçéèêëîïôùûüÿ"
 
-    allowed_punctuation = {"_", "-"}
+    allowed_punctuation = {"_", "-", ":"}
     forbidden_punctuation = "".join(list(set(punctuation) - allowed_punctuation))
 
     invalid_chain = (
@@ -66,18 +66,38 @@ def test_uid_validation():
         + accents
         + "0-a-toi_aussi"
     )
+    overriden_uid = "valid-uid_123"
 
     # When
     storable = Composable(
-        uid=invalid_chain, title="test", permalink="http://example.com/test"
+        uid=overriden_uid, title=invalid_chain, permalink="http://example.com/test"
     )
 
     # Then
     assert storable.uid is not None and len(storable.uid) > 0
+
     assert not any(
         char in storable.uid
         for char in forbidden_punctuation + whitespace + quotes + accents
     )
+    assert storable.uid.startswith("Composable:")
+    assert storable.uid != overriden_uid  # should ignore the provided uid
+
+
+def test_uid_generation_from_child_class():
+    # given
+    class MyComposable(Composable):
+        some_field: str
+
+    some_title = "Some Title"
+
+    # When
+    storable = MyComposable(
+        title=some_title, permalink="http://example.com/test", some_field="value"
+    )
+
+    # Then
+    assert storable.uid.startswith("MyComposable:")
 
 
 def test_permalink_is_mandatory():

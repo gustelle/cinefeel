@@ -21,7 +21,7 @@ def scraping_flow(
 
     http_client = SyncHttpClient(settings=settings)
 
-    download_flow = ContentDownloaderTask(settings=settings, http_client=http_client)
+    download_task = ContentDownloaderTask(settings=settings, http_client=http_client)
 
     # make them unique by page_id
     pages = {p.page_id: p for p in pages}.values()
@@ -38,7 +38,7 @@ def scraping_flow(
         )
 
         tasks.append(
-            download_flow.execute.submit(
+            download_task.execute.submit(
                 page=config,
                 storage_handler=html_store,
                 return_results=False,

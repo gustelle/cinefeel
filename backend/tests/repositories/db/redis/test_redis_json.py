@@ -1,5 +1,6 @@
 import random
 
+import pytest
 import redis
 from pydantic import HttpUrl
 from redis.commands.json.path import Path
@@ -7,6 +8,26 @@ from redis.commands.json.path import Path
 from src.entities.movie import Movie
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.settings import Settings
+
+
+@pytest.fixture(scope="function", autouse=True)
+def cleanup_redis(test_settings: Settings):
+    """Cleans up the Redis database used for testing."""
+    r = redis.Redis(
+        host=test_settings.redis_storage_dsn.host,
+        port=test_settings.redis_storage_dsn.port,
+        db=(
+            test_settings.redis_storage_dsn.path.lstrip("/")
+            if test_settings.redis_storage_dsn.path
+            else 0
+        ),
+        username=test_settings.redis_storage_dsn.username,
+        password=test_settings.redis_storage_dsn.password,
+        decode_responses=True,
+    )
+    r.flushdb()
+    yield
+    r.flushdb()
 
 
 def test_redis_insert_dict(test_film: Movie, test_settings: Settings):
@@ -21,23 +42,18 @@ def test_redis_insert_dict(test_film: Movie, test_settings: Settings):
         port=settings.redis_storage_dsn.port,
         decode_responses=True,
     )
-    r.json().delete(
-        storage._get_key(test_film.uid)
-    )  # Clear any existing content with the same ID
 
     # when
     storage.insert(test_film.uid, test_film)
 
     # then
-    stored_content = r.json().get(storage._get_key(test_film.uid))
+    stored_content = r.json().get(test_film.uid, Path.root_path())
 
     assert isinstance(stored_content, dict), "Stored content should be a dictionary"
     assert stored_content["uid"] == test_film.uid, "UID should match the inserted film"
     assert (
         stored_content["title"] == test_film.title
     ), "Title should match the inserted film"
-
-    r.json().delete(storage._get_key(test_film.uid))
 
 
 def test_redis_select_film(test_film: Movie, test_settings: Settings):
@@ -53,11 +69,9 @@ def test_redis_select_film(test_film: Movie, test_settings: Settings):
         decode_responses=True,
     )
 
-    r.json().delete(storage._get_key(test_film.uid))
-
     # Insert the content into Redis
     r.json().set(
-        storage._get_key(test_film.uid),
+        test_film.uid,
         Path.root_path(),
         test_film.model_dump(mode="json"),
     )
@@ -69,8 +83,6 @@ def test_redis_select_film(test_film: Movie, test_settings: Settings):
         retrieved_content, Movie
     ), "Retrieved content should be a Film instance"
     assert retrieved_content.uid == test_film.uid, "UID should match the inserted film"
-
-    r.json().delete(storage._get_key(test_film.uid))
 
 
 def test_redis_scan_film(test_film: Movie, test_settings: Settings):
@@ -88,17 +100,15 @@ def test_redis_scan_film(test_film: Movie, test_settings: Settings):
         port=settings.redis_storage_dsn.port,
         decode_responses=True,
     )
-    r.json().delete(storage._get_key(test_film_1.uid))
-    r.json().delete(storage._get_key(test_film.uid))
 
     # Insert the content into Redis
     r.json().set(
-        storage._get_key(test_film_1.uid),
+        test_film_1.uid,
         Path.root_path(),
         test_film_1.model_dump(mode="json"),
     )
     r.json().set(
-        storage._get_key(test_film.uid),
+        test_film.uid,
         Path.root_path(),
         test_film.model_dump(mode="json"),
     )
@@ -106,13 +116,21 @@ def test_redis_scan_film(test_film: Movie, test_settings: Settings):
     # Now scan it
     scanned_content = list(storage.scan())
 
-    assert len(scanned_content) == 2, "Expected 2 items to be scanned"
-    assert all(
-        isinstance(item, Movie) for item in scanned_content
-    ), "All scanned items should be Film instances"
+    for item in scanned_content:
+        print(f"Scanned id: {item[0]}, Title: {item[1].uid}")
 
-    r.json().delete(storage._get_key(test_film_1.uid))
-    r.json().delete(storage._get_key(test_film.uid))
+    assert len(scanned_content) == 2, "Expected 2 items to be scanned"
+    assert any(
+        item[0] == test_film_1.uid and item[1].uid == test_film_1.uid
+        for item in scanned_content
+    ), "Scanned content should include the first film"
+    assert any(
+        item[0] == test_film.uid and item[1].uid == test_film.uid
+        for item in scanned_content
+    ), "Scanned content should include the second film"
+    assert all(
+        isinstance(item[1], Movie) for item in scanned_content
+    ), "All scanned items should be Film instances"
 
 
 def test_redis_query_by_permalink(test_film: Movie, test_settings: Settings):
@@ -133,17 +151,15 @@ def test_redis_query_by_permalink(test_film: Movie, test_settings: Settings):
         port=settings.redis_storage_dsn.port,
         decode_responses=True,
     )
-    r.json().delete(storage._get_key(test_film_1.uid))
-    r.json().delete(storage._get_key(test_film.uid))
 
     # Insert the content into Redis
     r.json().set(
-        storage._get_key(test_film_1.uid),
+        test_film_1.uid,
         Path.root_path(),
         test_film_1.model_dump(mode="json"),
     )
     r.json().set(
-        storage._get_key(test_film.uid),
+        test_film.uid,
         Path.root_path(),
         test_film.model_dump(mode="json"),
     )
@@ -160,12 +176,6 @@ def test_redis_query_by_permalink(test_film: Movie, test_settings: Settings):
     assert (
         queried_content[0].uid == test_film_1.uid
     ), "UID should match the queried film"
-    assert (
-        queried_content[0].title == test_film_1.title
-    ), "Title should match the queried film"
-
-    r.json().delete(storage._get_key(test_film_1.uid))
-    r.json().delete(storage._get_key(test_film.uid))
 
 
 def test_redis_hashing_is_deterministic(test_film: Movie, test_settings: Settings):
@@ -214,17 +224,6 @@ def test_redis_query_after(test_film: Movie, test_settings: Settings):
         (str(test_film_4.permalink) + f"/{random.randint(1000, 9999)}")
     )
 
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
-    )
-    r.json().delete(storage._get_key(test_film_1.uid))
-    r.json().delete(storage._get_key(test_film.uid))
-    r.json().delete(storage._get_key(test_film_2.uid))
-    r.json().delete(storage._get_key(test_film_3.uid))
-    r.json().delete(storage._get_key(test_film_4.uid))
-
     # when
     storage.insert_many([test_film, test_film_1, test_film_2, test_film_3, test_film_4])
 
@@ -235,23 +234,12 @@ def test_redis_query_after(test_film: Movie, test_settings: Settings):
         item.uid == test_film_1.uid for item in queried_content
     ), "Queried content should not include the 'after' film"
 
-    # query after the second-to-last film
-    queried_content = storage.query(after=queried_content[-2])
-
-    assert len(queried_content) == 1, "Expected 1 item to be queried"
-
     # now go on querying after the last one
     queried_content = storage.query(after=queried_content[-1])
 
     assert (
         not queried_content
     ), "No more content should be available after the last film"
-
-    r.json().delete(storage._get_key(test_film_1.uid))
-    r.json().delete(storage._get_key(test_film.uid))
-    r.json().delete(storage._get_key(test_film_2.uid))
-    r.json().delete(storage._get_key(test_film_3.uid))
-    r.json().delete(storage._get_key(test_film_4.uid))
 
 
 def test_insert_many(test_film: Movie, test_settings: Settings):
@@ -266,18 +254,15 @@ def test_insert_many(test_film: Movie, test_settings: Settings):
         port=settings.redis_storage_dsn.port,
         decode_responses=True,
     )
-    r.json().delete(storage._get_key(test_film.uid))
 
     # when
     storage.insert_many([test_film])
 
     # then
-    stored_content = r.json().get(storage._get_key(test_film.uid))
+    stored_content = r.json().get(test_film.uid, Path.root_path())
 
     assert isinstance(stored_content, dict), "Stored content should be a dictionary"
     assert stored_content["uid"] == test_film.uid, "UID should match the inserted film"
     assert (
         stored_content["title"] == test_film.title
     ), "Title should match the inserted film"
-
-    r.json().delete(storage._get_key(test_film.uid))

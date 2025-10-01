@@ -4,9 +4,9 @@ from src.entities.movie import Movie
 from src.repositories.orchestration.tasks.task_html_parsing import HtmlDataParserTask
 from src.settings import Settings
 
-from .stubs.stub_analyzer import StubAnalyzer
-from .stubs.stub_section_search import StubSectionSearch
-from .stubs.stub_storage import StubStorage
+from ..stubs.stub_analyzer import StubAnalyzer
+from ..stubs.stub_section_search import StubSectionSearch
+from ..stubs.stub_storage import StubStorage
 
 
 def test_task_store(test_settings: Settings):

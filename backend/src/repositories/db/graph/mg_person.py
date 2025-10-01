@@ -70,3 +70,21 @@ class PersonGraphRepository(AbstractMemGraph[Person]):
 
             logger.error(f"Error inserting persons: {e}")
             return 0
+
+    def insert(
+        self,
+        content: Person,
+    ) -> int:
+        """inserts a single Person entity into the database.
+
+        Args:
+            content (Person): The Person entity to be inserted.
+
+        Returns:
+            int: The number of nodes inserted (1 if successful, 0 otherwise).
+        """
+
+        return self.insert_many([content])
+
+    def update(self, *args, **kwargs):
+        raise NotImplementedError("Update method is not implemented yet.")

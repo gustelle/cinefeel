@@ -149,8 +149,10 @@ class ContentDownloaderTask(ITaskExecutor):
             page (PageLink): The permalink to the page to be downloaded.
             storage_handler (IStorageHandler): the storage handler to use for storing the content that is downloaded.
             link_extractor (IContentParser | None, optional): The link extractor to use for extracting links from a table of contents.
-                Defaults to WikipediaParser().
+                Defaults to `WikipediaParser`.
             return_results (bool, optional): Defaults to False.
+                If True, the method will return a list of `page_id` stored into the storage backend.
+                If False, it will return None.
 
         Returns:
             list[str] | None: a list of `page_id` stored into the storage backend

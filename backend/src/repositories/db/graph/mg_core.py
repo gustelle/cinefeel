@@ -17,8 +17,8 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
     """
     Base class for MemoryGraph DB storage handler.
 
-    TODO:
-    - move to the `graph` module
+    **This class SHOULD NOT be instantiated directly, but rather extended by specific entity repositories.
+    e.g. MovieGraphRepository, PersonGraphRepository, etc.**
     """
 
     client: GraphDatabase
@@ -254,7 +254,7 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
 
         return []
 
-    def scan(self) -> Generator[T, None, None]:
+    def scan(self) -> Generator[tuple[str, T], None, None]:
 
         try:
 
@@ -290,7 +290,9 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
 
                         _last_uid = doc.get("uid")
 
-                        yield self.entity_type.model_validate(doc, by_name=True)
+                        yield _last_uid, self.entity_type.model_validate(
+                            doc, by_name=True
+                        )
 
                 except (IndexError, KeyError, ValidationError):
                     logger.warning(

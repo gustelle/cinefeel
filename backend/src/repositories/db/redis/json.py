@@ -22,8 +22,7 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
     """
 
     client: redis.Redis
-    key_prefix: str = "json"
-    search_index_name: str = "idx:entities"
+    _index_name: str
     entity_type: type[U]
 
     def __init__(self, settings: Settings):
@@ -40,15 +39,16 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
             password=settings.redis_storage_dsn.password,
             decode_responses=True,
         )
+        self._index_name = f"{self.entity_type.__name__}:idx"
 
         try:
             # delete if existing
-            self.client.ft(self.search_index_name).dropindex(delete_documents=False)
+            self.client.ft(self._index_name).dropindex(delete_documents=False)
         except Exception as e:
             logger.warning(f"Error deleting index for Redis: {e}")
 
         try:
-            self.client.ft(self.search_index_name).create_index(
+            self.client.ft(self._index_name).create_index(
                 (
                     TagField("$.permalink", as_name="permalink"),
                     NumericField(
@@ -56,11 +56,11 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
                     ),  # used for sorting
                 ),
                 definition=IndexDefinition(
-                    prefix=[f"{self.key_prefix}:"], index_type=IndexType.JSON
+                    prefix=[f"{self.entity_type.__name__}:"], index_type=IndexType.JSON
                 ),
             )
         except Exception as e:
-            logger.error(f"Error creating index for Redis: {e}")
+            logger.warning(f"Error creating index for Redis: {e}")
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -73,10 +73,6 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
         new_cls.entity_type = generic_type
         return new_cls
-
-    def _get_key(self, content_id: str) -> str:
-        """Generates the Redis key for the given content ID."""
-        return f"{self.key_prefix}:{self.entity_type.__name__}-{content_id}"
 
     def _get_uid_hash(self, content: U) -> int:
         """Generates a numeric hash for the UID of the content.
@@ -100,14 +96,13 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
     ) -> None:
 
         try:
-            key = self._get_key(content_id)
 
             data = content.model_dump(mode="json")
             data["uid_hash"] = self._get_uid_hash(content)  # Store the hash for sorting
 
             # Store the content as a JSON object in Redis
             self.client.json().set(
-                key,
+                content_id,
                 Path.root_path(),
                 data,
             )
@@ -131,31 +126,35 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         try:
 
             # Load the content as a JSON object from Redis
-            body = self.client.json().get(self._get_key(content_id))
+            body = self.client.json().get(content_id, Path.root_path())
+
+            if not body:
+                logger.warning(f"JSON Content '{content_id}' not found in Redis.")
+                return None
+
             body.pop("uid_hash", None)  # Remove the hash field if it exists
-            return self.entity_type.model_validate(body, by_name=True) if body else None
+            return self.entity_type.model_validate(body, by_name=True)
 
         except Exception as e:
             logger.error(f"Error loading '{content_id}': {e}")
             return None
 
-    def scan(self) -> Generator[U, None, None]:
+    def scan(self) -> Generator[tuple[str, U], None, None]:
         """Scans the persistent storage and iterates over contents.
 
-        TODO: inmfinite loop to be fixed
-
         Returns:
-            Generator[U, None, None]: a generator of documents of type U
+            Generator[tuple[str, U], None, None]: a generator of documents of type U
+                with their storage key as first element of the tuple.
         """
 
         try:
 
-            for key in self.client.scan_iter(match=f"{self.key_prefix}:*"):
+            for key in self.client.scan_iter(match=f"{self.entity_type.__name__}:*"):
 
                 try:
                     data = self.client.json().get(key)
                     data.pop("uid_hash", None)  # Remove the hash field if it exists
-                    yield self.entity_type.model_validate(data, by_name=True)
+                    yield key, self.entity_type.model_validate(data, by_name=True)
 
                 except Exception as e:
                     logger.error(f"Error parsing JSON from key '{key}': {e}")
@@ -194,7 +193,7 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         else:
             query = Query(q)
 
-        results = self.client.ft(self.search_index_name).search(
+        results = self.client.ft(self._index_name).search(
             query.paging(0, limit).sort_by("uid_hash", asc=True)
         )
 
@@ -202,3 +201,10 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
             self.entity_type.model_validate_json(doc.json, by_name=True)
             for doc in results.docs
         ][:limit]
+
+    def update(
+        self,
+        content: U,
+    ) -> U | None:
+
+        raise NotImplementedError("Update is not implemented for RedisJsonStorage.")

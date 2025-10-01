@@ -162,7 +162,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
         finally:
             conn.close()
 
-    def scan(self) -> Generator[T, None, None]:
+    def scan(self) -> Generator[tuple[str, T], None, None]:
         """Scans the persistent storage and returns an iterator over the contents."""
 
         try:
@@ -173,9 +173,11 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
                     try:
 
                         # use model_construct to avoid uid validation issues
-                        yield self.entity_type.model_validate_json(
+                        ent = self.entity_type.model_validate_json(
                             f.read(), by_name=True
                         )
+                        yield ent.uid, ent
+
                     except ValidationError as e:
                         logger.error(f"Error loading JSON from '{file}': {e}")
                         continue
@@ -183,3 +185,28 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
         except Exception as e:
             logger.error(f"Error scanning storage: {e}")
             raise StorageError(f"Error scanning storage: {e}") from e
+
+    def insert_many(
+        self,
+        *args,
+        **kwargs,
+    ) -> None:
+
+        raise NotImplementedError(
+            "Bulk insert is not supported for JSONEntityStorageHandler. Use insert() instead."
+        )
+
+    def update(
+        self,
+        content: T,
+        *args,
+        **kwargs,
+    ) -> T:
+        """Updates an existing content in persistent storage.
+
+        Raises StorageError: so that the caller can log and handle it gracefully.
+        """
+
+        raise NotImplementedError(
+            "Update is not supported for JSONEntityStorageHandler. Use insert() instead."
+        )

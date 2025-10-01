@@ -41,6 +41,10 @@ class RedisTextStorage(IStorageHandler[str]):
         """Constructs the Redis key for the given content ID."""
         return f"{self.key_prefix}:{content_id}"
 
+    def _get_content_id(self, key: str) -> str:
+        """Extracts the content ID from the Redis key."""
+        return key.split(":", 1)[1] if ":" in key else key
+
     def insert(
         self,
         content_id: str,
@@ -70,12 +74,15 @@ class RedisTextStorage(IStorageHandler[str]):
             logger.error(f"Error loading '{content_id}': {e}")
             return None
 
-    def scan(self) -> Generator[str, None, None]:
+    def scan(self) -> Generator[tuple[str, str], None, None]:
         """Scans the persistent storage and iterates over contents.
+
+        TODO:
+        - testing of the key retrieval
 
         Example:
         ```python
-            for content in storage.scan():
+            for key, content in storage.scan():
                 print(content)
 
             # This will match all HTML files in the storage directory.
@@ -91,7 +98,7 @@ class RedisTextStorage(IStorageHandler[str]):
         try:
 
             for key in self.client.scan_iter(match=f"{self.key_prefix}:*"):
-                yield self.client.get(key)
+                yield self._get_content_id(key), self.client.get(key)
 
         except Exception as e:
             logger.error(f"Error scanning redis: {e}")
@@ -104,4 +111,24 @@ class RedisTextStorage(IStorageHandler[str]):
     ) -> Sequence[str]:
         raise NotImplementedError(
             "Querying is not supported for RedisTextStorage. Use scan() instead."
+        )
+
+    def insert_many(
+        self,
+        contents: Sequence[str],
+        *args,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError(
+            "Bulk insert is not supported for RedisTextStorage. Use insert() instead."
+        )
+
+    def update(
+        self,
+        content: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        raise NotImplementedError(
+            "Update is not supported for RedisTextStorage. Use insert() instead."
         )

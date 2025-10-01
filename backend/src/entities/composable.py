@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from typing import Any, Self
 
 from loguru import logger
@@ -12,7 +11,7 @@ from pydantic import (
     ValidationError,
     model_validator,
 )
-from unidecode import unidecode
+from slugify import slugify
 
 from src.entities.base import Identifiable
 from src.entities.component import EntityComponent
@@ -51,17 +50,10 @@ class Composable(Identifiable):
         It is important to control how the UID is generated
         """
 
-        # replace accents and casefold to lowercase
-        value = unidecode(data.get("title")).casefold()
+        if not data.get("title", None):
+            raise ValueError("Title is required to generate UID.")
 
-        # constraint of meili:
-        # only (a-z A-Z 0-9), hyphens (-) and underscores (_) are allowed
-        value = re.sub(r"[^a-z0-9_-]", "", value, flags=re.IGNORECASE)
-
-        # remove quotes
-        value = value.replace('"', "").replace("'", "")
-
-        data["uid"] = value
+        data["uid"] = f"{cls.__name__}:{slugify(data.get("title"))}"
 
         return data
 

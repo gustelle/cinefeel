@@ -1,4 +1,5 @@
-from typing import Protocol, Sequence
+from abc import ABC, abstractmethod
+from typing import Sequence
 
 from src.entities.composable import Composable
 from src.entities.content import Section
@@ -9,12 +10,13 @@ class ContentAnalysisError(Exception):
     pass
 
 
-class IContentAnalyzer(Protocol):
+class IContentAnalyzer(ABC):
     """
     A content analyzer that extracts structured data from a given content.
     Contents may be HTML pages, text documents, etc.
     """
 
+    @abstractmethod
     def process(
         self,
         content_id: str,

@@ -1,9 +1,45 @@
 from pathlib import Path
 
+import pytest
+
 from src.entities.movie import Movie
+from src.entities.person import Person
 from src.repositories.db.local_storage.html_storage import LocalTextStorage
 
 current_dir = Path(__file__).parent
+
+
+@pytest.fixture(autouse=True, scope="function")
+def cleanup_directory():
+    # Cleanup before test
+    storage = LocalTextStorage(
+        path=current_dir, entity_type=Movie
+    ).persistence_directory
+    for child in storage.rglob("*"):
+        if child.is_file():
+            child.unlink()
+
+    storage = LocalTextStorage(
+        path=current_dir, entity_type=Person
+    ).persistence_directory
+    for child in storage.rglob("*"):
+        if child.is_file():
+            child.unlink()
+
+    yield
+    storage = LocalTextStorage(
+        path=current_dir, entity_type=Movie
+    ).persistence_directory
+    for child in storage.rglob("*"):
+        if child.is_file():
+            child.unlink()
+
+    storage = LocalTextStorage(
+        path=current_dir, entity_type=Person
+    ).persistence_directory
+    for child in storage.rglob("*"):
+        if child.is_file():
+            child.unlink()
 
 
 def test_local_text_storage_init():
@@ -17,10 +53,6 @@ def test_local_text_storage_init():
     # Then
     assert storage_path == current_dir / "html" / "movie"
     assert storage_path.exists()
-
-    # Teardown
-    storage_path.rmdir()
-    Path(current_dir / "html").rmdir()
 
 
 def test_local_text_storage_insert():
@@ -37,11 +69,6 @@ def test_local_text_storage_insert():
     assert path.exists()
     with open(path, "r") as f:
         assert f.read() == content
-
-    # Teardown
-    path.unlink()
-    storage.persistence_directory.rmdir()
-    Path(current_dir / "html").rmdir()
 
 
 def test_local_text_storage_insert_existing_path():
@@ -63,11 +90,6 @@ def test_local_text_storage_insert_existing_path():
     with open(path, "r") as f:
         assert f.read() == content
 
-    # Teardown
-    path.unlink()
-    storage.persistence_directory.rmdir()
-    Path(current_dir / "html").rmdir()
-
 
 def test_local_text_storage_select():
     # Given
@@ -82,12 +104,6 @@ def test_local_text_storage_select():
     # Then
     assert result == content
 
-    # Teardown
-    path = storage.persistence_directory / f"{content_id}.html"
-    path.unlink()
-    storage.persistence_directory.rmdir()
-    Path(current_dir / "html").rmdir()
-
 
 def test_local_text_storage_select_non_existent():
     # Given
@@ -100,12 +116,9 @@ def test_local_text_storage_select_non_existent():
     # Then
     assert result is None
 
-    # Teardown
-    storage.persistence_directory.rmdir()
-    Path(current_dir / "html").rmdir()
-
 
 def test_local_text_storage_scan():
+
     # Given
     storage = LocalTextStorage(path=current_dir, entity_type=Movie)
     content_id_1 = "test1"
@@ -120,14 +133,8 @@ def test_local_text_storage_scan():
 
     # Then
     assert len(results) == 2
-    assert content_1 in results
-    assert content_2 in results
-
-    # Teardown
-    Path(storage.persistence_directory / f"{content_id_1}.html").unlink()
-    Path(storage.persistence_directory / f"{content_id_2}.html").unlink()
-    storage.persistence_directory.rmdir()
-    Path(current_dir / "html").rmdir()
+    assert (content_id_1, content_1) in results
+    assert (content_id_2, content_2) in results
 
 
 def test_local_text_storage_scan_no_files():
@@ -139,10 +146,6 @@ def test_local_text_storage_scan_no_files():
 
     # Then
     assert len(results) == 0
-
-    # Teardown
-    storage.persistence_directory.rmdir()
-    Path(current_dir / "html").rmdir()
 
 
 def test_local_text_storage_scan_with_pattern():
@@ -160,10 +163,4 @@ def test_local_text_storage_scan_with_pattern():
 
     # Then
     assert len(results) == 1
-    assert content_1 in results
-
-    # Teardown
-    Path(storage.persistence_directory / f"{content_id_1}.html").unlink()
-    Path(storage.persistence_directory / f"{content_id_2}.html").unlink()
-    storage.persistence_directory.rmdir()
-    Path(current_dir / "html").rmdir()
+    assert (content_id_1, content_1) in results

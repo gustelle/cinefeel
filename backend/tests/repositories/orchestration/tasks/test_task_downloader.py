@@ -5,9 +5,9 @@ from src.interfaces.http_client import HttpError
 from src.repositories.orchestration.tasks.task_downloader import ContentDownloaderTask
 from src.settings import Settings
 
-from .stubs.stub_http import StubSyncHttpClient
-from .stubs.stub_parser import StubContentParser
-from .stubs.stub_storage import StubStorage
+from ..stubs.stub_http import StubSyncHttpClient
+from ..stubs.stub_parser import StubContentParser
+from ..stubs.stub_storage import StubStorage
 
 
 def test_download_return_page_id(

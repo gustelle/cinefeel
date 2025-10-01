@@ -70,3 +70,14 @@ class MovieGraphRepository(AbstractMemGraph[Movie]):
 
             logger.error(f"Error inserting movies: {e}")
             return 0
+
+    def insert(
+        self,
+        content: Movie,
+    ) -> None:
+        """inserts a single Movie entity into the database"""
+
+        self.insert_many(contents=[content])
+
+    def update(self, *args, **kwargs):
+        raise NotImplementedError("Update method is not implemented yet.")

@@ -60,7 +60,9 @@ class LocalTextStorage(IStorageHandler[str]):
             logger.error(f"Error loading '{path}': {e}")
             return None
 
-    def scan(self, file_pattern: str = "*.html") -> Generator[str, None, None]:
+    def scan(
+        self, file_pattern: str = "*.html"
+    ) -> Generator[tuple[str, str], None, None]:
         """Scans the persistent storage and iterates over contents.
 
         Args:
@@ -69,8 +71,8 @@ class LocalTextStorage(IStorageHandler[str]):
 
         Example:
         ```python
-            for content in storage.scan("*.html"):
-                print(content)
+            for key, content in storage.scan("*.html"):
+                print(f"Key: {key}, Content: {content}")
 
             # This will match all HTML files in the storage directory.
             <html>...</html>
@@ -87,8 +89,37 @@ class LocalTextStorage(IStorageHandler[str]):
             file_path = self.persistence_directory / file_pattern
             for file in glob.glob(str(file_path)):
                 with open(file, "r") as f:
-                    yield f.read()
+                    _p = Path(file)
+                    yield _p.name.split(".")[0], f.read()
 
         except Exception as e:
             logger.error(f"Error scanning '{self.persistence_directory}': {e}")
             return []
+
+    def insert_many(
+        self,
+        *args,
+        **kwargs,
+    ) -> None:
+        """Saves multiple HTML files."""
+
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
+    def query(
+        self,
+        *args,
+        **kwargs,
+    ) -> Generator[str, None, None]:
+        raise NotImplementedError(
+            "Querying is not supported for LocalTextStorage. Use scan() instead."
+        )
+
+    def update(
+        self,
+        content: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Updates an existing HTML file."""
+
+        raise NotImplementedError("This method should be overridden by subclasses.")
