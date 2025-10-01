@@ -74,13 +74,12 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
                             """
                         )
             except Exception:
-
                 logger.warning(
                     f"Index for {self.entity_type.__name__} already exists or could not be created."
                 )
 
             self._is_initialized = True
-            logger.info("Database schema initialized successfully.")
+            logger.trace("Database schema initialized successfully.")
 
         except Exception as e:
             logger.error(f"Error initializing the database connection: {e}")

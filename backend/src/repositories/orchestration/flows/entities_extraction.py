@@ -22,7 +22,7 @@ def extract_entities_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
     page_id: str | None = None,
-    # for testing purposes, we can inject a custom analyzer and section searcher
+    # for testing purposes, we can inject a custom things
     entity_analyzer: IContentAnalyzer | None = None,
     section_searcher: Processor | None = None,
     html_store: IStorageHandler | None = None,

@@ -5,6 +5,7 @@ from prefect.futures import wait
 
 from src.entities.movie import Movie
 from src.entities.person import Person
+from src.interfaces.storage import IStorageHandler
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.db.redis.json import RedisJsonStorage
@@ -21,6 +22,10 @@ from src.settings import Settings
 def db_storage_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
+    # for testing purposes, we can inject custom storage handlers
+    json_store: IStorageHandler | None = None,
+    graph_store: IStorageHandler | None = None,
+    search_store: IStorageHandler | None = None,
 ) -> None:
     """
     TODO:
@@ -38,40 +43,39 @@ def db_storage_flow(
         case _:
             raise ValueError(f"Unsupported entity type: {entity_type}")
 
-    json_store = RedisJsonStorage[_entity_type](settings=settings)
+    json_store = json_store or RedisJsonStorage[_entity_type](settings=settings)
 
-    if settings.search_base_url:
-        search_flow = SearchIndexerTask(
-            settings=settings,
-            entity_type=_entity_type,
+    search_flow = SearchIndexerTask(
+        settings=settings,
+        entity_type=_entity_type,
+    )
+
+    graph_store = graph_store or (
+        MovieGraphRepository(settings=settings)
+        if _entity_type is Movie
+        else PersonGraphRepository(settings=settings)
+    )
+
+    search_handler = search_store or MeiliHandler[_entity_type](settings=settings)
+
+    storage_flow = DBStorageTask(
+        settings=settings,
+        entity_type=_entity_type,
+    )
+
+    tasks.append(
+        storage_flow.execute.submit(
+            input_storage=json_store,
+            output_storage=graph_store,
         )
+    )
 
-        # for all pages
-        tasks.append(
-            search_flow.execute.submit(
-                input_storage=json_store,
-                output_storage=MeiliHandler[_entity_type](settings=settings),
-            )
+    # for all pages
+    tasks.append(
+        search_flow.execute.submit(
+            input_storage=json_store,
+            output_storage=search_handler,
         )
-
-    if settings.graph_db_uri:
-
-        storage_flow = DBStorageTask(
-            settings=settings,
-            entity_type=_entity_type,
-        )
-
-        db_handler = (
-            MovieGraphRepository(settings=settings)
-            if _entity_type is Movie
-            else PersonGraphRepository(settings=settings)
-        )
-
-        tasks.append(
-            storage_flow.execute.submit(
-                input_storage=json_store,
-                output_storage=db_handler,
-            )
-        )
+    )
 
     wait(tasks)

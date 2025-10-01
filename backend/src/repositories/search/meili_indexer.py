@@ -28,8 +28,10 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
 
         if self.entity_type == Movie:
             self.index = self._init_index(self.settings.search_movies_index_name)
-        else:
+        elif self.entity_type == Person:
             self.index = self._init_index(self.settings.search_persons_index_name)
+        else:
+            raise ValueError(f"Unsupported entity type: {self.entity_type}")
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -47,7 +49,7 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
         try:
             self.index = self.client.get_index(index_name)
         except meilisearch.errors.MeilisearchApiError as e:
-            logger.warning(f"Index '{index_name}' not found. Attempting to create it.")
+            logger.trace(f"Index '{index_name}' not found. Attempting to create it.")
             if e.status_code == 404:
                 t = self.client.create_index(
                     index_name,
@@ -58,19 +60,20 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
 
                 if self.entity_type == Movie:
                     self.index.update_searchable_attributes(
-                        ["title", "summary", "info"]
+                        ["title", "summary.content", "actors.full_name"]
                     )
-                else:
-                    # TODO
-                    pass
+                elif self.entity_type == Person:
+                    self.index.update_searchable_attributes(
+                        ["biography.full_name", "biography.nicknames"]
+                    )
 
             else:
                 logger.error(f"Error getting index '{index_name}': {e}")
                 raise
 
-            logger.info(f"Index '{index_name}' created: {e}")
+            logger.trace(f"Index '{index_name}' created: {e}")
         else:
-            logger.info(f"Index '{index_name}' already exists")
+            logger.trace(f"Index '{index_name}' already exists")
 
         return self.index
 
@@ -116,3 +119,30 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
 
             logger.error(traceback.format_exc())
             logger.error(f"Error adding documents to index '{self.index}': {e}")
+
+    def insert(
+        self,
+        content: T,
+    ) -> None:
+        """inserts a single entity into the Meilisearch index.
+
+        Args:
+            content (T): The entity to be inserted.
+
+        Returns:
+            None
+        """
+
+        self.insert_many([content])
+
+    def update(self, *args, **kwargs) -> None:
+        raise NotImplementedError("Use insert or insert_many methods instead.")
+
+    def select(self, content_id: str) -> T | None:
+        raise NotImplementedError("Select method is not implemented yet.")
+
+    def scan(self) -> list[tuple[str, T]]:
+        raise NotImplementedError("Scan method is not implemented yet.")
+
+    def query(self, *args, **kwargs):
+        raise NotImplementedError("Query method is not implemented yet.")
