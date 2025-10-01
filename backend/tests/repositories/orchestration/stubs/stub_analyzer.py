@@ -22,12 +22,12 @@ class StubAnalyzer(IContentAnalyzer):
         self.is_analyzed = True
         return (
             Composable(
-                title="Stub Film Title",
+                title=f"Stub Film Title {content_id}",
                 permalink=HttpUrl("http://example.com/stub-film"),
             ),
             [
                 Section(
-                    title="Stub Section",
+                    title=f"Stub Section {content_id}",
                     content=html_content[:50] + "...",
                 )
             ],

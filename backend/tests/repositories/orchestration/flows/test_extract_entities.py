@@ -87,11 +87,35 @@ def test_extract_entities_flow_for_given_page_id(
     results = list(json_store.scan())
     assert len(results) == 1
 
-    # select the extracted entities from the JSON storage
 
-    print(results)
-
-
-@pytest.mark.todo
 def test_extract_entities_flow_for_all_pages(test_settings: Settings):
-    pass
+
+    # given
+    # generate data in the HTML storage
+    html_store = RedisTextStorage(settings=test_settings)
+    for i in range(3):
+        html_store.insert(content_id=f"page_{i}", content=f"<html>content {i}</html>")
+
+    json_store = RedisJsonStorage[Person](settings=test_settings)
+    entity_analyzer = StubAnalyzer()
+    section_searcher = StubSectionSearch()
+
+    # the DB is empty
+    assert list(json_store.scan()) == []
+
+    # when
+    extract_entities_flow(
+        settings=test_settings,
+        entity_type="Person",
+        entity_analyzer=entity_analyzer,
+        section_searcher=section_searcher,
+        json_store=json_store,
+    )
+
+    # then
+    assert entity_analyzer.is_analyzed
+    assert section_searcher.is_called
+
+    # there should be one entity stored in the JSON storage
+    results = list(json_store.scan())
+    assert len(results) == 3

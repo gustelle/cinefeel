@@ -90,6 +90,6 @@ def extract_entities_flow(
                     output_storage=json_store,
                 )
             )
-            break  # for testing, process only one
+            # break  # for testing, process only one
 
     wait(tasks)
