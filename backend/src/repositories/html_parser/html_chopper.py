@@ -3,8 +3,8 @@ from loguru import logger
 from src.entities.composable import Composable
 from src.entities.content import Section
 from src.interfaces.analyzer import IContentAnalyzer
+from src.interfaces.content_splitter import IContentSplitter
 from src.interfaces.nlp_processor import Processor
-from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
 
 
 class Html2TextSectionsChopper(IContentAnalyzer):
@@ -13,12 +13,12 @@ class Html2TextSectionsChopper(IContentAnalyzer):
     It uses a `WikipediaAPIContentSplitter` to perform the splitting.
     """
 
-    content_splitter: WikipediaAPIContentSplitter
+    content_splitter: IContentSplitter
     post_processors: list[Processor]
 
     def __init__(
         self,
-        content_splitter: WikipediaAPIContentSplitter,
+        content_splitter: IContentSplitter,
         post_processors: list[Processor] = None,
     ):
         self.content_splitter = content_splitter
@@ -37,6 +37,7 @@ class Html2TextSectionsChopper(IContentAnalyzer):
             tuple[Composable, list[Section]] | None: A tuple containing the base information of the `Composable`
                 and the sections belonging to the content, or None if processing fails.
         """
+        logger.info(f"Processing Html2TextSectionsChopper for content '{content_id}'")
 
         if html_content is None or len(html_content) == 0:
             logger.warning(f"no HTML content found for content '{content_id}'")

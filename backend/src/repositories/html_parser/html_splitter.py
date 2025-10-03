@@ -104,7 +104,12 @@ class WikipediaAPIContentSplitter(IContentSplitter):
             sections.append(infobox)
 
         if self.pruner is not None:
+            former_length = len(html_content)
             html_content = self.pruner.process(html_content)
+
+            logger.info(
+                f"Simplified HTML content for '{uid}' from {former_length} to {len(html_content)} characters"
+            )
 
         # cut simplified_html into sections
         simple_soup = BeautifulSoup(html_content, "html.parser")

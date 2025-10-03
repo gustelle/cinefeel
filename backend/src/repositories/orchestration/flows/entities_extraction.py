@@ -1,7 +1,11 @@
 from typing import Literal
 
-from prefect import flow
-from prefect.futures import wait
+from prefect import flow, get_run_logger
+from prefect.cache_policies import INPUTS, NO_CACHE
+from prefect.futures import PrefectFuture, wait
+from prefect.locking.memory import MemoryLockManager
+from prefect.task_runners import ConcurrentTaskRunner
+from prefect.transactions import IsolationLevel
 
 from src.entities.movie import Movie
 from src.entities.person import Person
@@ -10,13 +14,24 @@ from src.interfaces.nlp_processor import Processor
 from src.interfaces.storage import IStorageHandler
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.db.redis.text import RedisTextStorage
+from src.repositories.orchestration.tasks.retry import (
+    RETRY_ATTEMPTS,
+    RETRY_DELAY_SECONDS,
+    is_task_retriable,
+)
 from src.repositories.orchestration.tasks.task_html_parsing import HtmlDataParserTask
 from src.settings import Settings
+
+cache_policy = INPUTS.configure(
+    isolation_level=IsolationLevel.SERIALIZABLE,
+    lock_manager=MemoryLockManager(),
+)
 
 
 @flow(
     name="extract_entities",
     description="Extract entities (Movie or Person) from HTML contents",
+    task_runner=ConcurrentTaskRunner(),
 )
 def extract_entities_flow(
     settings: Settings,
@@ -47,8 +62,9 @@ def extract_entities_flow(
         json_store (IStorageHandler | None, optional): Custom JSON storage handler, defaults to `RedisJsonStorage`
     """
 
-    tasks = []
+    tasks: list[PrefectFuture] = []
     _ent_type = None
+    logger = get_run_logger()
 
     match entity_type:
         case "Movie":
@@ -71,25 +87,47 @@ def extract_entities_flow(
     if page_id:
         content = html_store.select(content_id=page_id)
         if content:
-            tasks.append(
-                parser_task.execute.submit(
-                    content_id=page_id,
-                    content=content,
-                    output_storage=json_store,
-                )
-            )
+            parser_task.execute.with_options(
+                retries=RETRY_ATTEMPTS,
+                retry_delay_seconds=RETRY_DELAY_SECONDS,
+                retry_condition_fn=is_task_retriable,
+                cache_policy=NO_CACHE,
+                # cache_expiration=60 * 60 * 24,  # 24 hours
+                tags=["cinefeel_tasks"],
+                timeout_seconds=180,
+            ).submit(
+                content_id=page_id,
+                content=content,
+                output_storage=json_store,
+            ).wait()
         else:
             raise ValueError(f"No HTML content found for page_id: '{page_id}'")
     else:
         # iterate over all HTML contents in Redis
         for content_id, content in html_store.scan():
+            if not content or not content_id:
+                logger.warning(f"Skipping empty content or content_id: '{content_id}'")
+                continue
+
             tasks.append(
-                parser_task.execute.submit(
+                parser_task.execute.with_options(
+                    retries=RETRY_ATTEMPTS,
+                    retry_delay_seconds=RETRY_DELAY_SECONDS,
+                    retry_condition_fn=is_task_retriable,
+                    cache_policy=NO_CACHE,
+                    # cache_expiration=60 * 60 * 24,  # 24 hours
+                    tags=["cinefeel_tasks"],
+                    timeout_seconds=180,
+                ).submit(
                     content_id=content_id,
                     content=content,
                     output_storage=json_store,
                 )
             )
+
             # break  # for testing, process only one
 
-    wait(tasks)
+        logger.info(f"Submitted {len(tasks)} tasks for entity extraction.")
+
+        # timeout is set at task level
+        wait(tasks)

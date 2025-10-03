@@ -10,7 +10,7 @@ prefect config set PREFECT_API_URL="http://localhost:4200/api"
 prefect config set PREFECT_RESULTS_PERSIST_BY_DEFAULT=true
 
 # apply concurrency limit for workers (flows)
-prefect gcl create cinefeel --limit 10 --slot-decay-per-second 1.0
+prefect gcl create cinefeel --limit 5 --slot-decay-per-second 1.0
 
 # create a work pool (for flows)
 prefect work-pool create "local-processes" --type process 
@@ -21,8 +21,12 @@ prefect config set PREFECT_DEFAULT_WORK_POOL_NAME="local-processes"
 # set concurrency limit for the work pool
 prefect work-pool set-concurrency-limit "local-processes" 8 
 
+# make sure to remove stale tasks
+# see https://github.com/PrefectHQ/prefect/issues/5995
+prefect concurrency-limit reset cinefeel_tasks
+
 # for concurrent tasks
-prefect concurrency-limit create cinefeel_tasks 8 
+prefect concurrency-limit create cinefeel_tasks 20
 
 #prefect worker start --pool "local-processes" #--work-queue "local-queue"
 

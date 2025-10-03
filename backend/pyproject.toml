@@ -31,7 +31,6 @@ dependencies = [
     "prefect (>=3.4.10,<4.0.0)",
     "redis[hiredis] (>=6.2.0,<7.0.0)",
     "pydantic-yaml (>=1.6.0,<2.0.0)",
-    "txtai (>=9.0.1,<10.0.0)",
     "transformers (>=4.56.2,<5.0.0)",
     "bert-extractive-summarizer (>=0.10.1,<0.11.0)",
     "sentence-transformers (>=5.1.0,<6.0.0)",

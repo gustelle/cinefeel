@@ -77,7 +77,6 @@ class RedisTextStorage(IStorageHandler[str]):
     def scan(self) -> Generator[tuple[str, str], None, None]:
         """Scans the persistent storage and iterates over contents.
 
-
         Example:
         ```python
             for key, content in storage.scan():
@@ -96,11 +95,17 @@ class RedisTextStorage(IStorageHandler[str]):
         try:
 
             for key in self.client.scan_iter(match=f"{self.key_prefix}:*"):
-                yield self._get_content_id(key), self.client.get(key)
+                uid = self._get_content_id(key)
+                content = self.client.get(key)
+                if content is not None:
+                    yield uid, content
+                else:
+                    logger.warning(f"Content for key '{key}' not found in Redis.")
+                    continue
 
         except Exception as e:
             logger.error(f"Error scanning redis: {e}")
-            return []
+            yield from ()
 
     def query(
         self,

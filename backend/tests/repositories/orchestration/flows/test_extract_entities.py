@@ -41,7 +41,7 @@ def test_extract_entities_flow_of_a_page_non_existing(test_settings: Settings):
 
     # when
     with pytest.raises(ValueError) as v:
-        extract_entities_flow.fn(
+        extract_entities_flow(
             settings=test_settings, entity_type="Movie", page_id=page_id
         )
 

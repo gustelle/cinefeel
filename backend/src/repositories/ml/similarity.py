@@ -1,7 +1,7 @@
 import re
 
 from loguru import logger
-from txtai import Embeddings
+from sentence_transformers import SentenceTransformer, util
 
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
@@ -16,12 +16,12 @@ class SimilarSectionSearch(Processor[Section]):
     """
 
     settings: Settings
-    embedder: Embeddings
+    embedder: SentenceTransformer
 
     def __init__(self, settings: Settings):
 
         self.settings = settings
-        self.embedder = Embeddings(path=settings.similarity_model)
+        self.embedder = SentenceTransformer(settings.similarity_model)
 
         logger.debug(
             f"Initialized BERT model '{settings.similarity_model}' for similarity search"
@@ -70,13 +70,15 @@ class SimilarSectionSearch(Processor[Section]):
                 logger.warning("empty corpus, skipping the similarity search")
                 return None
 
-            self.embedder.index(corpus)
+            embeddings = self.embedder.encode(corpus, normalize_embeddings=True)
 
-            # logger.debug(self.embedder.search(query, 2))
+            query_embedding = self.embedder.encode(query, normalize_embeddings=True)
 
-            uid, score = self.embedder.search(query, 1)[0]
+            similarities = util.semantic_search(query_embedding, embeddings)[0][0]
 
-            most_similar_section_title = corpus[uid]
+            corpus_id, score = similarities["corpus_id"], similarities["score"]
+
+            most_similar_section_title = corpus[corpus_id]
 
             if score < self.settings.similarity_min_score:
                 logger.debug(

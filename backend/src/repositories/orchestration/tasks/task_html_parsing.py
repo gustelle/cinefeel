@@ -2,7 +2,6 @@ from typing import Type
 
 from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
-from prefect.futures import wait
 
 from src.entities.composable import Composable
 from src.entities.movie import FilmActor, FilmSpecifications, FilmSummary, Movie
@@ -38,8 +37,6 @@ from src.repositories.ml.summary import SectionSummarizer
 from src.repositories.resolver.movie_resolver import MovieResolver
 from src.repositories.resolver.person_resolver import PersonResolver
 from src.settings import Settings
-
-from .retry import RETRY_ATTEMPTS, RETRY_DELAY_SECONDS, is_task_retriable
 
 
 class HtmlDataParserTask(ITaskExecutor):
@@ -83,11 +80,7 @@ class HtmlDataParserTask(ITaskExecutor):
 
     @task(
         task_run_name="do_analysis-{content_id}",
-        retries=RETRY_ATTEMPTS,
-        retry_delay_seconds=RETRY_DELAY_SECONDS,
-        retry_condition_fn=is_task_retriable,
         cache_policy=NO_CACHE,
-        tags=["cinefeel_tasks"],
     )
     def do_analysis(
         self,
@@ -111,7 +104,7 @@ class HtmlDataParserTask(ITaskExecutor):
         base_info, sections = result
 
         logger.info(
-            f"Extracting '{self.entity_type.__name__}' for content with ID '{content_id}'"
+            f"Extracted base info & {len(sections) if sections else 0} sections of a '{self.entity_type.__name__}' for content '{content_id}'"
         )
 
         # assemble the entity from the sections
@@ -220,7 +213,6 @@ class HtmlDataParserTask(ITaskExecutor):
     @task(
         task_run_name="to_storage-{entity.uid}",
         cache_policy=NO_CACHE,
-        tags=["cinefeel_tasks"],
     )
     def to_storage(self, storage: IStorageHandler, entity: Composable) -> None:
         """
@@ -233,11 +225,7 @@ class HtmlDataParserTask(ITaskExecutor):
             )
 
     @task(
-        cache_policy=NO_CACHE,
-        retries=RETRY_ATTEMPTS,
-        retry_delay_seconds=RETRY_DELAY_SECONDS,
-        retry_condition_fn=is_task_retriable,
-        tags=["cinefeel_tasks"],
+        task_run_name="html_parsing_mother-{content_id}",
     )
     def execute(
         self,
@@ -246,23 +234,15 @@ class HtmlDataParserTask(ITaskExecutor):
         output_storage: IStorageHandler[Composable],
     ) -> None:
 
-        logger = get_run_logger()
-        logger.debug(f">> Processing HtmlDataParserTask for content ID '{content_id}'")
+        try:
 
-        # need to keep track of the futures to wait for them later
-        # see: https://github.com/PrefectHQ/prefect/issues/17517
-        _futures = []
-
-        future_entity = self.do_analysis.submit(
-            content_id=content_id,
-            html_content=content,
-        )
-
-        _futures.append(
-            self.to_storage.submit(
-                storage=output_storage,
-                entity=future_entity,
+            entity_fut = self.do_analysis.submit(
+                content_id=content_id,
+                html_content=content,
             )
-        )
 
-        wait(_futures)
+            self.to_storage.submit(storage=output_storage, entity=entity_fut).wait()
+
+        except Exception as e:
+            logger = get_run_logger()
+            logger.error(f"Error storing entity for content ID '{content_id}': {e}")
