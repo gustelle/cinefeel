@@ -18,7 +18,7 @@ class DBStorageTask(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
 
-    @task(cache_policy=NO_CACHE, tags=["cinefeel_tasks"])
+    @task(cache_policy=NO_CACHE)
     def index_batch(
         self,
         entities: list[Composable],
@@ -31,9 +31,7 @@ class DBStorageTask(ITaskExecutor):
             contents=entities,
         )
 
-    @task(
-        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
-    )
+    @task(cache_policy=NO_CACHE)
     def query_input_storage(
         self,
         input_storage: IStorageHandler[Composable],
@@ -52,9 +50,6 @@ class DBStorageTask(ITaskExecutor):
 
     @task(
         cache_policy=NO_CACHE,
-        retries=3,
-        retry_delay_seconds=5,
-        tags=["cinefeel_tasks"],
     )
     def execute(
         self,

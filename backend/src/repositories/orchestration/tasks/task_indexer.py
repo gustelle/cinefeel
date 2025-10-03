@@ -18,7 +18,7 @@ class SearchIndexerTask(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
 
-    @task(cache_policy=NO_CACHE, tags=["cinefeel_tasks"])
+    @task(cache_policy=NO_CACHE)
     def index_batch(
         self,
         entities: list[Composable],
@@ -32,9 +32,7 @@ class SearchIndexerTask(ITaskExecutor):
             wait_for_completion=False,
         )
 
-    @task(
-        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
-    )
+    @task(cache_policy=NO_CACHE)
     def execute(
         self,
         input_storage: IStorageHandler[Composable],
@@ -50,7 +48,7 @@ class SearchIndexerTask(ITaskExecutor):
 
         try:
 
-            for res in input_storage.scan():
+            for _, res in input_storage.scan():
 
                 batch.append(res)
 

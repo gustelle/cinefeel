@@ -30,7 +30,7 @@ def cleanup_redis(test_settings: Settings):
     r.flushdb()
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=False)
 def cleanup_db(test_settings: Settings):
 
     from neo4j import GraphDatabase, Session

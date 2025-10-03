@@ -4,6 +4,11 @@ from prefect.futures import wait
 from src.entities.content import TableOfContents
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
+from src.repositories.orchestration.tasks.retry import (
+    RETRY_ATTEMPTS,
+    RETRY_DELAY_SECONDS,
+    is_task_retriable,
+)
 from src.repositories.orchestration.tasks.task_downloader import ContentDownloaderTask
 from src.settings import Settings
 
@@ -38,7 +43,13 @@ def scraping_flow(
         )
 
         tasks.append(
-            download_task.execute.submit(
+            download_task.execute.with_options(
+                retries=RETRY_ATTEMPTS,
+                retry_delay_seconds=RETRY_DELAY_SECONDS,
+                retry_condition_fn=is_task_retriable,
+                tags=["cinefeel_tasks"],
+                timeout_seconds=30,
+            ).submit(
                 page=config,
                 storage_handler=html_store,
                 return_results=False,

@@ -12,7 +12,6 @@ from src.repositories.db.local_storage.html_storage import LocalTextStorage
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.settings import Settings
 
-from .retry import RETRY_ATTEMPTS, RETRY_DELAY_SECONDS, is_task_retriable
 
 
 class ContentDownloaderTask(ITaskExecutor):
@@ -34,11 +33,7 @@ class ContentDownloaderTask(ITaskExecutor):
 
     @task(
         task_run_name="download-{page_id}",
-        retries=RETRY_ATTEMPTS,
-        retry_delay_seconds=RETRY_DELAY_SECONDS,
-        retry_condition_fn=is_task_retriable,
         cache_policy=NO_CACHE,
-        tags=["cinefeel_tasks"],
     )
     def download(
         self,
@@ -90,7 +85,7 @@ class ContentDownloaderTask(ITaskExecutor):
 
         return page_id if html is not None else None
 
-    @task(cache_policy=NO_CACHE, tags=["cinefeel_tasks"])
+    @task(cache_policy=NO_CACHE)
     def extract_page_links(
         self,
         config: TableOfContents,
@@ -130,7 +125,7 @@ class ContentDownloaderTask(ITaskExecutor):
             return []
 
     @task(
-        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+        cache_policy=NO_CACHE,
     )
     def execute(
         self,

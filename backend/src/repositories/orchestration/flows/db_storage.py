@@ -1,6 +1,7 @@
 from typing import Literal
 
 from prefect import flow
+from prefect.cache_policies import NO_CACHE
 from prefect.futures import wait
 
 from src.entities.movie import Movie
@@ -9,6 +10,10 @@ from src.interfaces.storage import IStorageHandler
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.db.redis.json import RedisJsonStorage
+from src.repositories.orchestration.tasks.retry import (
+    RETRY_ATTEMPTS,
+    RETRY_DELAY_SECONDS,
+)
 from src.repositories.orchestration.tasks.task_graph_storage import DBStorageTask
 from src.repositories.orchestration.tasks.task_indexer import SearchIndexerTask
 from src.repositories.search.meili_indexer import MeiliHandler
@@ -64,7 +69,14 @@ def db_storage_flow(
     )
 
     tasks.append(
-        storage_flow.execute.submit(
+        storage_flow.execute.with_options(
+            retries=RETRY_ATTEMPTS,
+            retry_delay_seconds=RETRY_DELAY_SECONDS,
+            cache_policy=NO_CACHE,
+            # cache_expiration=60 * 60 * 24,  # 24 hours
+            tags=["cinefeel_tasks"],
+            timeout_seconds=1,  # fail fast if the task hangs
+        ).submit(
             input_storage=json_store,
             output_storage=graph_store,
         )
@@ -72,7 +84,14 @@ def db_storage_flow(
 
     # for all pages
     tasks.append(
-        search_flow.execute.submit(
+        search_flow.execute.with_options(
+            retries=RETRY_ATTEMPTS,
+            retry_delay_seconds=RETRY_DELAY_SECONDS,
+            cache_policy=NO_CACHE,
+            # cache_expiration=60 * 60 * 24,  # 24 hours
+            tags=["cinefeel_tasks"],
+            timeout_seconds=1,  # fail fast if the task hangs
+        ).submit(
             input_storage=json_store,
             output_storage=search_handler,
         )

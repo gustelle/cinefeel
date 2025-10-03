@@ -152,7 +152,7 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
             for key in self.client.scan_iter(match=f"{self.entity_type.__name__}:*"):
 
                 try:
-                    data = self.client.json().get(key)
+                    data = self.client.json().get(key, Path.root_path())
                     data.pop("uid_hash", None)  # Remove the hash field if it exists
                     yield key, self.entity_type.model_validate(data, by_name=True)
 

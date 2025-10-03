@@ -1,3 +1,5 @@
+from typing import Generator
+
 import meilisearch
 import meilisearch.errors
 import meilisearch.index
@@ -141,7 +143,7 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
     def select(self, content_id: str) -> T | None:
         raise NotImplementedError("Select method is not implemented yet.")
 
-    def scan(self) -> list[tuple[str, T]]:
+    def scan(self) -> Generator[tuple[str, T], None, None]:
         raise NotImplementedError("Scan method is not implemented yet.")
 
     def query(self, *args, **kwargs):
