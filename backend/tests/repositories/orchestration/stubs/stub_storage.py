@@ -1,3 +1,5 @@
+from typing import Generator
+
 from src.entities.movie import Movie
 from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler
@@ -9,6 +11,15 @@ class StubStorage[T: Movie | Person](IStorageHandler[T]):
     """
 
     is_inserted: bool = False
+    is_scanned: bool = False
+    _to_be_scanned: list[T] = []
+    _inserted: list[T] = []
+
+    def __init__(self, input: list[T] = None) -> None:
+        self.is_inserted = False
+        self.is_scanned = False
+        self._to_be_scanned = input or []
+        self._inserted = []
 
     def insert(
         self,
@@ -17,7 +28,7 @@ class StubStorage[T: Movie | Person](IStorageHandler[T]):
         *args,
     ) -> None:
         """Saves the given data to a file."""
-
+        self._inserted.append(content)
         self.is_inserted = True
 
     def insert_many(
@@ -25,14 +36,16 @@ class StubStorage[T: Movie | Person](IStorageHandler[T]):
         contents: list[T],
     ) -> None:
         """Saves multiple contents to persistent storage."""
-
+        self._inserted.extend(contents)
         self.is_inserted = True
 
     def scan(
         self,
         *args,
-    ) -> list[tuple[str, T]]:
-        raise NotImplementedError
+    ) -> Generator[tuple[str, T], None, None]:
+        for i, content in enumerate(self._to_be_scanned):
+            yield i, content
+        self.is_scanned = True
 
     def select(self, content_id, *args, **kwargs):
         raise NotImplementedError

@@ -23,9 +23,9 @@ class EntitiesConnectionUseCase:
             flow.from_source(
                 source=Path(__file__).parent.parent
                 / "repositories/orchestration/flows",
-                entrypoint="connection.py:process_entity_extraction",
+                entrypoint="connection.py:extract_entity_from_page",
             ).to_deployment(
-                name="process_entity_extraction",
+                name="extract_entity_from_page",
                 description="Triggers when an entity is not found in the storage which will trigger the extraction flow.",
                 triggers=[
                     DeploymentEventTrigger(

@@ -13,7 +13,7 @@ def test_task_store(test_settings: Settings):
 
     # given
     stub_storage = StubStorage()
-    flow_runner = HtmlDataParserTask(
+    runner = HtmlDataParserTask(
         settings=test_settings,
         entity_type=Movie,
     )
@@ -24,7 +24,7 @@ def test_task_store(test_settings: Settings):
     )
 
     # when
-    flow_runner.to_storage(stub_storage, entity)
+    runner.to_storage(stub_storage, entity)
 
     # then
     assert stub_storage.is_inserted, "Film was not inserted into the storage."

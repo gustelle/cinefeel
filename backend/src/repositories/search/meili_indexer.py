@@ -82,7 +82,6 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
     def insert_many(
         self,
         contents: list[T],
-        wait_for_completion: bool = True,
     ):
 
         try:
@@ -90,7 +89,6 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
             json_docs = []
             for doc in contents:
                 try:
-                    # logger.debug(f"Processing {type(doc).__name__}: '{doc.uid}'")
                     json_docs.append(doc.model_dump(mode="json"))
                 except Exception as e:
 
@@ -103,18 +101,16 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
                 logger.warning("No valid documents to insert or update.")
                 return
 
-            task_info = self.index.update_documents(json_docs, primary_key="uid")
+            self.index.update_documents(json_docs, primary_key="uid")
 
-            logger.info(
-                f"Indexation started with {len(json_docs)} {type(doc).__name__}."
-            )
+            logger.info(f"Indexation started with {len(json_docs)} documents.")
 
-            if wait_for_completion:
-                task_info = self.client.wait_for_task(task_info.task_uid)
-                if task_info.status != "succeeded":
-                    raise Exception(
-                        f"Task failed: {task_info.status} - {task_info.error}"
-                    )
+            # if wait_for_completion:
+            #     task_info = self.client.wait_for_task(task_info.task_uid)
+            #     if task_info.status != "succeeded":
+            #         raise Exception(
+            #             f"Task failed: {task_info.status} - {task_info.error}"
+            #         )
 
         except Exception as e:
             import traceback

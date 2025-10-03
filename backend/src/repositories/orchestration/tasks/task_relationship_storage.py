@@ -69,7 +69,7 @@ class EntityRelationshipTask(ITaskExecutor):
         """
         return HttpUrl(f"https://fr.wikipedia.org/wiki/{page_id}")
 
-    @task(cache_policy=NO_CACHE, tags=["cinefeel_tasks"])
+    @task(cache_policy=NO_CACHE)
     def load_entity_by_name(
         self, name: str, input_storage: IStorageHandler[Composable]
     ) -> Composable | None:
@@ -120,9 +120,6 @@ class EntityRelationshipTask(ITaskExecutor):
     @task(
         task_run_name="do_enrichment-{relationship.from_entity.uid}-{relationship.to_entity.uid}",
         cache_policy=NO_CACHE,
-        retries=3,
-        retry_delay_seconds=[2, 5, 10],
-        tags=["cinefeel_tasks"],
     )
     def do_enrichment(
         self,
@@ -145,7 +142,6 @@ class EntityRelationshipTask(ITaskExecutor):
     @task(
         task_run_name="analyze_relationships-{entity.uid}",
         cache_policy=NO_CACHE,
-        tags=["cinefeel_tasks"],
     )
     def analyze_relationships(
         self,
@@ -313,7 +309,7 @@ class EntityRelationshipTask(ITaskExecutor):
         return entity
 
     @task(
-        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
+        cache_policy=NO_CACHE,
     )
     def execute(
         self,

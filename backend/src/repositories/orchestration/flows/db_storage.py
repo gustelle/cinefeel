@@ -14,8 +14,7 @@ from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
     RETRY_DELAY_SECONDS,
 )
-from src.repositories.orchestration.tasks.task_graph_storage import DBStorageTask
-from src.repositories.orchestration.tasks.task_indexer import SearchIndexerTask
+from src.repositories.orchestration.tasks.task_storage import BatchInsertTask
 from src.repositories.search.meili_indexer import MeiliHandler
 from src.settings import Settings
 
@@ -50,11 +49,6 @@ def db_storage_flow(
 
     json_store = json_store or RedisJsonStorage[_entity_type](settings=settings)
 
-    search_flow = SearchIndexerTask(
-        settings=settings,
-        entity_type=_entity_type,
-    )
-
     graph_store = graph_store or (
         MovieGraphRepository(settings=settings)
         if _entity_type is Movie
@@ -63,13 +57,13 @@ def db_storage_flow(
 
     search_handler = search_store or MeiliHandler[_entity_type](settings=settings)
 
-    storage_flow = DBStorageTask(
+    insert_task = BatchInsertTask(
         settings=settings,
         entity_type=_entity_type,
     )
 
     tasks.append(
-        storage_flow.execute.with_options(
+        insert_task.execute.with_options(
             retries=RETRY_ATTEMPTS,
             retry_delay_seconds=RETRY_DELAY_SECONDS,
             cache_policy=NO_CACHE,
@@ -84,7 +78,7 @@ def db_storage_flow(
 
     # for all pages
     tasks.append(
-        search_flow.execute.with_options(
+        insert_task.execute.with_options(
             retries=RETRY_ATTEMPTS,
             retry_delay_seconds=RETRY_DELAY_SECONDS,
             cache_policy=NO_CACHE,

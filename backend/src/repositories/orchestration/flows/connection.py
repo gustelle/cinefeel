@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Literal
 
 from prefect import flow, get_run_logger, task
+from prefect.cache_policies import NO_CACHE
 
 from src.entities.content import TableOfContents
 from src.entities.movie import Movie
@@ -15,6 +16,10 @@ from src.repositories.orchestration.flows.entities_extraction import (
     extract_entities_flow,
 )
 from src.repositories.orchestration.flows.scraping import scraping_flow
+from src.repositories.orchestration.tasks.retry import (
+    RETRY_ATTEMPTS,
+    RETRY_DELAY_SECONDS,
+)
 from src.repositories.orchestration.tasks.task_relationship_storage import (
     EntityRelationshipTask,
 )
@@ -22,25 +27,23 @@ from src.settings import Settings
 
 
 @flow(
-    name="process_entity_extraction",
+    name="extract_entity_from_page",
     description="Based on the entity type and page_id, this flow will extract the entity and store it in the database.",
 )
-def process_entity_extraction(
+def extract_entity_from_page(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
     page_id: str,
 ) -> None:
     """
-    Extract a single entity (Movie or Person) from a given permalink.
+    Extract an entity (Movie or Person) from a given permalink.
     This flow will download the content, parse it, index it, and store it in the graph database.
 
-    It is quite useful when making a relationship between two entities, and one of them is not existing yet in the database.
-    typically, it is triggered on-demand by the relationship workflow.
+    It is useful when making a relationship between two entities, and one of them is not existing yet in the database.
+    typically, it is triggered on-demand by the connection workflow.
 
     """
     logger = get_run_logger()
-
-    # page_id = permalink.split("/")[-1]  # Extract page ID from permalink
 
     page = TableOfContents(
         page_id=page_id,
@@ -49,40 +52,28 @@ def process_entity_extraction(
 
     logger.info(f"Downloading '{entity_type}' for page_id: {page_id}")
 
-    task()(scraping_flow).submit(
+    scraping_task = task()(scraping_flow).submit(
         settings=settings,
         pages=[page],
-    ).wait()
-
-    # sanitize page_id to be used as a filename
-    # page_id = re.sub(r"[^a-zA-Z0-9_-]", "_", page_id)
-
-    logger.info(
-        f"Downloaded '{entity_type}' with page ID '{page_id}', now running the extraction flow."
     )
 
-    task()(extract_entities_flow).submit(
+    extract_task = task()(extract_entities_flow).submit(
         settings=settings,
         entity_type=entity_type,
         page_id=page_id,
-    ).wait()
-
-    logger.info(
-        f"Extracted '{entity_type}' with page ID '{page_id}', now running the storage flow."
+        wait_for=[scraping_task],
     )
 
-    task()(db_storage_flow).submit(
+    storage_task = task()(db_storage_flow).submit(
         settings=settings,
         entity_type=entity_type,
-    ).wait()
-
-    logger.info(
-        f"Entity '{entity_type}' with page ID '{page_id}' has been processed. Now entering the connection flow."
+        wait_for=[extract_task],
     )
 
     task()(connection_flow).submit(
         settings=settings,
         entity_type=entity_type,
+        wait_for=[storage_task],
     ).wait()
 
     logger.info(f"Entity '{entity_type}' with page ID '{page_id}' has been connected.")
@@ -127,7 +118,12 @@ def connection_flow(
     EntityRelationshipTask(
         settings=settings,
         http_client=http_client,
-    ).execute.submit(
+    ).execute.with_options(
+        retries=RETRY_ATTEMPTS,
+        retry_delay_seconds=RETRY_DELAY_SECONDS,
+        cache_policy=NO_CACHE,
+        tags=["cinefeel_tasks"],
+    ).submit(
         input_storage=db_storage,
         output_storage=db_storage,
     ).wait()
