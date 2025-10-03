@@ -7,6 +7,7 @@ from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.orchestration.flows.db_storage import db_storage_flow
 from src.settings import Settings
+from tests.repositories.orchestration.stubs.stub_storage import StubStorage
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -74,12 +75,16 @@ def test_entity_storage_flow(test_settings: Settings):
     db_store = PersonGraphRepository(settings=test_settings)
     assert len(list(db_store.scan())) == 0
 
+    # not interesting for this test
+    search_store = StubStorage[Person]()
+
     # when
     db_storage_flow(
         settings=test_settings,
         entity_type=entity_type,
         json_store=json_store,
         graph_store=db_store,
+        search_store=search_store,
     )
 
     # then
