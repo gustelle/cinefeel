@@ -11,6 +11,9 @@ from pydantic import (
     field_validator,
 )
 
+from .movie import Movie
+from .person import Person
+
 SectionTitle = Annotated[
     str,
     StringConstraints(
@@ -43,7 +46,7 @@ class PageLink(BaseModel):
         examples=["À_Biribi,_disciplinaires_français"],
     )
 
-    entity_type: Literal["Movie", "Person"] = Field(
+    entity_type: Literal[Movie.__name__, Person.__name__] = Field(
         ...,
         description="The type of content the link refers to. This can be either 'Movie' or 'Person'.",
         examples=["Movie", "Person"],

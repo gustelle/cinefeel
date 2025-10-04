@@ -10,16 +10,19 @@ class StubStorage[T: Movie | Person](IStorageHandler[T]):
     handles storage and retrieval of HTML files on disk.
     """
 
+    entity_type = T
+
     is_inserted: bool = False
     is_scanned: bool = False
-    _to_be_scanned: list[T] = []
+    _contents_in_store: list[T] = []
     _inserted: list[T] = []
 
-    def __init__(self, input: list[T] = None) -> None:
+    def __init__(self, input: list[T] = None, entity_type: type[T] = None) -> None:
         self.is_inserted = False
         self.is_scanned = False
-        self._to_be_scanned = input or []
+        self._contents_in_store = input or []
         self._inserted = []
+        self.entity_type = entity_type
 
     def insert(
         self,
@@ -43,7 +46,7 @@ class StubStorage[T: Movie | Person](IStorageHandler[T]):
         self,
         *args,
     ) -> Generator[tuple[str, T], None, None]:
-        for i, content in enumerate(self._to_be_scanned):
+        for i, content in enumerate(self._contents_in_store):
             yield i, content
         self.is_scanned = True
 
@@ -51,7 +54,7 @@ class StubStorage[T: Movie | Person](IStorageHandler[T]):
         raise NotImplementedError
 
     def query(self, *args, **kwargs) -> list[T]:
-        raise NotImplementedError
+        return self._contents_in_store
 
     def update(self, content: T, *args, **kwargs) -> T:
         raise NotImplementedError

@@ -1,3 +1,4 @@
+import importlib
 from typing import Literal
 
 from prefect import flow
@@ -5,7 +6,6 @@ from prefect.cache_policies import NO_CACHE
 from prefect.futures import wait
 
 from src.entities.movie import Movie
-from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
@@ -31,64 +31,49 @@ def db_storage_flow(
     graph_store: IStorageHandler | None = None,
     search_store: IStorageHandler | None = None,
 ) -> None:
-    """
-    TODO:
-    - mark entities as "processed" to avoid re-processing them
-    - pass a param to re-process all entities if needed (a bit like a "force" flag)
-    """
 
-    tasks = []
+    module = importlib.import_module("src.entities")
 
-    match entity_type:
-        case "Movie":
-            _entity_type = Movie
-        case "Person":
-            _entity_type = Person
-        case _:
-            raise ValueError(f"Unsupported entity type: {entity_type}")
+    try:
+        cls = getattr(module, entity_type)
+    except AttributeError as e:
+        raise ValueError(f"Unsupported entity type: {entity_type}") from e
 
-    json_store = json_store or RedisJsonStorage[_entity_type](settings=settings)
+    json_store = json_store or RedisJsonStorage[cls](settings=settings)
 
     graph_store = graph_store or (
         MovieGraphRepository(settings=settings)
-        if _entity_type is Movie
+        if cls is Movie
         else PersonGraphRepository(settings=settings)
     )
 
-    search_handler = search_store or MeiliHandler[_entity_type](settings=settings)
+    search_handler = search_store or MeiliHandler[cls](settings=settings)
 
     insert_task = BatchInsertTask(
         settings=settings,
-        entity_type=_entity_type,
+        entity_type=cls,
     )
 
-    tasks.append(
-        insert_task.execute.with_options(
-            retries=RETRY_ATTEMPTS,
-            retry_delay_seconds=RETRY_DELAY_SECONDS,
-            cache_policy=NO_CACHE,
-            # cache_expiration=60 * 60 * 24,  # 24 hours
-            tags=["cinefeel_tasks"],
-            timeout_seconds=1,  # fail fast if the task hangs
-        ).submit(
-            input_storage=json_store,
-            output_storage=graph_store,
-        )
+    t = insert_task.execute.with_options(
+        retries=RETRY_ATTEMPTS,
+        retry_delay_seconds=RETRY_DELAY_SECONDS,
+        cache_policy=NO_CACHE,
+        # cache_expiration=60 * 60 * 24,  # 24 hours
+        tags=["cinefeel_tasks"],
+        timeout_seconds=1,  # fail fast if the task hangs
+    ).submit(
+        input_storage=json_store,
+        output_storage=graph_store,
     )
 
     # for all pages
-    tasks.append(
-        insert_task.execute.with_options(
-            retries=RETRY_ATTEMPTS,
-            retry_delay_seconds=RETRY_DELAY_SECONDS,
-            cache_policy=NO_CACHE,
-            # cache_expiration=60 * 60 * 24,  # 24 hours
-            tags=["cinefeel_tasks"],
-            timeout_seconds=1,  # fail fast if the task hangs
-        ).submit(
-            input_storage=json_store,
-            output_storage=search_handler,
-        )
-    )
+    u = insert_task.execute.with_options(
+        retries=RETRY_ATTEMPTS,
+        retry_delay_seconds=RETRY_DELAY_SECONDS,
+        cache_policy=NO_CACHE,
+        # cache_expiration=60 * 60 * 24,  # 24 hours
+        tags=["cinefeel_tasks"],
+        timeout_seconds=1,  # fail fast if the task hangs
+    ).submit(input_storage=json_store, output_storage=search_handler)
 
-    wait(tasks)
+    wait([t, u])  # wait for all tasks to complete

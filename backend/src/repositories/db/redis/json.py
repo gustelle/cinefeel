@@ -17,8 +17,6 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
     """
     Dumps and loads JSON-serializable entities to/from redis-like databases.
     DB used must support the `redis` client's JSON commands.
-
-    Such data keys are prefixed with `json:`.
     """
 
     client: redis.Redis

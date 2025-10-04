@@ -3,6 +3,8 @@ from pathlib import Path
 from prefect import deploy, flow
 from prefect.events import DeploymentEventTrigger
 
+from src.entities.movie import Movie
+from src.entities.person import Person
 from src.settings import Settings
 
 from .uc_types import EntityType
@@ -59,7 +61,7 @@ class EntitiesConnectionUseCase:
                     description="Adds connections to movies.",
                     parameters={
                         "settings": self.settings,
-                        "entity_type": "Movie",
+                        "entity_type": Movie.__name__,
                     },
                     # cron="00 08 * * *",  # Every day at 8:00 AM
                     job_variables={
@@ -82,7 +84,7 @@ class EntitiesConnectionUseCase:
                     description="Adds connections to persons.",
                     parameters={
                         "settings": self.settings,
-                        "entity_type": "Person",
+                        "entity_type": Person.__name__,
                     },
                     # cron="00 09 * * *",  # Every day at 9:00 AM
                     job_variables={

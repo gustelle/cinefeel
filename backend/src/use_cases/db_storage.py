@@ -2,6 +2,8 @@ from pathlib import Path
 
 from prefect import deploy, flow
 
+from src.entities.movie import Movie
+from src.entities.person import Person
 from src.settings import Settings
 
 from .uc_types import EntityType
@@ -32,7 +34,7 @@ class DBStorageUseCase:
                     description="Stores movies into the database.",
                     parameters={
                         "settings": self.settings,
-                        "entity_type": "Movie",
+                        "entity_type": Movie.__name__,
                     },
                     # cron="0 0 * * *",  # Every day at midnight
                     job_variables={
@@ -55,7 +57,7 @@ class DBStorageUseCase:
                     description="Stores persons into the database.",
                     parameters={
                         "settings": self.settings,
-                        "entity_type": "Person",
+                        "entity_type": Person.__name__,
                     },
                     # cron="0 0 * * *",  # Every day at midnight
                     job_variables={

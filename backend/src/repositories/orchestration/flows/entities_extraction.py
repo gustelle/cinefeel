@@ -1,3 +1,4 @@
+import importlib
 from typing import Literal
 
 from prefect import flow, get_run_logger
@@ -7,8 +8,6 @@ from prefect.locking.memory import MemoryLockManager
 from prefect.task_runners import ConcurrentTaskRunner
 from prefect.transactions import IsolationLevel
 
-from src.entities.movie import Movie
-from src.entities.person import Person
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.storage import IStorageHandler
@@ -63,26 +62,25 @@ def extract_entities_flow(
     """
 
     tasks: list[PrefectFuture] = []
-    _ent_type = None
+
     logger = get_run_logger()
 
-    match entity_type:
-        case "Movie":
-            _ent_type = Movie
-        case "Person":
-            _ent_type = Person
-        case _:
-            raise ValueError(f"Unsupported entity type: {entity_type}")
+    module = importlib.import_module("src.entities")
+
+    try:
+        cls = getattr(module, entity_type)
+    except AttributeError as e:
+        raise ValueError(f"Unsupported entity type: {entity_type}") from e
 
     parser_task = HtmlDataParserTask(
         settings=settings,
-        entity_type=_ent_type,
+        entity_type=cls,
         analyzer=entity_analyzer,
         search_processor=section_searcher,
     )
 
     html_store = html_store or RedisTextStorage(settings=settings)
-    json_store = json_store or RedisJsonStorage[_ent_type](settings=settings)
+    json_store = json_store or RedisJsonStorage[cls](settings=settings)
 
     if page_id:
         content = html_store.select(content_id=page_id)

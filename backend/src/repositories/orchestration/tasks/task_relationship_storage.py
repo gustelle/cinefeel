@@ -110,11 +110,7 @@ class EntityRelationshipTask(ITaskExecutor):
         emit_event(
             event="extract.entity",
             resource={"prefect.resource.id": page_id},
-            payload={
-                "entity_type": (
-                    "Movie" if input_storage.entity_type is Movie else "Person"
-                ),
-            },
+            payload={"entity_type": input_storage.entity_type.__name__},
         )
 
     @task(
@@ -323,7 +319,7 @@ class EntityRelationshipTask(ITaskExecutor):
 
             _futures = []
 
-            for entity in input_storage.scan():
+            for _, entity in input_storage.scan():
 
                 _futures.append(
                     self.analyze_relationships.submit(

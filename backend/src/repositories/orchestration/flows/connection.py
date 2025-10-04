@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import importlib
 from typing import Literal
 
 from prefect import flow, get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 
 from src.entities.content import TableOfContents
-from src.entities.movie import Movie
-from src.entities.person import Person
+from src.interfaces.storage import IStorageHandler
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.http.sync_http import SyncHttpClient
@@ -83,33 +83,30 @@ def extract_entity_from_page(
 def connection_flow(
     settings: Settings,
     entity_type: Literal["Movie", "Person"],
+    # for testing purposes, we can inject custom storage handlers
+    graph_store: IStorageHandler | None = None,
 ) -> None:
     """
     Reads Entities (Movie or Person) from the storage,
     and analyzes their content to identify connections between them.
 
-    TODO:
-    - mark entities as "processed" to avoid re-processing them
-    - pass a param to re-process all entities if needed (a bit like a "force
     """
 
-    match entity_type:
-        case "Movie":
-            _entity_type = Movie
-        case "Person":
+    module = importlib.import_module("src.entities")
 
-            _entity_type = Person
-        case _:
-            raise ValueError(f"Unsupported entity type: {entity_type}")
+    try:
+        getattr(module, entity_type)
+    except AttributeError as e:
+        raise ValueError(f"Unsupported entity type: {entity_type}") from e
 
     http_client = SyncHttpClient(settings=settings)
 
     # where to store the relationships
-    db_storage = (
+    db_storage = graph_store or (
         MovieGraphRepository(
             settings=settings,
         )
-        if _entity_type is Movie
+        if entity_type == "Movie"
         else PersonGraphRepository(
             settings=settings,
         )
