@@ -1,3 +1,5 @@
+import importlib
+
 from prefect import flow, get_run_logger
 from prefect.futures import wait
 
@@ -31,8 +33,6 @@ def scraping_flow(
     # make them unique by page_id
     pages = {p.page_id: p for p in pages}.values()
 
-    html_store = RedisTextStorage(settings=settings)
-
     tasks = []
 
     # for each page
@@ -41,6 +41,15 @@ def scraping_flow(
         logger.info(
             f"Processing '{config.__class__.__name__}' with ID '{config.page_id}'"
         )
+
+        module = importlib.import_module("src.entities")
+
+        try:
+            cls = getattr(module, config.entity_type)
+        except AttributeError as e:
+            raise ValueError(f"Unsupported entity type: {config.entity_type}") from e
+
+        html_store = RedisTextStorage[cls](settings=settings)
 
         tasks.append(
             download_task.execute.with_options(

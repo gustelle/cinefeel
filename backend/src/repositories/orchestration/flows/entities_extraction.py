@@ -79,7 +79,7 @@ def extract_entities_flow(
         search_processor=section_searcher,
     )
 
-    html_store = html_store or RedisTextStorage(settings=settings)
+    html_store = html_store or RedisTextStorage[cls](settings=settings)
     json_store = json_store or RedisJsonStorage[cls](settings=settings)
 
     if page_id:

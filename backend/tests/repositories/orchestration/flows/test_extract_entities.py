@@ -58,7 +58,7 @@ def test_extract_entities_flow_for_given_page_id(
     page_id = "some_page_id"
 
     # insert the HTML content into the HTML storage
-    html_store = RedisTextStorage(settings=test_settings)
+    html_store = RedisTextStorage[Person](settings=test_settings)
     html_store.insert(content_id=page_id, content=read_beethoven_html)
 
     json_store = RedisJsonStorage[Person](settings=test_settings)
@@ -92,7 +92,7 @@ def test_extract_entities_flow_for_all_pages(test_settings: Settings):
 
     # given
     # generate data in the HTML storage
-    html_store = RedisTextStorage(settings=test_settings)
+    html_store = RedisTextStorage[Person](settings=test_settings)
     for i in range(3):
         html_store.insert(content_id=f"page_{i}", content=f"<html>content {i}</html>")
 
