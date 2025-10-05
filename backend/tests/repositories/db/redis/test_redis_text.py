@@ -1,6 +1,8 @@
 import pytest
 import redis
 
+from src.entities.movie import Movie
+from src.entities.person import Person
 from src.repositories.db.redis.text import RedisTextStorage
 from src.settings import Settings
 
@@ -29,7 +31,7 @@ def test_redis_text_insert_string(test_settings: Settings):
     """Test the insert method of RedisTextStorage."""
 
     settings = test_settings
-    storage = RedisTextStorage(settings)
+    storage = RedisTextStorage[Movie](settings)
 
     content_id = "test_content"
     content = "<html><body>Test Content</body></html>"
@@ -57,7 +59,7 @@ def test_redis_text_select(test_settings: Settings):
 
     # given
     settings = test_settings
-    storage = RedisTextStorage(settings)
+    storage = RedisTextStorage[Movie](settings)
 
     content_id = "test_content"
     content = "<html><body>Test Content</body></html>"
@@ -83,7 +85,7 @@ def test_redis_text_scan(test_settings: Settings):
 
     # given
     settings = test_settings
-    storage = RedisTextStorage(settings)
+    storage = RedisTextStorage[Movie](settings)
 
     content_id_1 = "test_content_1"
     content_1 = "<html><body>Test Content 1</body></html>"
@@ -111,3 +113,35 @@ def test_redis_text_scan(test_settings: Settings):
         content_id_2,
         content_2,
     ) in scanned_content, f"Expected '{content_id_2}' to be scanned"
+
+
+def test_redis_text_scan_with_namespace(test_settings: Settings):
+    """Scanning should filter by namespace"""
+
+    # given
+    settings = test_settings
+    storage = RedisTextStorage[Person](settings)
+
+    content_id_1 = "test_content_1"
+    content_1 = "<html><body>Test Content 1</body></html>"
+    content_id_2 = "test_content_2"
+    content_2 = "<html><body>Test Content 2</body></html>"
+
+    r = redis.Redis(
+        host=settings.redis_storage_dsn.host,
+        port=settings.redis_storage_dsn.port,
+        decode_responses=True,
+    )
+
+    # Insert the content into Redis
+    r.set(f"HTML-Movie:{content_id_1}", content_1)
+    r.set(f"HTML-Person:{content_id_2}", content_2)
+
+    # Now scan it with a namespace that matches only one key
+    scanned_content = list(storage.scan())
+
+    assert len(scanned_content) == 1, "Expected 1 item to be scanned"
+    assert scanned_content[0] == (
+        content_id_2,
+        content_2,
+    ), f"Expected '{content_id_2}' to be scanned"

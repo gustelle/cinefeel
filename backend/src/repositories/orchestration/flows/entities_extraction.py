@@ -123,7 +123,7 @@ def extract_entities_flow(
                 )
             )
 
-            # break  # for testing, process only one
+            break  # for testing, process only one
 
         logger.info(f"Submitted {len(tasks)} tasks for entity extraction.")
 
