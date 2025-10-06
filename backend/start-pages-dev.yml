@@ -2,4 +2,8 @@
 - page_id: "Liste_de_films_français_sortis_en_1907"
   link_selector: ".wikitable td:nth-child(1)"
   entity_type: "Movie"
+
+- page_id: "Liste_de_films_français_sortis_en_1907"
+  link_selector: ".wikitable td:nth-child(2)"
+  entity_type: "Person"
   

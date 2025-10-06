@@ -3,6 +3,7 @@ from typing import Literal
 
 from prefect import flow, get_run_logger
 from prefect.cache_policies import INPUTS, NO_CACHE
+from prefect.events import emit_event
 from prefect.futures import PrefectFuture, wait
 from prefect.locking.memory import MemoryLockManager
 from prefect.task_runners import ConcurrentTaskRunner
@@ -99,7 +100,14 @@ def extract_entities_flow(
                 output_storage=json_store,
             ).wait()
         else:
-            raise ValueError(f"No HTML content found for page_id: '{page_id}'")
+            logger.warning(
+                f"Content with page_id '{page_id}' not found in HTML storage, emitting event"
+            )
+            emit_event(
+                event="extract.entity",
+                resource={"prefect.resource.id": page_id},
+                payload={"entity_type": entity_type},
+            )
     else:
         # iterate over all HTML contents in Redis
         for content_id, content in html_store.scan():

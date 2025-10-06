@@ -1,4 +1,5 @@
 import uuid
+from unittest.mock import patch
 
 import pytest
 import redis
@@ -36,17 +37,30 @@ def cleanup_storage(test_settings: Settings):
 
 
 def test_extract_entities_flow_of_a_page_non_existing(test_settings: Settings):
+    """
+    an on-demand extraction of a non-existing page should be triggered in this case
+    """
+
     # given
     page_id = uuid.uuid4().hex  # random page_id
 
     # when
-    with pytest.raises(ValueError) as v:
+    with patch(
+        "src.repositories.orchestration.flows.entities_extraction.emit_event"
+    ) as mock_emit:
+        # Appelle la tâche Prefect (directement ou via .run si besoin)
         extract_entities_flow(
-            settings=test_settings, entity_type="Movie", page_id=page_id
+            settings=test_settings, entity_type="Person", page_id=page_id
         )
 
     # then
-    assert "page_id" in str(v.value)
+    # verify the event is emitted
+    assert mock_emit.called
+    mock_emit.assert_called_with(
+        event="extract.entity",
+        resource={"prefect.resource.id": page_id},
+        payload={"entity_type": "Person"},
+    )
 
 
 def test_extract_entities_flow_for_given_page_id(
