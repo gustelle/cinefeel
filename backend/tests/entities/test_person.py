@@ -94,3 +94,42 @@ def test_load_bio_with_string():
     # then
     assert isinstance(bio.birth_date, str) and bio.birth_date == "1990-01-01"
     assert isinstance(bio.death_date, str) and bio.death_date == "2020-01-01"
+
+
+def test_person_bio_full_name_default():
+    # given
+    title = "John Doe"
+
+    # when
+    person = Person(
+        title=title,
+        permalink="http://example.com/john-doe",
+    )
+
+    person.biography = Biography(
+        parent_uid=person.uid,
+    )
+
+    # then
+    assert person.biography is not None
+    assert person.biography.full_name == title
+
+
+def test_person_bio_full_name_no_override():
+    # given
+    title = "John Doe"
+
+    # when
+    person = Person(
+        title=title,
+        permalink="http://example.com/john-doe",
+    )
+
+    person.biography = Biography(
+        parent_uid=person.uid,
+        full_name="Johnny",
+    )
+
+    # then
+    assert person.biography is not None
+    assert person.biography.full_name == "Johnny"

@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any
+from typing import Annotated, Any, Self
 
-from pydantic import Field, HttpUrl, StringConstraints, field_validator
+from pydantic import Field, HttpUrl, StringConstraints, field_validator, model_validator
 
 from src.entities.color import SkinColor
 from src.entities.component import EntityComponent
@@ -175,3 +175,14 @@ class Person(Composable):
     influences: list[WOAInfluence] | None = Field(
         None,
     )
+
+    @model_validator(mode="after")
+    def set_default_fullname(self) -> Self:
+        """
+        Set the default full name for the person based on the title.
+        """
+
+        if self.biography is not None and self.biography.full_name is None:
+            self.biography.full_name = self.title
+
+        return self
