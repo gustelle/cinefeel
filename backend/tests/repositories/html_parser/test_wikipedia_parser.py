@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from src.entities.content import TableOfContents
+from src.entities.content import TableOfContents, UsualSectionTitles_FR_fr
 from src.interfaces.info_retriever import PageLink, RetrievalError
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 
@@ -376,7 +376,7 @@ def test_retrieve_infobox_section_title(read_beethoven_html):
     info_box = semantic.retrieve_infobox(read_beethoven_html)
 
     # then
-    assert info_box.title == "Données clés"
+    assert info_box.title == UsualSectionTitles_FR_fr.INFOBOX
 
 
 def test_retrieve_infobox_format_list_raises(read_not_enough_cols_infobox):
@@ -492,7 +492,7 @@ def test_retrieve_orphan_paragraphs():
 
     # then
     assert orphan_section is not None
-    assert orphan_section.title == "Introduction"
+    assert orphan_section.title == UsualSectionTitles_FR_fr.NO_TITLE
     assert (
         "This is an orphan paragraph before the first section" in orphan_section.content
     )
@@ -523,7 +523,7 @@ def test_retrieve_orphan_paragraphs_works_with_divs():
 
     # then
     assert orphan_section is not None
-    assert orphan_section.title == "Introduction"
+    assert orphan_section.title == UsualSectionTitles_FR_fr.NO_TITLE
     assert (
         "This is an orphan paragraph before the first section" in orphan_section.content
     )
@@ -590,7 +590,7 @@ def test_orphan_paragraphs_having_media():
 
     # then
     assert orphan_section is not None
-    assert orphan_section.title == "Introduction"
+    assert orphan_section.title == UsualSectionTitles_FR_fr.NO_TITLE
     assert "This is an orphan paragraph with media" in orphan_section.content
     assert (
         len(orphan_section.media) == 2

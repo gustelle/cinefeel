@@ -40,8 +40,8 @@ def test_insert_a_person(
     assert isinstance(person_data["biography"], dict)
     assert "full_name" in person_data["biography"]
     assert person_data["biography"]["full_name"] == test_person.biography.full_name
-    assert "characteristics" in person_data
-    assert isinstance(person_data["characteristics"], dict)
+    # assert "characteristics" in person_data
+    # assert isinstance(person_data["characteristics"], dict)
     assert "influences" in person_data
     assert isinstance(person_data["influences"], list)
 

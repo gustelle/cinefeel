@@ -50,13 +50,17 @@ class PersonGraphRepository(AbstractMemGraph[Person]):
                     UNWIND $rows AS o
                     MERGE (n:Person {uid: o.uid})
                     ON CREATE SET
-                            n.title = o.title, n.permalink = o.permalink,
-                            n.media = o.media, n.biography = o.biography,
-                            n.characteristics = o.characteristics, n.influences = o.influences
+                            n.title = o.title, 
+                            n.permalink = o.permalink,
+                            n.media = o.media, 
+                            n.biography = o.biography,
+                            n.influences = o.influences
                     ON MATCH SET 
-                            n.title = o.title, n.permalink = o.permalink,
-                            n.media = o.media, n.biography = o.biography,
-                            n.characteristics = o.characteristics, n.influences = o.influences
+                            n.title = o.title, 
+                            n.permalink = o.permalink,
+                            n.media = o.media, 
+                            n.biography = o.biography,
+                            n.influences = o.influences
                     RETURN count(n) AS count;
                     """,
                     parameters={"rows": rows},

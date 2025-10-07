@@ -8,12 +8,9 @@ from bs4 import BeautifulSoup, Tag
 from loguru import logger
 from pydantic import HttpUrl, ValidationError
 
-from src.entities.content import Media, PageLink, Section
+from src.entities.content import Media, PageLink, Section, UsualSectionTitles_FR_fr
 from src.interfaces.info_retriever import IContentParser, RetrievalError
 from src.settings import TableOfContents
-
-ORPHAN_SECTION_TITLE = "Introduction"
-INFOBOX_SECTION_TITLE = "Données clés"
 
 
 class WikipediaParser(IContentParser):
@@ -80,7 +77,7 @@ class WikipediaParser(IContentParser):
         content = "\n".join(orphans)
 
         return Section(
-            title=ORPHAN_SECTION_TITLE,
+            title=UsualSectionTitles_FR_fr.NO_TITLE,
             content=content,
             media=media,
         )
@@ -311,7 +308,7 @@ class WikipediaParser(IContentParser):
 
         # convert the DataFrame to a list of Section objects
         info_table = Section(
-            title=INFOBOX_SECTION_TITLE,
+            title=UsualSectionTitles_FR_fr.INFOBOX,
             content=content,
             media=media,
         )

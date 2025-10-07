@@ -1,3 +1,4 @@
+
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
 from src.entities.content import Media
@@ -23,9 +24,12 @@ class GenericOllamaExtractor(IDataMiner, OllamaMessager):
         parent: Composable | None = None,
     ) -> EntityComponent:
 
+        # logger.info(f"Extracting '{entity_type}'")
+        # logger.info(f"{content[:200]}...")
+
         prompt = f"""
             Context: {content}
-            Question: Structure les informations fournies en contexte au format JSON selon le modèle fourni.
+            Question: Extract the relevant information, do not invent data if not present in the context.
             Réponse:"""
 
         return self.request_entity(

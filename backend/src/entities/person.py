@@ -7,7 +7,6 @@ from pydantic import Field, HttpUrl, StringConstraints, field_validator
 from src.entities.color import SkinColor
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
-from src.entities.religion import Religion
 from src.entities.sexual_orientation import SexualOrientation
 from src.entities.woa import WOAInfluence
 
@@ -43,25 +42,34 @@ class ChildHoodConditions(EntityComponent):
 
 
 class Biography(EntityComponent):
+    """
+    TODO:
+    - full_name is the title of the Person entity
+    - TNR sur le fait que full_name est facultatif, sinon le LLM invente des noms
+    """
 
-    full_name: str = Field(
-        ...,
+    full_name: str | None = Field(
+        None,
+        description="Le nom complet de la personne.",
+        examples=["Jean Dupont"],
     )
     nicknames: list[str] | None = Field(
         None,
+        description="Les surnoms de la personne.",
+        examples=[["Le Grand", "JD"]],
     )
-    genre: GenderEnum | None = Field(
-        None,
-        description="homme, femme, non-binaire ou inconnu.",
-    )
+    # genre: GenderEnum | None = Field(
+    #     None,
+    #     description="homme, femme, non-binaire ou inconnu.",
+    # )
     nationalities: list[str] | None = Field(
         None,
         description="les nationalités de la personne",
         examples=["français", "américain", "canadien"],
     )
-    religion: Religion | None = Field(
-        None,
-    )
+    # religion: Religion | None = Field(
+    #     None,
+    # )
     birth_date: str | None = Field(
         None,
         examples=["2023-10-01"],
@@ -73,10 +81,10 @@ class Biography(EntityComponent):
         description="La date de décès de la personne au format ISO 8601 (YYYY-MM-DD).",
     )
 
-    education: list[str] | None = Field(
-        None,
-        description="Liste des formations de la personne, par exemple 'Harvard University', 'MIT'.",
-    )
+    # education: list[str] | None = Field(
+    #     None,
+    #     description="Liste des formations de la personne, par exemple 'Harvard University', 'MIT'.",
+    # )
     childhood_conditions: ChildHoodConditions | None = Field(
         None,
     )
@@ -160,9 +168,9 @@ class Person(Composable):
         None,
     )
 
-    characteristics: PersonCharacteristics | None = Field(
-        None,
-    )
+    # characteristics: PersonCharacteristics | None = Field(
+    #     None,
+    # )
 
     influences: list[WOAInfluence] | None = Field(
         None,

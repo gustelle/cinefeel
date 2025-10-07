@@ -9,7 +9,7 @@ from docker import DockerClient
 from neo4j import GraphDatabase
 
 from src.entities.movie import FilmActor, FilmMedia, FilmSpecifications, Movie
-from src.entities.person import Biography, GenderEnum, Person, PersonCharacteristics
+from src.entities.person import Biography, Person
 from src.entities.woa import WOAInfluence, WOAType
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
@@ -161,10 +161,10 @@ def test_person():
         full_name="Christopher Nolan",
     )
 
-    person.characteristics = PersonCharacteristics(
-        parent_uid=person.uid,
-        gender=GenderEnum.MALE,
-    )
+    # person.characteristics = PersonCharacteristics(
+    #     parent_uid=person.uid,
+    #     gender=GenderEnum.MALE,
+    # )
 
     person.influences = [
         WOAInfluence(

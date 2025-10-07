@@ -1,11 +1,8 @@
 from src.entities.composable import Composable
-from src.entities.content import Section
+from src.entities.content import Section, UsualSectionTitles_FR_fr
 from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
-from src.repositories.html_parser.wikipedia_info_retriever import (
-    INFOBOX_SECTION_TITLE,
-    WikipediaParser,
-)
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.repositories.ml.html_to_text import TextSectionConverter
 from src.repositories.ml.summary import SectionSummarizer
 from src.settings import Settings
@@ -51,7 +48,9 @@ def test_retrieve_infobox_is_processed_correctly(
 
     # then
     assert sections is not None, "Result should not be None."
-    assert any(section.title == INFOBOX_SECTION_TITLE for section in sections)
+    assert any(
+        section.title == UsualSectionTitles_FR_fr.INFOBOX for section in sections
+    )
 
 
 def test_process_complex_page(read_melies_html, test_settings: Settings):

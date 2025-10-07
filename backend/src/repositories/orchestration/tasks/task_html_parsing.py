@@ -4,14 +4,9 @@ from prefect import get_run_logger, task
 from prefect.cache_policies import NO_CACHE
 
 from src.entities.composable import Composable
+from src.entities.content import UsualSectionTitles_FR_fr
 from src.entities.movie import FilmActor, FilmSpecifications, FilmSummary, Movie
-from src.entities.person import (
-    Biography,
-    ChildHoodConditions,
-    Person,
-    PersonCharacteristics,
-    PersonVisibleFeatures,
-)
+from src.entities.person import Biography, Person
 from src.entities.woa import WOAInfluence
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.nlp_processor import Processor
@@ -20,18 +15,11 @@ from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
-from src.repositories.html_parser.wikipedia_info_retriever import (
-    INFOBOX_SECTION_TITLE,
-    ORPHAN_SECTION_TITLE,
-    WikipediaParser,
-)
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.repositories.ml.html_simplifier import HTMLSimplifier
 from src.repositories.ml.html_to_text import TextSectionConverter
-from src.repositories.ml.ollama_childhood import ChildhoodOllamaExtractor
 from src.repositories.ml.ollama_generic import GenericOllamaExtractor
 from src.repositories.ml.ollama_influences import InfluenceOllamaExtractor
-from src.repositories.ml.ollama_person_feats import PersonFeaturesOllamaExtractor
-from src.repositories.ml.ollama_person_visualizer import PersonOllamaVisualAnalysis
 from src.repositories.ml.similarity import SimilarSectionSearch
 from src.repositories.ml.summary import SectionSummarizer
 from src.repositories.resolver.movie_resolver import MovieResolver
@@ -41,8 +29,11 @@ from src.settings import Settings
 
 class HtmlDataParserTask(ITaskExecutor):
     """
-    Analyses the HTML content from an input_storage
-    and creates eventually a Composable entity stored in the output_storage.
+    The objective of this task is to parse raw HTML content
+    and extract structured entities like Movies or Persons.
+
+    * It relies on a `IContentAnalyzer` to process the HTML which extracts relevant information and structures it into a `Composable` entity.
+    * A `Processor` is used to facilitate searching for relevant sections within the HTML content to extract specific details.
     """
 
     entity_type: type[Composable]
@@ -116,22 +107,25 @@ class HtmlDataParserTask(ITaskExecutor):
                     ResolutionConfiguration(
                         # extractor=MistralDataMiner(settings=self.settings),
                         extractor=GenericOllamaExtractor(settings=self.settings),
-                        section_titles=[INFOBOX_SECTION_TITLE, "Fiche technique"],
+                        section_titles=[
+                            UsualSectionTitles_FR_fr.INFOBOX,
+                            UsualSectionTitles_FR_fr.TECHNICAL_SHEET,
+                        ],
                         extracted_type=FilmSpecifications,
                     ),
                     ResolutionConfiguration(
                         extractor=GenericOllamaExtractor(settings=self.settings),
                         # extractor=MistralDataMiner(settings=self.settings),
-                        section_titles=["Distribution"],
+                        section_titles=[UsualSectionTitles_FR_fr.DISTRIBUTION],
                         extracted_type=FilmActor,
                     ),
                     ResolutionConfiguration(
                         extractor=GenericOllamaExtractor(settings=self.settings),
                         # extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
-                            "Synopsis",
-                            "Résumé",
-                            ORPHAN_SECTION_TITLE,
+                            UsualSectionTitles_FR_fr.SYNOPSIS,
+                            UsualSectionTitles_FR_fr.SUMMARY,
+                            UsualSectionTitles_FR_fr.NO_TITLE,
                         ],
                         extracted_type=FilmSummary,
                     ),
@@ -140,10 +134,10 @@ class HtmlDataParserTask(ITaskExecutor):
                         extractor=InfluenceOllamaExtractor(settings=self.settings),
                         # extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
-                            "Contexte",
-                            "Analyse",
-                            "Influences",
-                            ORPHAN_SECTION_TITLE,
+                            UsualSectionTitles_FR_fr.CONTEXT,
+                            UsualSectionTitles_FR_fr.ANALYSIS,
+                            UsualSectionTitles_FR_fr.INFLUENCES,
+                            UsualSectionTitles_FR_fr.NO_TITLE,
                         ],
                         extracted_type=WOAInfluence,
                     ),
@@ -161,18 +155,29 @@ class HtmlDataParserTask(ITaskExecutor):
                         extractor=GenericOllamaExtractor(settings=self.settings),
                         # extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
-                            INFOBOX_SECTION_TITLE,
+                            UsualSectionTitles_FR_fr.BIOGRAPHY,
+                            UsualSectionTitles_FR_fr.INFOBOX,
                         ],
                         extracted_type=Biography,
                     ),
                     ResolutionConfiguration(
-                        extractor=ChildhoodOllamaExtractor(settings=self.settings),
+                        extractor=InfluenceOllamaExtractor(settings=self.settings),
                         # extractor=MistralDataMiner(settings=self.settings),
                         section_titles=[
-                            "Biographie",
+                            UsualSectionTitles_FR_fr.BIOGRAPHY,
+                            UsualSectionTitles_FR_fr.INFLUENCES,
+                            UsualSectionTitles_FR_fr.NO_TITLE,
                         ],
-                        extracted_type=ChildHoodConditions,
+                        extracted_type=WOAInfluence,
                     ),
+                    # ResolutionConfiguration(
+                    #     extractor=ChildhoodOllamaExtractor(settings=self.settings),
+                    #     # extractor=MistralDataMiner(settings=self.settings),
+                    #     section_titles=[
+                    #         "Biographie",
+                    #     ],
+                    #     extracted_type=ChildHoodConditions,
+                    # ),
                     # search for influences
                     # ResolutionConfiguration(
                     #     extractor=InfluenceExtractor(settings=self.settings),
@@ -182,23 +187,23 @@ class HtmlDataParserTask(ITaskExecutor):
                     #     ],
                     #     extracted_type=PersonInfluence,
                     # ),
-                    ResolutionConfiguration(
-                        extractor=PersonFeaturesOllamaExtractor(settings=self.settings),
-                        section_titles=[
-                            ORPHAN_SECTION_TITLE,
-                            "Biographie",
-                        ],
-                        extracted_type=PersonCharacteristics,
-                    ),
-                    ResolutionConfiguration(
-                        extractor=PersonOllamaVisualAnalysis(settings=self.settings),
-                        section_titles=[INFOBOX_SECTION_TITLE],
-                        extracted_type=PersonVisibleFeatures,
-                        # must specify the parent type
-                        # for the resolution to work correctly
-                        # because PersonVisibleFeatures is not a direct child of Person
-                        resolve_as=PersonCharacteristics,
-                    ),
+                    # ResolutionConfiguration(
+                    #     extractor=PersonFeaturesOllamaExtractor(settings=self.settings),
+                    #     section_titles=[
+                    #         ORPHAN_SECTION_TITLE,
+                    #         "Biographie",
+                    #     ],
+                    #     extracted_type=PersonCharacteristics,
+                    # ),
+                    # ResolutionConfiguration(
+                    #     extractor=PersonOllamaVisualAnalysis(settings=self.settings),
+                    #     section_titles=[INFOBOX_SECTION_TITLE],
+                    #     extracted_type=PersonVisibleFeatures,
+                    #     # must specify the parent type
+                    #     # for the resolution to work correctly
+                    #     # because PersonVisibleFeatures is not a direct child of Person
+                    #     resolve_as=PersonCharacteristics,
+                    # ),
                 ],
             ).resolve(
                 base_info=base_info,

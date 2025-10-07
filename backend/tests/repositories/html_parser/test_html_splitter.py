@@ -1,14 +1,12 @@
 from pathlib import Path
 
 from src.entities.composable import Composable
+from src.entities.content import UsualSectionTitles_FR_fr
 from src.repositories.html_parser.html_splitter import (
     Section,
     WikipediaAPIContentSplitter,
 )
-from src.repositories.html_parser.wikipedia_info_retriever import (
-    ORPHAN_SECTION_TITLE,
-    WikipediaParser,
-)
+from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.settings import Settings
 
 from .stubs.stub_pruner import DoNothingPruner
@@ -159,7 +157,7 @@ def test_split_sections_no_title(read_beethoven_html, test_settings: Settings):
     assert base_info is not None
     assert isinstance(base_info, Composable)
     assert len(sections) > 0
-    assert sections[0].title == ORPHAN_SECTION_TITLE
+    assert sections[0].title == UsualSectionTitles_FR_fr.NO_TITLE
 
 
 def test_split_sections_void_section(

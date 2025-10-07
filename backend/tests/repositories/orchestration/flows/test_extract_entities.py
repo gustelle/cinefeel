@@ -105,7 +105,7 @@ def test_extract_entities_flow_for_given_page_id(
 def test_extract_entities_flow_for_all_pages(test_settings: Settings):
 
     # given
-    # generate data in the HTML storage
+    # generate 3 pages in the HTML storage
     html_store = RedisTextStorage[Person](settings=test_settings)
     for i in range(3):
         html_store.insert(content_id=f"page_{i}", content=f"<html>content {i}</html>")
@@ -114,13 +114,13 @@ def test_extract_entities_flow_for_all_pages(test_settings: Settings):
     entity_analyzer = StubAnalyzer()
     section_searcher = StubSectionSearch()
 
-    # the DB is empty
+    # verify the DB is empty to start with
     assert list(json_store.scan()) == []
 
     # when
     extract_entities_flow(
         settings=test_settings,
-        entity_type="Person",
+        entity_type=Person.__name__,
         entity_analyzer=entity_analyzer,
         section_searcher=section_searcher,
         json_store=json_store,
@@ -130,6 +130,6 @@ def test_extract_entities_flow_for_all_pages(test_settings: Settings):
     assert entity_analyzer.is_analyzed
     assert section_searcher.is_called
 
-    # there should be one entity stored in the JSON storage
+    # there should be 3 entities stored in the JSON storage
     results = list(json_store.scan())
     assert len(results) == 3

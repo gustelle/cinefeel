@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -21,6 +22,24 @@ SectionTitle = Annotated[
         min_length=0,
     ),
 ]  # may be empty for some sections
+
+
+class UsualSectionTitles_FR_fr(StrEnum):
+    """
+    Common section titles found in Wikipedia articles.
+    """
+
+    INTRODUCTION = "Introduction"
+    INFOBOX = "Données clés"
+    TECHNICAL_SHEET = "Fiche technique"
+    BIOGRAPHY = "Biographie"
+    INFLUENCES = "Influences"
+    ANALYSIS = "Analyse"
+    CONTEXT = "Contexte"
+    SYNOPSIS = "Synopsis"
+    SUMMARY = "Résumé"
+    DISTRIBUTION = "Distribution"
+    NO_TITLE = ""  # sections that don't have a title
 
 
 class PageLink(BaseModel):
