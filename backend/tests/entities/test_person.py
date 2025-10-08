@@ -133,3 +133,45 @@ def test_person_bio_full_name_no_override():
     # then
     assert person.biography is not None
     assert person.biography.full_name == "Johnny"
+
+
+def test_person_bio_nicknames_has_no_empty_value():
+
+    # given
+    title = "John Doe"
+
+    # when
+    person = Person(
+        title=title,
+        permalink="http://example.com/john-doe",
+    )
+
+    person.biography = Biography(
+        parent_uid=person.uid,
+        nicknames=["Johnny", "", "  ", None, "JD"],
+    )
+
+    # then
+    assert person.biography is not None
+    assert person.biography.nicknames == ["Johnny", "JD"]
+
+
+def test_person_bio_nationalities_has_no_empty_value():
+
+    # given
+    title = "John Doe"
+
+    # when
+    person = Person(
+        title=title,
+        permalink="http://example.com/john-doe",
+    )
+
+    person.biography = Biography(
+        parent_uid=person.uid,
+        nationalities=["français", "", "  ", None, "canadien"],
+    )
+
+    # then
+    assert person.biography is not None
+    assert person.biography.nationalities == ["français", "canadien"]

@@ -1,5 +1,5 @@
 import datetime
-from typing import Any
+from typing import Any, Iterable
 
 from numpy import ndarray
 from pydantic import Field, HttpUrl, field_serializer, field_validator
@@ -92,6 +92,22 @@ class FilmSpecifications(WOASpecifications):
         examples=["01:30:00", "02:15:45"],
     )
 
+    @field_validator(
+        "directed_by",
+        "produced_by",
+        "genres",
+        "special_effects_by",
+        "scenary_by",
+        "written_by",
+        "music_by",
+        mode="before",
+    )
+    @classmethod
+    def filter_empty(cls, v: list[str] | None) -> list[str] | None:
+        if v is not None and isinstance(v, Iterable):
+            return list(filter(lambda x: x is not None and str(x).strip() != "", v))
+        return v
+
     @field_validator("duration", mode="before")
     @classmethod
     def load_from_dt(cls, value: Any) -> str | None:
@@ -130,6 +146,7 @@ class Movie(Composable, WorkOfArt):
     woa_type: WOAType = WOAType.MOVIE
 
     @field_serializer("actors")
+    @classmethod
     def serialize_dt(self, value: Any):
 
         # values coming from LLMs or other sources may be numpy arrays

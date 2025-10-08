@@ -44,6 +44,12 @@ class EntityRelationshipTask(ITaskExecutor):
         """
 
         try:
+
+            logger = get_run_logger()
+            if name is None or name.strip() == "":
+                logger.warning(f"Invalid name provided: '{name}'")
+                return None
+
             endpoint = f"https://fr.wikipedia.org/w/rest.php/v1/page/{name}/bare"
             response = self.http_client.send(
                 url=endpoint,
@@ -54,7 +60,7 @@ class EntityRelationshipTask(ITaskExecutor):
             return None
         except HttpError as e:
             if e.status_code == 404:
-                get_run_logger().warning(f"Page not found for name '{name}'")
+                logger.warning(f"Page not found for name '{name}'")
                 return None
             raise
 

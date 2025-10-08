@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any, Self
+from typing import Annotated, Any, Iterable, Self
 
 from pydantic import Field, HttpUrl, StringConstraints, field_validator, model_validator
 
@@ -42,34 +42,30 @@ class ChildHoodConditions(EntityComponent):
 
 
 class Biography(EntityComponent):
-    """
-    TODO:
-    - full_name is the title of the Person entity
-    - TNR sur le fait que full_name est facultatif, sinon le LLM invente des noms
-    """
 
     full_name: str | None = Field(
         None,
         description="Le nom complet de la personne.",
         examples=["Jean Dupont"],
     )
+
+    gender: GenderEnum | None = Field(
+        None,
+        description="Le genre de la personne: homme, femme, non-binaire ou inconnu.",
+    )
+
     nicknames: list[str] | None = Field(
         None,
         description="Les surnoms de la personne.",
         examples=[["Le Grand", "JD"]],
     )
-    # genre: GenderEnum | None = Field(
-    #     None,
-    #     description="homme, femme, non-binaire ou inconnu.",
-    # )
+
     nationalities: list[str] | None = Field(
         None,
         description="les nationalités de la personne",
         examples=["français", "américain", "canadien"],
     )
-    # religion: Religion | None = Field(
-    #     None,
-    # )
+
     birth_date: str | None = Field(
         None,
         examples=["2023-10-01"],
@@ -81,13 +77,16 @@ class Biography(EntityComponent):
         description="La date de décès de la personne au format ISO 8601 (YYYY-MM-DD).",
     )
 
-    # education: list[str] | None = Field(
-    #     None,
-    #     description="Liste des formations de la personne, par exemple 'Harvard University', 'MIT'.",
-    # )
     childhood_conditions: ChildHoodConditions | None = Field(
         None,
     )
+
+    @field_validator("nicknames", "nationalities", mode="before")
+    @classmethod
+    def filter_empty(cls, v: list[str] | None) -> list[str] | None:
+        if v is not None and isinstance(v, Iterable):
+            return list(filter(lambda x: x is not None and str(x).strip() != "", v))
+        return v
 
     @field_validator("birth_date", "death_date", mode="before")
     @classmethod
@@ -131,20 +130,16 @@ class PersonVisibleFeatures(EntityComponent):
         description="Indique si la personne est obèse.",
         examples=[True, False],
     )
-    is_dwarf: bool | None = Field(
-        None,
-        description="Indique si la personne est naine.",
-        examples=[True, False],
-    )
-    is_disabled: bool | None = Field(
-        None,
-        description="Indique si la personne est handicapée.",
-        examples=[True, False],
-    )
-    gender: GenderEnum | None = Field(
-        None,
-        description="Le genre de la personne: homme, femme, non-binaire ou inconnu.",
-    )
+    # is_dwarf: bool | None = Field(
+    #     None,
+    #     description="Indique si la personne est naine.",
+    #     examples=[True, False],
+    # )
+    # is_disabled: bool | None = Field(
+    #     None,
+    #     description="Indique si la personne est handicapée.",
+    #     examples=[True, False],
+    # )
 
 
 class PersonCharacteristics(PersonVisibleFeatures):

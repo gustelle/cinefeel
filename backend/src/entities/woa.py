@@ -1,6 +1,7 @@
 from enum import StrEnum
+from typing import Iterable
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from src.entities.component import EntityComponent
 
@@ -70,3 +71,10 @@ class WOAInfluence(EntityComponent):
         None,
         description="les autres oeuvres d'art qui ont influencé l'oeuvre d'art actuelle.",
     )
+
+    @field_validator("persons", "work_of_arts", mode="before")
+    @classmethod
+    def filter_empty(cls, v: list[str] | None) -> list[str] | None:
+        if v is not None and isinstance(v, Iterable):
+            return list(filter(lambda x: x is not None and str(x).strip() != "", v))
+        return v

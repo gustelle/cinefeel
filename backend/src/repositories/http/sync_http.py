@@ -75,6 +75,11 @@ class SyncHttpClient(IHttpClient):
 
         except httpx.HTTPStatusError as e:
 
+            if e.response.status_code >= 400:
+                logger.error(
+                    f"failed to fetch '{url}': {e.response.status_code} - {params}"
+                )
+
             raise HttpError(
                 message=f"HTTP error occurred: {e.response.status_code} - {e.response.text}",
                 status_code=e.response.status_code,
