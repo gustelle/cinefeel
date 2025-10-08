@@ -2,7 +2,6 @@ import importlib
 from typing import Literal
 
 from prefect import flow
-from prefect.cache_policies import NO_CACHE
 from prefect.futures import wait
 
 from src.entities.movie import Movie
@@ -57,10 +56,11 @@ def db_storage_flow(
     t = insert_task.execute.with_options(
         retries=RETRY_ATTEMPTS,
         retry_delay_seconds=RETRY_DELAY_SECONDS,
-        cache_policy=NO_CACHE,
+        # cache_policy=NO_CACHE,
         # cache_expiration=60 * 60 * 24,  # 24 hours
         tags=["cinefeel_tasks"],
         timeout_seconds=1,  # fail fast if the task hangs
+        cache_key_fn=lambda *_: f"insert_task-json-graph-{entity_type}",
     ).submit(
         input_storage=json_store,
         output_storage=graph_store,
@@ -70,8 +70,8 @@ def db_storage_flow(
     u = insert_task.execute.with_options(
         retries=RETRY_ATTEMPTS,
         retry_delay_seconds=RETRY_DELAY_SECONDS,
-        cache_policy=NO_CACHE,
-        # cache_expiration=60 * 60 * 24,  # 24 hours
+        cache_key_fn=lambda *_: f"insert_task-json-search-{entity_type}",
+        # cache_policy=NO_CACHE,
         tags=["cinefeel_tasks"],
         timeout_seconds=1,  # fail fast if the task hangs
     ).submit(input_storage=json_store, output_storage=search_handler)

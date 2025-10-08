@@ -1,7 +1,6 @@
 from typing import Type
 
 from prefect import get_run_logger, task
-from prefect.cache_policies import NO_CACHE
 
 from src.entities.composable import Composable
 from src.entities.content import UsualSectionTitles_FR_fr
@@ -71,7 +70,6 @@ class HtmlDataParserTask(ITaskExecutor):
 
     @task(
         task_run_name="do_analysis-{content_id}",
-        cache_policy=NO_CACHE,
     )
     def do_analysis(
         self,
@@ -217,7 +215,6 @@ class HtmlDataParserTask(ITaskExecutor):
 
     @task(
         task_run_name="to_storage-{entity.uid}",
-        cache_policy=NO_CACHE,
     )
     def to_storage(self, storage: IStorageHandler, entity: Composable) -> None:
         """
@@ -241,12 +238,16 @@ class HtmlDataParserTask(ITaskExecutor):
 
         try:
 
-            entity_fut = self.do_analysis.submit(
+            entity_fut = self.do_analysis.with_options(
+                cache_key_fn=lambda *_: f"do_analysis-{content_id}",
+            ).submit(
                 content_id=content_id,
                 html_content=content,
             )
 
-            self.to_storage.submit(storage=output_storage, entity=entity_fut).wait()
+            self.to_storage.with_options(
+                cache_key_fn=lambda *_: f"to_storage-{content_id}",
+            ).submit(storage=output_storage, entity=entity_fut).wait()
 
         except Exception as e:
             logger = get_run_logger()

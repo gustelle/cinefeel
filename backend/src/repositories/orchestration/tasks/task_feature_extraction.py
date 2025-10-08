@@ -1,5 +1,4 @@
 from prefect import get_run_logger, task
-from prefect.cache_policies import NO_CACHE
 from prefect.futures import wait
 
 from src.entities.composable import Composable
@@ -54,14 +53,10 @@ class FeatureExtractionTask(ITaskExecutor):
 
         return entity
 
-    @task(
-        cache_policy=NO_CACHE, retries=3, retry_delay_seconds=5, tags=["cinefeel_tasks"]
-    )
+    @task()
     def execute(
         self,
     ) -> None:
-
-        # logger = get_run_logger()
 
         local_storage_handler = JSONEntityStorageHandler[self.entity_type](
             settings=self.settings
@@ -69,12 +64,15 @@ class FeatureExtractionTask(ITaskExecutor):
 
         _futures = []
 
-        for entity in local_storage_handler.scan():
+        for uid, entity in local_storage_handler.scan():
 
             _futures.append(
                 self.to_db.submit(
                     # storage=json_p_storage,
-                    entity=self.extract_features.submit(
+                    entity=self.extract_features.with_options(
+                        cache_key_fn=lambda *_: f"extract_features-{uid}",
+                        cache_expiration=60 * 60 * 1,  # 1 hour
+                    ).submit(
                         entity=entity,
                     ),
                 )

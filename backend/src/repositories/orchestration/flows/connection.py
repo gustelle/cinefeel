@@ -4,7 +4,6 @@ import importlib
 from typing import Literal
 
 from prefect import flow, get_run_logger, task
-from prefect.cache_policies import NO_CACHE
 
 from src.entities.content import TableOfContents
 from src.interfaces.storage import IStorageHandler
@@ -118,7 +117,9 @@ def connection_flow(
     ).execute.with_options(
         retries=RETRY_ATTEMPTS,
         retry_delay_seconds=RETRY_DELAY_SECONDS,
-        cache_policy=NO_CACHE,
+        # cache_policy=CACHE_POLICY,
+        cache_expiration=60 * 60 * 1,  # 1 hour
+        cache_key_fn=lambda *_: f"execute-connection-{entity_type}",
         tags=["cinefeel_tasks"],
     ).submit(
         input_storage=db_storage,

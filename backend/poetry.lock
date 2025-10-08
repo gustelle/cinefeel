@@ -3889,6 +3889,22 @@ snowflake = ["prefect-snowflake (>=0.28.0)"]
 sqlalchemy = ["prefect-sqlalchemy (>=0.5.0)"]
 
 [[package]]
+name = "prefect-redis"
+version = "0.2.5"
+description = "Prefect integrations with Redis."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "prefect_redis-0.2.5-py3-none-any.whl", hash = "sha256:a0febf43c1a5bf671e3cc975b4b66f35432a29f73468b3fd4bb60b6821de68f8"},
+    {file = "prefect_redis-0.2.5.tar.gz", hash = "sha256:18885e64cf088d5489799a5b53890880a690a15c99b36c738990a4b91d18e093"},
+]
+
+[package.dependencies]
+prefect = ">=3.4.18"
+redis = ">=6.0.0"
+
+[[package]]
 name = "preshed"
 version = "3.0.10"
 description = "Cython hash table that trusts the keys are pre-hashed"
@@ -6906,4 +6922,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "9cfb1eade1ba9a5d1787341f6a6574ad96b2babf70380a691d33bb082c6c466e"
+content-hash = "075558c9257cbb20c08f88fd1dcd621ce17a7ce4c15ac7d5a0be703676630f0e"

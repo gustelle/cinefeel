@@ -10,9 +10,10 @@ RETRY_ATTEMPTS: int = 3
 RETRY_DELAY_SECONDS: list[int] = [1, 2, 5]
 
 
-def is_task_retriable(
+def is_http_task_retriable(
     task: Task[..., Any], task_run: TaskRun, state: State[Any]
 ) -> bool:
+    """determine if a task related to a HTTP response should be retried"""
     logger = get_run_logger()
     try:
         state.result()

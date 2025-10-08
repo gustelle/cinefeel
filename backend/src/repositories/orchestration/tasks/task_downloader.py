@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from prefect import get_run_logger, task
-from prefect.cache_policies import NO_CACHE
 
 from src.entities.content import PageLink, TableOfContents
 from src.interfaces.http_client import HttpError, IHttpClient
@@ -10,8 +9,12 @@ from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
 from src.repositories.db.local_storage.html_storage import LocalTextStorage
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
+from src.repositories.orchestration.tasks.retry import (
+    RETRY_ATTEMPTS,
+    RETRY_DELAY_SECONDS,
+    is_http_task_retriable,
+)
 from src.settings import Settings
-
 
 
 class ContentDownloaderTask(ITaskExecutor):
@@ -33,7 +36,6 @@ class ContentDownloaderTask(ITaskExecutor):
 
     @task(
         task_run_name="download-{page_id}",
-        cache_policy=NO_CACHE,
     )
     def download(
         self,
@@ -55,9 +57,11 @@ class ContentDownloaderTask(ITaskExecutor):
             str | None: The content ID if the download was successful, None otherwise.
         """
 
+        logger = get_run_logger()
+
         endpoint = self._endpoint_template.format(page_id=page_id)
 
-        get_run_logger().info(f">> Downloading '{endpoint}'")
+        logger.info(f">> Downloading '{endpoint}'")
 
         try:
             html = self.http_client.send(
@@ -67,7 +71,7 @@ class ContentDownloaderTask(ITaskExecutor):
             )
         except HttpError as e:
             if e.status_code == 404:
-                get_run_logger().warning(
+                logger.warning(
                     f"Page '{page_id}' not found at '{endpoint}'. Skipping download."
                 )
                 return None
@@ -85,7 +89,7 @@ class ContentDownloaderTask(ITaskExecutor):
 
         return page_id if html is not None else None
 
-    @task(cache_policy=NO_CACHE)
+    @task()
     def extract_page_links(
         self,
         config: TableOfContents,
@@ -103,9 +107,19 @@ class ContentDownloaderTask(ITaskExecutor):
 
         logger = get_run_logger()
 
-        html = self.download(
-            page_id=config.page_id,
-            return_content=True,  # return the content
+        html = (
+            self.download.with_options(
+                cache_key_fn=lambda *_: f"download-{config.page_id}",
+                timeout_seconds=10,
+                retries=RETRY_ATTEMPTS,
+                retry_delay_seconds=RETRY_DELAY_SECONDS,
+                retry_condition_fn=is_http_task_retriable,
+            )
+            .submit(
+                page_id=config.page_id,
+                return_content=True,  # return the content
+            )
+            .result()
         )
 
         if html is None:
@@ -124,9 +138,7 @@ class ContentDownloaderTask(ITaskExecutor):
             logger.error(f"Error extracting list of movies: {e}")
             return []
 
-    @task(
-        cache_policy=NO_CACHE,
-    )
+    @task()
     def execute(
         self,
         page: PageLink,
@@ -156,19 +168,33 @@ class ContentDownloaderTask(ITaskExecutor):
 
         if isinstance(page, TableOfContents):
             # extract the links from the table of contents
-            page_links = self.extract_page_links(
-                config=page,
-                link_extractor=link_extractor,
+            page_links = (
+                self.extract_page_links.with_options(
+                    cache_key_fn=lambda *_: f"extract-links-{page.page_id}",
+                )
+                .submit(
+                    config=page,
+                    link_extractor=link_extractor,
+                )
+                .result()
             )
         else:
             page_links = [page]
 
         content_ids = [
-            self.download(
+            self.download.with_options(
+                cache_key_fn=lambda *_: f"download-{page_link.page_id}",
+                timeout_seconds=10,
+                retries=RETRY_ATTEMPTS,
+                retry_delay_seconds=RETRY_DELAY_SECONDS,
+                retry_condition_fn=is_http_task_retriable,
+            )
+            .submit(
                 page_id=page_link.page_id,
                 storage_handler=storage_handler,
                 return_content=False,  # for memory constraints, return the content ID
             )
+            .result()
             for page_link in page_links
             if isinstance(page_link, PageLink)
         ]

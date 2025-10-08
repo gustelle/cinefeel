@@ -2,12 +2,9 @@ import importlib
 from typing import Literal
 
 from prefect import flow, get_run_logger
-from prefect.cache_policies import INPUTS, NO_CACHE
 from prefect.events import emit_event
 from prefect.futures import PrefectFuture, wait
-from prefect.locking.memory import MemoryLockManager
 from prefect.task_runners import ConcurrentTaskRunner
-from prefect.transactions import IsolationLevel
 
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.nlp_processor import Processor
@@ -17,15 +14,10 @@ from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
     RETRY_DELAY_SECONDS,
-    is_task_retriable,
 )
 from src.repositories.orchestration.tasks.task_html_parsing import HtmlDataParserTask
 from src.settings import Settings
 
-cache_policy = INPUTS.configure(
-    isolation_level=IsolationLevel.SERIALIZABLE,
-    lock_manager=MemoryLockManager(),
-)
 
 
 @flow(
@@ -89,9 +81,9 @@ def extract_entities_flow(
             parser_task.execute.with_options(
                 retries=RETRY_ATTEMPTS,
                 retry_delay_seconds=RETRY_DELAY_SECONDS,
-                retry_condition_fn=is_task_retriable,
-                cache_policy=NO_CACHE,
-                # cache_expiration=60 * 60 * 24,  # 24 hours
+                # cache_policy=CACHE_POLICY,
+                cache_key_fn=lambda *_: f"parser_task-{page_id}",
+                cache_expiration=60 * 60 * 24,  # 24 hours
                 tags=["cinefeel_tasks"],
                 timeout_seconds=180,
             ).submit(
@@ -119,9 +111,9 @@ def extract_entities_flow(
                 parser_task.execute.with_options(
                     retries=RETRY_ATTEMPTS,
                     retry_delay_seconds=RETRY_DELAY_SECONDS,
-                    retry_condition_fn=is_task_retriable,
-                    cache_policy=NO_CACHE,
-                    # cache_expiration=60 * 60 * 24,  # 24 hours
+                    # cache_policy=CACHE_POLICY,
+                    cache_key_fn=lambda *_: f"parser_task-{content_id}",
+                    cache_expiration=60 * 60 * 24,  # 24 hours
                     tags=["cinefeel_tasks"],
                     timeout_seconds=180,
                 ).submit(

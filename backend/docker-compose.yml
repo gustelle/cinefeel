@@ -91,7 +91,9 @@ services:
       PREFECT_MESSAGING_CACHE: prefect_redis.messaging
       PREFECT_REDIS_MESSAGING_HOST: redis
       PREFECT_REDIS_MESSAGING_PORT: 6379
-      PREFECT_REDIS_MESSAGING_DB: 0
+      PREFECT_REDIS_MESSAGING_DB: 1
+      PREFECT_CACHE_REDIS_DSN: redis://redis:6379/2
+      TOKENIZERS_PARALLELISM: "false"
     command: prefect server services start
 
   prefect-worker:
@@ -101,7 +103,6 @@ services:
         condition: service_started
     environment:
       PREFECT_API_URL: http://prefect-server:4200/api
-      TOKENIZERS_PARALLELISM: "false"
     command: prefect worker start --pool local-pool
 
 volumes:

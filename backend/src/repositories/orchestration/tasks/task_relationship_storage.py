@@ -1,5 +1,4 @@
 from prefect import get_run_logger, task
-from prefect.cache_policies import NO_CACHE
 from prefect.events import emit_event
 from prefect.futures import PrefectFuture, wait
 from pydantic import HttpUrl
@@ -75,7 +74,6 @@ class EntityRelationshipTask(ITaskExecutor):
         """
         return HttpUrl(f"https://fr.wikipedia.org/wiki/{page_id}")
 
-    @task(cache_policy=NO_CACHE)
     def load_entity_by_name(
         self, name: str, input_storage: IStorageHandler[Composable]
     ) -> Composable | None:
@@ -121,7 +119,6 @@ class EntityRelationshipTask(ITaskExecutor):
 
     @task(
         task_run_name="do_enrichment-{relationship.from_entity.uid}-{relationship.to_entity.uid}",
-        cache_policy=NO_CACHE,
     )
     def do_enrichment(
         self,
@@ -143,7 +140,6 @@ class EntityRelationshipTask(ITaskExecutor):
 
     @task(
         task_run_name="analyze_relationships-{entity.uid}",
-        cache_policy=NO_CACHE,
     )
     def analyze_relationships(
         self,
@@ -310,9 +306,7 @@ class EntityRelationshipTask(ITaskExecutor):
 
         return entity
 
-    @task(
-        cache_policy=NO_CACHE,
-    )
+    @task()
     def execute(
         self,
         input_storage: IStorageHandler[Composable],
@@ -325,10 +319,13 @@ class EntityRelationshipTask(ITaskExecutor):
 
             _futures = []
 
-            for _, entity in input_storage.scan():
+            for uid, entity in input_storage.scan():
 
                 _futures.append(
-                    self.analyze_relationships.submit(
+                    self.analyze_relationships.with_options(
+                        cache_key_fn=lambda *_: f"analyze_relationships-{uid}",
+                        cache_expiration=60 * 60 * 1,  # 1 hour
+                    ).submit(
                         entity=entity,
                         output_storage=output_storage,
                     )

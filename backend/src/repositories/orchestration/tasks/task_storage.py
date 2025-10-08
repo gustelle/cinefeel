@@ -1,5 +1,4 @@
 from prefect import get_run_logger, task
-from prefect.cache_policies import NO_CACHE
 
 from src.entities.composable import Composable
 from src.interfaces.storage import IStorageHandler
@@ -19,7 +18,7 @@ class BatchInsertTask(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
 
-    @task(cache_policy=NO_CACHE)
+    @task()
     def execute(
         self,
         input_storage: IStorageHandler[Composable],
