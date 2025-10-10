@@ -95,3 +95,29 @@ def test_sync_get_multiple_requests(httpx_mock: HTTPXMock, test_settings: Settin
     assert isinstance(response2, dict)
     assert response1 == response2
     assert http_client.client.is_closed is False
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_sync_timeout(httpx_mock: HTTPXMock, test_settings: Settings):
+
+    # given
+    from src.repositories.http.sync_http import SyncHttpClient
+
+    settings = test_settings
+    settings.scraping_request_timeout = 1
+
+    http_client = SyncHttpClient(settings=settings)
+
+    url = "https://fr.wikipedia.org/w/rest.php/v1/page/Lucien_Nonguet/bare"
+
+    httpx_mock.add_response(
+        match_extensions={
+            "timeout": {"connect": 10, "read": 10, "write": 10, "pool": 10}
+        },
+        is_optional=True,
+    )
+
+    with pytest.raises(HttpError) as e:
+        http_client.send(url, response_type="text")
+
+    assert e.value.status_code == 504

@@ -2,46 +2,34 @@ from prefect import get_run_logger, task
 
 from src.entities.composable import Composable
 from src.interfaces.storage import IStorageHandler
-from src.interfaces.task import ITaskExecutor
-from src.settings import Settings
 
 
-class BatchInsertTask(ITaskExecutor):
-    """
-    Scans an input storage and batch inserts entities into an output storage.
-    """
+@task(
+    name="Batch Insert Task",
+    description="Scans an input storage and batch inserts entities into an output storage.",
+)
+def execute_task(
+    input_storage: IStorageHandler[Composable],
+    output_storage: IStorageHandler[Composable],
+    batch_size: int = 100,
+):
 
-    entity_type: type[Composable]
-    settings: Settings
+    logger = get_run_logger()
 
-    def __init__(self, settings: Settings, entity_type: type[Composable]):
-        self.settings = settings
-        self.entity_type = entity_type
+    batch: list[Composable] = []
 
-    @task()
-    def execute(
-        self,
-        input_storage: IStorageHandler[Composable],
-        output_storage: IStorageHandler[Composable],
-        batch_size: int = 100,
-    ):
+    for _, res in input_storage.scan():
 
-        logger = get_run_logger()
+        batch.append(res)
 
-        batch: list[Composable] = []
-
-        for _, res in input_storage.scan():
-
-            batch.append(res)
-
-            if len(batch) >= batch_size:
-                output_storage.insert_many(
-                    contents=batch,
-                )
-                batch = []
-
-        if batch:
-            logger.info(f"Processing final batch of {len(batch)} entities")
+        if len(batch) >= batch_size:
             output_storage.insert_many(
                 contents=batch,
             )
+            batch = []
+
+    if batch:
+        logger.info(f"Processing final batch of {len(batch)} entities")
+        output_storage.insert_many(
+            contents=batch,
+        )

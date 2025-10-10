@@ -1,4 +1,5 @@
 import importlib
+from datetime import timedelta
 
 from prefect import flow, get_run_logger
 from prefect.futures import wait
@@ -6,7 +7,12 @@ from prefect.futures import wait
 from src.entities.content import TableOfContents
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
-from src.repositories.orchestration.tasks.task_downloader import ContentDownloaderTask
+from src.repositories.orchestration.tasks.retry import (
+    RETRY_ATTEMPTS,
+    RETRY_DELAY_SECONDS,
+    is_http_task_retriable,
+)
+from src.repositories.orchestration.tasks.task_downloader import execute_task
 from src.settings import Settings
 
 
@@ -26,8 +32,6 @@ def scraping_flow(
     logger = get_run_logger()
 
     http_client = SyncHttpClient(settings=settings)
-
-    download_task = ContentDownloaderTask(settings=settings, http_client=http_client)
 
     # make them unique by page_id
     pages = {p.page_id: p for p in pages}.values()
@@ -51,12 +55,17 @@ def scraping_flow(
         html_store = RedisTextStorage[cls](settings=settings)
 
         tasks.append(
-            download_task.execute.with_options(
+            execute_task.with_options(
                 tags=["cinefeel_tasks"],
-                cache_key_fn=lambda *_: f"download_task-{config.page_id}",
-                cache_expiration=60 * 60 * 24,  # 24 hours
+                cache_key_fn=lambda *_: f"scraping-{config.page_id}",
+                cache_expiration=timedelta(hours=24),
+                retries=RETRY_ATTEMPTS,
+                retry_delay_seconds=RETRY_DELAY_SECONDS,
+                retry_condition_fn=is_http_task_retriable,
             ).submit(
                 page=config,
+                settings=settings,
+                http_client=http_client,
                 storage_handler=html_store,
                 return_results=False,
             )

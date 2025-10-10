@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from datetime import timedelta
 from typing import Literal
 
 from prefect import flow, get_run_logger, task
@@ -19,7 +20,7 @@ from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
     RETRY_DELAY_SECONDS,
 )
-from src.repositories.orchestration.tasks.task_relationship_storage import (
+from src.repositories.orchestration.tasks.task_relationship import (
     EntityRelationshipTask,
 )
 from src.settings import Settings
@@ -114,11 +115,11 @@ def connection_flow(
     EntityRelationshipTask(
         settings=settings,
         http_client=http_client,
-    ).execute.with_options(
+    ).execute_task.with_options(
         retries=RETRY_ATTEMPTS,
         retry_delay_seconds=RETRY_DELAY_SECONDS,
         # cache_policy=CACHE_POLICY,
-        cache_expiration=60 * 60 * 1,  # 1 hour
+        cache_expiration=timedelta(hours=1),
         cache_key_fn=lambda *_: f"execute-connection-{entity_type}",
         tags=["cinefeel_tasks"],
     ).submit(

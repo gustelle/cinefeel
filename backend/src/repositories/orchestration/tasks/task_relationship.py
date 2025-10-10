@@ -1,16 +1,21 @@
+from datetime import timedelta
+
 from prefect import get_run_logger, task
 from prefect.events import emit_event
-from prefect.futures import PrefectFuture, wait
+from prefect.futures import wait
 from pydantic import HttpUrl
 
 from src.entities.composable import Composable
 from src.entities.movie import Movie
-from src.entities.relationship import PeopleRelationshipType, Relationship
+from src.entities.relationship import (
+    PeopleRelationshipType,
+    Relationship,
+    RelationshipType,
+)
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.relation_manager import IRelationshipHandler
 from src.interfaces.storage import IStorageHandler
 from src.interfaces.task import ITaskExecutor
-from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.settings import Settings
 
 
@@ -118,25 +123,41 @@ class EntityRelationshipTask(ITaskExecutor):
         )
 
     @task(
-        task_run_name="do_enrichment-{relationship.from_entity.uid}-{relationship.to_entity.uid}",
+        task_run_name="connect_by_name-{entity.uid}-{name}",
     )
-    def do_enrichment(
+    def connect_by_name(
         self,
-        relationship: Relationship,
-        output_storage: IRelationshipHandler,
-    ) -> Relationship:
-        """
-        Operates the storage of a relationship between two entities in the graph database.
+        entity: Composable,
+        name: str,
+        relation: RelationshipType,
+        storage: IRelationshipHandler,
+    ) -> Relationship | None:
+        """Connects an entity to another entity.
 
         Args:
-            relationship (Relationship): The relationship to store.
-            output_storage (IRelationshipHandler): The handler to use for storing the relationship.
+            entity (Composable): The source entity.
+            name (str): The name of the target entity.
+            relation (RelationshipType): The type of relationship.
+            storage (IRelationshipHandler): The storage handler for relationships.
 
+        Returns:
+            Relationship | None: The created relationship or None if unsuccessful.
         """
 
-        result = output_storage.add_relationship(relationship=relationship)
+        related_entity: Composable = self.load_entity_by_name(
+            name=name, input_storage=storage
+        )
 
-        return result
+        if related_entity is None:
+            return None
+
+        return storage.add_relationship(
+            relationship=Relationship(
+                from_entity=entity,
+                to_entity=related_entity,
+                relation_type=relation,
+            )
+        )
 
     @task(
         task_run_name="analyze_relationships-{entity.uid}",
@@ -168,26 +189,14 @@ class EntityRelationshipTask(ITaskExecutor):
 
                 for name in entity.specifications.directed_by:
 
-                    related_entity: Composable = self.load_entity_by_name(
-                        name=name,
-                        input_storage=PersonGraphRepository(
-                            settings=self.settings,
-                        ),
+                    _futures.append(
+                        self.connect_by_name.submit(
+                            entity=entity,
+                            name=name,
+                            relation=PeopleRelationshipType.DIRECTED_BY,
+                            storage=output_storage,
+                        )
                     )
-
-                    if related_entity is None:
-                        continue
-
-                    _fut_relationship: PrefectFuture = self.do_enrichment.submit(
-                        relationship=Relationship(
-                            from_entity=entity,
-                            to_entity=related_entity,
-                            relation_type=PeopleRelationshipType.DIRECTED_BY,
-                        ),
-                        output_storage=output_storage,
-                    )
-
-                    _futures.append(_fut_relationship)
 
             # retrieve the persons that wrote the script of the film
             if (
@@ -197,26 +206,14 @@ class EntityRelationshipTask(ITaskExecutor):
 
                 for name in entity.specifications.written_by:
 
-                    related_entity: Composable = self.load_entity_by_name(
-                        name=name,
-                        input_storage=PersonGraphRepository(
-                            settings=self.settings,
-                        ),
+                    _futures.append(
+                        self.connect_by_name.submit(
+                            entity=entity,
+                            name=name,
+                            relation=PeopleRelationshipType.WRITTEN_BY,
+                            storage=output_storage,
+                        )
                     )
-
-                    if related_entity is None:
-                        continue
-
-                    _fut_relationship: PrefectFuture = self.do_enrichment.submit(
-                        relationship=Relationship(
-                            from_entity=entity,
-                            to_entity=related_entity,
-                            relation_type=PeopleRelationshipType.WRITTEN_BY,
-                        ),
-                        output_storage=output_storage,
-                    )
-
-                    _futures.append(_fut_relationship)
 
             # retrieve the persons that composed the music of the film
             if (
@@ -226,56 +223,28 @@ class EntityRelationshipTask(ITaskExecutor):
 
                 for name in entity.specifications.music_by:
 
-                    related_entity: Composable = self.load_entity_by_name(
-                        name=name,
-                        input_storage=PersonGraphRepository(
-                            settings=self.settings,
-                        ),
+                    _futures.append(
+                        self.connect_by_name.submit(
+                            entity=entity,
+                            name=name,
+                            relation=PeopleRelationshipType.COMPOSED_BY,
+                            storage=output_storage,
+                        )
                     )
-
-                    if related_entity is None:
-                        continue
-
-                    _fut_relationship: PrefectFuture = self.do_enrichment.submit(
-                        relationship=Relationship(
-                            from_entity=entity,
-                            to_entity=related_entity,
-                            relation_type=PeopleRelationshipType.COMPOSED_BY,
-                        ),
-                        output_storage=output_storage,
-                    )
-
-                    _futures.append(_fut_relationship)
 
             # retrieve the persons that influenced the film
             if entity.influences is not None and len(entity.influences) > 0:
-
                 for influence in entity.influences:
                     if influence.persons is not None and len(influence.persons) > 0:
                         for name in influence.persons:
-
-                            related_entity: Composable = self.load_entity_by_name(
-                                name=name,
-                                input_storage=PersonGraphRepository(
-                                    settings=self.settings,
-                                ),
-                            )
-
-                            if related_entity is None:
-                                continue
-
-                            _fut_relationship: PrefectFuture = (
-                                self.do_enrichment.submit(
-                                    relationship=Relationship(
-                                        from_entity=entity,
-                                        to_entity=related_entity,
-                                        relation_type=PeopleRelationshipType.INFLUENCED_BY,
-                                    ),
-                                    output_storage=output_storage,
+                            _futures.append(
+                                self.connect_by_name.submit(
+                                    entity=entity,
+                                    name=name,
+                                    relation=PeopleRelationshipType.INFLUENCED_BY,
+                                    storage=output_storage,
                                 )
                             )
-
-                            _futures.append(_fut_relationship)
 
             # retrieve the company that produced the film
             ...
@@ -307,7 +276,7 @@ class EntityRelationshipTask(ITaskExecutor):
         return entity
 
     @task()
-    def execute(
+    def execute_task(
         self,
         input_storage: IStorageHandler[Composable],
         output_storage: IRelationshipHandler[Composable],
@@ -324,7 +293,7 @@ class EntityRelationshipTask(ITaskExecutor):
                 _futures.append(
                     self.analyze_relationships.with_options(
                         cache_key_fn=lambda *_: f"analyze_relationships-{uid}",
-                        cache_expiration=60 * 60 * 1,  # 1 hour
+                        cache_expiration=timedelta(hours=1),  # 1 hour
                     ).submit(
                         entity=entity,
                         output_storage=output_storage,

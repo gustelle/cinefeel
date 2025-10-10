@@ -1,4 +1,6 @@
 import pytest
+from prefect import flow
+from prefect.logging import disable_run_logger
 from prefect.testing.utilities import prefect_test_harness
 
 
@@ -10,4 +12,13 @@ def prefect_harness():
     """
 
     with prefect_test_harness():
-        yield
+        with disable_run_logger():
+            yield
+
+
+@pytest.fixture(scope="function")
+def test_flow(prefect_harness):
+
+    yield flow(
+        name="test_flow",
+    )()

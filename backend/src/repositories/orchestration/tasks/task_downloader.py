@@ -1,206 +1,168 @@
 from __future__ import annotations
 
+from loguru import logger
 from prefect import get_run_logger, task
 
 from src.entities.content import PageLink, TableOfContents
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.info_retriever import IContentParser
 from src.interfaces.storage import IStorageHandler
-from src.interfaces.task import ITaskExecutor
 from src.repositories.db.local_storage.html_storage import LocalTextStorage
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
-from src.repositories.orchestration.tasks.retry import (
-    RETRY_ATTEMPTS,
-    RETRY_DELAY_SECONDS,
-    is_http_task_retriable,
-)
 from src.settings import Settings
 
 
-class ContentDownloaderTask(ITaskExecutor):
-    """Downloads the HTML content of a page from a MediaWiki API and stores it using the provided storage handler."""
+def download(
+    http_client: IHttpClient,
+    page_id: str,
+    settings: Settings,
+    storage_handler: LocalTextStorage | None = None,
+    return_content: bool = False,
+    **params,
+) -> str | None:
+    """
+    Pre-requisite: The class `http_client` provided must be synchronous (async not supported yet).
 
-    settings: Settings
-    http_client: IHttpClient
+    Args:
+        page_id (str): The page ID to download.
+        storage_handler (LocalTextStorage | None, optional): The storage handler to use for storing the content. Defaults to None.
+        return_content (bool, optional): Whether to return the content. Defaults to False, in which case the content ID is returned.
+        **params: Additional parameters for the HTTP request.
 
-    # the endpoint to download the page content
-    # ex: https://en.wikipedia.org/api/rest_v1/page/{page_id}/html
-    _endpoint_template: str
+    Returns:
+        str | None: The content ID if the download was successful, None otherwise.
+    """
 
-    def __init__(self, settings: Settings, http_client: IHttpClient):
-        self.settings = settings
-        self.http_client = http_client
-        self._endpoint_template = (
-            f"{self.settings.mediawiki_base_url}/page/{{page_id}}/html"
+    endpoint = f"{settings.mediawiki_base_url}/page/{page_id}/html"
+
+    logger.info(f">> Downloading '{endpoint}'")
+
+    try:
+        html = http_client.send(
+            url=endpoint,
+            response_type="text",
+            params=params,
         )
-
-    @task(
-        task_run_name="download-{page_id}",
-    )
-    def download(
-        self,
-        page_id: str,
-        storage_handler: LocalTextStorage | None = None,
-        return_content: bool = False,
-        **params,
-    ) -> str | None:
-        """
-        Pre-requisite: The class `http_client` provided must be synchronous (async not supported yet).
-
-        Args:
-            page_id (str): The page ID to download.
-            storage_handler (LocalTextStorage | None, optional): The storage handler to use for storing the content. Defaults to None.
-            return_content (bool, optional): Whether to return the content. Defaults to False, in which case the content ID is returned.
-            **params: Additional parameters for the HTTP request.
-
-        Returns:
-            str | None: The content ID if the download was successful, None otherwise.
-        """
-
-        logger = get_run_logger()
-
-        endpoint = self._endpoint_template.format(page_id=page_id)
-
-        logger.info(f">> Downloading '{endpoint}'")
-
-        try:
-            html = self.http_client.send(
-                url=endpoint,
-                response_type="text",
-                params=params,
+    except HttpError as e:
+        if e.status_code == 404:
+            logger.warning(
+                f"Page '{page_id}' not found at '{endpoint}'. Skipping download."
             )
-        except HttpError as e:
-            if e.status_code == 404:
-                logger.warning(
-                    f"Page '{page_id}' not found at '{endpoint}'. Skipping download."
-                )
-                return None
-            else:
-                # force a retry for other HTTP errors
-                raise
-
-        if html is not None and storage_handler is not None:
-            storage_handler.insert(
-                content_id=page_id,
-                content=html,
-            )
-        if return_content:
-            return html
-
-        return page_id if html is not None else None
-
-    @task()
-    def extract_page_links(
-        self,
-        config: TableOfContents,
-        link_extractor: IContentParser,
-    ) -> list[PageLink]:
-        """
-        downloads the HTML page and extracts the links from it.
-
-        Args:
-            page (WikiTOCPageConfig): The configuration for the page to be downloaded.
-
-        Returns:
-            list[PageLink]: A list of page links.
-        """
-
-        logger = get_run_logger()
-
-        html = (
-            self.download.with_options(
-                cache_key_fn=lambda *_: f"download-{config.page_id}",
-                timeout_seconds=10,
-                retries=RETRY_ATTEMPTS,
-                retry_delay_seconds=RETRY_DELAY_SECONDS,
-                retry_condition_fn=is_http_task_retriable,
-            )
-            .submit(
-                page_id=config.page_id,
-                return_content=True,  # return the content
-            )
-            .result()
-        )
-
-        if html is None:
-            return []
-
-        try:
-
-            _links = link_extractor.retrieve_inner_links(
-                html_content=html,
-                config=config,
-            )
-
-            return _links
-
-        except Exception as e:
-            logger.error(f"Error extracting list of movies: {e}")
-            return []
-
-    @task()
-    def execute(
-        self,
-        page: PageLink,
-        storage_handler: IStorageHandler,
-        link_extractor: IContentParser | None = WikipediaParser(),
-        return_results: bool = False,
-    ) -> list[str] | None:
-        """
-        runs the task to download the HTML content of a page and store it using the provided storage handler.
-        - If the `page` is a `TableOfContents`, it will first extract the links from the table of contents
-        and then download each linked page.
-        - If the `page` is a `PageLink`, it will directly download the page.
-
-        Args:
-            page (PageLink): The permalink to the page to be downloaded.
-            storage_handler (IStorageHandler): the storage handler to use for storing the content that is downloaded.
-            link_extractor (IContentParser | None, optional): The link extractor to use for extracting links from a table of contents.
-                Defaults to `WikipediaParser`.
-            return_results (bool, optional): Defaults to False.
-                If True, the method will return a list of `page_id` stored into the storage backend.
-                If False, it will return None.
-
-        Returns:
-            list[str] | None: a list of `page_id` stored into the storage backend
-                if `return_results` is set to True, else None
-        """
-
-        if isinstance(page, TableOfContents):
-            # extract the links from the table of contents
-            page_links = (
-                self.extract_page_links.with_options(
-                    cache_key_fn=lambda *_: f"extract-links-{page.page_id}",
-                )
-                .submit(
-                    config=page,
-                    link_extractor=link_extractor,
-                )
-                .result()
-            )
+            return None
         else:
-            page_links = [page]
+            # force a retry for other HTTP errors
+            raise
 
-        content_ids = [
-            self.download.with_options(
-                cache_key_fn=lambda *_: f"download-{page_link.page_id}",
-                timeout_seconds=10,
-                retries=RETRY_ATTEMPTS,
-                retry_delay_seconds=RETRY_DELAY_SECONDS,
-                retry_condition_fn=is_http_task_retriable,
-            )
-            .submit(
-                page_id=page_link.page_id,
-                storage_handler=storage_handler,
-                return_content=False,  # for memory constraints, return the content ID
-            )
-            .result()
-            for page_link in page_links
-            if isinstance(page_link, PageLink)
-        ]
+    if html is not None and storage_handler is not None:
+        storage_handler.insert(
+            content_id=page_id,
+            content=html,
+        )
+    if return_content:
+        return html
 
-        # filter out None values
-        content_ids = [cid for cid in content_ids if cid is not None]
+    return page_id if html is not None else None
 
-        if return_results:
-            return content_ids
+
+def extract_page_links(
+    http_client: IHttpClient,
+    config: TableOfContents,
+    link_extractor: IContentParser,
+    settings: Settings,
+) -> list[PageLink]:
+    """
+    downloads the HTML page and extracts the links from it.
+
+    Args:
+        page (WikiTOCPageConfig): The configuration for the page to be downloaded.
+
+    Returns:
+        list[PageLink]: A list of page links.
+    """
+
+    logger = get_run_logger()
+
+    html = download(
+        http_client=http_client,
+        page_id=config.page_id,
+        return_content=True,  # return the content
+        settings=settings,
+    )
+
+    if html is None:
+        return []
+
+    try:
+
+        _links = link_extractor.retrieve_inner_links(
+            html_content=html,
+            config=config,
+        )
+
+        return _links
+
+    except Exception as e:
+        logger.error(f"Error extracting list of movies: {e}")
+        return []
+
+
+@task(
+    task_run_name="execute_task-{page.page_id}",
+)
+def execute_task(
+    page: PageLink,
+    settings: Settings,
+    http_client: IHttpClient,
+    storage_handler: IStorageHandler,
+    link_extractor: IContentParser | None = WikipediaParser(),
+    return_results: bool = False,
+) -> list[str] | None:
+    """
+    Entry point to scrape a page and store its HTML content. This function
+    runs the task to download the HTML content of a page and store it using the provided storage handler.
+    - If the `page` is a `TableOfContents`, it will first extract the links from the table of contents
+    and then download each linked page.
+    - If the `page` is a `PageLink`, it will directly download the page.
+
+    Args:
+        page (PageLink): The permalink to the page to be downloaded.
+        storage_handler (IStorageHandler): the storage handler to use for storing the content that is downloaded.
+        link_extractor (IContentParser | None, optional): The link extractor to use for extracting links from a table of contents.
+            Defaults to `WikipediaParser`.
+        return_results (bool, optional): Defaults to False.
+            If True, the method will return a list of `page_id` stored into the storage backend.
+            If False, it will return None.
+
+    Returns:
+        list[str] | None: a list of `page_id` stored into the storage backend
+            if `return_results` is set to True, else None
+    """
+
+    if isinstance(page, TableOfContents):
+        # extract the links from the table of contents
+        page_links = extract_page_links(
+            http_client=http_client,
+            config=page,
+            link_extractor=link_extractor,
+            settings=settings,
+        )
+    else:
+        page_links = [page]
+
+    content_ids = [
+        download(
+            http_client=http_client,
+            page_id=page_link.page_id,
+            storage_handler=storage_handler,
+            return_content=False,  # for memory constraints, return the content ID
+            settings=settings,
+        )
+        for page_link in page_links
+        if isinstance(page_link, PageLink)
+    ]
+
+    # filter out None values
+    content_ids = [cid for cid in content_ids if cid is not None]
+
+    if return_results:
+        return content_ids

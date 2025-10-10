@@ -1,5 +1,5 @@
 from src.entities.person import Person
-from src.repositories.orchestration.tasks.task_storage import BatchInsertTask
+from src.repositories.orchestration.tasks.task_storage import execute_task
 from src.settings import Settings
 from tests.repositories.orchestration.stubs.stub_storage import StubStorage
 
@@ -8,10 +8,6 @@ def test_batch_insert_task(test_settings: Settings, test_person: Person):
 
     # given
     # a runner
-    runner = BatchInsertTask(
-        settings=test_settings,
-        entity_type=Person,  # using dict as a dummy entity type
-    )
 
     # generate 10 entities
     test_persons = [
@@ -23,7 +19,7 @@ def test_batch_insert_task(test_settings: Settings, test_person: Person):
     output_storage = StubStorage[Person]()
 
     # when
-    runner.execute(  # type: ignore
+    execute_task.fn(  # type: ignore
         input_storage=input_storage,
         output_storage=output_storage,
     )
@@ -42,10 +38,6 @@ def test_batch_insert_task_per_batch(test_settings: Settings, test_person: Perso
 
     # given
     # a runner
-    runner = BatchInsertTask(
-        settings=test_settings,
-        entity_type=Person,  # using dict as a dummy entity type
-    )
 
     # generate 10 entities
     test_persons = [
@@ -57,7 +49,7 @@ def test_batch_insert_task_per_batch(test_settings: Settings, test_person: Perso
     output_storage = StubStorage[Person]()
 
     # when
-    runner.execute(  # type: ignore
+    execute_task.fn(  # type: ignore
         input_storage=input_storage,
         output_storage=output_storage,
         batch_size=10,  # smaller batch size for testing

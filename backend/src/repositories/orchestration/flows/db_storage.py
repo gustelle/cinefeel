@@ -13,7 +13,7 @@ from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
     RETRY_DELAY_SECONDS,
 )
-from src.repositories.orchestration.tasks.task_storage import BatchInsertTask
+from src.repositories.orchestration.tasks.task_storage import execute_task
 from src.repositories.search.meili_indexer import MeiliHandler
 from src.settings import Settings
 
@@ -48,16 +48,9 @@ def db_storage_flow(
 
     search_handler = search_store or MeiliHandler[cls](settings=settings)
 
-    insert_task = BatchInsertTask(
-        settings=settings,
-        entity_type=cls,
-    )
-
-    t = insert_task.execute.with_options(
+    t = execute_task.with_options(
         retries=RETRY_ATTEMPTS,
         retry_delay_seconds=RETRY_DELAY_SECONDS,
-        # cache_policy=NO_CACHE,
-        # cache_expiration=60 * 60 * 24,  # 24 hours
         tags=["cinefeel_tasks"],
         timeout_seconds=1,  # fail fast if the task hangs
         cache_key_fn=lambda *_: f"insert_task-json-graph-{entity_type}",
@@ -67,11 +60,10 @@ def db_storage_flow(
     )
 
     # for all pages
-    u = insert_task.execute.with_options(
+    u = execute_task.with_options(
         retries=RETRY_ATTEMPTS,
         retry_delay_seconds=RETRY_DELAY_SECONDS,
         cache_key_fn=lambda *_: f"insert_task-json-search-{entity_type}",
-        # cache_policy=NO_CACHE,
         tags=["cinefeel_tasks"],
         timeout_seconds=1,  # fail fast if the task hangs
     ).submit(input_storage=json_store, output_storage=search_handler)

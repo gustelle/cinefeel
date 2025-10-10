@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from prefect import get_run_logger, task
 from prefect.futures import wait
 
@@ -54,7 +56,7 @@ class FeatureExtractionTask(ITaskExecutor):
         return entity
 
     @task()
-    def execute(
+    def execute_task(
         self,
     ) -> None:
 
@@ -71,7 +73,7 @@ class FeatureExtractionTask(ITaskExecutor):
                     # storage=json_p_storage,
                     entity=self.extract_features.with_options(
                         cache_key_fn=lambda *_: f"extract_features-{uid}",
-                        cache_expiration=60 * 60 * 1,  # 1 hour
+                        cache_expiration=timedelta(hours=1),  # 1 hour
                     ).submit(
                         entity=entity,
                     ),

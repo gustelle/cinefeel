@@ -42,6 +42,10 @@ class Settings(BaseSettings):
         default=10,
         description="The maximum number of concurrent connections to download pages",
     )
+    scraping_request_timeout: int = Field(
+        default=10,
+        description="The timeout for each request in seconds",
+    )
 
     mediawiki_api_key: str = Field(
         default="",

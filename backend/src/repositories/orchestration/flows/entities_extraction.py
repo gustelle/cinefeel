@@ -1,4 +1,5 @@
 import importlib
+from datetime import timedelta
 from typing import Literal
 
 from prefect import flow, get_run_logger
@@ -15,9 +16,8 @@ from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
     RETRY_DELAY_SECONDS,
 )
-from src.repositories.orchestration.tasks.task_html_parsing import HtmlDataParserTask
+from src.repositories.orchestration.tasks.task_html_parsing import execute_task
 from src.settings import Settings
-
 
 
 @flow(
@@ -65,31 +65,27 @@ def extract_entities_flow(
     except AttributeError as e:
         raise ValueError(f"Unsupported entity type: {entity_type}") from e
 
-    parser_task = HtmlDataParserTask(
-        settings=settings,
-        entity_type=cls,
-        analyzer=entity_analyzer,
-        search_processor=section_searcher,
-    )
-
     html_store = html_store or RedisTextStorage[cls](settings=settings)
     json_store = json_store or RedisJsonStorage[cls](settings=settings)
 
     if page_id:
         content = html_store.select(content_id=page_id)
         if content:
-            parser_task.execute.with_options(
+            execute_task.with_options(
                 retries=RETRY_ATTEMPTS,
                 retry_delay_seconds=RETRY_DELAY_SECONDS,
-                # cache_policy=CACHE_POLICY,
                 cache_key_fn=lambda *_: f"parser_task-{page_id}",
-                cache_expiration=60 * 60 * 24,  # 24 hours
+                cache_expiration=timedelta(hours=24),
                 tags=["cinefeel_tasks"],
-                timeout_seconds=180,
+                timeout_seconds=60 * 10,  # 10 minutes
             ).submit(
                 content_id=page_id,
                 content=content,
                 output_storage=json_store,
+                settings=settings,
+                entity_type=cls,
+                analyzer=entity_analyzer,
+                search_processor=section_searcher,
             ).wait()
         else:
             logger.warning(
@@ -108,18 +104,21 @@ def extract_entities_flow(
                 continue
 
             tasks.append(
-                parser_task.execute.with_options(
+                execute_task.with_options(
                     retries=RETRY_ATTEMPTS,
                     retry_delay_seconds=RETRY_DELAY_SECONDS,
-                    # cache_policy=CACHE_POLICY,
                     cache_key_fn=lambda *_: f"parser_task-{content_id}",
-                    cache_expiration=60 * 60 * 24,  # 24 hours
+                    cache_expiration=timedelta(hours=24),
                     tags=["cinefeel_tasks"],
-                    timeout_seconds=180,
+                    timeout_seconds=60 * 10,  # 10 minutes
                 ).submit(
                     content_id=content_id,
                     content=content,
                     output_storage=json_store,
+                    settings=settings,
+                    entity_type=cls,
+                    analyzer=entity_analyzer,
+                    search_processor=section_searcher,
                 )
             )
 

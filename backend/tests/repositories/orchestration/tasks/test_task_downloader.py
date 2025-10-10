@@ -2,7 +2,11 @@ import pytest
 
 from src.entities.content import PageLink, TableOfContents
 from src.interfaces.http_client import HttpError
-from src.repositories.orchestration.tasks.task_downloader import ContentDownloaderTask
+from src.repositories.orchestration.tasks.task_downloader import (
+    download,
+    execute_task,
+    extract_page_links,
+)
 from src.settings import Settings
 
 from ..stubs.stub_http import StubSyncHttpClient
@@ -10,19 +14,19 @@ from ..stubs.stub_parser import StubContentParser
 from ..stubs.stub_storage import StubStorage
 
 
-def test_download_return_page_id(
-    test_settings: Settings,
-):
+def test_downloader_task_download_return_page_id(test_settings: Settings):
 
     # given
-    settings = test_settings
+
     client = StubSyncHttpClient(response="<html>Test Content</html>")
-    runner = ContentDownloaderTask(settings=settings, http_client=client)
+
     storage_handler = StubStorage()
 
     # when
-    result = runner.download(
-        "page_id",
+    result = download(
+        http_client=client,
+        page_id="page_id",
+        settings=test_settings,
         storage_handler=storage_handler,
         return_content=False,
     )
@@ -32,17 +36,18 @@ def test_download_return_page_id(
     assert storage_handler.is_inserted is True
 
 
-def test_download_return_content(test_settings: Settings):
+def test_downloader_task_download_return_content(test_settings: Settings):
 
     # given
-    settings = test_settings
+
     client = StubSyncHttpClient(response="<html>Test Content</html>")
     storage_handler = StubStorage()
-    runner = ContentDownloaderTask(settings=settings, http_client=client)
 
     # when
-    result = runner.download(
-        "page_id",
+    result = download(
+        http_client=client,
+        page_id="page_id",
+        settings=test_settings,
         storage_handler=storage_handler,
         return_content=True,  # return the content
     )
@@ -52,18 +57,18 @@ def test_download_return_content(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_download_page_using_storage(test_settings: Settings):
+def test_downloader_task_download_page_using_storage(test_settings: Settings):
 
     # given
 
-    settings = test_settings
     client = StubSyncHttpClient(response="<html>Test Content</html>")
     storage_handler = StubStorage()
-    runner = ContentDownloaderTask(settings=settings, http_client=client)
 
     # when
-    page_id = runner.download(
-        "page_id",
+    page_id = download(
+        http_client=client,
+        page_id="page_id",
+        settings=test_settings,
         storage_handler=storage_handler,
         return_content=False,
     )
@@ -73,20 +78,19 @@ def test_download_page_using_storage(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_download_page_http_error(test_settings: Settings):
+def test_downloader_task_download_page_http_error(test_settings: Settings):
 
-    settings = test_settings
     client = StubSyncHttpClient(
         raise_exc=HttpError("Boom", status_code=503),
     )
 
-    runner = ContentDownloaderTask(settings=settings, http_client=client)
-
     # when
     with pytest.raises(HttpError) as exc_info:
-        runner.download(
-            "page_id",
+        download(
+            http_client=client,
+            page_id="page_id",
             return_content=True,
+            settings=test_settings,
         )
 
     # then
@@ -94,11 +98,12 @@ def test_download_page_http_error(test_settings: Settings):
     assert "Boom" in str(exc_info.value)
 
 
-def test_extract_page_links(test_settings: Settings, mocker):
+def test_downloader_task_extract_page_links(test_settings: Settings):
+
     # given
-    settings = test_settings
+
     client = StubSyncHttpClient(response="<html>Test Content</html>")
-    runner = ContentDownloaderTask(settings=settings, http_client=client)
+
     extractor = StubContentParser(
         inner_links=[
             PageLink(page_id="link1", entity_type="Movie"),
@@ -107,9 +112,12 @@ def test_extract_page_links(test_settings: Settings, mocker):
     )
 
     # when
-    result = runner.extract_page_links(
+
+    result = extract_page_links(
+        http_client=client,
         config=TableOfContents(page_id="page_id", entity_type="Movie"),
         link_extractor=extractor,
+        settings=test_settings,
     )
 
     # then
@@ -120,12 +128,11 @@ def test_extract_page_links(test_settings: Settings, mocker):
     ]
 
 
-def test_execute_with_TableOfContents(test_settings: Settings):
+def test_downloader_task_execute_with_TableOfContents(test_settings: Settings):
     """when the task is executed with a TableOfContents, it should extract the links and download each linked page."""
 
-    settings = test_settings
     client = StubSyncHttpClient(response="<html>Test Content</html>")
-    runner = ContentDownloaderTask(settings=settings, http_client=client)
+
     storage_handler = StubStorage()
     extractor = StubContentParser(
         inner_links=[
@@ -138,8 +145,10 @@ def test_execute_with_TableOfContents(test_settings: Settings):
     # imagine this TOC contains 2 links: link1 and link2
 
     # when
-    result = runner.execute(
+    result = execute_task.fn(
         page=toc,
+        settings=test_settings,
+        http_client=client,
         storage_handler=storage_handler,
         link_extractor=extractor,
         return_results=True,
@@ -151,19 +160,20 @@ def test_execute_with_TableOfContents(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_execute_with_PageLink(test_settings: Settings):
+def test_downloader_task_execute_with_PageLink(test_settings: Settings):
     """when the task is executed with a PageLink, it should download the page content."""
 
-    settings = test_settings
     client = StubSyncHttpClient(response="<html>Test Content</html>")
-    runner = ContentDownloaderTask(settings=settings, http_client=client)
+
     storage_handler = StubStorage()
 
     page_link = PageLink(page_id="link1", entity_type="Movie")
 
     # when
-    result = runner.execute(
+    result = execute_task.fn(
         page=page_link,
+        settings=test_settings,
+        http_client=client,
         storage_handler=storage_handler,
         return_results=True,
     )
@@ -173,26 +183,22 @@ def test_execute_with_PageLink(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_execute_return_results(test_settings: Settings):
+def test_downloader_task_execute_return_results(test_settings: Settings):
     """when the task is executed with a TableOfContents, it should extract the links and download each linked page."""
 
-    settings = test_settings
     client = StubSyncHttpClient(response="<html>Test Content</html>")
-    runner = ContentDownloaderTask(settings=settings, http_client=client)
     storage_handler = StubStorage()
 
     page_link = PageLink(page_id="link1", entity_type="Movie")
 
     # when
-    runner.execute(
+    _ = execute_task.fn(
         page=page_link,
+        settings=test_settings,
+        http_client=client,
         storage_handler=storage_handler,
         return_results=True,
     )
 
     # then
     assert storage_handler.is_inserted is True
-
-
-# def test_execute_return_no_results(test_settings: Settings):
-#     pass

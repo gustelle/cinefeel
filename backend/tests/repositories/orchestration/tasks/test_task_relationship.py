@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from src.entities.person import Person
 from src.interfaces.http_client import HttpError
-from src.repositories.orchestration.tasks.task_relationship_storage import (
+from src.repositories.orchestration.tasks.task_relationship import (
     EntityRelationshipTask,
 )
 from src.settings import Settings

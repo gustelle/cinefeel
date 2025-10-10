@@ -6,7 +6,7 @@ class ITaskExecutor(Protocol):
     Interface for task executors.
     """
 
-    def execute(self, *args, return_results: bool = False, **kwargs) -> None:
+    def execute_task(self, *args, return_results: bool = False, **kwargs) -> None:
         """
         Execute a given task.
 

@@ -12,8 +12,6 @@ class SyncHttpClient(IHttpClient):
     """executes HTTP requests synchronously
     this is useful for cases where you need to keep synchronous code for GPU processing
     or other synchronous libraries that do not support async/await
-
-
     """
 
     settings: Settings
@@ -40,6 +38,7 @@ class SyncHttpClient(IHttpClient):
                 "User-Agent": self.settings.mediawiki_user_agent,
                 "Authorization": f"Bearer {pwd}",
             },
+            timeout=settings.scraping_request_timeout,
         )
 
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
@@ -59,19 +58,19 @@ class SyncHttpClient(IHttpClient):
         headers: dict = None,
         params: dict = None,
         response_type: Literal["json", "text"] = "json",
-        timeout: int = 10,
     ) -> dict | str:
         """Sends a GET request to the specified URL."""
 
         try:
 
-            response = self.client.get(
-                url, params=params, headers=headers, timeout=timeout
-            )
+            response = self.client.get(url, params=params, headers=headers)
 
             response.raise_for_status()
 
             return response.text if response_type == "text" else response.json()
+
+        except httpx.TimeoutException as t:
+            raise HttpError(message=f"Request timed out: {t}", status_code=504)
 
         except httpx.HTTPStatusError as e:
 
