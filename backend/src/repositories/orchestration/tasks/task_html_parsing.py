@@ -184,6 +184,8 @@ def execute_task(
     search_processor: Processor = None,
 ) -> None:
 
+    logger = get_run_logger()
+
     analyzer = analyzer or Html2TextSectionsChopper(
         content_splitter=WikipediaAPIContentSplitter(
             parser=WikipediaParser(),
@@ -215,5 +217,4 @@ def execute_task(
             )
 
     except Exception as e:
-        logger = get_run_logger()
         logger.error(f"Error storing entity for content ID '{content_id}': {e}")

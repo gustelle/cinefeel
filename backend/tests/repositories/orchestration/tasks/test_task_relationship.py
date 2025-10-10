@@ -68,7 +68,7 @@ def test_task_load_entity_by_name_not_existing_in_storage(
 
     # when
     with patch(
-        "src.repositories.orchestration.tasks.task_relationship_storage.emit_event"
+        "src.repositories.orchestration.tasks.task_relationship.emit_event"
     ) as mock_emit:
         # Appelle la tâche Prefect (directement ou via .run si besoin)
         result = runner.load_entity_by_name(name=name, input_storage=storage)
@@ -113,7 +113,7 @@ def test_task_load_entity_by_name_not_existing_in_wikipedia(
     # when
     # when
     with patch(
-        "src.repositories.orchestration.tasks.task_relationship_storage.emit_event"
+        "src.repositories.orchestration.tasks.task_relationship.emit_event"
     ) as mock_emit:
         result = runner.load_entity_by_name(name=name, input_storage=storage)
 

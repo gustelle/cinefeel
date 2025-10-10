@@ -2,7 +2,7 @@ import importlib
 from datetime import timedelta
 from typing import Literal
 
-from prefect import flow, get_run_logger
+from prefect import flow
 from prefect.events import emit_event
 from prefect.futures import PrefectFuture, wait
 from prefect.task_runners import ConcurrentTaskRunner
@@ -34,6 +34,7 @@ def extract_entities_flow(
     section_searcher: Processor | None = None,
     html_store: IStorageHandler | None = None,
     json_store: IStorageHandler | None = None,
+    refresh_cache: bool = False,
 ) -> None:
     """
     Extract entities (Movie or Person) from HTML contents
@@ -52,11 +53,13 @@ def extract_entities_flow(
         section_searcher (Processor | None, optional): Custom section searcher
         html_store (IStorageHandler | None, optional): Custom HTML storage handler, defaults to `RedisTextStorage`
         json_store (IStorageHandler | None, optional): Custom JSON storage handler, defaults to `RedisJsonStorage`
+        refresh_cache (bool, optional): If True, forces re-processing of all pages by bypassing task cache. Defaults to False.
     """
 
     tasks: list[PrefectFuture] = []
 
-    logger = get_run_logger()
+    # logger = get_run_logger()
+    from loguru import logger
 
     module = importlib.import_module("src.entities")
 
@@ -70,6 +73,7 @@ def extract_entities_flow(
 
     if page_id:
         content = html_store.select(content_id=page_id)
+
         if content:
             execute_task.with_options(
                 retries=RETRY_ATTEMPTS,
@@ -78,6 +82,7 @@ def extract_entities_flow(
                 cache_expiration=timedelta(hours=24),
                 tags=["cinefeel_tasks"],
                 timeout_seconds=60 * 10,  # 10 minutes
+                refresh_cache=refresh_cache,
             ).submit(
                 content_id=page_id,
                 content=content,
@@ -110,7 +115,8 @@ def extract_entities_flow(
                     cache_key_fn=lambda *_: f"parser_task-{content_id}",
                     cache_expiration=timedelta(hours=24),
                     tags=["cinefeel_tasks"],
-                    timeout_seconds=60 * 10,  # 10 minutes
+                    timeout_seconds=60 * 5,  # 5 minutes
+                    refresh_cache=refresh_cache,
                 ).submit(
                     content_id=content_id,
                     content=content,
@@ -124,7 +130,8 @@ def extract_entities_flow(
 
             # break  # for testing, process only one
 
-        logger.info(f"Submitted {len(tasks)} tasks for entity extraction.")
-
         # timeout is set at task level
         wait(tasks)
+
+        for task in tasks:
+            logger.info(f"Task {task} state: {task.state}")

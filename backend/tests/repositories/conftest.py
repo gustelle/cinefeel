@@ -161,11 +161,6 @@ def test_person():
         full_name="Christopher Nolan",
     )
 
-    # person.characteristics = PersonCharacteristics(
-    #     parent_uid=person.uid,
-    #     gender=GenderEnum.MALE,
-    # )
-
     person.influences = [
         WOAInfluence(
             parent_uid=person.uid,

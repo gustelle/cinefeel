@@ -29,6 +29,7 @@ def db_storage_flow(
     json_store: IStorageHandler | None = None,
     graph_store: IStorageHandler | None = None,
     search_store: IStorageHandler | None = None,
+    refresh_cache: bool = False,
 ) -> None:
 
     module = importlib.import_module("src.entities")
@@ -54,6 +55,7 @@ def db_storage_flow(
         tags=["cinefeel_tasks"],
         timeout_seconds=1,  # fail fast if the task hangs
         cache_key_fn=lambda *_: f"insert_task-json-graph-{entity_type}",
+        refresh_cache=refresh_cache,
     ).submit(
         input_storage=json_store,
         output_storage=graph_store,
@@ -66,6 +68,7 @@ def db_storage_flow(
         cache_key_fn=lambda *_: f"insert_task-json-search-{entity_type}",
         tags=["cinefeel_tasks"],
         timeout_seconds=1,  # fail fast if the task hangs
+        refresh_cache=refresh_cache,
     ).submit(input_storage=json_store, output_storage=search_handler)
 
     wait([t, u])  # wait for all tasks to complete

@@ -50,7 +50,10 @@ def test_extract_entities_flow_of_a_page_non_existing(test_settings: Settings):
     ) as mock_emit:
         # Appelle la tâche Prefect (directement ou via .run si besoin)
         extract_entities_flow(
-            settings=test_settings, entity_type="Person", page_id=page_id
+            settings=test_settings,
+            entity_type="Person",
+            page_id=page_id,
+            refresh_cache=True,
         )
 
     # then
@@ -91,6 +94,7 @@ def test_extract_entities_flow_for_given_page_id(
         entity_analyzer=entity_analyzer,
         section_searcher=section_searcher,
         json_store=json_store,
+        refresh_cache=True,  # force re-processing of all pages
     )
 
     # then
@@ -124,6 +128,7 @@ def test_extract_entities_flow_for_all_pages(test_settings: Settings):
         entity_analyzer=entity_analyzer,
         section_searcher=section_searcher,
         json_store=json_store,
+        refresh_cache=True,  # force re-processing of all pages
     )
 
     # then

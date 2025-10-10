@@ -85,6 +85,7 @@ def test_entity_storage_flow(test_settings: Settings):
         json_store=json_store,
         graph_store=db_store,
         search_store=search_store,
+        refresh_cache=True,  # force re-processing of all pages
     )
 
     # then
@@ -93,55 +94,3 @@ def test_entity_storage_flow(test_settings: Settings):
     stored_person_uid = list(db_store.scan())[0][0]
 
     assert stored_person_uid == person.uid
-
-
-@pytest.mark.todo
-@pytest.mark.skip(reason="not implemented yet")
-def test_entity_storage_flow_processed_entities_are_marked(
-    test_settings: Settings,
-    cleanup_db,  # noqa: F811
-):
-    """when an entity has been processed, it is marked as such in the JSON store
-    so that it is not re-processed again
-
-    thus triggering the flow a second time should not process the same entity twice
-    """
-    entity_type = "Person"
-    json_store = RedisJsonStorage[Person](settings=test_settings)
-
-    # generate a Person entity into the json_store
-    person = Person(
-        title="Ludwig van Beethoven",
-        permalink="https://en.wikipedia.org/wiki/Ludwig_van_Beethoven",
-    )
-
-    json_store.insert(person.uid, person)
-
-    db_store = StubStorage[Person]()
-    search_store = StubStorage[Person]()
-
-    # when
-    db_storage_flow(
-        settings=test_settings,
-        entity_type=entity_type,
-        json_store=json_store,
-        graph_store=db_store,
-        search_store=search_store,
-    )
-
-    # verify the entity has been marked as processed
-    stored_person = json_store.get(person.uid)
-    assert stored_person is not None
-    assert stored_person.processed is True
-
-    # when triggering the flow a second time
-    db_storage_flow(
-        settings=test_settings,
-        entity_type=entity_type,
-        json_store=json_store,
-        graph_store=db_store,
-        search_store=search_store,
-    )
-
-    # then
-    # the entity should not have been processed again
