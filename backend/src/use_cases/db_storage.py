@@ -36,7 +36,7 @@ class DBStorageUseCase:
                         "settings": self.settings,
                         "entity_type": Movie.__name__,
                     },
-                    # cron="0 0 * * *",  # Every day at midnight
+                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()
@@ -59,7 +59,7 @@ class DBStorageUseCase:
                         "settings": self.settings,
                         "entity_type": Person.__name__,
                     },
-                    # cron="0 0 * * *",  # Every day at midnight
+                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()

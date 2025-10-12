@@ -36,12 +36,12 @@ class EntityExtractionUseCase:
                         "settings": self.settings,
                         "entity_type": Movie.__name__,
                     },
-                    # cron="0 0 * * *",  # Every day at midnight
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()
                         .as_posix(),
                     },
+                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,
                 )
             )
 
@@ -59,12 +59,12 @@ class EntityExtractionUseCase:
                         "settings": self.settings,
                         "entity_type": Person.__name__,
                     },
-                    # cron="0 0 * * *",  # Every day at midnight
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()
                         .as_posix(),
                     },
+                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,
                 )
             )
 

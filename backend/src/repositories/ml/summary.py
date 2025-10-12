@@ -1,10 +1,17 @@
-from spacy.lang.fr import French
-from summarizer.sbert import SBertSummarizer
-from summarizer.text_processors.sentence_handler import SentenceHandler
+import nltk
+import numpy as np
+import torch
+from loguru import logger
+from sentence_transformers import SentenceTransformer
 
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
 from src.settings import Settings
+
+from .lexrank import degree_centrality_scores
+
+# load once
+nltk.download("punkt_tab")
 
 
 class SectionSummarizer(Processor[Section]):
@@ -13,13 +20,27 @@ class SectionSummarizer(Processor[Section]):
     """
 
     settings: Settings
-    _summarizer: SBertSummarizer
+    _summarizer: SentenceTransformer
 
     def __init__(self, settings: Settings):
 
         self.settings = settings
-        self._summarizer = SBertSummarizer(
-            model=settings.summary_model, sentence_handler=SentenceHandler(French)
+
+        device = (
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps" if torch.backends.mps.is_available() else "cpu"
+        )
+
+        self._summarizer = SentenceTransformer(
+            settings.summary_model,
+            backend=settings.transformer_model_backend,
+            device=device,
+            # model_kwargs={"file_name": "onnx/model.onnx"},
+        )
+
+        logger.info(
+            f"SectionSummarizer initialized with backend '{self._summarizer.backend}' on device: {self._summarizer.device}",
         )
 
     def process(self, section: Section) -> Section | None:
@@ -61,11 +82,32 @@ class SectionSummarizer(Processor[Section]):
         title = section.title
 
         if len(section.content) > self.settings.summary_max_length:
+            sentences = nltk.sent_tokenize(section.content, language="french")
 
-            new_content = self._summarizer(
-                section.content,
-                max_length=self.settings.summary_max_length,
-                min_length=self.settings.summary_min_length,
+            # Compute the sentence embeddings
+            embeddings = self._summarizer.encode(sentences)
+
+            # Compute the similarity scores
+            similarity_scores = self._summarizer.similarity(
+                embeddings, embeddings
+            ).numpy()
+
+            # Compute the centrality for each sentence
+            centrality_scores = degree_centrality_scores(
+                similarity_scores, threshold=None
+            )
+
+            # We argsort so that the first element is the sentence with the highest score
+            most_central_sentence_indices = np.argsort(-centrality_scores)
+            num_sentences_to_keep = len(sentences) // 3
+            new_content = " ".join(
+                [
+                    sentences[idx]
+                    for idx in most_central_sentence_indices[:num_sentences_to_keep]
+                ]
+            )
+            logger.info(
+                f"Section '{title}' content summarized from {len(section.content)} to {len(new_content)} characters."
             )
 
         children = None

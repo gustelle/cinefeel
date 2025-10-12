@@ -2,7 +2,7 @@ import importlib
 from datetime import timedelta
 from typing import Literal
 
-from prefect import flow
+from prefect import flow, get_run_logger
 from prefect.events import emit_event
 from prefect.futures import PrefectFuture, wait
 from prefect.task_runners import ConcurrentTaskRunner
@@ -58,8 +58,7 @@ def extract_entities_flow(
 
     tasks: list[PrefectFuture] = []
 
-    # logger = get_run_logger()
-    from loguru import logger
+    logger = get_run_logger()
 
     module = importlib.import_module("src.entities")
 
@@ -71,6 +70,12 @@ def extract_entities_flow(
     html_store = html_store or RedisTextStorage[cls](settings=settings)
     json_store = json_store or RedisJsonStorage[cls](settings=settings)
 
+    _refresh_cache = settings.prefect_cache_disabled or refresh_cache
+
+    logger.info(
+        f"Starting extraction flow for entity_type={entity_type}, page_id={page_id}, refresh_cache={_refresh_cache}"
+    )
+
     if page_id:
         content = html_store.select(content_id=page_id)
 
@@ -78,11 +83,10 @@ def extract_entities_flow(
             execute_task.with_options(
                 retries=RETRY_ATTEMPTS,
                 retry_delay_seconds=RETRY_DELAY_SECONDS,
-                cache_key_fn=lambda *_: f"parser_task-{page_id}",
-                cache_expiration=timedelta(hours=24),
-                tags=["cinefeel_tasks"],
+                cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
+                cache_expiration=timedelta(seconds=1),
                 timeout_seconds=60 * 10,  # 10 minutes
-                refresh_cache=refresh_cache,
+                refresh_cache=_refresh_cache,
             ).submit(
                 content_id=page_id,
                 content=content,
@@ -90,18 +94,17 @@ def extract_entities_flow(
                 settings=settings,
                 entity_type=cls,
                 analyzer=entity_analyzer,
-                search_processor=section_searcher,
+                search_processor=settings.prefect_cache_disabled or section_searcher,
             ).wait()
         else:
-            logger.warning(
-                f"Content with page_id '{page_id}' not found in HTML storage, emitting event"
-            )
+            # request extraction flow via event if content not found
             emit_event(
                 event="extract.entity",
                 resource={"prefect.resource.id": page_id},
                 payload={"entity_type": entity_type},
             )
     else:
+        count = 0
         # iterate over all HTML contents in Redis
         for content_id, content in html_store.scan():
             if not content or not content_id:
@@ -112,11 +115,11 @@ def extract_entities_flow(
                 execute_task.with_options(
                     retries=RETRY_ATTEMPTS,
                     retry_delay_seconds=RETRY_DELAY_SECONDS,
-                    cache_key_fn=lambda *_: f"parser_task-{content_id}",
-                    cache_expiration=timedelta(hours=24),
-                    tags=["cinefeel_tasks"],
+                    cache_key_fn=lambda *_: f"parser_execute_task-{content_id}",
+                    cache_expiration=timedelta(minutes=1),
                     timeout_seconds=60 * 5,  # 5 minutes
-                    refresh_cache=refresh_cache,
+                    refresh_cache=_refresh_cache,
+                    tags=["heavy"],  # mark as heavy task
                 ).submit(
                     content_id=content_id,
                     content=content,
@@ -127,8 +130,9 @@ def extract_entities_flow(
                     search_processor=section_searcher,
                 )
             )
-
-            # break  # for testing, process only one
+            count += 1
+            if count >= 4:
+                break  # for testing, process only one
 
         # timeout is set at task level
         wait(tasks)

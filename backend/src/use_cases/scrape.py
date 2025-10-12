@@ -40,7 +40,7 @@ class ScrapingUseCase:
                             if p.entity_type == Movie.__name__
                         ],
                     },
-                    # cron="0 0 * * *",  # Every day at midnight
+                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,  # 2 deploys at a time
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()
@@ -67,7 +67,7 @@ class ScrapingUseCase:
                             if p.entity_type == Person.__name__
                         ],
                     },
-                    # cron="0 0 * * *",  # Every day at midnight
+                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,  # 2 deploys at a time
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()

@@ -118,10 +118,9 @@ def connection_flow(
     ).execute_task.with_options(
         retries=RETRY_ATTEMPTS,
         retry_delay_seconds=RETRY_DELAY_SECONDS,
-        # cache_policy=CACHE_POLICY,
         cache_expiration=timedelta(hours=1),
         cache_key_fn=lambda *_: f"execute-connection-{entity_type}",
-        tags=["cinefeel_tasks"],
+        refresh_cache=settings.prefect_cache_disabled,
     ).submit(
         input_storage=db_storage,
         output_storage=db_storage,

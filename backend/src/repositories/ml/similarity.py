@@ -1,5 +1,6 @@
 import re
 
+import torch
 from loguru import logger
 from sentence_transformers import SentenceTransformer, util
 
@@ -21,10 +22,22 @@ class SimilarSectionSearch(Processor[Section]):
     def __init__(self, settings: Settings):
 
         self.settings = settings
-        self.embedder = SentenceTransformer(settings.similarity_model)
 
-        logger.debug(
-            f"Initialized BERT model '{settings.similarity_model}' for similarity search"
+        device = (
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps" if torch.backends.mps.is_available() else "cpu"
+        )
+
+        self.embedder = SentenceTransformer(
+            settings.similarity_model,
+            backend=settings.transformer_model_backend,
+            device=device,
+            # model_kwargs={"file_name": "onnx/model.onnx"},
+        )
+
+        logger.info(
+            f"Initialized BERT model '{settings.similarity_model}' for similarity search on device: {self.embedder.device}"
         )
 
     def _most_similar_text(self, query: str, corpus: list[str]) -> str | None:

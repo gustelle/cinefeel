@@ -23,7 +23,7 @@ class FeatureExtractionTask(ITaskExecutor):
         self.settings = settings
         self.entity_type = entity_type
 
-    @task(task_run_name="to_db-{entity.uid}", tags=["cinefeel_tasks"])
+    @task(task_run_name="to_db-{entity.uid}")
     def to_db(self, entity: Composable) -> Composable:
         """
         Analyze the relationships of a single entity.
@@ -38,7 +38,7 @@ class FeatureExtractionTask(ITaskExecutor):
         # and then store the results back into the graph database.
         return entity
 
-    @task(task_run_name="extract_features-{entity.uid}", tags=["cinefeel_tasks"])
+    @task(task_run_name="extract_features-{entity.uid}")
     def extract_features(self, entity: Composable) -> Composable:
         """
         Analyze the relationships of a single entity.

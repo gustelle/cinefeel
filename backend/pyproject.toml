@@ -1,7 +1,6 @@
 [project]
 name = "cinefeel_backend"
-version = "0.2.0"
-description = ""
+version = "0.3.0"
 authors = [
     {name = "gustelle"}
 ]
@@ -31,26 +30,16 @@ dependencies = [
     "prefect (>=3.4.10,<4.0.0)",
     "redis[hiredis] (>=6.2.0,<7.0.0)",
     "pydantic-yaml (>=1.6.0,<2.0.0)",
-    "transformers (>=4.56.2,<5.0.0)",
-    "bert-extractive-summarizer (>=0.10.1,<0.11.0)",
-    "sentence-transformers (>=5.1.0,<6.0.0)",
+    "sentence-transformers[onnx] (>=5.1.1,<6.0.0)",
     "python-slugify (>=8.0.4,<9.0.0)",
     "prefect-redis (>=0.2.5,<0.3.0)",
+    "nltk (>=3.9.2,<4.0.0)",
 ]
 
 [tool.poetry]
 package-mode = false
 
-[tool.poe.tasks]
-run         = "python3 main.py"
-test        = "pytest -s --tb=line"
-serve       = "poe run serve"
-deploy      = "poe run deploy"
-extract     = "poe run extract"
-
 [tool.poetry.group.dev.dependencies]
-poethepoet = "^0.36.0"
-bokeh = "^3.7.3"
 pytest-sugar = "^1.1.1"
 pytest-timeout = "^2.4.0"
 pytest-instafail = "^0.5.0"

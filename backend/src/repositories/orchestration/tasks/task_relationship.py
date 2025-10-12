@@ -246,18 +246,22 @@ class EntityRelationshipTask(ITaskExecutor):
                                 )
                             )
 
-            # retrieve the company that produced the film
-            ...
-            # retrieve the company that distributed the film
-            ...
             # retrieve the persons that did the special effects of the film
-            ...
-            # retrieve the persons that did the scenography of the film
-            ...
-            # retrieve the persons that influenced the film
-            ...
-            # retrieve actors that played in the film
-            ...
+            if (
+                entity.specifications is not None
+                and entity.specifications.special_effects_by is not None
+            ):
+
+                for name in entity.specifications.special_effects_by:
+
+                    _futures.append(
+                        self.connect_by_name.submit(
+                            entity=entity,
+                            name=name,
+                            relation=PeopleRelationshipType.SPECIAL_EFFECTS_BY,
+                            storage=output_storage,
+                        )
+                    )
 
             for future in _futures:
                 try:

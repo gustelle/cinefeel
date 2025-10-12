@@ -108,6 +108,7 @@ def extract_page_links(
 
 @task(
     task_run_name="execute_task-{page.page_id}",
+    tags=["scraping"],  # mark as scraping task
 )
 def execute_task(
     page: PageLink,

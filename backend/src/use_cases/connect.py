@@ -40,7 +40,7 @@ class EntitiesConnectionUseCase:
                         },
                     )
                 ],
-                concurrency_limit=self.settings.prefect_concurrency_limit,
+                concurrency_limit=10,  # max 10 at a time
                 job_variables={
                     "working_dir": Path(__file__)
                     .parent.parent.parent.resolve()
@@ -63,7 +63,7 @@ class EntitiesConnectionUseCase:
                         "settings": self.settings,
                         "entity_type": Movie.__name__,
                     },
-                    # cron="00 08 * * *",  # Every day at 8:00 AM
+                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()
@@ -86,7 +86,7 @@ class EntitiesConnectionUseCase:
                         "settings": self.settings,
                         "entity_type": Person.__name__,
                     },
-                    # cron="00 09 * * *",  # Every day at 9:00 AM
+                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,
                     job_variables={
                         "working_dir": Path(__file__)
                         .parent.parent.parent.resolve()

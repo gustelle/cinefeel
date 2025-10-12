@@ -170,7 +170,8 @@ def do_analysis(
 
 
 @task(
-    task_run_name="html_parsing_mother-{content_id}",
+    task_run_name="html-to-entity-{content_id}",
+    tags=["heavy"],  # mark as heavy task
 )
 def execute_task(
     content_id: str,
@@ -184,23 +185,23 @@ def execute_task(
     search_processor: Processor = None,
 ) -> None:
 
-    logger = get_run_logger()
-
-    analyzer = analyzer or Html2TextSectionsChopper(
-        content_splitter=WikipediaAPIContentSplitter(
-            parser=WikipediaParser(),
-            pruner=HTMLSimplifier(),
-            settings=settings,
-        ),
-        post_processors=[
-            TextSectionConverter(),
-            SectionSummarizer(settings=settings),
-        ],
-    )
-
-    search_processor = search_processor or SimilarSectionSearch(settings=settings)
-
     try:
+
+        logger = get_run_logger()
+
+        analyzer = analyzer or Html2TextSectionsChopper(
+            content_splitter=WikipediaAPIContentSplitter(
+                parser=WikipediaParser(),
+                pruner=HTMLSimplifier(),
+                settings=settings,
+            ),
+            post_processors=[
+                TextSectionConverter(),
+                SectionSummarizer(settings=settings),
+            ],
+        )
+
+        search_processor = search_processor or SimilarSectionSearch(settings=settings)
 
         entity = do_analysis(
             content_id=content_id,
@@ -217,4 +218,7 @@ def execute_task(
             )
 
     except Exception as e:
-        logger.error(f"Error storing entity for content ID '{content_id}': {e}")
+        import traceback
+
+        logger.error(traceback.format_exc())
+        logger.error(f"Error extracting entity for content ID '{content_id}': {e}")

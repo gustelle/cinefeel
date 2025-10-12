@@ -148,13 +148,29 @@ class Settings(BaseSettings):
         """,
     )
 
+    transformer_model_backend: str = Field(
+        default="onnx",
+        description="""
+            can't make it work with "cuda" or "mps" backends, so using onnx for now.
+        """,
+    )
+
+    prefect_flows_concurrency_limit: int = Field(
+        default=2,
+        description="The maximum number of concurrent flows",
+    )
+
     prefect_task_timeout: int = Field(
         default=60 * 30,  # 30 minutes
         description="The timeout for prefect tasks in seconds",
     )
-    prefect_concurrency_limit: int = Field(
+    prefect_tasks_concurrency_limit: int = Field(
         default=10,
         description="The maximum number of concurrent prefect tasks",
+    )
+    prefect_cache_disabled: bool = Field(
+        default=False,
+        description="If True, disables the prefect task cache",
     )
 
     # section params

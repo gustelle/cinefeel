@@ -56,12 +56,12 @@ def scraping_flow(
 
         tasks.append(
             execute_task.with_options(
-                tags=["cinefeel_tasks"],
                 cache_key_fn=lambda *_: f"scraping-{config.page_id}",
                 cache_expiration=timedelta(hours=24),
                 retries=RETRY_ATTEMPTS,
                 retry_delay_seconds=RETRY_DELAY_SECONDS,
                 retry_condition_fn=is_http_task_retriable,
+                refresh_cache=settings.prefect_cache_disabled,
             ).submit(
                 page=config,
                 settings=settings,
