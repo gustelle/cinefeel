@@ -12,9 +12,7 @@ from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.orchestration.flows.db_storage import db_storage_flow
-from src.repositories.orchestration.flows.entities_extraction import (
-    extract_entities_flow,
-)
+from src.repositories.orchestration.flows.extract import extract_entities_flow
 from src.repositories.orchestration.flows.scraping import scraping_flow
 from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
@@ -52,25 +50,37 @@ def extract_entity_from_page(
 
     logger.info(f"Downloading '{entity_type}' for page_id: {page_id}")
 
-    scraping_task = task()(scraping_flow).submit(
+    scraping_task = task(
+        cache_key_fn=lambda *_: f"on-demand-scraping-{page_id}",
+        cache_expiration=timedelta(hours=1),
+    )(scraping_flow).submit(
         settings=settings,
         pages=[page],
     )
 
-    extract_task = task()(extract_entities_flow).submit(
+    extract_task = task(
+        cache_key_fn=lambda *_: f"on-demand-extract-{entity_type}-{page_id}",
+        cache_expiration=timedelta(hours=1),
+    )(extract_entities_flow).submit(
         settings=settings,
         entity_type=entity_type,
         page_id=page_id,
         wait_for=[scraping_task],
     )
 
-    storage_task = task()(db_storage_flow).submit(
+    storage_task = task(
+        cache_key_fn=lambda *_: f"on-demand-store-{entity_type}-{page_id}",
+        cache_expiration=timedelta(hours=1),
+    )(db_storage_flow).submit(
         settings=settings,
         entity_type=entity_type,
         wait_for=[extract_task],
     )
 
-    task()(connection_flow).submit(
+    task(
+        cache_key_fn=lambda *_: f"on-demand-connect-{entity_type}-{page_id}",
+        cache_expiration=timedelta(hours=1),
+    )(connection_flow).submit(
         settings=settings,
         entity_type=entity_type,
         wait_for=[storage_task],
@@ -91,6 +101,10 @@ def connection_flow(
     and analyzes their content to identify connections between them.
 
     """
+
+    get_run_logger().info(
+        f"Starting connection flow for entity_type={entity_type} (cache disabled={settings.prefect_cache_disabled})"
+    )
 
     module = importlib.import_module("src.entities")
 
@@ -118,10 +132,11 @@ def connection_flow(
     ).execute_task.with_options(
         retries=RETRY_ATTEMPTS,
         retry_delay_seconds=RETRY_DELAY_SECONDS,
-        cache_expiration=timedelta(hours=1),
+        cache_expiration=timedelta(minutes=1),
         cache_key_fn=lambda *_: f"execute-connection-{entity_type}",
         refresh_cache=settings.prefect_cache_disabled,
     ).submit(
         input_storage=db_storage,
         output_storage=db_storage,
+        refresh_cache=settings.prefect_cache_disabled,
     ).wait()

@@ -28,7 +28,7 @@ class EntityExtractionUseCase:
                 flow.from_source(
                     source=Path(__file__).parent.parent
                     / "repositories/orchestration/flows",
-                    entrypoint="entities_extraction.py:extract_entities_flow",
+                    entrypoint="extract.py:extract_entities_flow",
                 ).to_deployment(
                     name="movies_extraction",
                     description="Extracts movies from HTML content.",
@@ -51,7 +51,7 @@ class EntityExtractionUseCase:
                 flow.from_source(
                     source=Path(__file__).parent.parent
                     / "repositories/orchestration/flows",
-                    entrypoint="entities_extraction.py:extract_entities_flow",
+                    entrypoint="extract.py:extract_entities_flow",
                 ).to_deployment(
                     name="persons_extraction",
                     description="Extracts persons from HTML content.",

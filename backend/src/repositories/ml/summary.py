@@ -36,7 +36,6 @@ class SectionSummarizer(Processor[Section]):
             settings.summary_model,
             backend=settings.transformer_model_backend,
             device=device,
-            # model_kwargs={"file_name": "onnx/model.onnx"},
         )
 
         logger.info(

@@ -13,9 +13,9 @@ prefect config set PREFECT_RESULTS_PERSIST_BY_DEFAULT=true
 prefect gcl create cinefeel --limit 10 --slot-decay-per-second 1.0
 
 # concurrent tasks
-prefect config set PREFECT_TASK_RUN_TAG_CONCURRENCY_SLOT_WAIT_SECONDS=60
+prefect config set PREFECT_TASK_RUN_TAG_CONCURRENCY_SLOT_WAIT_SECONDS=10
 prefect --no-prompt concurrency-limit delete heavy  # in case it already exists
-prefect concurrency-limit create heavy 2
+prefect concurrency-limit create heavy 10
 
 prefect --no-prompt concurrency-limit delete scraping  # in case it already exists
 prefect concurrency-limit create scraping 20

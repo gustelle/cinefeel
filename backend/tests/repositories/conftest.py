@@ -243,7 +243,7 @@ def test_settings(launch_memgraph):  #
             scraping_config_file=path,
             similarity_min_score=0.7,
             summary_max_length=512,
-            transformer_model_backend="torch",  # "onnx" on prefect
+            transformer_model_backend="torch",  # ok on local machine with cuda or mps
         )
 
         yield settings

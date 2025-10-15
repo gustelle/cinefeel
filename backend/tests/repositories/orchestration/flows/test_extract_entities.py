@@ -7,9 +7,7 @@ import redis
 from src.entities.person import Person
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.db.redis.text import RedisTextStorage
-from src.repositories.orchestration.flows.entities_extraction import (
-    extract_entities_flow,
-)
+from src.repositories.orchestration.flows.extract import extract_entities_flow
 from src.settings import Settings
 
 from ..stubs.stub_analyzer import StubAnalyzer
@@ -45,9 +43,7 @@ def test_extract_entities_flow_of_a_page_non_existing(test_settings: Settings):
     page_id = uuid.uuid4().hex  # random page_id
 
     # when
-    with patch(
-        "src.repositories.orchestration.flows.entities_extraction.emit_event"
-    ) as mock_emit:
+    with patch("src.repositories.orchestration.flows.extract.emit_event") as mock_emit:
         # Appelle la tâche Prefect (directement ou via .run si besoin)
         extract_entities_flow(
             settings=test_settings,
@@ -87,6 +83,7 @@ def test_extract_entities_flow_for_given_page_id(
     assert list(json_store.scan()) == []
 
     # when
+
     extract_entities_flow(
         settings=test_settings,
         entity_type="Person",

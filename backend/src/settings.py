@@ -149,10 +149,14 @@ class Settings(BaseSettings):
     )
 
     transformer_model_backend: str = Field(
-        default="onnx",
+        default="openvino",
+        pattern="^(torch|onnx|openvino)$",
         description="""
-            can't make it work with "cuda" or "mps" backends, so using onnx for now.
+            can't use GPU on macOS with docker, 
+            so using OpenVINO for better performance on CPU
+            may be a good deal.
         """,
+        examples=["torch", "onnx", "openvino"],
     )
 
     prefect_flows_concurrency_limit: int = Field(

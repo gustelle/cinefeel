@@ -2,8 +2,9 @@ import importlib
 from datetime import timedelta
 from typing import Literal
 
-from prefect import flow, get_run_logger
+from prefect import Flow, State, flow, get_run_logger
 from prefect.events import emit_event
+from prefect.flow_runs import FlowRun
 from prefect.futures import PrefectFuture, wait
 from prefect.task_runners import ConcurrentTaskRunner
 
@@ -20,10 +21,22 @@ from src.repositories.orchestration.tasks.task_html_parsing import execute_task
 from src.settings import Settings
 
 
+def capture_crash_info(flow: Flow, flow_run: FlowRun, state: State) -> State:
+    if state.is_crashed():
+        logger = get_run_logger()
+        logger.error("_--- Crash details ---_")
+        logger.error(flow_run.model_dump(mode="json"))
+        logger.error(state.model_dump(mode="json"))
+        logger.error("_--- End crash details ---_")
+    return state
+
+
 @flow(
     name="extract_entities",
     description="Extract entities (Movie or Person) from HTML contents",
     task_runner=ConcurrentTaskRunner(),
+    on_crashed=[capture_crash_info],
+    log_prints=True,
 )
 def extract_entities_flow(
     settings: Settings,
@@ -94,7 +107,7 @@ def extract_entities_flow(
                 settings=settings,
                 entity_type=cls,
                 analyzer=entity_analyzer,
-                search_processor=settings.prefect_cache_disabled or section_searcher,
+                search_processor=section_searcher,
             ).wait()
         else:
             # request extraction flow via event if content not found
@@ -104,7 +117,7 @@ def extract_entities_flow(
                 payload={"entity_type": entity_type},
             )
     else:
-        count = 0
+        # count = 0
         # iterate over all HTML contents in Redis
         for content_id, content in html_store.scan():
             if not content or not content_id:
@@ -116,7 +129,7 @@ def extract_entities_flow(
                     retries=RETRY_ATTEMPTS,
                     retry_delay_seconds=RETRY_DELAY_SECONDS,
                     cache_key_fn=lambda *_: f"parser_execute_task-{content_id}",
-                    cache_expiration=timedelta(minutes=1),
+                    cache_expiration=timedelta(minutes=5),
                     timeout_seconds=60 * 5,  # 5 minutes
                     refresh_cache=_refresh_cache,
                     tags=["heavy"],  # mark as heavy task
@@ -130,9 +143,9 @@ def extract_entities_flow(
                     search_processor=section_searcher,
                 )
             )
-            count += 1
-            if count >= 4:
-                break  # for testing, process only one
+            # count += 1
+            # if count >= :
+            #     break  # for testing, process only one
 
         # timeout is set at task level
         wait(tasks)

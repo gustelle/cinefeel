@@ -59,7 +59,7 @@ services:
       - "6379:6379"
 
   prefect-server:
-    image: prefecthq/prefect:3-python3.10-conda
+    image: prefecthq/prefect:3-latest-conda
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,7 +79,7 @@ services:
       - "4200:4200"
 
   prefect-services:
-    image: prefecthq/prefect:3-python3.10-conda
+    image: prefecthq/prefect:3-latest-conda
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,7 +97,7 @@ services:
     command: prefect server services start
 
   prefect-worker:
-    image: prefecthq/prefect:3-python3.10-conda
+    image: prefecthq/prefect:3-latest-conda
     depends_on:
       prefect-server:
         condition: service_started

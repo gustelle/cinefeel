@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from prefect import get_run_logger, task
+from prefect.cache_policies import NO_CACHE
 from prefect.events import emit_event
 from prefect.futures import wait
 from pydantic import HttpUrl
@@ -124,6 +125,7 @@ class EntityRelationshipTask(ITaskExecutor):
 
     @task(
         task_run_name="connect_by_name-{entity.uid}-{name}",
+        cache_policy=NO_CACHE,
     )
     def connect_by_name(
         self,
@@ -279,11 +281,12 @@ class EntityRelationshipTask(ITaskExecutor):
 
         return entity
 
-    @task()
+    @task
     def execute_task(
         self,
         input_storage: IStorageHandler[Composable],
         output_storage: IRelationshipHandler[Composable],
+        refresh_cache: bool = False,
     ) -> None:
 
         logger = get_run_logger()
@@ -298,6 +301,7 @@ class EntityRelationshipTask(ITaskExecutor):
                     self.analyze_relationships.with_options(
                         cache_key_fn=lambda *_: f"analyze_relationships-{uid}",
                         cache_expiration=timedelta(hours=1),  # 1 hour
+                        refresh_cache=refresh_cache,
                     ).submit(
                         entity=entity,
                         output_storage=output_storage,
