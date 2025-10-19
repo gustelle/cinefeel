@@ -39,6 +39,8 @@ class StubStorage[T: Movie | Person](IStorageHandler[T]):
         contents: list[T],
     ) -> None:
         """Saves multiple contents to persistent storage."""
+        print("StubStorage.insert_many called")
+
         self._inserted.extend(contents)
         self.is_inserted = True
 

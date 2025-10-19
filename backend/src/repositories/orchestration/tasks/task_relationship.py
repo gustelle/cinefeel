@@ -1,4 +1,3 @@
-
 from prefect import get_run_logger, task
 from prefect.events import emit_event
 from pydantic import HttpUrl
@@ -18,6 +17,9 @@ from src.interfaces.storage import IStorageHandler
 def _retrieve_page_id(name: str, http_client: IHttpClient) -> str | None:
     """
     verifies that a page exists on Wikipedia and retrieves its page ID.
+
+    TODO:
+    - raise on 404 so that we can connect to 'UNKNOWN' entities later on.
 
     Args:
         name (str): The name of the page to verify.
@@ -68,6 +70,9 @@ def load_entity_by_name(
     """
     retrieves a content from the input storage by its name.
 
+    TODO:
+    - handle 404 errors when retrieving the page ID.
+
     Args:
         name (str): The name of the entity to extract.
         input_storage (IStorageHandler[Composable]): The storage handler to use for retrieving the entity.
@@ -115,13 +120,15 @@ def connect_by_name(
 ) -> Relationship | None:
     """Connects an entity to another entity.
 
+    TODO:
+    - handle the case where the related entity is not found.
+
     Args:
         entity (Composable): The source entity.
         name (str): The name of the target entity.
         relation (RelationshipType): The type of relationship.
         storage (IRelationshipHandler): The storage handler for relationships.
         http_client (IHttpClient): The HTTP client for making requests.
-        settings (Settings): Application settings.
 
     Returns:
         Relationship | None: The created relationship or None if unsuccessful.
@@ -132,6 +139,16 @@ def connect_by_name(
     )
 
     if related_entity is None:
+        # TODO:
+        # Handle the case where the related entity is not found.
+        # ex:
+        # storage.add_relationship(
+        #     relationship=Relationship(
+        #         from_entity=entity,
+        #         to_entity=UNKNOWN_ENTITY[name],
+        #         relation_type=relation,
+        #     )
+        # )
         return None
 
     return storage.add_relationship(

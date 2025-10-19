@@ -1,4 +1,3 @@
-
 from src.entities.movie import Movie
 from src.repositories.orchestration.tasks.task_html_parsing import (
     do_analysis,
@@ -8,6 +7,7 @@ from src.settings import Settings
 
 from ..stubs.stub_analyzer import StubAnalyzer
 from ..stubs.stub_section_search import StubSectionSearch
+from ..stubs.stub_stats import StubStatsCollector
 from ..stubs.stub_storage import StubStorage
 
 
@@ -29,6 +29,7 @@ def test_task_parser_entity_is_stored_when_parsed(test_settings: Settings):
         output_storage=stub_storage,
         analyzer=StubAnalyzer(),
         search_processor=StubSectionSearch(),
+        stats_collector=StubStatsCollector(),
     )
 
     # then
