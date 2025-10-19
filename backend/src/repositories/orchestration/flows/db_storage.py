@@ -1,9 +1,9 @@
-import importlib
 from typing import Literal
 
 from prefect import flow
 from prefect.futures import wait
 
+from src.entities import get_entity_class
 from src.entities.movie import Movie
 from src.interfaces.storage import IStorageHandler
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
@@ -32,12 +32,7 @@ def db_storage_flow(
     refresh_cache: bool = False,
 ) -> None:
 
-    module = importlib.import_module("src.entities")
-
-    try:
-        cls = getattr(module, entity_type)
-    except AttributeError as e:
-        raise ValueError(f"Unsupported entity type: {entity_type}") from e
+    cls = get_entity_class(entity_type)
 
     json_store = json_store or RedisJsonStorage[cls](settings=settings)
 

@@ -1,13 +1,12 @@
-import importlib
 from datetime import timedelta
 from typing import Literal
 
-from prefect import Flow, State, flow, get_run_logger
+from prefect import flow, get_run_logger
 from prefect.events import emit_event
-from prefect.flow_runs import FlowRun
 from prefect.futures import PrefectFuture, wait
 from prefect.task_runners import ConcurrentTaskRunner
 
+from src.entities import get_entity_class
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.storage import IStorageHandler
@@ -21,15 +20,7 @@ from src.repositories.orchestration.tasks.task_html_parsing import execute_task
 from src.repositories.stats import RedisStatsCollector
 from src.settings import Settings
 
-
-def capture_crash_info(flow: Flow, flow_run: FlowRun, state: State) -> State:
-    if state.is_crashed():
-        logger = get_run_logger()
-        logger.error("_--- Crash details ---_")
-        logger.error(flow_run.model_dump(mode="json"))
-        logger.error(state.model_dump(mode="json"))
-        logger.error("_--- End crash details ---_")
-    return state
+from .hooks import capture_crash_info
 
 
 @flow(
@@ -74,12 +65,7 @@ def extract_entities_flow(
 
     logger = get_run_logger()
 
-    module = importlib.import_module("src.entities")
-
-    try:
-        cls = getattr(module, entity_type)
-    except AttributeError as e:
-        raise ValueError(f"Unsupported entity type: {entity_type}") from e
+    cls = get_entity_class(entity_type)
 
     html_store = html_store or RedisTextStorage[cls](settings=settings)
     json_store = json_store or RedisJsonStorage[cls](settings=settings)
@@ -154,6 +140,3 @@ def extract_entities_flow(
 
         # timeout is set at task level
         wait(tasks)
-
-        for task in tasks:
-            logger.info(f"Task {task} state: {task.state}")

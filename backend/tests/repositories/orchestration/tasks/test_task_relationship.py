@@ -2,9 +2,7 @@ from unittest.mock import patch
 
 from src.entities.person import Person
 from src.interfaces.http_client import HttpError
-from src.repositories.orchestration.tasks.task_relationship import (
-    EntityRelationshipTask,
-)
+from src.repositories.orchestration.tasks.task_relationship import load_entity_by_name
 from src.settings import Settings
 from tests.repositories.orchestration.stubs.stub_http import StubSyncHttpClient
 from tests.repositories.orchestration.stubs.stub_storage import StubStorage
@@ -21,16 +19,12 @@ def test_task_load_entity_by_name_from_storage(
     name = "Clint Eastwood"
     permalink = f"https://fr.wikipedia.org/wiki/{page_id}"
 
-    runner = EntityRelationshipTask(
-        settings=test_settings,
-        http_client=StubSyncHttpClient(
-            response={
-                "key": page_id,
-            }
-        ),
+    http_client = StubSyncHttpClient(
+        response={
+            "key": page_id,
+        }
     )
 
-    # an input storage with a film entity
     clint = test_person.model_copy(
         update={
             "permalink": permalink,
@@ -38,10 +32,12 @@ def test_task_load_entity_by_name_from_storage(
     )
     storage = StubStorage([clint])
 
-    # when
-    result = runner.load_entity_by_name(name=name, input_storage=storage)
+    # # when
+    result = load_entity_by_name(
+        name=name, input_storage=storage, http_client=http_client
+    )
 
-    # then
+    # # then
     assert isinstance(result, Person), "should return a Person entity"
     assert result.permalink == permalink
 
@@ -55,23 +51,22 @@ def test_task_load_entity_by_name_not_existing_in_storage(
     page_id = "Clint_Eastwood"
     name = "Clint Eastwood"
 
-    runner = EntityRelationshipTask(
-        settings=test_settings,
-        http_client=StubSyncHttpClient(
-            response={
-                "key": page_id,
-            }
-        ),
+    http_client = StubSyncHttpClient(
+        response={
+            "key": page_id,
+        }
     )
 
     storage = StubStorage(None, entity_type=Person)  # nothing in storage
 
-    # when
+    # # when
     with patch(
         "src.repositories.orchestration.tasks.task_relationship.emit_event"
     ) as mock_emit:
         # Appelle la tâche Prefect (directement ou via .run si besoin)
-        result = runner.load_entity_by_name(name=name, input_storage=storage)
+        result = load_entity_by_name(
+            name=name, input_storage=storage, http_client=http_client
+        )
 
     # then
     assert result is None
@@ -95,14 +90,9 @@ def test_task_load_entity_by_name_not_existing_in_wikipedia(
     name = "Clint Eastwood"
     permalink = f"https://fr.wikipedia.org/wiki/{page_id}"
 
-    runner = EntityRelationshipTask(
-        settings=test_settings,
-        http_client=StubSyncHttpClient(
-            raise_exc=HttpError("Not Found", status_code=404)
-        ),
-    )
+    http_client = StubSyncHttpClient(raise_exc=HttpError("Not Found", status_code=404))
 
-    # an input storage with a film entity
+    # # an input storage with a film entity
     clint = test_person.model_copy(
         update={
             "permalink": permalink,
@@ -110,13 +100,14 @@ def test_task_load_entity_by_name_not_existing_in_wikipedia(
     )
     storage = StubStorage([clint])
 
-    # when
-    # when
+    # # when
     with patch(
         "src.repositories.orchestration.tasks.task_relationship.emit_event"
     ) as mock_emit:
-        result = runner.load_entity_by_name(name=name, input_storage=storage)
+        result = load_entity_by_name(
+            name=name, input_storage=storage, http_client=http_client
+        )
 
-    # then
+    # # then
     assert result is None, "should return None if the entity is not found in wikipedia"
     assert not mock_emit.called, "should not emit an event if the entity is not found"

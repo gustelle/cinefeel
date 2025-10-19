@@ -1,10 +1,10 @@
-import importlib
 from datetime import timedelta
 
 from prefect import flow, get_run_logger
 from prefect.futures import wait
 from prefect.tasks import exponential_backoff
 
+from src.entities import get_entity_class
 from src.entities.content import TableOfContents
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
@@ -44,12 +44,7 @@ def scraping_flow(
             f"Processing '{config.__class__.__name__}' with ID '{config.page_id}'"
         )
 
-        module = importlib.import_module("src.entities")
-
-        try:
-            cls = getattr(module, config.entity_type)
-        except AttributeError as e:
-            raise ValueError(f"Unsupported entity type: {config.entity_type}") from e
+        cls = get_entity_class(config.entity_type)
 
         html_store = RedisTextStorage[cls](settings=settings)
 
