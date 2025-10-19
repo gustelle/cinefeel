@@ -5376,6 +5376,17 @@ files = [
 ]
 
 [[package]]
+name = "ratelimit"
+version = "2.2.1"
+description = "API rate limit decorator"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "ratelimit-2.2.1.tar.gz", hash = "sha256:af8a9b64b821529aca09ebaf6d8d279100d766f19e90b5059ac6a718ca6dee42"},
+]
+
+[[package]]
 name = "readchar"
 version = "4.2.1"
 description = "Library to easily read single chars and key strokes"
@@ -7556,4 +7567,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "2b2dde8907c0466a1979916a0581d2c7f5acb9552a2fe21a9f2d23620ca84856"
+content-hash = "61509dd49fbae7fea2a67c9695fef58fb2e013bdca03941118499ab5d47ac7a3"

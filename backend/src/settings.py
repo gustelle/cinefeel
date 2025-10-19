@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     )
 
     scraping_max_concurrency: int = Field(
-        default=10,
+        default=3,
         description="The maximum number of concurrent connections to download pages",
     )
     scraping_request_timeout: int = Field(
@@ -49,7 +49,10 @@ class Settings(BaseSettings):
 
     mediawiki_api_key: str = Field(
         default="",
-        description="The API key for the MediaWiki API",
+        description="""
+            The API key for the MediaWiki API;
+            see https://api.wikimedia.org/wiki/Special:AppManagement
+        """,
     )
     mediawiki_base_url: str = Field(
         default="https://api.wikimedia.org/core/v1/wikipedia/fr",
@@ -213,6 +216,14 @@ class Settings(BaseSettings):
             used for storing html and JSON contents temporarily, before processing them into the Graph DB.
             NB: only the /0 database is supported because we are using RedisSearch module which does not support logical DBs.
             @see https://stackoverflow.com/questions/72116930/redisearch-cannot-create-index-on-db-0
+        """,
+    )
+
+    redis_stats_dsn: RedisDsn = Field(
+        default="redis://localhost:6379/2",
+        description="""
+            used for storing statistics about the scraping and extraction processes.
+            We use a separate Redis logical DB to avoid conflicts with the data storage.
         """,
     )
 

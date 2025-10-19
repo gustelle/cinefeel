@@ -1,6 +1,7 @@
 from typing import Type
 
-from prefect import get_run_logger, task
+import orjson
+from prefect import get_run_logger, runtime, task
 
 from src.entities.composable import Composable
 from src.entities.content import UsualSectionTitles_FR_fr
@@ -10,6 +11,7 @@ from src.entities.woa import WOAInfluence
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import ResolutionConfiguration
+from src.interfaces.stats import IStatsCollector, StatKey
 from src.interfaces.storage import IStorageHandler
 from src.repositories.html_parser.html_chopper import Html2TextSectionsChopper
 from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitter
@@ -183,7 +185,10 @@ def execute_task(
     # enable injection of dependencies
     analyzer: IContentAnalyzer = None,
     search_processor: Processor = None,
+    stats_collector: IStatsCollector = None,
 ) -> None:
+
+    flow_id = runtime.flow_run.id
 
     try:
 
@@ -213,12 +218,27 @@ def execute_task(
         )
 
         if entity is not None:
+            stats_collector.inc_value(StatKey.EXTRACTION_SUCCESS, flow_id=flow_id)
             output_storage.insert_many(
                 [entity],
             )
+        else:
+            if stats_collector:
+                stats_collector.inc_value(StatKey.EXTRACTION_VOID, flow_id=flow_id)
 
     except Exception as e:
+        if stats_collector:
+            stats_collector.inc_value(StatKey.EXTRACTION_FAILED, flow_id=flow_id)
+
         import traceback
 
         logger.error(traceback.format_exc())
         logger.error(f"Error extracting entity for content ID '{content_id}': {e}")
+
+    finally:
+        if stats_collector:
+            logger.info(
+                orjson.dumps(
+                    stats_collector.collect(flow_id=flow_id), option=orjson.OPT_INDENT_2
+                ).decode()
+            )

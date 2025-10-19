@@ -3,6 +3,7 @@ from typing import Literal
 import hishel
 import httpx
 from loguru import logger
+from ratelimit import limits
 
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.settings import Settings
@@ -52,6 +53,8 @@ class SyncHttpClient(IHttpClient):
             logger.debug("Closing HTTP client connection.")
             self.client.close()
 
+    # 4 requests per second
+    @limits(calls=240, period=60)
     def send(
         self,
         url: str,

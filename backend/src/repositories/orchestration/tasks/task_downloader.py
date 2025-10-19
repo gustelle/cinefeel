@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import orjson
 from loguru import logger
-from prefect import get_run_logger, task
+from prefect import get_run_logger, runtime, task
 
 from src.entities.content import PageLink, TableOfContents
 from src.interfaces.http_client import HttpError, IHttpClient
 from src.interfaces.info_retriever import IContentParser
+from src.interfaces.stats import IStatsCollector, StatKey
 from src.interfaces.storage import IStorageHandler
 from src.repositories.db.local_storage.html_storage import LocalTextStorage
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
@@ -18,6 +20,7 @@ def download(
     settings: Settings,
     storage_handler: LocalTextStorage | None = None,
     return_content: bool = False,
+    stats_collector: IStatsCollector | None = None,
     **params,
 ) -> str | None:
     """
@@ -27,6 +30,8 @@ def download(
         page_id (str): The page ID to download.
         storage_handler (LocalTextStorage | None, optional): The storage handler to use for storing the content. Defaults to None.
         return_content (bool, optional): Whether to return the content. Defaults to False, in which case the content ID is returned.
+        stats_collector (IStatsCollector | None): The stats collector to use for collecting statistics during the scraping process.
+            Defaults to None.
         **params: Additional parameters for the HTTP request.
 
     Returns:
@@ -37,6 +42,8 @@ def download(
 
     logger.info(f">> Downloading '{endpoint}'")
 
+    flow_id = runtime.flow_run.id
+
     try:
         html = http_client.send(
             url=endpoint,
@@ -44,10 +51,16 @@ def download(
             params=params,
         )
     except HttpError as e:
+
+        if stats_collector:
+            stats_collector.inc_value(StatKey.SCRAPING_FAILED, flow_id=flow_id)
+
         if e.status_code == 404:
             logger.warning(
                 f"Page '{page_id}' not found at '{endpoint}'. Skipping download."
             )
+            if stats_collector:
+                stats_collector.inc_value(StatKey.SCRAPING_VOID, flow_id=flow_id)
             return None
         else:
             # force a retry for other HTTP errors
@@ -58,6 +71,20 @@ def download(
             content_id=page_id,
             content=html,
         )
+
+    if stats_collector:
+
+        if html is not None:
+            stats_collector.inc_value(StatKey.SCRAPING_SUCCESS, flow_id=flow_id)
+        else:
+            stats_collector.inc_value(StatKey.SCRAPING_VOID, flow_id=flow_id)
+
+        logger.info(
+            orjson.dumps(
+                stats_collector.collect(flow_id=flow_id), option=orjson.OPT_INDENT_2
+            ).decode()
+        )
+
     if return_content:
         return html
 
@@ -117,6 +144,7 @@ def execute_task(
     storage_handler: IStorageHandler,
     link_extractor: IContentParser | None = WikipediaParser(),
     return_results: bool = False,
+    stats_collector: IStatsCollector | None = None,
 ) -> list[str] | None:
     """
     Entry point to scrape a page and store its HTML content. This function
@@ -133,6 +161,8 @@ def execute_task(
         return_results (bool, optional): Defaults to False.
             If True, the method will return a list of `page_id` stored into the storage backend.
             If False, it will return None.
+        stats_collector (IStatsCollector | None): The stats collector to use for collecting statistics during the scraping process.
+            Defaults to None.
 
     Returns:
         list[str] | None: a list of `page_id` stored into the storage backend
@@ -157,6 +187,7 @@ def execute_task(
             storage_handler=storage_handler,
             return_content=False,  # for memory constraints, return the content ID
             settings=settings,
+            stats_collector=stats_collector,
         )
         for page_link in page_links
         if isinstance(page_link, PageLink)

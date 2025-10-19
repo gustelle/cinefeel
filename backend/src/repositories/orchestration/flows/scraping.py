@@ -3,16 +3,17 @@ from datetime import timedelta
 
 from prefect import flow, get_run_logger
 from prefect.futures import wait
+from prefect.tasks import exponential_backoff
 
 from src.entities.content import TableOfContents
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
-    RETRY_DELAY_SECONDS,
     is_http_task_retriable,
 )
 from src.repositories.orchestration.tasks.task_downloader import execute_task
+from src.repositories.stats import RedisStatsCollector
 from src.settings import Settings
 
 
@@ -24,10 +25,6 @@ def scraping_flow(
     settings: Settings,
     pages: list[TableOfContents],
 ) -> None:
-    """TODO:
-    - inject ContentDownloaderTask for testing purposes
-    - inject RedisTextStorage for testing purposes
-    """
 
     logger = get_run_logger()
 
@@ -37,6 +34,8 @@ def scraping_flow(
     pages = {p.page_id: p for p in pages}.values()
 
     tasks = []
+
+    stats_collector = RedisStatsCollector(redis_dsn=settings.redis_stats_dsn)
 
     # for each page
     for config in pages:
@@ -59,8 +58,10 @@ def scraping_flow(
                 cache_key_fn=lambda *_: f"scraping-{config.page_id}",
                 cache_expiration=timedelta(hours=24),
                 retries=RETRY_ATTEMPTS,
-                retry_delay_seconds=RETRY_DELAY_SECONDS,
+                # retry_delay_seconds=RETRY_DELAY_SECONDS,
                 retry_condition_fn=is_http_task_retriable,
+                retry_delay_seconds=exponential_backoff(backoff_factor=0.3),
+                retry_jitter_factor=0.1,
                 refresh_cache=settings.prefect_cache_disabled,
             ).submit(
                 page=config,
@@ -68,6 +69,7 @@ def scraping_flow(
                 http_client=http_client,
                 storage_handler=html_store,
                 return_results=False,
+                stats_collector=stats_collector,
             )
         )
 

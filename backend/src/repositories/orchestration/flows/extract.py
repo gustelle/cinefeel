@@ -18,6 +18,7 @@ from src.repositories.orchestration.tasks.retry import (
     RETRY_DELAY_SECONDS,
 )
 from src.repositories.orchestration.tasks.task_html_parsing import execute_task
+from src.repositories.stats import RedisStatsCollector
 from src.settings import Settings
 
 
@@ -83,6 +84,8 @@ def extract_entities_flow(
     html_store = html_store or RedisTextStorage[cls](settings=settings)
     json_store = json_store or RedisJsonStorage[cls](settings=settings)
 
+    stats_collector = RedisStatsCollector(redis_dsn=settings.redis_stats_dsn)
+
     _refresh_cache = settings.prefect_cache_disabled or refresh_cache
 
     logger.info(
@@ -108,6 +111,7 @@ def extract_entities_flow(
                 entity_type=cls,
                 analyzer=entity_analyzer,
                 search_processor=section_searcher,
+                stats_collector=stats_collector,
             ).wait()
         else:
             # request extraction flow via event if content not found
@@ -141,6 +145,7 @@ def extract_entities_flow(
                     entity_type=cls,
                     analyzer=entity_analyzer,
                     search_processor=section_searcher,
+                    stats_collector=stats_collector,
                 )
             )
             # count += 1
