@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from loguru import logger
 from pydantic import HttpUrl
 
@@ -39,9 +41,6 @@ def download_page(
 def get_permalink(name: str, http_client: IHttpClient) -> HttpUrl | None:
     """
     retrieves the permalink for a given Wikipedia page name.
-
-    TODO:
-    - test this function
 
     Example:
         >>> get_permalink("Some Wikipedia Page", http_client=http_client)
@@ -85,17 +84,23 @@ def get_permalink(name: str, http_client: IHttpClient) -> HttpUrl | None:
 def get_page_id(permalink: HttpUrl) -> str:
     """Query wikipedia to get the page ID from a permalink.
 
-    TODO:
-    - test this function
-
     Args:
         permalink (HttpUrl): The permalink URL of the Wikipedia page.
 
     Returns:
         str: The extracted page ID.
+
+    Raises:
+        RetrievalError: If the permalink format is invalid or extraction fails.
+        (expected format is 'https://<lang>.wikipedia.org/wiki/<page_id>')
     """
     try:
         # extract the page ID from the permalink
+        if not re.search(r"https:\/\/.+\.wikipedia\.org\/wiki\/.+", str(permalink)):
+            raise ValueError(
+                f"Invalid permalink format for '{permalink}', expected format is 'https://<lang>.wikipedia.org/wiki/<page_id>'",
+            )
+
         return str(permalink).split("/wiki/")[-1]
     except Exception as e:
         raise RetrievalError(
