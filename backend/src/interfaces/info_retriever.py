@@ -6,10 +6,6 @@ from pydantic import HttpUrl
 from src.entities.content import Media, PageLink, Section
 
 
-class RetrievalError(Exception):
-    pass
-
-
 class IContentParser(ABC):
     """
     Interface for a parser that extracts data from a given HTML content.

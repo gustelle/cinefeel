@@ -9,7 +9,8 @@ from loguru import logger
 from pydantic import HttpUrl, ValidationError
 
 from src.entities.content import Media, PageLink, Section, UsualSectionTitles_FR_fr
-from src.interfaces.info_retriever import IContentParser, RetrievalError
+from src.exceptions import RetrievalError
+from src.interfaces.info_retriever import IContentParser
 from src.settings import TableOfContents
 
 
@@ -105,7 +106,9 @@ class WikipediaParser(IContentParser):
                     value = f"https://{value}"
                 return HttpUrl(value)
 
-        raise RetrievalError("Permalink not found in the HTML content.")
+        raise RetrievalError(
+            "Permalink not found in the HTML content.", status_code=404
+        )
 
     def retrieve_title(self, html_content: str) -> str:
         """
@@ -124,7 +127,9 @@ class WikipediaParser(IContentParser):
         if title_tag:
             return title_tag.get_text(strip=True)
         else:
-            raise RetrievalError("Title not found in the HTML content.")
+            raise RetrievalError(
+                "Title not found in the HTML content.", status_code=404
+            )
 
     def retrieve_inner_links(
         self, html_content: str, config: TableOfContents
@@ -280,19 +285,24 @@ class WikipediaParser(IContentParser):
         try:
             df = pd.read_html(StringIO(content.find("table").decode()))[0]
             if df.empty:
-                raise RetrievalError("Infobox table is empty.")
+                raise RetrievalError("Infobox table is empty.", status_code=404)
             if df.shape[1] < 2:
                 raise RetrievalError(
-                    "Infobox table has less than 2 columns, cannot parse key-value pairs."
+                    "Infobox table has less than 2 columns, cannot parse key-value pairs.",
+                    status_code=500,
                 )
         except ValueError as e:
-            raise RetrievalError("Infobox table not found or malformed.") from e
+            raise RetrievalError(
+                "Infobox table not found or malformed.", status_code=500
+            ) from e
 
         if format_as == "table":
             # return the raw HTML table
             content = content.find("table").decode()
             if not content:
-                raise RetrievalError("Infobox table not found in the HTML content.")
+                raise RetrievalError(
+                    "Infobox table not found in the HTML content.", status_code=404
+                )
 
         else:
             # format the DataFrame as a list of values
@@ -304,7 +314,9 @@ class WikipediaParser(IContentParser):
                 </ul>
                 """
             except Exception as e:
-                raise RetrievalError("Error formatting infobox as list.") from e
+                raise RetrievalError(
+                    "Error formatting infobox as list.", status_code=500
+                ) from e
 
         # convert the DataFrame to a list of Section objects
         info_table = Section(

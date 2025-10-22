@@ -2,8 +2,8 @@ import pytest
 
 from src.entities.content import PageLink, TableOfContents
 from src.interfaces.http_client import HttpError
-from src.repositories.orchestration.tasks.task_downloader import (
-    download,
+from src.repositories.orchestration.tasks.task_scraper import (
+    download_page,
     execute_task,
     extract_page_links,
 )
@@ -23,7 +23,7 @@ def test_downloader_task_download_return_page_id(test_settings: Settings):
     storage_handler = StubStorage()
 
     # when
-    result = download(
+    result = download_page.fn(
         http_client=client,
         page_id="page_id",
         settings=test_settings,
@@ -44,7 +44,7 @@ def test_downloader_task_download_return_content(test_settings: Settings):
     storage_handler = StubStorage()
 
     # when
-    result = download(
+    result = download_page.fn(
         http_client=client,
         page_id="page_id",
         settings=test_settings,
@@ -65,7 +65,7 @@ def test_downloader_task_download_page_using_storage(test_settings: Settings):
     storage_handler = StubStorage()
 
     # when
-    page_id = download(
+    page_id = download_page.fn(
         http_client=client,
         page_id="page_id",
         settings=test_settings,
@@ -86,7 +86,7 @@ def test_downloader_task_download_page_http_error(test_settings: Settings):
 
     # when
     with pytest.raises(HttpError) as exc_info:
-        download(
+        download_page.fn(
             http_client=client,
             page_id="page_id",
             return_content=True,

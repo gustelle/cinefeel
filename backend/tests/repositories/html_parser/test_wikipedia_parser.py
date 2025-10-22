@@ -5,7 +5,8 @@ import pytest
 from bs4 import BeautifulSoup
 
 from src.entities.content import TableOfContents, UsualSectionTitles_FR_fr
-from src.interfaces.info_retriever import PageLink, RetrievalError
+from src.exceptions import RetrievalError
+from src.interfaces.info_retriever import PageLink
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 
 

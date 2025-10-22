@@ -7,7 +7,7 @@ from src.entities.movie import FilmSpecifications, Movie
 from src.entities.person import Person
 from src.entities.relationship import (
     PeopleRelationshipType,
-    Relationship,
+    StrongRelationship,
     WOARelationshipType,
 )
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
@@ -231,7 +231,7 @@ def test_add_relationship_to_person(
 
     # when
     test_film_graphdb.add_relationship(
-        relationship=Relationship(
+        relationship=StrongRelationship(
             from_entity=test_film,
             to_entity=test_person,
             relation_type=PeopleRelationshipType.DIRECTED_BY,
@@ -272,7 +272,7 @@ def test_add_relationship_to_film(
 
     # when
     test_film_graphdb.add_relationship(
-        relationship=Relationship(
+        relationship=StrongRelationship(
             from_entity=test_film,
             to_entity=film_copy,
             relation_type=WOARelationshipType.INSPIRED_BY,
@@ -347,7 +347,7 @@ def test_get_related(
     test_person_graphdb.insert_many([test_person])
 
     test_film_graphdb.add_relationship(
-        relationship=Relationship(
+        relationship=StrongRelationship(
             from_entity=test_film,
             to_entity=test_person,
             relation_type=PeopleRelationshipType.DIRECTED_BY,
@@ -355,7 +355,7 @@ def test_get_related(
     )
 
     test_film_graphdb.add_relationship(
-        relationship=Relationship(
+        relationship=StrongRelationship(
             from_entity=test_film,
             to_entity=film_copy,
             relation_type=WOARelationshipType.INSPIRED_BY,
@@ -401,7 +401,7 @@ def test_get_related_with_relation_type(
     test_person_graphdb.insert_many([test_person])
 
     test_film_graphdb.add_relationship(
-        relationship=Relationship(
+        relationship=StrongRelationship(
             from_entity=test_film,
             to_entity=test_person,
             relation_type=PeopleRelationshipType.DIRECTED_BY,
@@ -409,7 +409,7 @@ def test_get_related_with_relation_type(
     )
 
     test_film_graphdb.add_relationship(
-        relationship=Relationship(
+        relationship=StrongRelationship(
             from_entity=test_film,
             to_entity=film_copy,
             relation_type=WOARelationshipType.INSPIRED_BY,

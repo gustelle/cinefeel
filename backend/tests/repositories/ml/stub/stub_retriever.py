@@ -3,13 +3,14 @@ from typing import Type
 from pydantic import HttpUrl
 
 from src.entities.content import PageLink, Section
-from src.interfaces.info_retriever import IContentParser, RetrievalError
+from src.exceptions import RetrievalError
+from src.interfaces.info_retriever import IContentParser
 
 
 class NoPermakinRetriever(IContentParser):
 
     def retrieve_permalink(self, html_content, *args, **kwargs):
-        raise RetrievalError("Failed to retrieve permalink")
+        raise RetrievalError("Failed to retrieve permalink", status_code=404)
 
     def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
         """
@@ -38,7 +39,7 @@ class NoTitleRetriever(IContentParser):
         return HttpUrl("https://example.com/test-page")
 
     def retrieve_title(self, html_content: str, *args, **kwargs) -> str:
-        raise RetrievalError("Failed to retrieve title")
+        raise RetrievalError("Failed to retrieve title", status_code=404)
 
     def retrieve_orphan_paragraphs(self, html_content, *args, **kwargs):
         raise NotImplementedError("Subclasses must implement this method.")

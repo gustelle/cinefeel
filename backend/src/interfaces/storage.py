@@ -2,11 +2,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Generator, Sequence
 
-
-class StorageError(Exception):
-    """Base class for all storage exceptions."""
-
-    pass
+from src.entities.composable import Composable
+from src.entities.relationship import BaseRelationship
 
 
 class IStorageHandler[U](ABC):
@@ -51,4 +48,21 @@ class IStorageHandler[U](ABC):
     @abstractmethod
     def update(self, content: U, *args, **kwargs) -> U:
         """Updates an existing content in persistent storage."""
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
+
+class IRelationshipHandler[U: Composable](IStorageHandler[U]):
+
+    @abstractmethod
+    def add_relationship(
+        self,
+        relationship: BaseRelationship,
+        *args,
+        **kwargs,
+    ) -> None:
+        """Adds a relationship between two contents.
+
+        raises:
+            RelationshipError: If the relationship cannot be added.
+        """
         raise NotImplementedError("This method should be overridden by subclasses.")

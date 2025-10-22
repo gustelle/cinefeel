@@ -6,7 +6,8 @@ from loguru import logger
 from pydantic import ValidationError
 
 from src.entities.composable import Composable
-from src.interfaces.storage import IStorageHandler, StorageError
+from src.exceptions import StorageError
+from src.interfaces.storage import IStorageHandler
 from src.settings import Settings
 
 

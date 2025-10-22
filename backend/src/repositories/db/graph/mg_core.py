@@ -3,17 +3,21 @@ from typing import Generator, Sequence
 
 from loguru import logger
 from neo4j import GraphDatabase, Session
-from pydantic import ValidationError, validate_call
+from pydantic import ValidationError
 from pydantic_settings import BaseSettings
 
 from src.entities.composable import Composable
-from src.entities.relationship import Relationship, RelationshipType
-from src.interfaces.relation_manager import IRelationshipHandler, RelationshipError
-from src.interfaces.storage import IStorageHandler, StorageError
+from src.entities.relationship import (
+    BaseRelationship,
+    RelationshipType,
+    StrongRelationship,
+)
+from src.exceptions import RelationshipError, StorageError
+from src.interfaces.storage import IRelationshipHandler
 from src.settings import Settings
 
 
-class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T]):
+class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
     """
     Base class for MemoryGraph DB storage handler.
 
@@ -136,18 +140,20 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
             logger.error(f"Error validating document with ID '{content_id}': {e}")
             return None
 
-    @validate_call
     def add_relationship(
         self,
-        relationship: Relationship,
+        relationship: BaseRelationship,
     ) -> None:
         """
         adds a relationship between two contents in the database,
 
-        It assumes that both entities already exist in the database.
+        TODO:
+        - test this method
 
         Args:
             relationship (Relationship): The relationship to add.
+                the relationship can be strong or loose
+
         Raises:
             RelationshipError
         """
@@ -159,35 +165,55 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
 
             with session:
 
-                session.run(
-                    f"""
-                    MATCH (c1:{relationship.from_entity.__class__.__name__} {{uid: $from_uid}}), (c2:{relationship.to_entity.__class__.__name__} {{uid: $to_uid}})
-                    MERGE (c1)-[r:{relationship.relation_type.value}]->(c2)
-                    RETURN r, c1, c2;
-                    """,
-                    parameters={
-                        "from_uid": relationship.from_entity.uid,
-                        "to_uid": relationship.to_entity.uid,
-                    },
-                )
+                if relationship.is_strong:
 
-                logger.info(
-                    f"Stored relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_entity.uid}'."
-                )
+                    session.run(
+                        f"""
+                        MATCH (c1:{relationship.from_entity_type} {{uid: $from_uid}}), (c2:{relationship.to_entity_type} {{uid: $to_uid}})
+                        MERGE (c1)-[r:{relationship.relation_type.value} {{is_strong: true}}]->(c2)
+                        RETURN r, c1, c2;
+                        """,
+                        parameters={
+                            "from_uid": relationship.from_entity.uid,
+                            "to_uid": relationship.to_entity.uid,
+                        },
+                    )
+
+                    logger.info(
+                        f"Stored strong relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_entity.uid}'."
+                    )
+
+                else:
+                    session.run(
+                        f"""
+                        MATCH (c1:{relationship.from_entity_type} {{uid: $from_uid}}), (c2:{relationship.to_entity_type} {{title: $to_title}})
+                        MERGE (c1)-[r:{relationship.relation_type.value} {{is_strong: false}}]->(c2)
+                        RETURN r, c1, c2;
+                        """,
+                        parameters={
+                            "from_uid": relationship.from_entity.uid,
+                            "to_title": relationship.to_title,
+                        },
+                    )
+
+                    logger.info(
+                        f"Stored loose relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_title}'."
+                    )
 
         except Exception as e:
-            logger.error(
-                f"Error adding relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_entity.uid}': {e}"
-            )
+
             raise RelationshipError(
                 f"Invalid related content with ID '{relationship.to_entity.uid}': {e}"
             ) from e
 
     def get_related(
         self, content: T, relation_type: RelationshipType = None
-    ) -> Sequence[Relationship]:
+    ) -> Sequence[StrongRelationship]:
         """
         Retrieve relationships of a specific type for a given content.
+
+        TODO:
+        - test this method for loose relationships
 
         Args:
             content (T): The content to retrieve relationships for.
@@ -233,7 +259,7 @@ class AbstractMemGraph[T: Composable](IStorageHandler[T], IRelationshipHandler[T
                         continue
 
                     rels.append(
-                        Relationship(
+                        StrongRelationship(
                             from_entity=content,
                             to_entity=related_type.model_validate(
                                 dict(result.get("n")), by_alias=False, by_name=True

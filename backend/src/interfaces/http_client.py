@@ -1,20 +1,6 @@
 from typing import Literal, Protocol
 
 
-class HttpError(Exception):
-
-    status_code: int
-
-    def __init__(self, message: str, status_code: int = 500):
-        """
-        Custom exception for scraping errors.
-
-        Args:
-            message (str): The error message.
-        """
-        self.status_code = status_code
-        super().__init__(message)
-
 
 class IHttpClient(Protocol):
     """

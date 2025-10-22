@@ -12,7 +12,7 @@ from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
     is_http_task_retriable,
 )
-from src.repositories.orchestration.tasks.task_downloader import execute_task
+from src.repositories.orchestration.tasks.task_scraper import execute_task
 from src.repositories.stats import RedisStatsCollector
 from src.settings import Settings
 

@@ -8,7 +8,7 @@ from pydantic import HttpUrl
 
 from src.entities.movie import FilmSpecifications, Movie
 from src.entities.person import Biography, Person, PersonMedia
-from src.interfaces.storage import StorageError
+from src.exceptions import StorageError
 from src.repositories.db.local_storage.json_storage import JSONEntityStorageHandler
 from src.settings import Settings
 

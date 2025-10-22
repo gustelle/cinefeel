@@ -1,114 +1,21 @@
 from prefect import get_run_logger, task
 from prefect.events import emit_event
-from pydantic import HttpUrl
 
 from src.entities.composable import Composable
 from src.entities.movie import Movie
 from src.entities.relationship import (
+    LooseRelationship,
     PeopleRelationshipType,
-    Relationship,
     RelationshipType,
+    StrongRelationship,
 )
-from src.interfaces.http_client import HttpError, IHttpClient
-from src.interfaces.relation_manager import IRelationshipHandler
-from src.interfaces.storage import IStorageHandler
-
-
-def _retrieve_page_id(name: str, http_client: IHttpClient) -> str | None:
-    """
-    verifies that a page exists on Wikipedia and retrieves its page ID.
-
-    TODO:
-    - raise on 404 so that we can connect to 'UNKNOWN' entities later on.
-
-    Args:
-        name (str): The name of the page to verify.
-
-    Returns:
-        str | None: the page ID of the page on Wikipedia, or None if not found.
-    """
-
-    try:
-
-        logger = get_run_logger()
-        if name is None or name.strip() == "":
-            logger.warning(f"Invalid name provided: '{name}'")
-            return None
-
-        endpoint = f"https://fr.wikipedia.org/w/rest.php/v1/page/{name}/bare"
-        response = http_client.send(
-            url=endpoint,
-            response_type="json",
-        )
-        return response["key"]
-    except KeyError:
-        return None
-    except HttpError as e:
-        if e.status_code == 404:
-            logger.warning(f"Page not found for name '{name}'")
-            return None
-        raise
-
-
-def _build_permalink(page_id: str) -> HttpUrl:
-    """
-    builds a permalink from a given page ID.
-
-    Args:
-        page_id (str): The page ID to build the permalink from.
-    Returns:
-        HttpUrl: The constructed permalink.
-    """
-    return HttpUrl(f"https://fr.wikipedia.org/wiki/{page_id}")
-
-
-def load_entity_by_name(
-    name: str,
-    input_storage: IStorageHandler[Composable],
-    http_client: IHttpClient,
-) -> Composable | None:
-    """
-    retrieves a content from the input storage by its name.
-
-    TODO:
-    - handle 404 errors when retrieving the page ID.
-
-    Args:
-        name (str): The name of the entity to extract.
-        input_storage (IStorageHandler[Composable]): The storage handler to use for retrieving the entity.
-
-    Returns:
-        Composable | None: The extracted entity if successful, None otherwise.
-
-
-    """
-    logger = get_run_logger()
-
-    page_id = _retrieve_page_id(name=name, http_client=http_client)
-
-    if page_id is None:
-        logger.warning(
-            f"Could not find page ID for name '{name}'. Skipping relationship storage."
-        )
-        return None
-
-    results = input_storage.query(
-        permalink=_build_permalink(page_id=page_id),
-        limit=1,
-    )
-
-    if results:
-        return results[0]
-
-    # send an event to scrape the entity if not found in storage
-    logger.info(
-        f"Entity with page ID '{page_id}' not found in storage. Triggering extraction flow."
-    )
-    emit_event(
-        event="extract.entity",
-        resource={"prefect.resource.id": page_id},
-        payload={"entity_type": input_storage.entity_type.__name__},
-    )
+from src.exceptions import RetrievalError
+from src.interfaces.http_client import IHttpClient
+from src.interfaces.storage import IRelationshipHandler
+from src.repositories.orchestration.tasks.task_wikipedia import (
+    get_page_id,
+    get_permalink,
+)
 
 
 def connect_by_name(
@@ -117,11 +24,11 @@ def connect_by_name(
     relation: RelationshipType,
     storage: IRelationshipHandler,
     http_client: IHttpClient,
-) -> Relationship | None:
+) -> None:
     """Connects an entity to another entity.
 
     TODO:
-    - handle the case where the related entity is not found.
+    - test this function
 
     Args:
         entity (Composable): The source entity.
@@ -133,31 +40,53 @@ def connect_by_name(
     Returns:
         Relationship | None: The created relationship or None if unsuccessful.
     """
+    logger = get_run_logger()
+    try:
 
-    related_entity: Composable = load_entity_by_name(
-        name=name, input_storage=storage, http_client=http_client
-    )
+        permalink = get_permalink.submit(name=name, http_client=http_client).wait()
 
-    if related_entity is None:
-        # TODO:
-        # Handle the case where the related entity is not found.
-        # ex:
-        # storage.add_relationship(
-        #     relationship=Relationship(
-        #         from_entity=entity,
-        #         to_entity=UNKNOWN_ENTITY[name],
-        #         relation_type=relation,
-        #     )
-        # )
-        return None
-
-    return storage.add_relationship(
-        relationship=Relationship(
-            from_entity=entity,
-            to_entity=related_entity,
-            relation_type=relation,
+        # query the storage for the entity by its permalink
+        results = storage.query(
+            permalink=permalink,
+            limit=1,
         )
-    )
+
+        if results is not None:
+            storage.add_relationship(
+                relationship=StrongRelationship(
+                    from_entity=entity,
+                    to_entity=results[0],
+                    relation_type=relation,
+                )
+            )
+        else:
+            page_id = get_page_id(permalink=permalink)
+            emit_event(
+                event="extract.entity",
+                resource={"prefect.resource.id": page_id},
+                payload={"entity_type": storage.entity_type.__name__},
+            )
+
+    except RetrievalError as e:
+        # different cases may happen here
+        # case 1:
+        # the entity does not exist on Wikipedia
+        if e.status_code == 404:
+            logger.warning(
+                f"Entity '{name}' not found on Wikipedia, creating a loose relationship."
+            )
+            storage.add_relationship(
+                relationship=LooseRelationship(
+                    from_entity=entity,
+                    to_title=name,
+                    relation_type=relation,
+                )
+            )
+        else:
+            # case 2:
+            logger.error(f"RetrievalError while connecting entity: {e}")
+            # re-raise the error or handle it as needed
+            raise
 
 
 @task(

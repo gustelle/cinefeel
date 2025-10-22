@@ -66,7 +66,7 @@ class AsyncHttpClient(IHttpClient):
         except httpx.HTTPStatusError as e:
 
             raise HttpError(
-                message=f"HTTP error occurred: {e.response.status_code} - {e.response.text}",
+                reason=f"HTTP error occurred: {e.response.status_code} - {e.response.text}",
                 status_code=e.response.status_code,
             )
 

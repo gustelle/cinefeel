@@ -4,8 +4,9 @@ from bs4 import BeautifulSoup, Tag
 from loguru import logger
 
 from src.entities.composable import Composable
+from src.exceptions import RetrievalError
 from src.interfaces.content_splitter import IContentSplitter, Section
-from src.interfaces.info_retriever import IContentParser, RetrievalError
+from src.interfaces.info_retriever import IContentParser
 from src.interfaces.nlp_processor import Processor
 from src.settings import Settings
 

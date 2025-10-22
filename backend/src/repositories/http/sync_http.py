@@ -73,7 +73,7 @@ class SyncHttpClient(IHttpClient):
             return response.text if response_type == "text" else response.json()
 
         except httpx.TimeoutException as t:
-            raise HttpError(message=f"Request timed out: {t}", status_code=504)
+            raise HttpError(reason=f"Request timed out: {t}", status_code=504)
 
         except httpx.HTTPStatusError as e:
 
@@ -83,6 +83,6 @@ class SyncHttpClient(IHttpClient):
                 )
 
             raise HttpError(
-                message=f"HTTP error occurred: {e.response.status_code} - {e.response.text}",
+                reason=f"HTTP error occurred: {e.response.status_code} - {e.response.text}",
                 status_code=e.response.status_code,
             )
