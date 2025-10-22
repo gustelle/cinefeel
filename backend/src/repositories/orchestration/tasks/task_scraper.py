@@ -1,16 +1,77 @@
 from __future__ import annotations
 
-from prefect import get_run_logger, task
+import orjson
+from prefect import get_run_logger, runtime, task
 
 from src.entities.content import PageLink, TableOfContents
+from src.exceptions import HttpError
 from src.interfaces.http_client import IHttpClient
 from src.interfaces.info_retriever import IContentParser
-from src.interfaces.stats import IStatsCollector
+from src.interfaces.stats import IStatsCollector, StatKey
 from src.interfaces.storage import IStorageHandler
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
+from src.repositories.wikipedia import download_page
 from src.settings import Settings
 
-from .task_wikipedia import download_page
+
+def download_and_store(
+    http_client: IHttpClient,
+    page_id: str,
+    storage_handler: IStorageHandler,
+    return_content: bool,
+    settings: Settings,
+    stats_collector: IStatsCollector | None = None,
+) -> str | None:
+    """
+    Helper function to download a page and update stats.
+    """
+
+    logger = get_run_logger()
+    flow_id = runtime.flow_run.id
+
+    try:
+        html = download_page(
+            http_client=http_client,
+            page_id=page_id,
+            storage_handler=storage_handler,
+            return_content=return_content,
+            settings=settings,
+        )
+
+        if stats_collector:
+            if html is not None:
+                stats_collector.inc_value(StatKey.SCRAPING_SUCCESS, flow_id=flow_id)
+            else:
+                stats_collector.inc_value(StatKey.SCRAPING_VOID, flow_id=flow_id)
+
+            logger.info(
+                orjson.dumps(
+                    stats_collector.collect(flow_id=flow_id), option=orjson.OPT_INDENT_2
+                ).decode()
+            )
+
+        if html is not None and storage_handler is not None:
+            storage_handler.insert(
+                content_id=page_id,
+                content=html,
+            )
+
+        if return_content:
+            return html
+
+        return page_id if html is not None else None
+
+    except HttpError as e:
+
+        if e.status_code == 404:
+            if stats_collector:
+                stats_collector.inc_value(StatKey.SCRAPING_VOID, flow_id=flow_id)
+            return None
+        else:
+            if stats_collector:
+                stats_collector.inc_value(StatKey.SCRAPING_FAILED, flow_id=flow_id)
+            # eventually retry or fail
+            raise
 
 
 def extract_page_links(
@@ -31,12 +92,12 @@ def extract_page_links(
 
     logger = get_run_logger()
 
-    html = download_page.submit(
+    html = download_page(
         http_client=http_client,
         page_id=config.page_id,
         return_content=True,  # return the content
         settings=settings,
-    ).wait()
+    )
 
     if html is None:
         return []
@@ -103,14 +164,14 @@ def execute_task(
         page_links = [page]
 
     content_ids = [
-        download_page.submit(
+        download_and_store(
             http_client=http_client,
             page_id=page_link.page_id,
             storage_handler=storage_handler,
             return_content=False,  # for memory constraints, return the content ID
             settings=settings,
             stats_collector=stats_collector,
-        ).wait()
+        )
         for page_link in page_links
         if isinstance(page_link, PageLink)
     ]

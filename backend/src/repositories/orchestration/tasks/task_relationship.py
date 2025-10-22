@@ -12,10 +12,7 @@ from src.entities.relationship import (
 from src.exceptions import RetrievalError
 from src.interfaces.http_client import IHttpClient
 from src.interfaces.storage import IRelationshipHandler
-from src.repositories.orchestration.tasks.task_wikipedia import (
-    get_page_id,
-    get_permalink,
-)
+from src.repositories.wikipedia import get_page_id, get_permalink
 
 
 def connect_by_name(
@@ -43,7 +40,7 @@ def connect_by_name(
     logger = get_run_logger()
     try:
 
-        permalink = get_permalink.submit(name=name, http_client=http_client).wait()
+        permalink = get_permalink(name=name, http_client=http_client)
 
         # query the storage for the entity by its permalink
         results = storage.query(

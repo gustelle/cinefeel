@@ -5,7 +5,8 @@ import httpx
 from loguru import logger
 from ratelimit import limits
 
-from src.interfaces.http_client import HttpError, IHttpClient
+from src.exceptions import HttpError
+from src.interfaces.http_client import IHttpClient
 from src.settings import Settings
 
 

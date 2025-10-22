@@ -3,7 +3,7 @@ import pytest
 from src.entities.content import PageLink, TableOfContents
 from src.exceptions import HttpError
 from src.repositories.orchestration.tasks.task_scraper import (
-    download_page,
+    download_and_store,
     execute_task,
     extract_page_links,
 )
@@ -23,7 +23,7 @@ def test_downloader_task_download_return_page_id(test_settings: Settings):
     storage_handler = StubStorage()
 
     # when
-    result = download_page.fn(
+    result = download_and_store(
         http_client=client,
         page_id="page_id",
         settings=test_settings,
@@ -44,7 +44,7 @@ def test_downloader_task_download_return_content(test_settings: Settings):
     storage_handler = StubStorage()
 
     # when
-    result = download_page.fn(
+    result = download_and_store(
         http_client=client,
         page_id="page_id",
         settings=test_settings,
@@ -57,7 +57,7 @@ def test_downloader_task_download_return_content(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_downloader_task_download_page_using_storage(test_settings: Settings):
+def test_downloader_task_download_and_store(test_settings: Settings):
 
     # given
 
@@ -65,7 +65,7 @@ def test_downloader_task_download_page_using_storage(test_settings: Settings):
     storage_handler = StubStorage()
 
     # when
-    page_id = download_page.fn(
+    page_id = download_and_store(
         http_client=client,
         page_id="page_id",
         settings=test_settings,
@@ -78,19 +78,22 @@ def test_downloader_task_download_page_using_storage(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_downloader_task_download_page_http_error(test_settings: Settings):
+def test_downloader_task_download_and_store_http_error(test_settings: Settings):
 
+    # given
     client = StubSyncHttpClient(
         raise_exc=HttpError("Boom", status_code=503),
     )
+    storage_handler = StubStorage()
 
     # when
     with pytest.raises(HttpError) as exc_info:
-        download_page.fn(
+        download_and_store(
             http_client=client,
             page_id="page_id",
             return_content=True,
             settings=test_settings,
+            storage_handler=storage_handler,
         )
 
     # then
@@ -112,7 +115,6 @@ def test_downloader_task_extract_page_links(test_settings: Settings):
     )
 
     # when
-
     result = extract_page_links(
         http_client=client,
         config=TableOfContents(page_id="page_id", entity_type="Movie"),
@@ -145,7 +147,7 @@ def test_downloader_task_execute_with_TableOfContents(test_settings: Settings):
     # imagine this TOC contains 2 links: link1 and link2
 
     # when
-    result = execute_task.fn(
+    result = execute_task(
         page=toc,
         settings=test_settings,
         http_client=client,
@@ -170,7 +172,7 @@ def test_downloader_task_execute_with_PageLink(test_settings: Settings):
     page_link = PageLink(page_id="link1", entity_type="Movie")
 
     # when
-    result = execute_task.fn(
+    result = execute_task(
         page=page_link,
         settings=test_settings,
         http_client=client,
@@ -192,7 +194,7 @@ def test_downloader_task_execute_return_results(test_settings: Settings):
     page_link = PageLink(page_id="link1", entity_type="Movie")
 
     # when
-    _ = execute_task.fn(
+    _ = execute_task(
         page=page_link,
         settings=test_settings,
         http_client=client,
