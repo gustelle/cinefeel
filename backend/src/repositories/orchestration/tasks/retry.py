@@ -5,7 +5,7 @@ from prefect.client.schemas.objects import TaskRun
 from prefect.states import State
 from ratelimit import RateLimitException
 
-from src.interfaces.http_client import HttpError
+from src.exceptions import HttpError
 
 RETRY_ATTEMPTS: int = 30
 RETRY_DELAY_SECONDS: list[int] = [0.1, 0.5, 1]

@@ -5,8 +5,8 @@ from loguru import logger
 from prefect import get_run_logger, runtime, task
 from pydantic import HttpUrl
 
-from src.exceptions import RetrievalError
-from src.interfaces.http_client import HttpError, IHttpClient
+from src.exceptions import HttpError, RetrievalError
+from src.interfaces.http_client import IHttpClient
 from src.interfaces.stats import IStatsCollector, StatKey
 from src.repositories.db.local_storage.html_storage import LocalTextStorage
 from src.settings import Settings

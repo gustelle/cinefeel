@@ -1,7 +1,7 @@
 import pytest
 from pytest_httpx import HTTPXMock
 
-from src.interfaces.http_client import HttpError
+from src.exceptions import HttpError
 from src.settings import Settings
 
 

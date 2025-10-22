@@ -1,7 +1,7 @@
 import pytest
 
 from src.entities.content import PageLink, TableOfContents
-from src.interfaces.http_client import HttpError
+from src.exceptions import HttpError
 from src.repositories.orchestration.tasks.task_scraper import (
     download_page,
     execute_task,

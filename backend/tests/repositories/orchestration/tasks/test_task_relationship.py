@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from src.entities.person import Person
-from src.interfaces.http_client import HttpError
+from src.exceptions import HttpError
 from src.repositories.orchestration.tasks.task_relationship import connect_by_name
 from src.settings import Settings
 from tests.repositories.orchestration.stubs.stub_http import StubSyncHttpClient
