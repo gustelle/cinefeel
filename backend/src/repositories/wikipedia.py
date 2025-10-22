@@ -3,7 +3,7 @@ from __future__ import annotations
 from loguru import logger
 from pydantic import HttpUrl
 
-from src.exceptions import HttpError, RetrievalError
+from src.exceptions import RetrievalError
 from src.interfaces.http_client import IHttpClient
 from src.settings import Settings
 
@@ -78,16 +78,6 @@ def get_permalink(name: str, http_client: IHttpClient) -> HttpUrl | None:
     except KeyError as e:
         raise RetrievalError(
             reason=f"Unexpected response structure when retrieving page ID for name '{name}': {str(e)}",
-            status_code=500,
-        ) from e
-    except HttpError as e:
-        raise RetrievalError(
-            reason=f"HTTP error occurred while retrieving page ID for name '{name}': {e.reason}",
-            status_code=e.status_code,
-        ) from e
-    except Exception as e:
-        raise RetrievalError(
-            reason=f"Unexpected error occurred while retrieving page ID for name '{name}': {str(e)}",
             status_code=500,
         ) from e
 

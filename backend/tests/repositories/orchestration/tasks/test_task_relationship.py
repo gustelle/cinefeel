@@ -1,7 +1,13 @@
 from unittest.mock import patch
 
+import pytest
+
 from src.entities.person import Person
-from src.entities.relationship import PeopleRelationshipType, StrongRelationship
+from src.entities.relationship import (
+    LooseRelationship,
+    PeopleRelationshipType,
+    StrongRelationship,
+)
 from src.exceptions import HttpError
 from src.repositories.orchestration.tasks.task_relationship import connect_by_name
 from src.settings import Settings
@@ -9,10 +15,10 @@ from tests.repositories.orchestration.stubs.stub_http import StubSyncHttpClient
 from tests.repositories.orchestration.stubs.stub_storage import StubRelationHandler
 
 
-def test_connect_by_name_from_storage(
+def test_connect_by_name_nominal(
     test_person: Person,
 ):
-    """case where the entity is found in the storage"""
+    """case of a strong relationship being established successfully"""
     # given
     # a runner
     page_id = "Clint_Eastwood"
@@ -32,25 +38,22 @@ def test_connect_by_name_from_storage(
     )
     storage = StubRelationHandler([clint])
 
-    relation = StrongRelationship(
-        from_entity=test_person,
-        to_entity=clint,
-        relation_type=PeopleRelationshipType.ACTED_IN,
-    )
-
     # # when
     connect_by_name(
         test_person,
         name=name,
-        relation=relation,
+        relation=PeopleRelationshipType.ACTED_IN,
         storage=storage,
         http_client=http_client,
     )
 
     # # then
+    assert storage.is_found
     assert storage.is_added_relationship
-    # verify the relationship with Clint Eastwood is established
-    assert False
+    assert isinstance(storage.relationship, StrongRelationship)
+    assert storage.relationship.from_entity == test_person
+    assert storage.relationship.to_entity == clint
+    assert storage.relationship.relation_type == PeopleRelationshipType.ACTED_IN
 
 
 def test_connect_by_name_not_existing_in_storage(test_person: Person):
@@ -66,15 +69,7 @@ def test_connect_by_name_not_existing_in_storage(test_person: Person):
         }
     )
 
-    clint = test_person.model_copy()
-
     storage = StubRelationHandler(None, entity_type=Person)  # nothing in storage
-
-    relation = StrongRelationship(
-        from_entity=test_person,
-        to_entity=clint,
-        relation_type=PeopleRelationshipType.ACTED_IN,
-    )
 
     # # when
     with patch(
@@ -87,7 +82,7 @@ def test_connect_by_name_not_existing_in_storage(test_person: Person):
         connect_by_name(
             test_person,
             name=name,
-            relation=relation,
+            relation=PeopleRelationshipType.ACTED_IN,
             storage=storage,
             http_client=http_client,
         )
@@ -102,7 +97,7 @@ def test_connect_by_name_not_existing_in_storage(test_person: Person):
     )
 
 
-def test_connect_by_name_not_existing_in_wikipedia(
+def test_connect_by_name_not_existing_on_wikipedia(
     test_settings: Settings, test_person: Person
 ):
     """the entity is not found in the storage, we try to load it from wikipedia, but it is not found there either"""
@@ -122,23 +117,21 @@ def test_connect_by_name_not_existing_in_wikipedia(
     )
     storage = StubRelationHandler([clint])
 
-    relation = StrongRelationship(
-        from_entity=test_person,
-        to_entity=clint,
-        relation_type=PeopleRelationshipType.ACTED_IN,
-    )
-
     # # when
     connect_by_name(
         test_person,
         name=name,
-        relation=relation,
+        relation=PeopleRelationshipType.ACTED_IN,
         storage=storage,
         http_client=http_client,
     )
 
     # # then
-    assert False, "a loose coupling should be established here"
+    assert storage.is_added_relationship
+    assert isinstance(storage.relationship, LooseRelationship)
+    assert storage.relationship.from_entity == test_person
+    assert storage.relationship.to_title == name
+    assert storage.relationship.relation_type == PeopleRelationshipType.ACTED_IN
 
 
 def test_connect_by_name_wikipedia_scraping_throws_http_error(
@@ -151,7 +144,9 @@ def test_connect_by_name_wikipedia_scraping_throws_http_error(
     name = "Clint Eastwood"
     permalink = f"https://fr.wikipedia.org/wiki/{page_id}"
 
-    http_client = StubSyncHttpClient(raise_exc=HttpError("Not Found", status_code=404))
+    http_client = StubSyncHttpClient(
+        raise_exc=HttpError("server error", status_code=500)
+    )
 
     # # an input storage with a film entity
     clint = test_person.model_copy(
@@ -161,20 +156,16 @@ def test_connect_by_name_wikipedia_scraping_throws_http_error(
     )
     storage = StubRelationHandler([clint])
 
-    relation = StrongRelationship(
-        from_entity=test_person,
-        to_entity=clint,
-        relation_type=PeopleRelationshipType.ACTED_IN,
-    )
-
     # # when
-    connect_by_name(
-        test_person,
-        name=name,
-        relation=relation,
-        storage=storage,
-        http_client=http_client,
-    )
+    with pytest.raises(HttpError) as exc_info:
+        connect_by_name(
+            test_person,
+            name=name,
+            relation=PeopleRelationshipType.ACTED_IN,
+            storage=storage,
+            http_client=http_client,
+        )
 
     # # then
-    assert False
+    assert exc_info.value.status_code == 500
+    assert not storage.is_added_relationship

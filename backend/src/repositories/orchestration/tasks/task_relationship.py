@@ -24,9 +24,6 @@ def connect_by_name(
 ) -> None:
     """Connects an entity to another entity.
 
-    TODO:
-    - test this function
-
     Args:
         entity (Composable): The source entity.
         name (str): The name of the target entity.

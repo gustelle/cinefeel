@@ -1,6 +1,7 @@
 from typing import Generator
 
 from src.entities.composable import Composable
+from src.entities.relationship import BaseRelationship
 from src.interfaces.storage import IRelationshipHandler, IStorageHandler
 
 
@@ -13,12 +14,14 @@ class StubStorage[T: Composable](IStorageHandler[T]):
 
     is_inserted: bool = False
     is_scanned: bool = False
+    is_found: bool = False
     _contents_in_store: list[T] = []
     _inserted: list[T] = []
 
     def __init__(self, input: list[T] = None, entity_type: type[T] = None) -> None:
         self.is_inserted = False
         self.is_scanned = False
+        self.is_found = False
         self._contents_in_store = input or []
         self._inserted = []
         self.entity_type = entity_type
@@ -55,7 +58,10 @@ class StubStorage[T: Composable](IStorageHandler[T]):
         raise NotImplementedError
 
     def query(self, *args, **kwargs) -> list[T]:
-        return self._contents_in_store
+        if self._contents_in_store:
+            self.is_found = True
+            return self._contents_in_store
+        return None
 
     def update(self, content: T, *args, **kwargs) -> T:
         raise NotImplementedError
@@ -64,6 +70,7 @@ class StubStorage[T: Composable](IStorageHandler[T]):
 class StubRelationHandler[T: Composable](StubStorage[T], IRelationshipHandler[T]):
 
     is_added_relationship: bool = False
+    relationship: BaseRelationship
 
     def add_relationship(
         self,
@@ -71,4 +78,5 @@ class StubRelationHandler[T: Composable](StubStorage[T], IRelationshipHandler[T]
         *args,
         **kwargs,
     ) -> None:
+        self.relationship = relationship
         self.is_added_relationship = True
