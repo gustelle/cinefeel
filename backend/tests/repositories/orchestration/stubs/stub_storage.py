@@ -1,11 +1,10 @@
 from typing import Generator
 
-from src.entities.movie import Movie
-from src.entities.person import Person
-from src.interfaces.storage import IStorageHandler
+from src.entities.composable import Composable
+from src.interfaces.storage import IRelationshipHandler, IStorageHandler
 
 
-class StubStorage[T: Movie | Person](IStorageHandler[T]):
+class StubStorage[T: Composable](IStorageHandler[T]):
     """
     handles storage and retrieval of HTML files on disk.
     """
@@ -60,3 +59,16 @@ class StubStorage[T: Movie | Person](IStorageHandler[T]):
 
     def update(self, content: T, *args, **kwargs) -> T:
         raise NotImplementedError
+
+
+class StubRelationHandler[T: Composable](StubStorage[T], IRelationshipHandler[T]):
+
+    is_added_relationship: bool = False
+
+    def add_relationship(
+        self,
+        relationship,
+        *args,
+        **kwargs,
+    ) -> None:
+        self.is_added_relationship = True

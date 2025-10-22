@@ -1,11 +1,12 @@
 from unittest.mock import patch
 
 from src.entities.person import Person
+from src.entities.relationship import PeopleRelationshipType, StrongRelationship
 from src.exceptions import HttpError
 from src.repositories.orchestration.tasks.task_relationship import connect_by_name
 from src.settings import Settings
 from tests.repositories.orchestration.stubs.stub_http import StubSyncHttpClient
-from tests.repositories.orchestration.stubs.stub_storage import StubStorage
+from tests.repositories.orchestration.stubs.stub_storage import StubRelationHandler
 
 
 def test_connect_by_name_from_storage(
@@ -29,14 +30,26 @@ def test_connect_by_name_from_storage(
             "permalink": permalink,
         }
     )
-    storage = StubStorage([clint])
+    storage = StubRelationHandler([clint])
+
+    relation = StrongRelationship(
+        from_entity=test_person,
+        to_entity=clint,
+        relation_type=PeopleRelationshipType.ACTED_IN,
+    )
 
     # # when
     connect_by_name(
-        test_person, name=name, input_storage=storage, http_client=http_client
+        test_person,
+        name=name,
+        relation=relation,
+        storage=storage,
+        http_client=http_client,
     )
 
     # # then
+    assert storage.is_added_relationship
+    # verify the relationship with Clint Eastwood is established
     assert False
 
 
@@ -53,7 +66,15 @@ def test_connect_by_name_not_existing_in_storage(test_person: Person):
         }
     )
 
-    storage = StubStorage(None, entity_type=Person)  # nothing in storage
+    clint = test_person.model_copy()
+
+    storage = StubRelationHandler(None, entity_type=Person)  # nothing in storage
+
+    relation = StrongRelationship(
+        from_entity=test_person,
+        to_entity=clint,
+        relation_type=PeopleRelationshipType.ACTED_IN,
+    )
 
     # # when
     with patch(
@@ -64,11 +85,13 @@ def test_connect_by_name_not_existing_in_storage(test_person: Person):
     ):
         # Appelle la tâche Prefect (directement ou via .run si besoin)
         connect_by_name(
-            test_person, name=name, input_storage=storage, http_client=http_client
+            test_person,
+            name=name,
+            relation=relation,
+            storage=storage,
+            http_client=http_client,
         )
 
-    # then
-    assert False
     # verify the event is emitted
     # (we don't check the return value here, as Prefect tasks return a PrefectFuture)
     assert mock_emit.called
@@ -97,11 +120,21 @@ def test_connect_by_name_not_existing_in_wikipedia(
             "permalink": permalink,
         }
     )
-    storage = StubStorage([clint])
+    storage = StubRelationHandler([clint])
+
+    relation = StrongRelationship(
+        from_entity=test_person,
+        to_entity=clint,
+        relation_type=PeopleRelationshipType.ACTED_IN,
+    )
 
     # # when
     connect_by_name(
-        test_person, name=name, input_storage=storage, http_client=http_client
+        test_person,
+        name=name,
+        relation=relation,
+        storage=storage,
+        http_client=http_client,
     )
 
     # # then
@@ -126,11 +159,21 @@ def test_connect_by_name_wikipedia_scraping_throws_http_error(
             "permalink": permalink,
         }
     )
-    storage = StubStorage([clint])
+    storage = StubRelationHandler([clint])
+
+    relation = StrongRelationship(
+        from_entity=test_person,
+        to_entity=clint,
+        relation_type=PeopleRelationshipType.ACTED_IN,
+    )
 
     # # when
     connect_by_name(
-        test_person, name=name, input_storage=storage, http_client=http_client
+        test_person,
+        name=name,
+        relation=relation,
+        storage=storage,
+        http_client=http_client,
     )
 
     # # then
