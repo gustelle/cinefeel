@@ -6,6 +6,7 @@ from neo4j.graph import Node
 from src.entities.movie import FilmSpecifications, Movie
 from src.entities.person import Person
 from src.entities.relationship import (
+    LooseRelationship,
     PeopleRelationshipType,
     StrongRelationship,
     WOARelationshipType,
@@ -330,7 +331,7 @@ def test_select_film(
     test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
 
 
-def test_get_related(
+def test_get_related_returns_StrongRelationship(
     test_film_graphdb: MovieGraphRepository,
     test_memgraph_client: GraphDatabase,
     test_person_graphdb: PersonGraphRepository,
@@ -433,6 +434,93 @@ def test_get_related_with_relation_type(
     test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
 
 
+def test_get_related_returns_LooseRelationship(
+    test_film_graphdb: MovieGraphRepository,
+    test_memgraph_client: GraphDatabase,
+    test_film: Movie,
+):
+    # given
+    test_memgraph_client.execute_query(
+        "MATCH (n:Movie), (p:Unknown) DETACH DELETE n, p"
+    )
+
+    test_film_graphdb.insert_many([test_film])
+
+    test_film_graphdb.add_relationship(
+        relationship=LooseRelationship(
+            from_entity=test_film,
+            to_title="Inception Copy",
+            relation_type=WOARelationshipType.INSPIRED_BY,
+        )
+    )
+
+    # when
+    related = test_film_graphdb.get_related(test_film)
+
+    # then
+    assert len(related) == 1
+    assert any(
+        rel.from_entity.uid == test_film.uid
+        and rel.to_title == "Inception Copy"
+        and rel.relation_type == WOARelationshipType.INSPIRED_BY
+        for rel in related
+    )
+
+    test_memgraph_client.execute_query(
+        "MATCH (n:Movie), (p:Unknown) DETACH DELETE n, p"
+    )
+
+
+def test_get_related_returns_mixed_relationships(
+    test_film_graphdb: MovieGraphRepository,
+    test_memgraph_client: GraphDatabase,
+    test_person_graphdb: PersonGraphRepository,
+    test_film: Movie,
+    test_person: Person,
+):
+    # given
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
+
+    test_film_graphdb.insert_many([test_film])
+    test_person_graphdb.insert_many([test_person])
+
+    test_film_graphdb.add_relationship(
+        relationship=StrongRelationship(
+            from_entity=test_film,
+            to_entity=test_person,
+            relation_type=PeopleRelationshipType.DIRECTED_BY,
+        )
+    )
+
+    test_film_graphdb.add_relationship(
+        relationship=LooseRelationship(
+            from_entity=test_film,
+            to_title="Inception Copy",
+            relation_type=WOARelationshipType.INSPIRED_BY,
+        )
+    )
+
+    # when
+    related = test_film_graphdb.get_related(test_film)
+
+    # then
+    assert len(related) == 2
+    assert any(
+        rel.from_entity.uid == test_film.uid
+        and rel.to_entity.uid == test_person.uid
+        and rel.relation_type == PeopleRelationshipType.DIRECTED_BY
+        for rel in related
+    )
+    assert any(
+        rel.from_entity.uid == test_film.uid
+        and rel.to_title == "Inception Copy"
+        and rel.relation_type == WOARelationshipType.INSPIRED_BY
+        for rel in related
+    )
+
+    test_memgraph_client.execute_query("MATCH (n:Movie), (m:Person) DETACH DELETE n, m")
+
+
 def test_graph_scan(
     test_film_graphdb: MovieGraphRepository,
     test_memgraph_client: GraphDatabase,
@@ -513,3 +601,102 @@ def test_query_graph_by_permalink(
 
     # tear down the database
     test_memgraph_client.execute_query("MATCH (n:Movie) DETACH DELETE n")
+
+
+def test_add_loose_relationship_to_non_existing_loose_entity(
+    test_memgraph_client: GraphDatabase,
+    test_film_graphdb: MovieGraphRepository,
+    test_film: Movie,
+):
+    # given
+    test_memgraph_client.execute_query(
+        "MATCH (n:Movie), (m:Unknown) DETACH DELETE n, m"
+    )
+
+    test_film_graphdb.insert_many([test_film])
+
+    # when
+    test_film_graphdb.add_relationship(
+        relationship=LooseRelationship(
+            from_entity=test_film,
+            to_title="some film",
+            relation_type=WOARelationshipType.INSPIRED_BY,
+        )
+    )
+
+    # then
+    # verify the relationship was created
+    results, _, _ = test_memgraph_client.execute_query(
+        f"""
+        MATCH (n:Movie {{uid: $from_uid}})-[r:{str(WOARelationshipType.INSPIRED_BY)}]->(m)
+        WHERE m.title = $to_title
+        RETURN r
+        """,
+        from_uid=test_film.uid,
+        to_title="some film",
+    )
+
+    assert len(results) == 1
+
+    test_memgraph_client.execute_query(
+        "MATCH (n:Movie), (m:Unknown) DETACH DELETE n, m"
+    )
+
+
+def test_add_loose_relationship_to_existing_loose_entity(
+    test_memgraph_client: GraphDatabase,
+    test_film_graphdb: MovieGraphRepository,
+    test_film: Movie,
+):
+    # given
+    test_memgraph_client.execute_query(
+        "MATCH (n:Movie), (m:Unknown) DETACH DELETE n, m"
+    )
+
+    test_film_graphdb.insert_many([test_film])
+
+    # insert the loose entity beforehand
+    test_memgraph_client.execute_query(
+        """
+        CREATE (m:Unknown {title: $to_title})
+        """,
+        to_title="some film",
+    )
+
+    # when
+    test_film_graphdb.add_relationship(
+        relationship=LooseRelationship(
+            from_entity=test_film,
+            to_title="some film",
+            relation_type=WOARelationshipType.INSPIRED_BY,
+        )
+    )
+
+    # then
+    # verify the relationship was created
+    results, _, _ = test_memgraph_client.execute_query(
+        f"""
+        MATCH (n:Movie {{uid: $from_uid}})-[r:{str(WOARelationshipType.INSPIRED_BY)}]->(m)
+        WHERE m.title = $to_title
+        RETURN r
+        """,
+        from_uid=test_film.uid,
+        to_title="some film",
+    )
+
+    assert len(results) == 1
+
+    # verify there is only one loose entity
+    results, _, _ = test_memgraph_client.execute_query(
+        """
+        MATCH (m:Unknown {title: $to_title})
+        RETURN m
+        """,
+        to_title="some film",
+    )
+
+    assert len(results) == 1
+
+    test_memgraph_client.execute_query(
+        "MATCH (n:Movie), (m:Unknown) DETACH DELETE n, m"
+    )

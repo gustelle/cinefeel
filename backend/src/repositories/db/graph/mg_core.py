@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings
 from src.entities.composable import Composable
 from src.entities.relationship import (
     BaseRelationship,
+    LooseRelationship,
     RelationshipType,
     StrongRelationship,
 )
@@ -108,10 +109,13 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
         content_id: str,
     ) -> T | None:
         """
-        Retrieve a document by its ID.
+        Retrieve a `Composable` by its unique identifier.
+
+        Args:
+            content_id (str): The unique identifier of the `Composable`.
 
         Returns:
-            T: The document with the specified ID.
+            T: The `Composable` with the specified ID.
         """
         try:
 
@@ -147,11 +151,8 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
         """
         adds a relationship between two contents in the database,
 
-        TODO:
-        - test this method
-
         Args:
-            relationship (Relationship): The relationship to add.
+            relationship (BaseRelationship): The relationship to add.
                 the relationship can be strong or loose
 
         Raises:
@@ -184,7 +185,15 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
                     )
 
                 else:
+
                     session.run(
+                        f"""
+                        MERGE (c2:{relationship.to_entity_type} {{title: $to_title}})
+                        """,
+                        parameters={"to_title": relationship.to_title},
+                    )
+
+                    _ = session.run(
                         f"""
                         MATCH (c1:{relationship.from_entity_type} {{uid: $from_uid}}), (c2:{relationship.to_entity_type} {{title: $to_title}})
                         MERGE (c1)-[r:{relationship.relation_type.value} {{is_strong: false}}]->(c2)
@@ -196,24 +205,24 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
                         },
                     )
 
+                    # logger.info(_.data())
+
                     logger.info(
                         f"Stored loose relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_title}'."
                     )
 
         except Exception as e:
-
             raise RelationshipError(
-                f"Invalid related content with ID '{relationship.to_entity.uid}': {e}"
+                f"Invalid relationship {relationship.model_dump()}: {e}"
             ) from e
 
     def get_related(
         self, content: T, relation_type: RelationshipType = None
-    ) -> Sequence[StrongRelationship]:
+    ) -> Sequence[BaseRelationship]:
         """
-        Retrieve relationships of a specific type for a given content.
-
-        TODO:
-        - test this method for loose relationships
+        Retrieve relationships for a given content,
+            both strong and loose relationships are returned.
+            when relation_type is specified, only relationships of that type are returned.
 
         Args:
             content (T): The content to retrieve relationships for.
@@ -221,7 +230,8 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
                 in which case all relationships are returned.
 
         Returns:
-            Sequence[Relationship]: A sequence of relationships matching the criteria.
+            Sequence[BaseRelationship]: A sequence of relationships matching the criteria; either strong or loose.
+                empty if none found.
         """
         if not self._is_initialized:
             self.setup()
@@ -253,22 +263,29 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
                     m = importlib.import_module("src.entities")
                     related_type = getattr(m, first_label, None)
                     if related_type is None:
-                        logger.warning(
-                            f"Related type '{first_label}' not found in entities module for content with ID '{content.uid}'"
+                        # this is a loose relationship
+                        rels.append(
+                            LooseRelationship(
+                                from_entity=content,
+                                to_title=result.get("n").get("title"),
+                                relation_type=RelationshipType.from_string(
+                                    result.get("r").type
+                                ),
+                            )
                         )
-                        continue
-
-                    rels.append(
-                        StrongRelationship(
-                            from_entity=content,
-                            to_entity=related_type.model_validate(
-                                dict(result.get("n")), by_alias=False, by_name=True
-                            ),
-                            relation_type=RelationshipType.from_string(
-                                result.get("r").type
-                            ),
+                    else:
+                        # this is a strong relationship
+                        rels.append(
+                            StrongRelationship(
+                                from_entity=content,
+                                to_entity=related_type.model_validate(
+                                    dict(result.get("n")), by_alias=False, by_name=True
+                                ),
+                                relation_type=RelationshipType.from_string(
+                                    result.get("r").type
+                                ),
+                            )
                         )
-                    )
 
                 return rels
 
