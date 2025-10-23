@@ -24,9 +24,15 @@ def connect_by_name(
 ) -> None:
     """Connects an entity to another entity.
 
+    Several cases are handled:
+    1. If the related entity identified by its `name` exists on Wikipedia and in the storage, a StrongRelationship is created.
+    2. If the related entity exists on Wikipedia but not in the storage, an event is emitted to extract the entity later
+         (e.g., via another task).
+    3. If the related entity does not exist on Wikipedia, a LooseRelationship is created.
+
     Args:
         entity (Composable): The source entity.
-        name (str): The name of the target entity.
+        name (str): The name of the related entity.
         relation (RelationshipType): The type of relationship.
         storage (IRelationshipHandler): The storage handler for relationships.
         http_client (IHttpClient): The HTTP client for making requests.
@@ -62,13 +68,9 @@ def connect_by_name(
             )
 
     except RetrievalError as e:
-        # different cases may happen here
-        # case 1:
-        # the entity does not exist on Wikipedia
         if e.status_code == 404:
-            logger.warning(
-                f"Entity '{name}' not found on Wikipedia, creating a loose relationship."
-            )
+            # case 1:
+            # the entity does not exist on Wikipedia
             storage.add_relationship(
                 relationship=LooseRelationship(
                     from_entity=entity,
@@ -93,10 +95,14 @@ def execute_task(
 ) -> Composable:
     """
     discovers relationships for a given entity and stores them in the graph database.
+    TODO:
+    - rename to discover_relationships_task
+    - rename param output_storage to relationship_storage
 
     Args:
         entity (Composable): The entity to analyze.
         output_storage (IRelationshipHandler): The storage handler to use for storing the relationships.
+        http_client (IHttpClient): The HTTP client for making requests.
 
     """
 

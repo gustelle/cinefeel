@@ -26,14 +26,14 @@ class MovieResolver(AbstractResolver[Movie]):
 
     def patch_media(self, entity: Movie, sections: list[Section]) -> Movie:
         """
-        Patches the media of the Film entity with the media extracted from sections.
+        Adds media (posters, trailers, etc.) to the Movie entity based on the media found in the sections.
 
         Args:
-            entity (Film): The Film entity to patch.
+            entity (Movie): The Movie entity to patch.
             sections (list[Section]): List of Section objects containing content.
 
         Returns:
-            Film: The patched Film entity with media.
+            Movie: The patched Movie entity with media.
         """
         # Extract media from sections
         # for the time being, we only extract FilmMedia entities
@@ -60,7 +60,7 @@ class MovieResolver(AbstractResolver[Movie]):
             if m.media_type == "audio"
         ]
 
-        # Patch the media into the Film entity
+        # Patch the media into the Movie entity
         if posters or videos or audios:
             entity.media = FilmMedia(
                 posters=posters,
@@ -72,6 +72,10 @@ class MovieResolver(AbstractResolver[Movie]):
         return entity
 
     def validate_entity(self, entity: Movie) -> Movie:
+        """
+        TODO:
+        - handle i18n of duration formats
+        """
 
         # validate the duration format
         duration = None

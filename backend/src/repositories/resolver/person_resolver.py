@@ -26,7 +26,7 @@ class PersonResolver(AbstractResolver[Person]):
 
     def patch_media(self, entity: Person, sections: list[Section]) -> Person:
         """
-        Patches the media of the Person entity with the media extracted from sections.
+        Adds media (images, videos, etc.) to the Person entity based on the media found in the sections.
 
         Args:
             entity (Person): The Person entity to patch.
@@ -71,6 +71,10 @@ class PersonResolver(AbstractResolver[Person]):
         return entity
 
     def validate_entity(self, entity: Person) -> Person:
+        """
+        TODO:
+        - handle i18n of date formats and nationalities throught a configurable mechanism
+        """
 
         # validate the nationality
         phonetic_search = PhoneticSearch(
