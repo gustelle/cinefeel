@@ -9,6 +9,9 @@ from src.settings import Settings
 class InfluenceOllamaExtractor(IDataMiner, OllamaMessager):
     """
     specialized extractor for WOAInfluence
+
+    TODO:
+    - handle i18n of the prompt
     """
 
     def __init__(self, settings: Settings):

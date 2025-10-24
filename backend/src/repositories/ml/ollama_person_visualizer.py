@@ -11,6 +11,14 @@ from src.settings import Settings
 
 
 class PersonOllamaVisualAnalysis(OllamaVisioner):
+    """Performs visual analysis on images of persons.
+
+    TODO:
+    - handle i18n of the prompt
+
+    Args:
+        OllamaVisioner (OllamaVisioner): The base visioner class for image analysis.
+    """
 
     def __init__(self, settings: Settings):
 

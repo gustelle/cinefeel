@@ -6,6 +6,11 @@ from src.interfaces.nlp_processor import Processor
 
 
 class TextSectionConverter(Processor[Section]):
+    """Converts HTML content in a Section to plain text.
+
+    Args:
+        Processor (Processor[Section]): The base processor class for sections.
+    """
 
     def _preprocess(self, content: str) -> str:
         """

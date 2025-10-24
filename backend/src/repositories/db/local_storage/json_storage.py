@@ -17,6 +17,9 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
 
     This is useful for testing and local development but not for production,
     infrastructure of production should not depend on local disk storage.
+
+    TODO:
+    - remove this code
     """
 
     persistence_directory: Path

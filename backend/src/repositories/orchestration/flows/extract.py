@@ -86,7 +86,7 @@ def extract_entities_flow(
                 retries=RETRY_ATTEMPTS,
                 retry_delay_seconds=RETRY_DELAY_SECONDS,
                 cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
-                cache_expiration=timedelta(seconds=1),
+                cache_expiration=timedelta(hours=24),
                 timeout_seconds=60 * 10,  # 10 minutes
                 refresh_cache=_refresh_cache,
             ).submit(

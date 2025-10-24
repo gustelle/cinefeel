@@ -7,6 +7,10 @@ from src.settings import Settings
 
 
 class ChildhoodOllamaExtractor(IDataMiner, OllamaMessager):
+    """
+    TODO:
+    - remove this code
+    """
 
     def __init__(self, settings: Settings):
 

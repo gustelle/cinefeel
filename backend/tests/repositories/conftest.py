@@ -244,6 +244,8 @@ def test_settings(launch_memgraph):  #
             similarity_min_score=0.7,
             summary_max_length=512,
             transformer_model_backend="torch",  # ok on local machine with cuda or mps
+            redis_stats_dsn=f"redis://localhost:{REDIS_HOST_PORT}/1",
+            redis_storage_dsn=f"redis://localhost:{REDIS_HOST_PORT}/0",
         )
 
         yield settings

@@ -9,6 +9,9 @@ from src.settings import Settings
 class PersonFeaturesOllamaExtractor(IDataMiner, OllamaMessager):
     """
     extracts features of a Person entity using Ollama
+
+    TODO:
+    - remove this code
     """
 
     def __init__(self, settings: Settings):
