@@ -1,15 +1,15 @@
 import uuid
 
 import redis
-from pydantic import RedisDsn
 
 from src.repositories.stats import RedisStatsCollector, StatKey
+from src.settings import Settings
 
 
-def test_redis_stats_collector_get_value_not_existing():
+def test_redis_stats_collector_get_value_not_existing(test_settings: Settings):
 
     # given
-    redis_dsn = RedisDsn("redis://localhost:6379/2")
+    redis_dsn = test_settings.redis_stats_dsn
     collector = RedisStatsCollector(redis_dsn=redis_dsn)
     redis_client = redis.Redis(
         host=redis_dsn.host,
@@ -33,9 +33,9 @@ def test_redis_stats_collector_get_value_not_existing():
     redis_client.delete(key)
 
 
-def test_redis_stats_collector_get_existing_value():
+def test_redis_stats_collector_get_existing_value(test_settings: Settings):
     # given
-    redis_dsn = RedisDsn("redis://localhost:6379/2")
+    redis_dsn = test_settings.redis_stats_dsn
     collector = RedisStatsCollector(redis_dsn=redis_dsn)
     redis_client = redis.Redis(
         host=redis_dsn.host,
@@ -61,9 +61,9 @@ def test_redis_stats_collector_get_existing_value():
     redis_client.delete(test_key)
 
 
-def test_redis_stats_collector_set_value():
+def test_redis_stats_collector_set_value(test_settings: Settings):
     # given
-    redis_dsn = RedisDsn("redis://localhost:6379/2")
+    redis_dsn = test_settings.redis_stats_dsn
     collector = RedisStatsCollector(redis_dsn=redis_dsn)
     redis_client = redis.Redis(
         host=redis_dsn.host,
@@ -89,9 +89,9 @@ def test_redis_stats_collector_set_value():
     redis_client.delete(key)
 
 
-def test_redis_stats_collector_inc_value():
+def test_redis_stats_collector_inc_value(test_settings: Settings):
     # given
-    redis_dsn = RedisDsn("redis://localhost:6379/2")
+    redis_dsn = test_settings.redis_stats_dsn
     collector = RedisStatsCollector(redis_dsn=redis_dsn)
     redis_client = redis.Redis(
         host=redis_dsn.host,
@@ -124,9 +124,9 @@ def test_redis_stats_collector_inc_value():
     redis_client.delete(key)
 
 
-def test_redis_stats_collector_collect():
+def test_redis_stats_collector_collect(test_settings: Settings):
     # given
-    redis_dsn = RedisDsn("redis://localhost:6379/2")
+    redis_dsn = test_settings.redis_stats_dsn
     collector = RedisStatsCollector(redis_dsn=redis_dsn)
     redis_client = redis.Redis(
         host=redis_dsn.host,
