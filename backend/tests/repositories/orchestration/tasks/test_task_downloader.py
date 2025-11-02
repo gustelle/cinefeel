@@ -7,14 +7,14 @@ from src.repositories.orchestration.tasks.task_scraper import (
     execute_task,
     extract_page_links,
 )
-from src.settings import Settings
+from src.settings import AppSettings
 
 from ..stubs.stub_http import StubSyncHttpClient
 from ..stubs.stub_parser import StubContentParser
 from ..stubs.stub_storage import StubStorage
 
 
-def test_downloader_task_download_return_page_id(test_settings: Settings):
+def test_downloader_task_download_return_page_id(test_settings: AppSettings):
 
     # given
 
@@ -26,7 +26,7 @@ def test_downloader_task_download_return_page_id(test_settings: Settings):
     result = download_and_store(
         http_client=client,
         page_id="page_id",
-        settings=test_settings,
+        scraping_settings=test_settings.scraping_settings,
         storage_handler=storage_handler,
         return_content=False,
     )
@@ -36,7 +36,7 @@ def test_downloader_task_download_return_page_id(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_downloader_task_download_return_content(test_settings: Settings):
+def test_downloader_task_download_return_content(test_settings: AppSettings):
 
     # given
 
@@ -47,7 +47,7 @@ def test_downloader_task_download_return_content(test_settings: Settings):
     result = download_and_store(
         http_client=client,
         page_id="page_id",
-        settings=test_settings,
+        scraping_settings=test_settings.scraping_settings,
         storage_handler=storage_handler,
         return_content=True,  # return the content
     )
@@ -57,7 +57,7 @@ def test_downloader_task_download_return_content(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_downloader_task_download_and_store(test_settings: Settings):
+def test_downloader_task_download_and_store(test_settings: AppSettings):
 
     # given
 
@@ -68,7 +68,7 @@ def test_downloader_task_download_and_store(test_settings: Settings):
     page_id = download_and_store(
         http_client=client,
         page_id="page_id",
-        settings=test_settings,
+        scraping_settings=test_settings.scraping_settings,
         storage_handler=storage_handler,
         return_content=False,
     )
@@ -78,7 +78,7 @@ def test_downloader_task_download_and_store(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_downloader_task_download_and_store_http_error(test_settings: Settings):
+def test_downloader_task_download_and_store_http_error(test_settings: AppSettings):
 
     # given
     client = StubSyncHttpClient(
@@ -92,7 +92,7 @@ def test_downloader_task_download_and_store_http_error(test_settings: Settings):
             http_client=client,
             page_id="page_id",
             return_content=True,
-            settings=test_settings,
+            scraping_settings=test_settings.scraping_settings,
             storage_handler=storage_handler,
         )
 
@@ -101,7 +101,7 @@ def test_downloader_task_download_and_store_http_error(test_settings: Settings):
     assert "Boom" in str(exc_info.value)
 
 
-def test_downloader_task_extract_page_links(test_settings: Settings):
+def test_downloader_task_extract_page_links(test_settings: AppSettings):
 
     # given
 
@@ -119,7 +119,7 @@ def test_downloader_task_extract_page_links(test_settings: Settings):
         http_client=client,
         config=TableOfContents(page_id="page_id", entity_type="Movie"),
         link_extractor=extractor,
-        settings=test_settings,
+        scraping_settings=test_settings.scraping_settings,
     )
 
     # then
@@ -130,7 +130,7 @@ def test_downloader_task_extract_page_links(test_settings: Settings):
     ]
 
 
-def test_downloader_task_execute_with_TableOfContents(test_settings: Settings):
+def test_downloader_task_execute_with_TableOfContents(test_settings: AppSettings):
     """when the task is executed with a TableOfContents, it should extract the links and download each linked page."""
 
     client = StubSyncHttpClient(response="<html>Test Content</html>")
@@ -149,7 +149,7 @@ def test_downloader_task_execute_with_TableOfContents(test_settings: Settings):
     # when
     result = execute_task(
         page=toc,
-        settings=test_settings,
+        scraping_settings=test_settings.scraping_settings,
         http_client=client,
         storage_handler=storage_handler,
         link_extractor=extractor,
@@ -162,7 +162,7 @@ def test_downloader_task_execute_with_TableOfContents(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_downloader_task_execute_with_PageLink(test_settings: Settings):
+def test_downloader_task_execute_with_PageLink(test_settings: AppSettings):
     """when the task is executed with a PageLink, it should download the page content."""
 
     client = StubSyncHttpClient(response="<html>Test Content</html>")
@@ -174,7 +174,7 @@ def test_downloader_task_execute_with_PageLink(test_settings: Settings):
     # when
     result = execute_task(
         page=page_link,
-        settings=test_settings,
+        scraping_settings=test_settings.scraping_settings,
         http_client=client,
         storage_handler=storage_handler,
         return_results=True,
@@ -185,7 +185,7 @@ def test_downloader_task_execute_with_PageLink(test_settings: Settings):
     assert storage_handler.is_inserted is True
 
 
-def test_downloader_task_execute_return_results(test_settings: Settings):
+def test_downloader_task_execute_return_results(test_settings: AppSettings):
     """when the task is executed with a TableOfContents, it should extract the links and download each linked page."""
 
     client = StubSyncHttpClient(response="<html>Test Content</html>")
@@ -196,7 +196,7 @@ def test_downloader_task_execute_return_results(test_settings: Settings):
     # when
     _ = execute_task(
         page=page_link,
-        settings=test_settings,
+        scraping_settings=test_settings.scraping_settings,
         http_client=client,
         storage_handler=storage_handler,
         return_results=True,

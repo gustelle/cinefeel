@@ -10,7 +10,7 @@ from src.entities.relationship import (
 )
 from src.exceptions import HttpError
 from src.repositories.orchestration.tasks.task_relationship import connect_by_name
-from src.settings import Settings
+from src.settings import AppSettings
 from tests.repositories.orchestration.stubs.stub_http import StubSyncHttpClient
 from tests.repositories.orchestration.stubs.stub_storage import StubRelationHandler
 
@@ -98,7 +98,7 @@ def test_connect_by_name_not_existing_in_storage(test_person: Person):
 
 
 def test_connect_by_name_not_existing_on_wikipedia(
-    test_settings: Settings, test_person: Person
+    test_settings: AppSettings, test_person: Person
 ):
     """the entity is not found in the storage, we try to load it from wikipedia, but it is not found there either"""
     # given
@@ -135,7 +135,7 @@ def test_connect_by_name_not_existing_on_wikipedia(
 
 
 def test_connect_by_name_wikipedia_scraping_throws_http_error(
-    test_settings: Settings, test_person: Person
+    test_settings: AppSettings, test_person: Person
 ):
     """the entity is not found in the storage, we try to load it from wikipedia, but it is not found there either"""
     # given

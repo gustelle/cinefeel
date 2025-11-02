@@ -24,13 +24,14 @@ from src.repositories.ml.similarity import SimilarSectionSearch
 from src.repositories.ml.summary import SectionSummarizer
 from src.repositories.resolver.movie_resolver import MovieResolver
 from src.repositories.resolver.person_resolver import PersonResolver
-from src.settings import Settings
+from src.settings import MLSettings, SectionSettings
 
 
 def do_analysis(
     content_id: str,
     html_content: str,
-    settings: Settings,
+    section_settings: SectionSettings,
+    ml_settings: MLSettings,
     entity_type: Type[Composable],
     analyzer: IContentAnalyzer,
     search_processor: Processor,
@@ -58,12 +59,13 @@ def do_analysis(
     # assemble the entity from the sections
     if entity_type == Movie:
         return MovieResolver(
-            settings=settings,
             section_searcher=search_processor,
+            section_settings=section_settings,
+            ml_settings=ml_settings,
             configurations=[
                 ResolutionConfiguration(
                     # extractor=MistralDataMiner(settings=self.settings),
-                    extractor=GenericOllamaExtractor(settings=settings),
+                    extractor=GenericOllamaExtractor(settings=ml_settings),
                     section_titles=[
                         UsualSectionTitles_FR_fr.INFOBOX,
                         UsualSectionTitles_FR_fr.TECHNICAL_SHEET,
@@ -71,13 +73,13 @@ def do_analysis(
                     extracted_type=FilmSpecifications,
                 ),
                 ResolutionConfiguration(
-                    extractor=GenericOllamaExtractor(settings=settings),
+                    extractor=GenericOllamaExtractor(settings=ml_settings),
                     # extractor=MistralDataMiner(settings=self.settings),
                     section_titles=[UsualSectionTitles_FR_fr.DISTRIBUTION],
                     extracted_type=FilmActor,
                 ),
                 ResolutionConfiguration(
-                    extractor=GenericOllamaExtractor(settings=settings),
+                    extractor=GenericOllamaExtractor(settings=ml_settings),
                     # extractor=MistralDataMiner(settings=self.settings),
                     section_titles=[
                         UsualSectionTitles_FR_fr.SYNOPSIS,
@@ -88,7 +90,7 @@ def do_analysis(
                 ),
                 # search for influences
                 ResolutionConfiguration(
-                    extractor=InfluenceOllamaExtractor(settings=settings),
+                    extractor=InfluenceOllamaExtractor(settings=ml_settings),
                     # extractor=MistralDataMiner(settings=self.settings),
                     section_titles=[
                         UsualSectionTitles_FR_fr.CONTEXT,
@@ -105,11 +107,12 @@ def do_analysis(
         )
     elif entity_type == Person:
         return PersonResolver(
-            settings=settings,
             section_searcher=search_processor,
+            ml_settings=ml_settings,
+            section_settings=section_settings,
             configurations=[
                 ResolutionConfiguration(
-                    extractor=GenericOllamaExtractor(settings=settings),
+                    extractor=GenericOllamaExtractor(settings=ml_settings),
                     # extractor=MistralDataMiner(settings=self.settings),
                     section_titles=[
                         UsualSectionTitles_FR_fr.BIOGRAPHY,
@@ -118,7 +121,7 @@ def do_analysis(
                     extracted_type=Biography,
                 ),
                 ResolutionConfiguration(
-                    extractor=InfluenceOllamaExtractor(settings=settings),
+                    extractor=InfluenceOllamaExtractor(settings=ml_settings),
                     # extractor=MistralDataMiner(settings=self.settings),
                     section_titles=[
                         UsualSectionTitles_FR_fr.BIOGRAPHY,
@@ -174,11 +177,13 @@ def do_analysis(
 @task(
     task_run_name="html-to-entity-{content_id}",
     tags=["heavy"],  # mark as heavy task
+    log_prints=False,
 )
 def execute_task(
     content_id: str,
     content: str,
-    settings: Settings,
+    ml_settings: MLSettings,
+    section_settings: SectionSettings,
     entity_type: Type[Composable],
     output_storage: IStorageHandler[Composable],
     # for testing,
@@ -198,20 +203,23 @@ def execute_task(
             content_splitter=WikipediaAPIContentSplitter(
                 parser=WikipediaParser(),
                 pruner=HTMLSimplifier(),
-                settings=settings,
+                settings=section_settings,
             ),
             post_processors=[
                 TextSectionConverter(),
-                SectionSummarizer(settings=settings),
+                SectionSummarizer(settings=ml_settings),
             ],
         )
 
-        search_processor = search_processor or SimilarSectionSearch(settings=settings)
+        search_processor = search_processor or SimilarSectionSearch(
+            settings=ml_settings
+        )
 
         entity = do_analysis(
             content_id=content_id,
             html_content=content,
-            settings=settings,
+            section_settings=section_settings,
+            ml_settings=ml_settings,
             entity_type=entity_type,
             analyzer=analyzer,
             search_processor=search_processor,

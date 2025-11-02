@@ -2,12 +2,12 @@ from src.entities.composable import Composable
 from src.entities.ml import ExtractionResult
 from src.entities.person import Biography
 from src.repositories.ml.mistral_data_miner import MistralDataMiner
-from src.settings import Settings
+from src.settings import AppSettings
 
 from .stub.stub_llm import StubMistral
 
 
-def test_parent_uid_is_attached_to_entity(mocker, test_settings: Settings):
+def test_parent_uid_is_attached_to_entity(mocker, test_settings: AppSettings):
 
     # given
     # the uid will be generated from the title
@@ -26,7 +26,7 @@ def test_parent_uid_is_attached_to_entity(mocker, test_settings: Settings):
         return_value=StubMistral(mock_llm_response),
     )
 
-    parser = MistralDataMiner(test_settings)
+    parser = MistralDataMiner(test_settings.ml_settings)
     entity_type = Biography
 
     # when

@@ -7,7 +7,7 @@ from src.entities.component import EntityComponent
 from src.entities.composable import Composable
 from src.entities.content import Media
 from src.repositories.ml.ollama_visioner import OllamaVisioner
-from src.settings import Settings
+from src.settings import MLSettings
 
 
 class PersonOllamaVisualAnalysis(OllamaVisioner):
@@ -20,7 +20,7 @@ class PersonOllamaVisualAnalysis(OllamaVisioner):
         OllamaVisioner (OllamaVisioner): The base visioner class for image analysis.
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: MLSettings):
 
         self.model = settings.ollama_vision_model
 

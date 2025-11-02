@@ -1,46 +1,35 @@
+import orjson
 import pytest
 import redis
 
 from src.entities.movie import Movie
 from src.entities.person import Person
 from src.repositories.db.redis.text import RedisTextStorage
-from src.settings import Settings
+from src.settings import AppSettings
 
 
 @pytest.fixture(scope="function", autouse=True)
-def cleanup_redis(test_settings: Settings):
+def cleanup_redis(test_settings: AppSettings):
     """Cleans up the Redis database used for testing."""
-    r = redis.Redis(
-        host=test_settings.redis_storage_dsn.host,
-        port=test_settings.redis_storage_dsn.port,
-        db=(
-            test_settings.redis_storage_dsn.path.lstrip("/")
-            if test_settings.redis_storage_dsn.path
-            else 0
-        ),
-        username=test_settings.redis_storage_dsn.username,
-        password=test_settings.redis_storage_dsn.password,
-        decode_responses=True,
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
     r.flushdb()
     yield
     r.flushdb()
 
 
-def test_redis_text_insert_string(test_settings: Settings):
+def test_redis_text_insert_string(test_settings: AppSettings):
     """Test the insert method of RedisTextStorage."""
 
-    settings = test_settings
-    storage = RedisTextStorage[Movie](settings)
+    storage = RedisTextStorage[Movie](str(test_settings.storage_settings.redis_dsn))
 
     content_id = "test_content"
     content = "<html><body>Test Content</body></html>"
 
     # make sure the content does not already exist
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
 
     # when
@@ -54,19 +43,16 @@ def test_redis_text_insert_string(test_settings: Settings):
     ), f"Expected '{content}', but got '{stored_content}'"
 
 
-def test_redis_text_select(test_settings: Settings):
+def test_redis_text_select(test_settings: AppSettings):
     """Test the select method of RedisTextStorage."""
 
     # given
-    settings = test_settings
-    storage = RedisTextStorage[Movie](settings)
+    storage = RedisTextStorage[Movie](str(test_settings.storage_settings.redis_dsn))
 
     content_id = "test_content"
     content = "<html><body>Test Content</body></html>"
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
 
     # Insert the content into Redis
@@ -80,21 +66,18 @@ def test_redis_text_select(test_settings: Settings):
     ), f"Expected '{content}', but got '{retrieved_content}'"
 
 
-def test_redis_text_scan(test_settings: Settings):
+def test_redis_text_scan(test_settings: AppSettings):
     """Test the scan method of RedisTextStorage."""
 
     # given
-    settings = test_settings
-    storage = RedisTextStorage[Movie](settings)
+    storage = RedisTextStorage[Movie](str(test_settings.storage_settings.redis_dsn))
 
     content_id_1 = "test_content_1"
     content_1 = "<html><body>Test Content 1</body></html>"
     content_id_2 = "test_content_2"
     content_2 = "<html><body>Test Content 2</body></html>"
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
 
     # Insert the content into Redis
@@ -115,22 +98,20 @@ def test_redis_text_scan(test_settings: Settings):
     ) in scanned_content, f"Expected '{content_id_2}' to be scanned"
 
 
-def test_redis_text_scan_with_namespace(test_settings: Settings):
+def test_redis_text_scan_with_namespace(test_settings: AppSettings):
     """Scanning should filter by namespace"""
 
     # given
-    settings = test_settings
-    storage = RedisTextStorage[Person](settings)
+
+    storage = RedisTextStorage[Person](str(test_settings.storage_settings.redis_dsn))
 
     content_id_1 = "test_content_1"
     content_1 = "<html><body>Test Content 1</body></html>"
     content_id_2 = "test_content_2"
     content_2 = "<html><body>Test Content 2</body></html>"
 
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
 
     # Insert the content into Redis
@@ -145,3 +126,42 @@ def test_redis_text_scan_with_namespace(test_settings: Settings):
         content_id_2,
         content_2,
     ), f"Expected '{content_id_2}' to be scanned"
+
+
+def test_redis_text_insert_overwrite(test_settings: AppSettings):
+    """Test that inserting content with an existing ID overwrites the previous content."""
+
+    # given
+
+    storage = RedisTextStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+
+    content_id = "test_content"
+    initial_content = "<html><body>Initial Content</body></html>"
+    updated_content = "<html><body>Updated Content</body></html>"
+
+    # Insert the initial content
+    storage.insert(content_id, initial_content)
+
+    # When inserting updated content with the same ID
+    storage.insert(content_id, updated_content)
+
+    # Then the content should be updated in Redis
+    retrieved_content = storage.select(content_id)
+
+    assert (
+        retrieved_content == updated_content
+    ), f"Expected '{updated_content}', but got '{retrieved_content}'"
+
+
+def test_redis_text_is_serializable(test_settings: AppSettings):
+    """serialization is required for Prefect storage serializers"""
+
+    # given
+
+    storage = RedisTextStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+
+    # when
+    serialized = orjson.dumps(storage, default=lambda o: o.__dict__)
+
+    # then
+    assert isinstance(serialized, bytes), "Serialized storage should be bytes"

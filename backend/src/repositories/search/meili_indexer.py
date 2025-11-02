@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from typing import Generator
 
 import meilisearch
@@ -8,32 +9,20 @@ from loguru import logger
 from src.entities.movie import Movie
 from src.entities.person import Person
 from src.interfaces.storage import IStorageHandler
-from src.settings import Settings
+from src.settings import SearchSettings
 
 
 class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
 
-    client: meilisearch.Client
-    index: meilisearch.index.Index
-    settings: Settings
+    settings: SearchSettings
     entity_type: type[Movie | Person]
 
     def __init__(
         self,
-        settings: Settings,
+        settings: SearchSettings,
     ):
 
-        self.client = meilisearch.Client(
-            str(settings.search_base_url), settings.search_api_key
-        )
         self.settings = settings
-
-        if self.entity_type == Movie:
-            self.index = self._init_index(self.settings.search_movies_index_name)
-        elif self.entity_type == Person:
-            self.index = self._init_index(self.settings.search_persons_index_name)
-        else:
-            raise ValueError(f"Unsupported entity type: {self.entity_type}")
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -46,38 +35,53 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
         new_cls.entity_type = generic_type
         return new_cls
 
-    def _init_index(self, index_name: str) -> meilisearch.index.Index:
-
-        try:
-            self.index = self.client.get_index(index_name)
-        except meilisearch.errors.MeilisearchApiError as e:
-            logger.trace(f"Index '{index_name}' not found. Attempting to create it.")
-            if e.status_code == 404:
-                t = self.client.create_index(
-                    index_name,
-                    options={"primaryKey": "uid"},
-                )
-                self.client.wait_for_task(t.task_uid)
-                self.index = self.client.index(index_name)
-
-                if self.entity_type == Movie:
-                    self.index.update_searchable_attributes(
-                        ["title", "summary.content", "actors.full_name"]
-                    )
-                elif self.entity_type == Person:
-                    self.index.update_searchable_attributes(
-                        ["biography.full_name", "biography.nicknames"]
-                    )
-
-            else:
-                logger.error(f"Error getting index '{index_name}': {e}")
-                raise
-
-            logger.trace(f"Index '{index_name}' created: {e}")
+    def on_init(self):
+        if self.entity_type == Movie:
+            self._init_index(self.settings.movies_index_name)
+        elif self.entity_type == Person:
+            self._init_index(self.settings.persons_index_name)
         else:
-            logger.trace(f"Index '{index_name}' already exists")
+            raise ValueError(f"Unsupported entity type: {self.entity_type}")
 
-        return self.index
+    @contextmanager
+    def client(self) -> Generator[meilisearch.Client, None, None]:
+
+        yield meilisearch.Client(str(self.settings.base_url), self.settings.api_key)
+
+    def _init_index(self, index_name: str) -> None:
+
+        with self.client() as _client:
+
+            try:
+                index = _client.get_index(index_name)
+            except meilisearch.errors.MeilisearchApiError as e:
+                logger.trace(
+                    f"Index '{index_name}' not found. Attempting to create it."
+                )
+                if e.status_code == 404:
+                    t = _client.create_index(
+                        index_name,
+                        options={"primaryKey": "uid"},
+                    )
+                    _client.wait_for_task(t.task_uid)
+                    index = _client.index(index_name)
+
+                else:
+                    logger.error(f"Error getting index '{index_name}': {e}")
+                    raise
+
+                logger.trace(f"Index '{index_name}' created: {e}")
+            else:
+                logger.trace(f"Index '{index_name}' already exists")
+
+            if self.entity_type == Movie:
+                index.update_searchable_attributes(
+                    ["title", "summary.content", "actors.full_name"]
+                )
+            elif self.entity_type == Person:
+                index.update_searchable_attributes(
+                    ["biography.full_name", "biography.nicknames"]
+                )
 
     def insert_many(
         self,
@@ -101,7 +105,9 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
                 logger.warning("No valid documents to insert or update.")
                 return
 
-            self.index.update_documents(json_docs, primary_key="uid")
+            with self.client() as _client:
+                index = _client.get_index(self.index.uid)
+                index.update_documents(json_docs, primary_key="uid")
 
             logger.info(f"Indexation started with {len(json_docs)} documents.")
 

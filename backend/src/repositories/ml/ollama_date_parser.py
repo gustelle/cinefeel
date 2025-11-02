@@ -1,11 +1,11 @@
 from src.interfaces.formatter import IFormatter
 from src.repositories.ml.ollama_messager import OllamaMessager
-from src.settings import Settings
+from src.settings import MLSettings
 
 
 class OllamaDateFormatter(IFormatter, OllamaMessager):
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: MLSettings):
 
         self.model = settings.ollama_llm_model
 

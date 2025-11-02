@@ -1,10 +1,10 @@
 import importlib
+from contextlib import contextmanager
 from typing import Generator, Sequence
 
 from loguru import logger
 from neo4j import GraphDatabase, Session
 from pydantic import ValidationError
-from pydantic_settings import BaseSettings
 
 from src.entities.composable import Composable
 from src.entities.relationship import (
@@ -15,7 +15,7 @@ from src.entities.relationship import (
 )
 from src.exceptions import RelationshipError, StorageError
 from src.interfaces.storage import IRelationshipHandler
-from src.settings import Settings
+from src.settings import StorageSettings
 
 
 class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
@@ -26,27 +26,26 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
     e.g. MovieGraphRepository, PersonGraphRepository, etc.**
     """
 
-    client: GraphDatabase
-    settings: Settings
+    settings: StorageSettings
     entity_type: type[T]
-    _is_initialized: bool = False
 
     def __init__(
         self,
-        settings: BaseSettings | None = None,
+        settings: StorageSettings | None = None,
     ):
+        self.settings = settings or StorageSettings()
 
-        self.settings = settings or Settings()
-        self.client: GraphDatabase = GraphDatabase.driver(
-            str(self.settings.graph_db_uri),
+    @contextmanager
+    def client(self):
+        _client = GraphDatabase.driver(
+            str(self.settings.graphdb_uri),
             auth=("", ""),
         )
-
-    def __exit__(self, exc_type=None, exc_value=None, traceback=None):
-        """Close the database connection when exiting the context."""
-        if self.client:
-            self.client.close()
-            logger.debug("Database connection closed.")
+        try:
+            _client.verify_connectivity()
+            yield _client
+        finally:
+            _client.close()
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -59,38 +58,28 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
         new_cls.entity_type = generic_type
         return new_cls
 
-    def setup(self) -> bool:
+    def on_init(self):
 
-        try:
-            if self._is_initialized:
-                return True
-
-            self.client.verify_connectivity()
-
+        with self.client() as _client:
             try:
-                if hasattr(self, "entity_type") and self.entity_type is not None:
-                    # create indexes if they do not exist
-                    session: Session = self.client.session()
-                    with session:
-                        session.run(
-                            f"""
+
+                # create indexes if they do not exist
+                session: Session = _client.session()
+                with session:
+                    session.run(
+                        f"""
                             CREATE INDEX ON :{self.entity_type.__name__}(uid);
                             CREATE INDEX ON :{self.entity_type.__name__}(permalink);
                             """
-                        )
+                    )
+                    logger.info(
+                        f"Indexes for '{self.entity_type.__name__}' ensured in MemoryGraphDB."
+                    )
+
             except Exception:
                 logger.warning(
                     f"Index for {self.entity_type.__name__} already exists or could not be created."
                 )
-
-            self._is_initialized = True
-            logger.trace("Database schema initialized successfully.")
-
-        except Exception as e:
-            logger.error(f"Error initializing the database connection: {e}")
-            raise StorageError(f"Database connection error: {e}") from e
-
-        return self._is_initialized
 
     def insert_many(
         self,
@@ -119,21 +108,23 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
         """
         try:
 
-            session: Session = self.client.session()
+            with self.client() as _client:
 
-            with session:
+                session: Session = _client.session()
 
-                result = session.run(
-                    f"""
-                    MATCH (n:{self.entity_type.__name__} {{uid: '{content_id}'}})
-                    RETURN n
-                    LIMIT 1;
-                    """
-                )
+                with session:
 
-                doc = dict(result.fetch(1)[0].get("n"))
+                    result = session.run(
+                        f"""
+                        MATCH (n:{self.entity_type.__name__} {{uid: '{content_id}'}})
+                        RETURN n
+                        LIMIT 1;
+                        """
+                    )
 
-                return self.entity_type.model_validate(doc, by_name=True)
+                    doc = dict(result.fetch(1)[0].get("n"))
+
+                    return self.entity_type.model_validate(doc, by_name=True)
 
         except IndexError as e:
             logger.warning(f"Document with ID '{content_id}' not found: {e}")
@@ -158,58 +149,55 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
         Raises:
             RelationshipError
         """
-        if not self._is_initialized:
-            self.setup()
 
         try:
-            session: Session = self.client.session()
+            with self.client() as _client:
+                session: Session = _client.session()
 
-            with session:
+                with session:
 
-                if relationship.is_strong:
+                    if relationship.is_strong:
 
-                    session.run(
-                        f"""
-                        MATCH (c1:{relationship.from_entity_type} {{uid: $from_uid}}), (c2:{relationship.to_entity_type} {{uid: $to_uid}})
-                        MERGE (c1)-[r:{relationship.relation_type.value} {{is_strong: true}}]->(c2)
-                        RETURN r, c1, c2;
-                        """,
-                        parameters={
-                            "from_uid": relationship.from_entity.uid,
-                            "to_uid": relationship.to_entity.uid,
-                        },
-                    )
+                        session.run(
+                            f"""
+                            MATCH (c1:{relationship.from_entity_type} {{uid: $from_uid}}), (c2:{relationship.to_entity_type} {{uid: $to_uid}})
+                            MERGE (c1)-[r:{relationship.relation_type.value} {{is_strong: true}}]->(c2)
+                            RETURN r, c1, c2;
+                            """,
+                            parameters={
+                                "from_uid": relationship.from_entity.uid,
+                                "to_uid": relationship.to_entity.uid,
+                            },
+                        )
 
-                    logger.info(
-                        f"Stored strong relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_entity.uid}'."
-                    )
+                        logger.info(
+                            f"Stored strong relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_entity.uid}'."
+                        )
 
-                else:
+                    else:
 
-                    session.run(
-                        f"""
-                        MERGE (c2:{relationship.to_entity_type} {{title: $to_title}})
-                        """,
-                        parameters={"to_title": relationship.to_title},
-                    )
+                        session.run(
+                            f"""
+                            MERGE (c2:{relationship.to_entity_type} {{title: $to_title}})
+                            """,
+                            parameters={"to_title": relationship.to_title},
+                        )
 
-                    _ = session.run(
-                        f"""
-                        MATCH (c1:{relationship.from_entity_type} {{uid: $from_uid}}), (c2:{relationship.to_entity_type} {{title: $to_title}})
-                        MERGE (c1)-[r:{relationship.relation_type.value} {{is_strong: false}}]->(c2)
-                        RETURN r, c1, c2;
-                        """,
-                        parameters={
-                            "from_uid": relationship.from_entity.uid,
-                            "to_title": relationship.to_title,
-                        },
-                    )
+                        _ = session.run(
+                            f"""
+                            MATCH (c1:{relationship.from_entity_type} {{uid: $from_uid}}), (c2:{relationship.to_entity_type} {{title: $to_title}})
+                            MERGE (c1)-[r:{relationship.relation_type.value} {{is_strong: false}}]->(c2)
+                            RETURN r, c1, c2;
+                            """,
+                            parameters={
+                                "from_uid": relationship.from_entity.uid,
+                                "to_title": relationship.to_title,
+                            },
+                        )
 
-                    # logger.info(_.data())
-
-                    logger.info(
-                        f"Stored loose relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_title}'."
-                    )
+                        logger.info(
+                            f"Stored loose relationship '{relationship.from_entity.uid}' -[{relationship.relation_type}]-> '{relationship.to_title}'."
+                        )
 
         except Exception as e:
             raise RelationshipError(
@@ -233,61 +221,62 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
             Sequence[BaseRelationship]: A sequence of relationships matching the criteria; either strong or loose.
                 empty if none found.
         """
-        if not self._is_initialized:
-            self.setup()
 
         try:
-            session: Session = self.client.session()
+            with self.client() as _client:
+                session: Session = _client.session()
 
-            with session:
+                with session:
 
-                results = session.run(
-                    f"""
-                    MATCH (:{self.entity_type.__name__} {{uid: $uid}})-[r{':' + relation_type.value if relation_type else ''}]->(n)
-                    RETURN labels(n) as labels, n, r;
-                    """,
-                    parameters={
-                        "uid": content.uid,
-                    },
-                )
-
-                rels = []
-
-                for result in results:
-                    first_label = (
-                        result.get("labels")[0] if result.get("labels") else None
+                    results = session.run(
+                        f"""
+                        MATCH (:{self.entity_type.__name__} {{uid: $uid}})-[r{':' + relation_type.value if relation_type else ''}]->(n)
+                        RETURN labels(n) as labels, n, r;
+                        """,
+                        parameters={
+                            "uid": content.uid,
+                        },
                     )
-                    if first_label is None:
-                        continue
 
-                    m = importlib.import_module("src.entities")
-                    related_type = getattr(m, first_label, None)
-                    if related_type is None:
-                        # this is a loose relationship
-                        rels.append(
-                            LooseRelationship(
-                                from_entity=content,
-                                to_title=result.get("n").get("title"),
-                                relation_type=RelationshipType.from_string(
-                                    result.get("r").type
-                                ),
-                            )
-                        )
-                    else:
-                        # this is a strong relationship
-                        rels.append(
-                            StrongRelationship(
-                                from_entity=content,
-                                to_entity=related_type.model_validate(
-                                    dict(result.get("n")), by_alias=False, by_name=True
-                                ),
-                                relation_type=RelationshipType.from_string(
-                                    result.get("r").type
-                                ),
-                            )
-                        )
+                    rels = []
 
-                return rels
+                    for result in results:
+                        first_label = (
+                            result.get("labels")[0] if result.get("labels") else None
+                        )
+                        if first_label is None:
+                            continue
+
+                        m = importlib.import_module("src.entities")
+                        related_type = getattr(m, first_label, None)
+                        if related_type is None:
+                            # this is a loose relationship
+                            rels.append(
+                                LooseRelationship(
+                                    from_entity=content,
+                                    to_title=result.get("n").get("title"),
+                                    relation_type=RelationshipType.from_string(
+                                        result.get("r").type
+                                    ),
+                                )
+                            )
+                        else:
+                            # this is a strong relationship
+                            rels.append(
+                                StrongRelationship(
+                                    from_entity=content,
+                                    to_entity=related_type.model_validate(
+                                        dict(result.get("n")),
+                                        by_alias=False,
+                                        by_name=True,
+                                    ),
+                                    relation_type=RelationshipType.from_string(
+                                        result.get("r").type
+                                    ),
+                                )
+                            )
+
+                    return rels
 
         except Exception as e:
             raise RelationshipError(
@@ -300,47 +289,49 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
 
         try:
 
-            _last_uid = ""
+            with self.client() as _client:
 
-            while _last_uid is not None:
+                _last_uid = ""
 
-                try:
+                while _last_uid is not None:
 
-                    session: Session = self.client.session()
+                    try:
 
-                    with session:
+                        session: Session = _client.session()
 
-                        result = session.run(
-                            f"""
-                            MATCH (n:{self.entity_type.__name__})
-                            WHERE n.uid IS NOT NULL AND n.uid > $uid
-                            RETURN n
-                            ORDER BY n.uid ASC
-                            LIMIT 1;
-                            """,
-                            parameters={"uid": _last_uid},
-                        )
+                        with session:
 
-                        if not result.peek():
-                            # stop if no more results
-                            logger.debug(
-                                f"No more '{self.entity_type.__name__}' found after UID '{_last_uid}'"
+                            result = session.run(
+                                f"""
+                                MATCH (n:{self.entity_type.__name__})
+                                WHERE n.uid IS NOT NULL AND n.uid > $uid
+                                RETURN n
+                                ORDER BY n.uid ASC
+                                LIMIT 1;
+                                """,
+                                parameters={"uid": _last_uid},
                             )
-                            break
 
-                        doc = dict(result.fetch(1)[0].get("n"))
+                            if not result.peek():
+                                # stop if no more results
+                                logger.debug(
+                                    f"No more '{self.entity_type.__name__}' found after UID '{_last_uid}'"
+                                )
+                                break
 
-                        _last_uid = doc.get("uid")
+                            doc = dict(result.fetch(1)[0].get("n"))
 
-                        yield _last_uid, self.entity_type.model_validate(
-                            doc, by_name=True
+                            _last_uid = doc.get("uid")
+
+                            yield _last_uid, self.entity_type.model_validate(
+                                doc, by_name=True
+                            )
+
+                    except (IndexError, KeyError, ValidationError):
+                        logger.warning(
+                            f"No documents found for entity type '{self.entity_type.__name__}'"
                         )
-
-                except (IndexError, KeyError, ValidationError):
-                    logger.warning(
-                        f"No documents found for entity type '{self.entity_type.__name__}'"
-                    )
-                    continue
+                        continue
 
         except Exception as e:
 
@@ -355,45 +346,46 @@ class AbstractMemGraph[T: Composable](IRelationshipHandler[T]):
         limit: int = 100,
     ) -> Sequence[T]:
 
-        if not self._is_initialized:
-            self.setup()
-
         try:
 
-            q = f"""
-                MATCH (n:{self.entity_type.__name__})
-                WHERE 
-                {'n.uid > $after_uid' if after else '1=1'}
-                AND 
-                {'n.permalink = $permalink' if permalink else '1=1'}
-                RETURN n
-                ORDER BY n.{order_by} ASC
-                LIMIT $limit;
-            """
-            session: Session = self.client.session()
+            with self.client() as _client:
 
-            with session:
+                q = f"""
+                    MATCH (n:{self.entity_type.__name__})
+                    WHERE 
+                    {'n.uid > $after_uid' if after else '1=1'}
+                    AND 
+                    {'n.permalink = $permalink' if permalink else '1=1'}
+                    RETURN n
+                    ORDER BY n.{order_by} ASC
+                    LIMIT $limit;
+                """
+                session: Session = _client.session()
 
-                results = session.run(
-                    q,
-                    parameters={
-                        "order_by": order_by,
-                        "permalink": str(permalink) if permalink else "",
-                        "after_uid": after.uid if after else "",
-                        "limit": limit,
-                    },
-                )
+                with session:
 
-                if not results.peek():
-                    logger.warning(
-                        f"No '{self.entity_type.__name__}' found matching the criteria"
+                    results = session.run(
+                        q,
+                        parameters={
+                            "order_by": order_by,
+                            "permalink": str(permalink) if permalink else "",
+                            "after_uid": after.uid if after else "",
+                            "limit": limit,
+                        },
                     )
-                    return []
 
-                return [
-                    self.entity_type.model_validate(dict(result.get("n")), by_name=True)
-                    for result in results
-                ]
+                    if not results.peek():
+                        logger.warning(
+                            f"No '{self.entity_type.__name__}' found matching the criteria"
+                        )
+                        return []
+
+                    return [
+                        self.entity_type.model_validate(
+                            dict(result.get("n")), by_name=True
+                        )
+                        for result in results
+                    ]
 
         except Exception as e:
 

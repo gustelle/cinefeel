@@ -5,11 +5,11 @@ from src.entities.composable import Composable
 from src.entities.content import Media
 from src.entities.person import PersonVisibleFeatures
 from src.repositories.ml.ollama_person_visualizer import PersonOllamaVisualAnalysis
-from src.settings import Settings
+from src.settings import AppSettings
 
 
 @pytest.mark.skip(reason="Requires Ollama server to be running")
-def test_visual_analysis(test_settings: Settings):
+def test_visual_analysis(test_settings: AppSettings):
     # given
 
     settings = test_settings
@@ -24,7 +24,7 @@ def test_visual_analysis(test_settings: Settings):
     media = [Media(uid="test_media_uid", src=src, media_type="image")]
     entity_type = PersonVisibleFeatures
 
-    extractor = PersonOllamaVisualAnalysis(settings)
+    extractor = PersonOllamaVisualAnalysis(settings.ml_settings)
 
     # when
     result = extractor.extract_entity(

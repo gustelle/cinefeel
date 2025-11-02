@@ -8,7 +8,7 @@ from src.exceptions import RetrievalError
 from src.interfaces.content_splitter import IContentSplitter, Section
 from src.interfaces.info_retriever import IContentParser
 from src.interfaces.nlp_processor import Processor
-from src.settings import Settings
+from src.settings import SectionSettings
 
 
 class WikipediaAPIContentSplitter(IContentSplitter):
@@ -25,7 +25,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
     parser: IContentParser
     pruner: Processor[str]
-    settings: Settings
+    settings: SectionSettings
 
     VOID_SECTION_MARKER = "cette section est vide"
 
@@ -37,7 +37,10 @@ class WikipediaAPIContentSplitter(IContentSplitter):
     ]
 
     def __init__(
-        self, parser: IContentParser, pruner: Processor[str], settings: Settings = None
+        self,
+        parser: IContentParser,
+        pruner: Processor[str],
+        settings: SectionSettings = None,
     ):
         """
         Initializes the WikipediaAPIContentSplitter.
@@ -48,7 +51,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
         """
         self.parser = parser
         self.pruner = pruner
-        self.settings = settings or Settings()
+        self.settings = settings or SectionSettings()
 
     def split(
         self,
@@ -276,7 +279,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
 
                 # if the child section is too small, merge it with the parent section
                 for child in sec.children:
-                    if len(child.content) < self.settings.sections_min_length:
+                    if len(child.content) < self.settings.min_length:
                         sec.content += "<br>" + child.content
                         sec.title += " - " + child.title
                         sec.children.remove(child)
@@ -286,7 +289,7 @@ class WikipediaAPIContentSplitter(IContentSplitter):
                 sec.children = self._merge_sections(sec.children)
 
             # if the section is too small, merge it with the previous one
-            if i > 0 and len(sec.content) < self.settings.sections_min_length:
+            if i > 0 and len(sec.content) < self.settings.min_length:
                 sections[i - 1].content += "<br>" + sec.content
                 sections[i - 1].title += " - " + sec.title
                 sections.pop(i)

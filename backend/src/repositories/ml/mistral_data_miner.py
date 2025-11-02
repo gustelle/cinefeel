@@ -7,7 +7,7 @@ from src.entities.composable import Composable
 from src.entities.content import Media
 from src.entities.ml import ExtractionResult
 from src.interfaces.extractor import IDataMiner
-from src.settings import Settings
+from src.settings import MLSettings
 
 from .response_formater import create_response_model
 
@@ -17,13 +17,7 @@ class MistralDataMiner(IDataMiner):
     Mistral Data Miner is a wrapper around the Mistral API for data extraction.
     """
 
-    def __init__(self, settings: Settings):
-        """
-        Initializes the MistralDataMiner with the provided settings.
-
-        Args:
-            settings: The settings object containing configuration for the data miner.
-        """
+    def __init__(self, settings: MLSettings):
         self.settings = settings
 
     def extract_entity(

@@ -3,7 +3,7 @@ from src.entities.composable import Composable
 from src.entities.content import Media
 from src.interfaces.extractor import IDataMiner
 from src.repositories.ml.ollama_messager import OllamaMessager
-from src.settings import Settings
+from src.settings import MLSettings
 
 
 class InfluenceOllamaExtractor(IDataMiner, OllamaMessager):
@@ -14,7 +14,7 @@ class InfluenceOllamaExtractor(IDataMiner, OllamaMessager):
     - handle i18n of the prompt
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: MLSettings):
 
         self.model = settings.ollama_llm_model
 

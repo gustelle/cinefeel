@@ -5,24 +5,10 @@ from loguru import logger
 
 from src.entities.content import Section
 from src.entities.movie import FilmMedia, Movie
-from src.interfaces.nlp_processor import Processor
-from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.abstract_resolver import AbstractResolver
-from src.settings import Settings
 
 
 class MovieResolver(AbstractResolver[Movie]):
-
-    def __init__(
-        self,
-        configurations: list[ResolutionConfiguration],
-        section_searcher: Processor,
-        settings: Settings = None,
-    ):
-
-        self.section_searcher = section_searcher
-        self.configurations = configurations
-        self.settings = settings or Settings()
 
     def patch_media(self, entity: Movie, sections: list[Section]) -> Movie:
         """

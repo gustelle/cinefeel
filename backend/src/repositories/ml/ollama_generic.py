@@ -1,10 +1,9 @@
-
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
 from src.entities.content import Media
 from src.interfaces.extractor import IDataMiner
 from src.repositories.ml.ollama_messager import OllamaMessager
-from src.settings import Settings
+from src.settings import MLSettings
 
 
 class GenericOllamaExtractor(IDataMiner, OllamaMessager):
@@ -12,7 +11,7 @@ class GenericOllamaExtractor(IDataMiner, OllamaMessager):
     OllamaChat is a wrapper around the Ollama API for chat-based interactions with language models.
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: MLSettings):
 
         self.model = settings.ollama_llm_model
 

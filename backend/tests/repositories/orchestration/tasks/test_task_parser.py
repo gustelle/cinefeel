@@ -3,7 +3,7 @@ from src.repositories.orchestration.tasks.task_html_parsing import (
     do_analysis,
     execute_task,
 )
-from src.settings import Settings
+from src.settings import AppSettings
 
 from ..stubs.stub_analyzer import StubAnalyzer
 from ..stubs.stub_section_search import StubSectionSearch
@@ -11,7 +11,7 @@ from ..stubs.stub_stats import StubStatsCollector
 from ..stubs.stub_storage import StubStorage
 
 
-def test_task_parser_entity_is_stored_when_parsed(test_settings: Settings):
+def test_task_parser_entity_is_stored_when_parsed(test_settings: AppSettings):
 
     # given
     # mock do_analysis to return a Movie
@@ -24,7 +24,8 @@ def test_task_parser_entity_is_stored_when_parsed(test_settings: Settings):
     execute_task.fn(
         content_id=content_id,
         content=content,
-        settings=test_settings,
+        ml_settings=test_settings.ml_settings,
+        section_settings=test_settings.section_settings,
         entity_type=Movie,
         output_storage=stub_storage,
         analyzer=StubAnalyzer(),
@@ -36,7 +37,7 @@ def test_task_parser_entity_is_stored_when_parsed(test_settings: Settings):
     assert stub_storage.is_inserted, "Film was not inserted into the storage."
 
 
-def test_task_parser_analyze(test_settings: Settings):
+def test_task_parser_analyze(test_settings: AppSettings):
     # given
 
     analyzer = StubAnalyzer()
@@ -49,7 +50,8 @@ def test_task_parser_analyze(test_settings: Settings):
     result = do_analysis(
         content_id=content_id,
         html_content=html_content,
-        settings=test_settings,
+        ml_settings=test_settings.ml_settings,
+        section_settings=test_settings.section_settings,
         entity_type=Movie,
         analyzer=analyzer,
         search_processor=section_searcher,

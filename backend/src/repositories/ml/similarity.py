@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer, util
 
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
-from src.settings import Settings
+from src.settings import MLSettings
 
 from .exceptions import SimilaritySearchError
 
@@ -16,10 +16,10 @@ class SimilarSectionSearch(Processor[Section]):
     Computes BERT similarity between a given title and a list of sections to find the most similar section.
     """
 
-    settings: Settings
+    settings: MLSettings
     embedder: SentenceTransformer
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: MLSettings):
 
         self.settings = settings
 

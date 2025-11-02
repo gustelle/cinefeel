@@ -19,5 +19,6 @@ def prefect_harness():
     """
 
     with prefect_test_harness():
+        print("Prefect test harness started for the session.")
         with disable_run_logger():
             yield

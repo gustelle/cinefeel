@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from src.entities.composable import Composable
 from src.exceptions import StorageError
 from src.interfaces.storage import IStorageHandler
-from src.settings import Settings
+from src.settings import StorageSettings
 
 
 class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
@@ -37,7 +37,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
 
         return new_cls
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: StorageSettings) -> None:
 
         if not hasattr(self, "entity_type"):
             raise ValueError(
@@ -45,7 +45,7 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
             )
 
         self.persistence_directory = (
-            settings.local_storage_directory / f"{self.entity_type.__name__.lower()}s"
+            Path(settings.local_directory) / f"{self.entity_type.__name__.lower()}s"
         )
         self.persistence_directory.mkdir(parents=True, exist_ok=True)
         logger.debug(

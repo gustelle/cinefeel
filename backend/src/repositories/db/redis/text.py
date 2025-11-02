@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from typing import Generator, Sequence
 
 import redis
@@ -5,34 +6,19 @@ from loguru import logger
 
 from src.entities.composable import Composable
 from src.interfaces.storage import IStorageHandler
-from src.settings import Settings
 
 
 class RedisTextStorage[U: Composable](IStorageHandler[str]):
     """
     Stores raw text data in Redis.
+    the keys are namespaced based on the generic type U.
     """
 
-    client: redis.Redis
+    redis_dsn: str
     _namespace: str
 
-    def __init__(self, settings: Settings):
-        self.settings = settings
-        self.client = redis.Redis(
-            host=settings.redis_storage_dsn.host,
-            port=settings.redis_storage_dsn.port,
-            db=(
-                settings.redis_storage_dsn.path.lstrip("/")
-                if settings.redis_storage_dsn.path
-                else 0
-            ),
-            username=settings.redis_storage_dsn.username,
-            password=settings.redis_storage_dsn.password,
-            decode_responses=True,
-        )
-        logger.info(
-            f"Connected to Redis at {settings.redis_storage_dsn.host}:{settings.redis_storage_dsn.port}, db={settings.redis_storage_dsn.path.lstrip('/') if settings.redis_storage_dsn.path else 0}"
-        )
+    def __init__(self, redis_dsn: str):
+        self.redis_dsn = redis_dsn
 
         if not hasattr(self, "_namespace"):
             raise ValueError(
@@ -51,12 +37,24 @@ class RedisTextStorage[U: Composable](IStorageHandler[str]):
         new_cls._namespace = f"HTML-{generic_type.__name__}"
         return new_cls
 
+    @contextmanager
+    def client(self):
+        _client = redis.Redis.from_url(self.redis_dsn, decode_responses=True)
+        try:
+            yield _client
+        finally:
+            _client.close()
+
+    def on_init(self):
+        pass
+
     def _get_key(self, content_id: str) -> str:
         """Constructs the Redis key for the given content ID."""
         return f"{self._namespace}:{content_id}"
 
     def _get_content_id(self, key: str) -> str:
         """Extracts the content ID from the Redis key."""
+
         return key.split(":", 1)[1] if ":" in key else key
 
     def insert(
@@ -66,15 +64,17 @@ class RedisTextStorage[U: Composable](IStorageHandler[str]):
     ) -> None:
         """Saves the given data to a file."""
 
-        try:
-            key = self._get_key(content_id)
+        with self.client() as _client:
 
-            self.client.set(key, content)
+            try:
+                key = self._get_key(content_id)
 
-            logger.info(f"Saved '{key}' to Redis storage.")
+                _client.set(key, content)
 
-        except Exception as e:
-            logger.error(f"Error saving '{content_id}': {e}")
+                logger.info(f"Saved '{key}' to Redis storage.")
+
+            except Exception as e:
+                logger.error(f"Error saving '{content_id}': {e}")
 
     def select(
         self,
@@ -82,11 +82,13 @@ class RedisTextStorage[U: Composable](IStorageHandler[str]):
     ) -> str | None:
         """Loads data from a file."""
 
-        try:
-            return self.client.get(self._get_key(content_id))
-        except Exception as e:
-            logger.error(f"Error loading '{content_id}': {e}")
-            return None
+        with self.client() as _client:
+
+            try:
+                return _client.get(self._get_key(content_id))
+            except Exception as e:
+                logger.error(f"Error loading '{content_id}': {e}")
+                return None
 
     def scan(self) -> Generator[tuple[str, str], None, None]:
         """Scans the persistent storage and iterates over contents.
@@ -106,20 +108,22 @@ class RedisTextStorage[U: Composable](IStorageHandler[str]):
             Generator[str, None, None]: a generator of HTML contents.
         """
 
-        try:
+        with self.client() as _client:
 
-            for key in self.client.scan_iter(match=f"{self._namespace}:*"):
-                uid = self._get_content_id(key)
-                content = self.client.get(key)
-                if content is not None:
-                    yield uid, content
-                else:
-                    logger.warning(f"Content for key '{key}' not found in Redis.")
-                    continue
+            try:
 
-        except Exception as e:
-            logger.error(f"Error scanning redis: {e}")
-            yield from ()
+                for key in _client.scan_iter(match=f"{self._namespace}:*"):
+                    uid = self._get_content_id(key)
+                    content = _client.get(key)
+                    if content is not None:
+                        yield uid, content
+                    else:
+                        logger.warning(f"Content for key '{key}' not found in Redis.")
+                        continue
+
+            except Exception as e:
+                logger.error(f"Error scanning redis: {e}")
+                yield from ()
 
     def query(
         self,

@@ -2,12 +2,12 @@ from src.entities.composable import Composable
 from src.entities.ml import ExtractionResult
 from src.entities.person import Biography
 from src.repositories.ml.ollama_generic import GenericOllamaExtractor
-from src.settings import Settings
+from src.settings import AppSettings
 
 from .stub.stub_llm import OllamaMessage, StubOllama
 
 
-def test_parent_uid_is_attached_to_entity(mocker, test_settings: Settings):
+def test_parent_uid_is_attached_to_entity(mocker, test_settings: AppSettings):
     # given
     base_info = Composable(
         title="Test Title",
@@ -24,7 +24,7 @@ def test_parent_uid_is_attached_to_entity(mocker, test_settings: Settings):
         return_value=StubOllama(OllamaMessage(mock_llm_response)),
     )
 
-    parser = GenericOllamaExtractor(test_settings)
+    parser = GenericOllamaExtractor(test_settings.ml_settings)
     entity_type = Biography
 
     # when

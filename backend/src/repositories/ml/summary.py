@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
-from src.settings import Settings
+from src.settings import MLSettings
 
 from .lexrank import degree_centrality_scores
 
@@ -19,12 +19,15 @@ class SectionSummarizer(Processor[Section]):
     summarize the content of a section.
     """
 
-    settings: Settings
     _summarizer: SentenceTransformer
+    _settings: MLSettings
 
-    def __init__(self, settings: Settings):
+    def __init__(
+        self,
+        settings: MLSettings,
+    ) -> None:
 
-        self.settings = settings
+        self._settings = settings
 
         device = (
             "cuda"
@@ -80,7 +83,7 @@ class SectionSummarizer(Processor[Section]):
         new_content = section.content
         title = section.title
 
-        if len(section.content) > self.settings.summary_max_length:
+        if len(section.content) > self._settings.summary_max_length:
             sentences = nltk.sent_tokenize(section.content, language="french")
 
             # Compute the sentence embeddings

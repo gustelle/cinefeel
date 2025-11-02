@@ -1,6 +1,7 @@
+from contextlib import contextmanager
+
 import redis
 from loguru import logger
-from pydantic import RedisDsn
 
 from src.interfaces.stats import IStatsCollector, StatKey
 
@@ -8,36 +9,44 @@ from src.interfaces.stats import IStatsCollector, StatKey
 class RedisStatsCollector(IStatsCollector):
     """A simple Redis stats collector implementation."""
 
-    client: redis.Redis
     _key_prefix: str = "stats:"
+    redis_dsn: str
 
-    def __init__(self, redis_dsn: RedisDsn):
-        self.client = redis.Redis(
-            host=redis_dsn.host,
-            port=redis_dsn.port,
-            db=(redis_dsn.path.lstrip("/") if redis_dsn.path else 0),
-            username=redis_dsn.username,
-            password=redis_dsn.password,
-            decode_responses=True,
-        )
+    def __init__(self, redis_dsn: str):
+        """for serialization purposes, we store the dsn as a string not as a `RedisDsn` object"""
+        self.redis_dsn = redis_dsn
 
-        logger.info(f"RedisStatsCollector connected to '{redis_dsn}'")
+    @contextmanager
+    def client(self):
+        _client = redis.Redis.from_url(self.redis_dsn, decode_responses=True)
+        try:
+            yield _client
+        finally:
+            _client.close()
+
+    def on_init(self):
+        pass
 
     def _compose_key(self, key: StatKey, flow_id: str) -> str:
         return f"{self._key_prefix}{key}:{flow_id}"
 
     def get_value(self, key: StatKey, flow_id: str, default: int | None = None) -> int:
-        val = self.client.get(self._compose_key(key, flow_id)) or default
-        try:
-            if val is None:
+
+        with self.client() as _client:
+
+            val = _client.get(self._compose_key(key, flow_id)) or default
+            try:
+                if val is None:
+                    return default
+                return int(val)
+            except (ValueError, TypeError):
+                logger.error(f"Failed to convert value '{val}' to int for key '{key}'")
                 return default
-            return int(val)
-        except (ValueError, TypeError):
-            logger.error(f"Failed to convert value '{val}' to int for key '{key}'")
-            return default
 
     def set_value(self, key: StatKey, flow_id: str, value: int) -> None:
-        self.client.set(self._compose_key(key, flow_id), value)
+
+        with self.client() as _client:
+            _client.set(self._compose_key(key, flow_id), value)
 
     def inc_value(
         self,
@@ -46,10 +55,13 @@ class RedisStatsCollector(IStatsCollector):
         count: int = 1,
         start: int = 0,
     ) -> None:
-        if not self.client.exists(self._compose_key(key, flow_id)):
-            self.client.set(self._compose_key(key, flow_id), start + count)
-        else:
-            self.client.incr(self._compose_key(key, flow_id), count)
+
+        with self.client() as _client:
+
+            if not _client.exists(self._compose_key(key, flow_id)):
+                _client.set(self._compose_key(key, flow_id), start + count)
+            else:
+                _client.incr(self._compose_key(key, flow_id), count)
 
     def collect(self, flow_id: str) -> dict[str, int]:
 

@@ -3,7 +3,7 @@ from src.entities.composable import Composable
 from src.entities.content import Media
 from src.interfaces.extractor import IDataMiner
 from src.repositories.ml.ollama_messager import OllamaMessager
-from src.settings import Settings
+from src.settings import MLSettings
 
 
 class ParentsTradesExctractor(IDataMiner, OllamaMessager):
@@ -12,7 +12,7 @@ class ParentsTradesExctractor(IDataMiner, OllamaMessager):
     - remove this code
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: MLSettings):
 
         self.model = settings.ollama_llm_model
 

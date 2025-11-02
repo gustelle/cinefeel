@@ -4,7 +4,7 @@ from typing import Optional
 import typer
 from loguru import logger
 
-from src.settings import Settings
+from src.settings import AppSettings
 from src.use_cases.uc_types import EntityType
 
 app = typer.Typer()
@@ -16,7 +16,7 @@ def scrape(type: Optional[EntityType] = None):
     from src.use_cases.scrape import ScrapingUseCase
 
     uc = ScrapingUseCase(
-        settings=Settings(),
+        app_settings=AppSettings(),
         types=[type.value] if type else list(EntityType),
     )
     uc.execute()
@@ -34,7 +34,7 @@ def extract(type: Optional[EntityType] = None):
     from src.use_cases.extract import EntityExtractionUseCase
 
     uc = EntityExtractionUseCase(
-        settings=Settings(),
+        app_settings=AppSettings(),
         types=[type.value] if type else list(EntityType),
     )
     uc.execute()
@@ -56,7 +56,7 @@ def store(type: Optional[EntityType] = None):
     from src.use_cases.db_storage import DBStorageUseCase
 
     uc = DBStorageUseCase(
-        settings=Settings(),
+        app_settings=AppSettings(),
         types=[type.value] if type else list(EntityType),
     )
     uc.execute()
@@ -76,7 +76,7 @@ def connect(type: Optional[EntityType] = None):
     from src.use_cases.connect import EntitiesConnectionUseCase
 
     uc = EntitiesConnectionUseCase(
-        settings=Settings(),
+        app_settings=AppSettings(),
         types=[type.value] if type else list(EntityType),
     )
     uc.execute()

@@ -1,16 +1,15 @@
 from src.entities.nationality import NATIONALITIES
 from src.repositories.ml.phonetics import PhoneticSearch
-from src.settings import Settings
+from src.settings import AppSettings
 
 
-def test_phonetics_similar_nationality_search(test_settings: Settings):
+def test_phonetics_similar_nationality_search(test_settings: AppSettings):
     """
     Test the SimilaritySearch for nationalities.
     """
 
     # given
-    settings = test_settings
-    similar_value_search = PhoneticSearch(settings, NATIONALITIES["FR"])
+    similar_value_search = PhoneticSearch(NATIONALITIES["FR"])
 
     # Define a query
     query = "francaise"

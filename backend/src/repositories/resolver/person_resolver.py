@@ -4,25 +4,12 @@ from loguru import logger
 from src.entities.content import Section
 from src.entities.nationality import NATIONALITIES
 from src.entities.person import Biography, Person, PersonMedia
-from src.interfaces.nlp_processor import Processor
-from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.ml.ollama_date_parser import OllamaDateFormatter
 from src.repositories.ml.phonetics import PhoneticSearch
 from src.repositories.resolver.abstract_resolver import AbstractResolver
-from src.settings import Settings
 
 
 class PersonResolver(AbstractResolver[Person]):
-
-    def __init__(
-        self,
-        configurations: list[ResolutionConfiguration],
-        section_searcher: Processor,
-        settings: Settings = None,
-    ):
-        self.section_searcher = section_searcher
-        self.configurations = configurations
-        self.settings = settings or Settings()
 
     def patch_media(self, entity: Person, sections: list[Section]) -> Person:
         """
@@ -77,9 +64,7 @@ class PersonResolver(AbstractResolver[Person]):
         """
 
         # validate the nationality
-        phonetic_search = PhoneticSearch(
-            settings=self.settings, corpus=NATIONALITIES["FR"]
-        )
+        phonetic_search = PhoneticSearch(corpus=NATIONALITIES["FR"])
 
         valid_nationalities = []
         if entity.biography and entity.biography.nationalities:
@@ -108,7 +93,7 @@ class PersonResolver(AbstractResolver[Person]):
                 logger.warning(
                     f"Could not parse birth date '{birth_date}' for person '{entity.title}', trying with Ollama"
                 )
-                chat = OllamaDateFormatter(settings=self.settings)
+                chat = OllamaDateFormatter(settings=self.ml_settings)
                 birth_date = chat.format(birth_date)
 
         death_date = entity.biography.death_date if entity.biography else None
@@ -127,7 +112,7 @@ class PersonResolver(AbstractResolver[Person]):
                 logger.warning(
                     f"Could not parse death date '{death_date}' for person '{entity.title}', trying with Ollama."
                 )
-                chat = OllamaDateFormatter(settings=self.settings)
+                chat = OllamaDateFormatter(settings=self.ml_settings)
                 death_date = chat.format(death_date)
 
         if not entity.biography:

@@ -1,4 +1,5 @@
 import hashlib
+from contextlib import contextmanager
 from typing import Generator, Sequence
 
 import redis
@@ -10,7 +11,6 @@ from redis.commands.search.query import NumericFilter, Query
 
 from src.entities.composable import Composable
 from src.interfaces.storage import IStorageHandler
-from src.settings import Settings
 
 
 class RedisJsonStorage[U: Composable](IStorageHandler[U]):
@@ -19,46 +19,12 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
     DB used must support the `redis` client's JSON commands.
     """
 
-    client: redis.Redis
     _index_name: str
     entity_type: type[U]
+    redis_dsn: str
 
-    def __init__(self, settings: Settings):
-        self.settings = settings
-        self.client = redis.Redis(
-            host=settings.redis_storage_dsn.host,
-            port=settings.redis_storage_dsn.port,
-            db=(
-                settings.redis_storage_dsn.path.lstrip("/")
-                if settings.redis_storage_dsn.path
-                else 0
-            ),
-            username=settings.redis_storage_dsn.username,
-            password=settings.redis_storage_dsn.password,
-            decode_responses=True,
-        )
-        self._index_name = f"{self.entity_type.__name__}:idx"
-
-        try:
-            # delete if existing
-            self.client.ft(self._index_name).dropindex(delete_documents=False)
-        except Exception as e:
-            logger.warning(f"Error deleting index for Redis: {e}")
-
-        try:
-            self.client.ft(self._index_name).create_index(
-                (
-                    TagField("$.permalink", as_name="permalink"),
-                    NumericField(
-                        "$.uid_hash", as_name="uid_hash", sortable=True
-                    ),  # used for sorting
-                ),
-                definition=IndexDefinition(
-                    prefix=[f"{self.entity_type.__name__}:"], index_type=IndexType.JSON
-                ),
-            )
-        except Exception as e:
-            logger.warning(f"Error creating index for Redis: {e}")
+    def __init__(self, redis_dsn: str):
+        self.redis_dsn = redis_dsn
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -71,6 +37,46 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         new_cls = type(cls.__name__, cls.__bases__, dict(cls.__dict__))
         new_cls.entity_type = generic_type
         return new_cls
+
+    @contextmanager
+    def client(self):
+        _client = redis.Redis.from_url(self.redis_dsn, decode_responses=True)
+        try:
+            yield _client
+        finally:
+            _client.close()
+
+    def on_init(self):
+
+        self._index_name = f"{self.entity_type.__name__}:idx"
+
+        with self.client() as _client:
+
+            try:
+                # delete if existing
+                _client.ft(self._index_name).dropindex(delete_documents=False)
+            except Exception as e:
+                logger.warning(f"Error deleting index for Redis: {e}")
+
+            try:
+                _client.ft(self._index_name).create_index(
+                    (
+                        TagField("$.permalink", as_name="permalink"),
+                        NumericField(
+                            "$.uid_hash", as_name="uid_hash", sortable=True
+                        ),  # used for sorting
+                    ),
+                    definition=IndexDefinition(
+                        prefix=[f"{self.entity_type.__name__}:"],
+                        index_type=IndexType.JSON,
+                    ),
+                )
+            except Exception as e:
+                logger.warning(f"Error creating index for Redis: {e}")
+
+            logger.info(
+                f"RedisJsonStorage[{self.entity_type.__name__}] connected to '{self.redis_dsn}'"
+            )
 
     def _get_uid_hash(self, content: U) -> int:
         """Generates a numeric hash for the UID of the content.
@@ -93,20 +99,24 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         content: U,
     ) -> None:
 
-        try:
+        with self.client() as _client:
 
-            data = content.model_dump(mode="json")
-            data["uid_hash"] = self._get_uid_hash(content)  # Store the hash for sorting
+            try:
 
-            # Store the content as a JSON object in Redis
-            self.client.json().set(
-                content_id,
-                Path.root_path(),
-                data,
-            )
+                data = content.model_dump(mode="json")
+                data["uid_hash"] = self._get_uid_hash(
+                    content
+                )  # Store the hash for sorting
 
-        except Exception as e:
-            logger.error(f"Error saving '{content_id}': {e}")
+                # Store the content as a JSON object in Redis
+                _client.json().set(
+                    content_id,
+                    Path.root_path(),
+                    data,
+                )
+
+            except Exception as e:
+                logger.error(f"Error saving '{content_id}': {e}")
 
     def insert_many(
         self,
@@ -121,21 +131,23 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         content_id: str,
     ) -> U | None:
 
-        try:
+        with self.client() as _client:
 
-            # Load the content as a JSON object from Redis
-            body = self.client.json().get(content_id, Path.root_path())
+            try:
 
-            if not body:
-                logger.warning(f"JSON Content '{content_id}' not found in Redis.")
+                # Load the content as a JSON object from Redis
+                body = _client.json().get(content_id, Path.root_path())
+
+                if not body:
+                    logger.warning(f"JSON Content '{content_id}' not found in Redis.")
+                    return None
+
+                body.pop("uid_hash", None)  # Remove the hash field if it exists
+                return self.entity_type.model_validate(body, by_name=True)
+
+            except Exception as e:
+                logger.error(f"Error loading '{content_id}': {e}")
                 return None
-
-            body.pop("uid_hash", None)  # Remove the hash field if it exists
-            return self.entity_type.model_validate(body, by_name=True)
-
-        except Exception as e:
-            logger.error(f"Error loading '{content_id}': {e}")
-            return None
 
     def scan(self) -> Generator[tuple[str, U], None, None]:
         """Scans the persistent storage and iterates over contents.
@@ -145,21 +157,23 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
                 with their storage key as first element of the tuple.
         """
 
-        try:
+        with self.client() as _client:
 
-            for key in self.client.scan_iter(match=f"{self.entity_type.__name__}:*"):
+            try:
 
-                try:
-                    data = self.client.json().get(key, Path.root_path())
-                    data.pop("uid_hash", None)  # Remove the hash field if it exists
-                    yield key, self.entity_type.model_validate(data, by_name=True)
+                for key in _client.scan_iter(match=f"{self.entity_type.__name__}:*"):
 
-                except Exception as e:
-                    logger.error(f"Error parsing JSON from key '{key}': {e}")
-                    continue
+                    try:
+                        data = _client.json().get(key, Path.root_path())
+                        data.pop("uid_hash", None)  # Remove the hash field if it exists
+                        yield key, self.entity_type.model_validate(data, by_name=True)
 
-        except Exception as e:
-            raise StopIteration from e
+                    except Exception as e:
+                        logger.error(f"Error parsing JSON from key '{key}': {e}")
+                        continue
+
+            except Exception as e:
+                raise StopIteration from e
 
     def query(
         self,
@@ -172,33 +186,34 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
         @see: https://redis.io/docs/latest/develop/clients/redis-py/queryjson/
         """
 
-        if permalink is not None:
-            q = f"@permalink:{{'{permalink}'}}"
+        with self.client() as _client:
+            if permalink is not None:
+                q = f"@permalink:{{'{permalink}'}}"
 
-        else:
-            q = "*"
+            else:
+                q = "*"
 
-        if after:
-            min_uid = self._get_uid_hash(after)
-            query = Query(q).add_filter(
-                NumericFilter(
-                    "uid_hash",
-                    minval=min_uid,
-                    minExclusive=True,
-                    maxval="+inf",
+            if after:
+                min_uid = self._get_uid_hash(after)
+                query = Query(q).add_filter(
+                    NumericFilter(
+                        "uid_hash",
+                        minval=min_uid,
+                        minExclusive=True,
+                        maxval="+inf",
+                    )
                 )
+            else:
+                query = Query(q)
+
+            results = _client.ft(self._index_name).search(
+                query.paging(0, limit).sort_by("uid_hash", asc=True)
             )
-        else:
-            query = Query(q)
 
-        results = self.client.ft(self._index_name).search(
-            query.paging(0, limit).sort_by("uid_hash", asc=True)
-        )
-
-        return [
-            self.entity_type.model_validate_json(doc.json, by_name=True)
-            for doc in results.docs
-        ][:limit]
+            return [
+                self.entity_type.model_validate_json(doc.json, by_name=True)
+                for doc in results.docs
+            ][:limit]
 
     def update(
         self,

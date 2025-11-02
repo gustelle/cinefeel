@@ -15,7 +15,7 @@ from src.repositories.orchestration.tasks.retry import (
 )
 from src.repositories.orchestration.tasks.task_storage import execute_task
 from src.repositories.search.meili_indexer import MeiliHandler
-from src.settings import Settings
+from src.settings import AppSettings
 
 
 @flow(
@@ -23,7 +23,7 @@ from src.settings import Settings
     description="Store extracted entities into a storage backend.",
 )
 def db_storage_flow(
-    settings: Settings,
+    app_settings: AppSettings,
     entity_type: Literal["Movie", "Person"],
     # for testing purposes, we can inject custom storage handlers
     json_store: IStorageHandler | None = None,
@@ -34,23 +34,33 @@ def db_storage_flow(
 
     cls = get_entity_class(entity_type)
 
-    json_store = json_store or RedisJsonStorage[cls](settings=settings)
-
-    graph_store = graph_store or (
-        MovieGraphRepository(settings=settings)
-        if cls is Movie
-        else PersonGraphRepository(settings=settings)
+    json_store = json_store or RedisJsonStorage[cls](
+        redis_dsn=app_settings.storage_settings.redis_dsn
     )
 
-    search_handler = search_store or MeiliHandler[cls](settings=settings)
+    json_store.on_init()
+
+    graph_store = graph_store or (
+        MovieGraphRepository(settings=app_settings.storage_settings)
+        if cls is Movie
+        else PersonGraphRepository(settings=app_settings.storage_settings)
+    )
+
+    graph_store.on_init()
+
+    search_handler = search_store or MeiliHandler[cls](
+        settings=app_settings.search_settings
+    )
+
+    search_handler.on_init()
 
     t = execute_task.with_options(
         retries=RETRY_ATTEMPTS,
         retry_delay_seconds=RETRY_DELAY_SECONDS,
         timeout_seconds=1,  # fail fast if the task hangs
         cache_key_fn=lambda *_: f"insert_task-json-graph-{entity_type}",
-        refresh_cache=settings.prefect_cache_disabled or refresh_cache,
-    ).submit(
+        refresh_cache=app_settings.prefect_settings.cache_disabled or refresh_cache,
+    ).delay(
         input_storage=json_store,
         output_storage=graph_store,
     )
@@ -61,7 +71,7 @@ def db_storage_flow(
         retry_delay_seconds=RETRY_DELAY_SECONDS,
         cache_key_fn=lambda *_: f"insert_task-json-search-{entity_type}",
         timeout_seconds=1,  # fail fast if the task hangs
-        refresh_cache=settings.prefect_cache_disabled or refresh_cache,
-    ).submit(input_storage=json_store, output_storage=search_handler)
+        refresh_cache=app_settings.prefect_settings.cache_disabled or refresh_cache,
+    ).delay(input_storage=json_store, output_storage=search_handler)
 
     wait([t, u])  # wait for all tasks to complete

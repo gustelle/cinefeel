@@ -3,14 +3,14 @@ from src.entities.content import Section
 from src.entities.movie import FilmSpecifications, Movie
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.movie_resolver import MovieResolver
-from src.settings import Settings
+from src.settings import AppSettings
 
 from .stubs.stub_extractor import StubExtractor
 from .stubs.stub_similarity import ExactTitleSimilaritySearch, StubSimilaritySearch
 
 
 def test_BasicFilmResolver_nominal_case(
-    test_settings: Settings,
+    test_settings: AppSettings,
 ):
     # Given a film specifications and summary
     title = "The Great Film"
@@ -41,7 +41,7 @@ def test_BasicFilmResolver_nominal_case(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings,
+        settings=test_settings.section_settings,
     )
 
     # When resolving the film
@@ -54,7 +54,7 @@ def test_BasicFilmResolver_nominal_case(
 
 
 def test_resolve_film_patch_media(
-    test_settings: Settings,
+    test_settings: AppSettings,
 ):
     # Given a film with no media
     film = Movie(
@@ -129,7 +129,7 @@ def test_resolve_film_patch_media(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings,
+        settings=test_settings.section_settings,
     )
 
     # When patching media
@@ -148,7 +148,7 @@ def test_resolve_film_patch_media(
 
 
 def test_validate_iso_duration(
-    test_settings: Settings,
+    test_settings: AppSettings,
 ):
     # Given a film with a valid duration
     film = Movie(
@@ -172,7 +172,7 @@ def test_validate_iso_duration(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings,
+        settings=test_settings.section_settings,
     )
 
     # When validating the duration
@@ -183,7 +183,7 @@ def test_validate_iso_duration(
 
 
 def test_validate_duration_by_regex_no_hour(
-    test_settings: Settings,
+    test_settings: AppSettings,
 ):
     # Given a film with an invalid duration
     film = Movie(
@@ -207,7 +207,7 @@ def test_validate_duration_by_regex_no_hour(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings,
+        settings=test_settings.section_settings,
     )
 
     # When validating the duration
@@ -220,7 +220,7 @@ def test_validate_duration_by_regex_no_hour(
 
 
 def test_validate_duration_by_regex_with_hour(
-    test_settings: Settings,
+    test_settings: AppSettings,
 ):
     # Given a film with an invalid duration
     film = Movie(
@@ -244,7 +244,7 @@ def test_validate_duration_by_regex_with_hour(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings,
+        settings=test_settings.section_settings,
     )
 
     # When validating the duration

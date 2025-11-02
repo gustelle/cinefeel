@@ -3,12 +3,13 @@ from typing import Any
 from prefect import Task, get_run_logger
 from prefect.client.schemas.objects import TaskRun
 from prefect.states import State
-from ratelimit import RateLimitException
 
 from src.exceptions import HttpError
 
 RETRY_ATTEMPTS: int = 30
-RETRY_DELAY_SECONDS: list[int] = [0.1, 0.5, 1]
+RETRY_DELAY_SECONDS: list[int] = [
+    0.1 * ((i**2) / 8) for i in range(RETRY_ATTEMPTS)
+]  # exponential backoff
 
 
 def is_http_task_retriable(
@@ -29,9 +30,6 @@ def is_http_task_retriable(
             return False
         elif isinstance(e, TimeoutError):
             logger.warning("Timeout error will be retried")
-            return True
-        elif isinstance(e, RateLimitException):
-            logger.warning("Rate limit exceeded, error will be retried")
             return True
         else:
             logger.error(f"Exception is not retriable: {e}")

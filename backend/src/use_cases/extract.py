@@ -4,7 +4,7 @@ from prefect import deploy, flow
 
 from src.entities.movie import Movie
 from src.entities.person import Person
-from src.settings import Settings
+from src.settings import AppSettings
 
 from .uc_types import EntityType
 
@@ -12,11 +12,16 @@ from .uc_types import EntityType
 class EntityExtractionUseCase:
     """Handles the scraping of Wikipedia pages for specific entity types."""
 
-    settings: Settings
+    _app_settings: AppSettings
+
     _types: list[EntityType]
 
-    def __init__(self, settings: Settings, types: list[EntityType]):
-        self.settings = settings
+    def __init__(
+        self,
+        app_settings: AppSettings,
+        types: list[EntityType],
+    ):
+        self._app_settings = app_settings
         self._types = types
 
     def execute(self):
@@ -33,7 +38,7 @@ class EntityExtractionUseCase:
                     name="movies_extraction",
                     description="Extracts movies from HTML content.",
                     parameters={
-                        "settings": self.settings,
+                        "app_settings": self._app_settings,
                         "entity_type": Movie.__name__,
                     },
                     job_variables={
@@ -41,7 +46,7 @@ class EntityExtractionUseCase:
                         .parent.parent.parent.resolve()
                         .as_posix(),
                     },
-                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,
+                    concurrency_limit=self._app_settings.prefect_settings.flows_concurrency_limit,
                 )
             )
 
@@ -56,7 +61,7 @@ class EntityExtractionUseCase:
                     name="persons_extraction",
                     description="Extracts persons from HTML content.",
                     parameters={
-                        "settings": self.settings,
+                        "app_settings": self._app_settings,
                         "entity_type": Person.__name__,
                     },
                     job_variables={
@@ -64,7 +69,7 @@ class EntityExtractionUseCase:
                         .parent.parent.parent.resolve()
                         .as_posix(),
                     },
-                    concurrency_limit=self.settings.prefect_flows_concurrency_limit,
+                    concurrency_limit=self._app_settings.prefect_settings.flows_concurrency_limit,
                 )
             )
 

@@ -7,7 +7,7 @@ from src.entities.content import Section
 from src.entities.ml import ExtractionResult
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import IEntityResolver, ResolutionConfiguration
-from src.settings import Settings
+from src.settings import MLSettings, SectionSettings
 
 
 class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
@@ -18,7 +18,21 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
     entity_type: T
     configurations: list[ResolutionConfiguration]
     section_searcher: Processor
-    settings: Settings
+    section_settings: SectionSettings
+    ml_settings: MLSettings
+
+    def __init__(
+        self,
+        configurations: list[ResolutionConfiguration],
+        section_searcher: Processor,
+        section_settings: SectionSettings = None,
+        ml_settings: MLSettings = None,
+    ):
+
+        self.section_searcher = section_searcher
+        self.configurations = configurations
+        self.section_settings = section_settings or SectionSettings()
+        self.ml_settings = ml_settings or MLSettings()
 
     def __class_getitem__(cls, generic_type):
         """Called when the class is indexed with a type parameter.
@@ -78,12 +92,12 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         """
 
         # choose the longest sections if there are more than `sections_max_per_page`
-        if sections and len(sections) > self.settings.sections_max_per_page:
+        if sections and len(sections) > self.section_settings.max_per_page:
             sections = sorted(
                 sections,
                 key=lambda section: len(section.content),
                 reverse=True,
-            )[: self.settings.sections_max_per_page]
+            )[: self.section_settings.max_per_page]
 
         # limit the number of children per section
         # by choosing the longest children
@@ -91,13 +105,13 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         for section in sections:
             if (
                 section.children
-                and len(section.children) > self.settings.sections_max_children
+                and len(section.children) > self.section_settings.max_children
             ):
                 section.children = sorted(
                     section.children,
                     key=lambda child: len(child.content),
                     reverse=True,
-                )[: self.settings.sections_max_children]
+                )[: self.section_settings.max_children]
 
         return sections
 

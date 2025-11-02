@@ -1,15 +1,15 @@
 import pytest
 
 from src.repositories.ml.ollama_date_parser import OllamaDateFormatter
-from src.settings import Settings
+from src.settings import AppSettings
 
 
 @pytest.mark.skip(
     reason="This test requires Ollama to be running and the model to be available."
 )
-def test_ollama_date_formatter(test_settings: Settings):
+def test_ollama_date_formatter(test_settings: AppSettings):
 
-    formatter = OllamaDateFormatter(settings=test_settings)
+    formatter = OllamaDateFormatter(settings=test_settings.ml_settings)
     birth_date = "25 octobre 1852"
     resp = formatter.format(
         content=birth_date,

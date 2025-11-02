@@ -13,7 +13,16 @@ from src.entities.person import Biography, Person
 from src.entities.woa import WOAInfluence, WOAType
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
-from src.settings import Settings
+from src.settings import (
+    AppSettings,
+    MLSettings,
+    PrefectSettings,
+    ScrapingSettings,
+    SearchSettings,
+    SectionSettings,
+    StatsSettings,
+    StorageSettings,
+)
 
 # see https://stackoverflow.com/questions/46733332/how-to-monkeypatch-the-environment-using-pytest-in-conftest-py
 mp = pytest.MonkeyPatch()
@@ -237,34 +246,50 @@ def test_settings(launch_memgraph):  #
     # because on github actions, we don't have control over the file system
     with tempfile.TemporaryDirectory() as tmpdir:
 
-        settings = Settings(
-            local_storage_directory=Path(tmpdir) / "data",
-            graph_db_uri=GRAPHDB_URI,
-            scraping_config_file=path,
-            similarity_min_score=0.7,
-            summary_max_length=512,
-            transformer_model_backend="torch",  # ok on local machine with cuda or mps
-            redis_stats_dsn=f"redis://localhost:{REDIS_HOST_PORT}/1",
-            redis_storage_dsn=f"redis://localhost:{REDIS_HOST_PORT}/0",
+        settings = AppSettings(
+            _env_file=None,
+            storage_settings=StorageSettings(
+                _env_file=None,
+                local_directory=(Path(tmpdir) / "data").as_posix(),
+                graphdb_uri=GRAPHDB_URI,
+                redis_dsn=f"redis://localhost:{REDIS_HOST_PORT}/0",
+            ),
+            scraping_settings=ScrapingSettings(
+                _env_file=None,
+                config_file=path.as_posix(),
+            ),
+            ml_settings=MLSettings(
+                _env_file=None,
+                similarity_min_score=0.7,
+                summary_max_length=512,
+                transformer_model_backend="torch",  # ok on local machine with cuda or mps
+            ),
+            stats_settings=StatsSettings(
+                _env_file=None,
+                redis_dsn=f"redis://localhost:{REDIS_HOST_PORT}/1",
+            ),
+            search_settings=SearchSettings(_env_file=None),
+            prefect_settings=PrefectSettings(_env_file=None),
+            section_settings=SectionSettings(_env_file=None),
         )
 
         yield settings
 
 
 @pytest.fixture(scope="function")
-def test_person_graphdb(test_settings):
-    yield PersonGraphRepository(test_settings)
+def test_person_graphdb(test_settings: AppSettings):
+    yield PersonGraphRepository(test_settings.storage_settings)
 
 
 @pytest.fixture(scope="function")
-def test_film_graphdb(test_settings):
-    yield MovieGraphRepository(test_settings)
+def test_film_graphdb(test_settings: AppSettings):
+    yield MovieGraphRepository(test_settings.storage_settings)
 
 
 @pytest.fixture(scope="function")
-def test_memgraph_client(test_settings: Settings):
+def test_memgraph_client(test_settings: AppSettings):
     client = GraphDatabase.driver(
-        str(test_settings.graph_db_uri),
+        str(test_settings.storage_settings.graphdb_uri),
         auth=("", ""),
     )
     yield client

@@ -1,10 +1,10 @@
 from src.entities.person import Person
 from src.repositories.orchestration.tasks.task_storage import execute_task
-from src.settings import Settings
+from src.settings import AppSettings
 from tests.repositories.orchestration.stubs.stub_storage import StubStorage
 
 
-def test_batch_insert_task(test_settings: Settings, test_person: Person):
+def test_batch_insert_task(test_settings: AppSettings, test_person: Person):
 
     # given
     # a runner
@@ -34,7 +34,7 @@ def test_batch_insert_task(test_settings: Settings, test_person: Person):
     ), "Not all entities were inserted into the output storage."
 
 
-def test_batch_insert_task_per_batch(test_settings: Settings, test_person: Person):
+def test_batch_insert_task_per_batch(test_settings: AppSettings, test_person: Person):
 
     # given
     # a runner

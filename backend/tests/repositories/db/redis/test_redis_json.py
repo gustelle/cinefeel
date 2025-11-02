@@ -1,5 +1,6 @@
 import random
 
+import orjson
 import pytest
 import redis
 from pydantic import HttpUrl
@@ -7,40 +8,29 @@ from redis.commands.json.path import Path
 
 from src.entities.movie import Movie
 from src.repositories.db.redis.json import RedisJsonStorage
-from src.settings import Settings
+from src.settings import AppSettings
 
 
 @pytest.fixture(scope="function", autouse=True)
-def cleanup_redis(test_settings: Settings):
+def cleanup_redis(test_settings: AppSettings):
     """Cleans up the Redis database used for testing."""
-    r = redis.Redis(
-        host=test_settings.redis_storage_dsn.host,
-        port=test_settings.redis_storage_dsn.port,
-        db=(
-            test_settings.redis_storage_dsn.path.lstrip("/")
-            if test_settings.redis_storage_dsn.path
-            else 0
-        ),
-        username=test_settings.redis_storage_dsn.username,
-        password=test_settings.redis_storage_dsn.password,
-        decode_responses=True,
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
     r.flushdb()
     yield
     r.flushdb()
 
 
-def test_redis_insert_dict(test_film: Movie, test_settings: Settings):
+def test_redis_json_insert_dict(test_film: Movie, test_settings: AppSettings):
     """Test the insert method of RedisStorage with a dictionary."""
 
     # given
-    settings = test_settings
-    storage = RedisJsonStorage[Movie](settings)
 
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
+    storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
 
     # when
@@ -56,17 +46,15 @@ def test_redis_insert_dict(test_film: Movie, test_settings: Settings):
     ), "Title should match the inserted film"
 
 
-def test_redis_select_film(test_film: Movie, test_settings: Settings):
+def test_redis_json_select_film(test_film: Movie, test_settings: AppSettings):
     """Test the select method of RedisStorage with a dictionary."""
 
     # given
-    settings = test_settings
-    storage = RedisJsonStorage[Movie](settings)
 
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
+    storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
 
     # Insert the content into Redis
@@ -85,20 +73,18 @@ def test_redis_select_film(test_film: Movie, test_settings: Settings):
     assert retrieved_content.uid == test_film.uid, "UID should match the inserted film"
 
 
-def test_redis_scan_film(test_film: Movie, test_settings: Settings):
+def test_redis_json_scan_film(test_film: Movie, test_settings: AppSettings):
     """Test the scan method of RedisStorage with a dictionary."""
 
     # given
-    settings = test_settings
-    storage = RedisJsonStorage[Movie](settings)
+
+    storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
 
     test_film_1 = test_film.model_copy(deep=True)
     test_film_1.title = test_film_1.title + " 1"
 
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
 
     # Insert the content into Redis
@@ -133,12 +119,12 @@ def test_redis_scan_film(test_film: Movie, test_settings: Settings):
     ), "All scanned items should be Film instances"
 
 
-def test_redis_query_by_permalink(test_film: Movie, test_settings: Settings):
+def test_redis_json_query_by_permalink(test_film: Movie, test_settings: AppSettings):
     """Test the query method of RedisStorage."""
 
     # given
-    settings = test_settings
-    storage = RedisJsonStorage[Movie](settings)
+
+    storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
 
     test_film_1 = test_film.model_copy(deep=True)
     test_film_1.title = test_film_1.title + " 1"
@@ -146,10 +132,8 @@ def test_redis_query_by_permalink(test_film: Movie, test_settings: Settings):
         (str(test_film_1.permalink) + f"/{random.randint(1000, 9999)}")
     )
 
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
 
     # Insert the content into Redis
@@ -178,12 +162,14 @@ def test_redis_query_by_permalink(test_film: Movie, test_settings: Settings):
     ), "UID should match the queried film"
 
 
-def test_redis_hashing_is_deterministic(test_film: Movie, test_settings: Settings):
+def test_redis_json_hashing_is_deterministic(
+    test_film: Movie, test_settings: AppSettings
+):
     """Test that the uid_hash is deterministic for the same UID."""
 
     # given
-    settings = test_settings
-    storage = RedisJsonStorage[Movie](settings)
+
+    storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
 
     # when
     hash1 = storage._get_uid_hash(test_film)
@@ -193,12 +179,12 @@ def test_redis_hashing_is_deterministic(test_film: Movie, test_settings: Setting
     assert hash1 == hash2, "UID hash should be deterministic and consistent"
 
 
-def test_redis_query_after(test_film: Movie, test_settings: Settings):
+def test_redis_json_query_after(test_film: Movie, test_settings: AppSettings):
     """Test the query method of RedisStorage with 'after' parameter."""
 
     # given
-    settings = test_settings
-    storage = RedisJsonStorage[Movie](settings)
+
+    storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
 
     test_film_1 = test_film.model_copy(deep=True)
     test_film_1.title = test_film_1.title + " 1"
@@ -242,17 +228,15 @@ def test_redis_query_after(test_film: Movie, test_settings: Settings):
     ), "No more content should be available after the last film"
 
 
-def test_insert_many(test_film: Movie, test_settings: Settings):
+def test_redis_json_insert_many(test_film: Movie, test_settings: AppSettings):
     """Test the insert_many method of RedisStorage."""
 
     # given
-    settings = test_settings
-    storage = RedisJsonStorage[Movie](settings)
 
-    r = redis.Redis(
-        host=settings.redis_storage_dsn.host,
-        port=settings.redis_storage_dsn.port,
-        decode_responses=True,
+    storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+
+    r = redis.Redis.from_url(
+        str(test_settings.storage_settings.redis_dsn), decode_responses=True
     )
 
     # when
@@ -266,3 +250,17 @@ def test_insert_many(test_film: Movie, test_settings: Settings):
     assert (
         stored_content["title"] == test_film.title
     ), "Title should match the inserted film"
+
+
+def test_redis_json_is_json_serializable(test_settings: AppSettings):
+    """serialization is required for Prefect storage serializers"""
+
+    # given
+
+    storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+
+    # when
+    serialized = orjson.dumps(storage, default=lambda o: o.__dict__)
+
+    # then
+    assert isinstance(serialized, bytes), "Serialized storage should be bytes"

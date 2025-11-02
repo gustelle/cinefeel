@@ -1,23 +1,19 @@
 import uuid
 
+import orjson
 import redis
 
 from src.repositories.stats import RedisStatsCollector, StatKey
-from src.settings import Settings
+from src.settings import AppSettings
 
 
-def test_redis_stats_collector_get_value_not_existing(test_settings: Settings):
+def test_redis_stats_collector_get_value_not_existing(test_settings: AppSettings):
 
     # given
-    redis_dsn = test_settings.redis_stats_dsn
-    collector = RedisStatsCollector(redis_dsn=redis_dsn)
-    redis_client = redis.Redis(
-        host=redis_dsn.host,
-        port=redis_dsn.port,
-        db=2,
-        username=redis_dsn.username,
-        password=redis_dsn.password,
-        decode_responses=True,
+    redis_dsn = test_settings.stats_settings.redis_dsn
+    collector = RedisStatsCollector(redis_dsn=str(redis_dsn))
+    redis_client = redis.Redis.from_url(
+        str(test_settings.stats_settings.redis_dsn), decode_responses=True
     )
 
     test_key = StatKey.SCRAPING_FAILED
@@ -33,17 +29,12 @@ def test_redis_stats_collector_get_value_not_existing(test_settings: Settings):
     redis_client.delete(key)
 
 
-def test_redis_stats_collector_get_existing_value(test_settings: Settings):
+def test_redis_stats_collector_get_existing_value(test_settings: AppSettings):
     # given
-    redis_dsn = test_settings.redis_stats_dsn
-    collector = RedisStatsCollector(redis_dsn=redis_dsn)
-    redis_client = redis.Redis(
-        host=redis_dsn.host,
-        port=redis_dsn.port,
-        db=2,
-        username=redis_dsn.username,
-        password=redis_dsn.password,
-        decode_responses=True,
+    redis_dsn = test_settings.stats_settings.redis_dsn
+    collector = RedisStatsCollector(redis_dsn=str(redis_dsn))
+    redis_client = redis.Redis.from_url(
+        str(test_settings.stats_settings.redis_dsn), decode_responses=True
     )
 
     test_key = StatKey.SCRAPING_FAILED
@@ -61,17 +52,12 @@ def test_redis_stats_collector_get_existing_value(test_settings: Settings):
     redis_client.delete(test_key)
 
 
-def test_redis_stats_collector_set_value(test_settings: Settings):
+def test_redis_stats_collector_set_value(test_settings: AppSettings):
     # given
-    redis_dsn = test_settings.redis_stats_dsn
-    collector = RedisStatsCollector(redis_dsn=redis_dsn)
-    redis_client = redis.Redis(
-        host=redis_dsn.host,
-        port=redis_dsn.port,
-        db=2,
-        username=redis_dsn.username,
-        password=redis_dsn.password,
-        decode_responses=True,
+    redis_dsn = test_settings.stats_settings.redis_dsn
+    collector = RedisStatsCollector(redis_dsn=str(redis_dsn))
+    redis_client = redis.Redis.from_url(
+        str(test_settings.stats_settings.redis_dsn), decode_responses=True
     )
 
     test_key = StatKey.SCRAPING_FAILED
@@ -89,17 +75,12 @@ def test_redis_stats_collector_set_value(test_settings: Settings):
     redis_client.delete(key)
 
 
-def test_redis_stats_collector_inc_value(test_settings: Settings):
+def test_redis_stats_collector_inc_value(test_settings: AppSettings):
     # given
-    redis_dsn = test_settings.redis_stats_dsn
-    collector = RedisStatsCollector(redis_dsn=redis_dsn)
-    redis_client = redis.Redis(
-        host=redis_dsn.host,
-        port=redis_dsn.port,
-        db=2,
-        username=redis_dsn.username,
-        password=redis_dsn.password,
-        decode_responses=True,
+    redis_dsn = test_settings.stats_settings.redis_dsn
+    collector = RedisStatsCollector(redis_dsn=str(redis_dsn))
+    redis_client = redis.Redis.from_url(
+        str(test_settings.stats_settings.redis_dsn), decode_responses=True
     )
 
     test_key = StatKey.SCRAPING_FAILED
@@ -124,17 +105,12 @@ def test_redis_stats_collector_inc_value(test_settings: Settings):
     redis_client.delete(key)
 
 
-def test_redis_stats_collector_collect(test_settings: Settings):
+def test_redis_stats_collector_collect(test_settings: AppSettings):
     # given
-    redis_dsn = test_settings.redis_stats_dsn
-    collector = RedisStatsCollector(redis_dsn=redis_dsn)
-    redis_client = redis.Redis(
-        host=redis_dsn.host,
-        port=redis_dsn.port,
-        db=2,
-        username=redis_dsn.username,
-        password=redis_dsn.password,
-        decode_responses=True,
+    redis_dsn = test_settings.stats_settings.redis_dsn
+    collector = RedisStatsCollector(redis_dsn=str(redis_dsn))
+    redis_client = redis.Redis.from_url(
+        str(test_settings.stats_settings.redis_dsn), decode_responses=True
     )
 
     flow_id = str(uuid.uuid4())
@@ -161,3 +137,17 @@ def test_redis_stats_collector_collect(test_settings: Settings):
     # cleanup
     for key in StatKey:
         redis_client.delete(collector._compose_key(key, flow_id))
+
+
+def test_redis_stats_collector_is_serializable(test_settings: AppSettings):
+    """serialization is required for Prefect storage serializers"""
+
+    # given
+    redis_dsn = test_settings.stats_settings.redis_dsn
+    collector = RedisStatsCollector(redis_dsn=str(redis_dsn))
+
+    # when
+    serialized = orjson.dumps(collector, default=lambda o: o.__dict__)
+
+    # then
+    assert isinstance(serialized, bytes), "Serialized storage should be bytes"

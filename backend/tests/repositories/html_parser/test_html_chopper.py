@@ -5,7 +5,7 @@ from src.repositories.html_parser.html_splitter import WikipediaAPIContentSplitt
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.repositories.ml.html_to_text import TextSectionConverter
 from src.repositories.ml.summary import SectionSummarizer
-from src.settings import Settings
+from src.settings import AppSettings
 
 from .stubs.stub_pruner import DoNothingPruner
 
@@ -13,7 +13,7 @@ from .stubs.stub_pruner import DoNothingPruner
 def test_retrieve_infobox_is_processed_correctly(
     # given
     read_beethoven_html,
-    test_settings: Settings,
+    test_settings: AppSettings,
 ):
     """
     Test that the infobox is retrieved before the content simplification.
@@ -25,13 +25,13 @@ def test_retrieve_infobox_is_processed_correctly(
     retriever = WikipediaParser()
 
     text_converter = TextSectionConverter()
-    section_summarizer = SectionSummarizer(settings=settings)
+    section_summarizer = SectionSummarizer(settings=settings.ml_settings)
 
     analyzer = Html2TextSectionsChopper(
         content_splitter=WikipediaAPIContentSplitter(
             parser=retriever,
             pruner=DoNothingPruner(),
-            settings=settings,
+            settings=settings.section_settings,
         ),
         post_processors=[
             text_converter,
@@ -53,7 +53,7 @@ def test_retrieve_infobox_is_processed_correctly(
     )
 
 
-def test_process_complex_page(read_melies_html, test_settings: Settings):
+def test_process_complex_page(read_melies_html, test_settings: AppSettings):
     """
     Test the process method of the HtmlChopper class with a complex HTML page.
     """
@@ -62,11 +62,13 @@ def test_process_complex_page(read_melies_html, test_settings: Settings):
     settings = test_settings
     retriever = WikipediaParser()
     html_cleaner = TextSectionConverter()
-    section_summarizer = SectionSummarizer(settings=settings)
+    section_summarizer = SectionSummarizer(settings=settings.ml_settings)
 
     analyzer = Html2TextSectionsChopper(
         content_splitter=WikipediaAPIContentSplitter(
-            parser=retriever, pruner=DoNothingPruner(), settings=settings
+            parser=retriever,
+            pruner=DoNothingPruner(),
+            settings=settings.section_settings,
         ),
         post_processors=[
             html_cleaner,

@@ -6,7 +6,7 @@ from src.entities.movie import FilmMedia, Movie
 from src.entities.person import Person, PersonCharacteristics, PersonVisibleFeatures
 from src.interfaces.resolver import ResolutionConfiguration
 from src.repositories.resolver.abstract_resolver import AbstractResolver
-from src.settings import Settings
+from src.settings import AppSettings
 
 from .stubs.stub_extractor import StubExtractor
 from .stubs.stub_similarity import ExactTitleSimilaritySearch, StubSimilaritySearch
@@ -78,7 +78,7 @@ def test_extract_entities_with_children():
     assert all(isinstance(entity.entity, FilmMedia) for entity in extracted_entities)
 
 
-def test_extracted_entities_uid_is_assigned(test_settings: Settings):
+def test_extracted_entities_uid_is_assigned(test_settings: AppSettings):
     """
     Test that the extracted entities have their UID assigned correctly.
     this is a major requirement for the resolver to work properly
@@ -130,7 +130,7 @@ def test_extracted_entities_uid_is_assigned(test_settings: Settings):
     assert len(results) == 2
 
 
-def test_sections_max_children(test_settings: Settings):
+def test_sections_max_children(test_settings: AppSettings):
     # given
 
     # a section withe lots of children
@@ -155,9 +155,9 @@ def test_sections_max_children(test_settings: Settings):
             self.configurations = {
                 FilmMedia: ["Section 1", "Section 2"],
             }
-            self.settings = test_settings.model_copy(
+            self.section_settings = test_settings.section_settings.model_copy(
                 update={
-                    "sections_max_children": 5,  # Limit to 5 children per section
+                    "max_children": 5,  # Limit to 5 children per section
                 }
             )
 
@@ -181,7 +181,7 @@ def test_sections_max_children(test_settings: Settings):
     assert len(filtered_sections[0].children) == 5
 
 
-def test_sections_max_per_page(test_settings: Settings):
+def test_sections_max_per_page(test_settings: AppSettings):
     # given
     # lots of sections, more than the max per page
     sections = [
@@ -198,9 +198,9 @@ def test_sections_max_per_page(test_settings: Settings):
             self.configurations = {
                 FilmMedia: ["Section 1", "Section 2"],
             }
-            self.settings = test_settings.model_copy(
+            self.section_settings = test_settings.section_settings.model_copy(
                 update={
-                    "sections_max_per_page": 100,  # Limit to 100 sections per page
+                    "max_per_page": 100,  # Limit to 100 sections per page
                 }
             )
 

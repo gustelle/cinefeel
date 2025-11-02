@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Generator, Sequence
 
 from src.entities.composable import Composable
@@ -7,10 +6,6 @@ from src.entities.relationship import BaseRelationship
 
 
 class IStorageHandler[U](ABC):
-
-    # TODO; move this to an implementation
-    # this should not be in the interface
-    persistence_directory: Path
 
     # the type of the entity being stored
     # e.g. Movie or Person
@@ -48,6 +43,11 @@ class IStorageHandler[U](ABC):
     @abstractmethod
     def update(self, content: U, *args, **kwargs) -> U:
         """Updates an existing content in persistent storage."""
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
+    @abstractmethod
+    def on_init(self):
+        """Hook called after initialization of the storage handler."""
         raise NotImplementedError("This method should be overridden by subclasses.")
 
 

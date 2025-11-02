@@ -7,13 +7,13 @@ from pydantic import HttpUrl
 
 from src.exceptions import RetrievalError
 from src.interfaces.http_client import IHttpClient
-from src.settings import Settings
+from src.settings import ScrapingSettings
 
 
 def download_page(
     http_client: IHttpClient,
     page_id: str,
-    settings: Settings,
+    settings: ScrapingSettings,
     **params,
 ) -> str:
     """

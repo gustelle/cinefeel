@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import orjson
 from prefect import get_run_logger, runtime, task
+from prefect.concurrency.sync import rate_limit
 
 from src.entities.content import PageLink, TableOfContents
 from src.exceptions import HttpError
@@ -11,7 +12,7 @@ from src.interfaces.stats import IStatsCollector, StatKey
 from src.interfaces.storage import IStorageHandler
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 from src.repositories.wikipedia import download_page
-from src.settings import Settings
+from src.settings import ScrapingSettings
 
 
 def download_and_store(
@@ -19,7 +20,7 @@ def download_and_store(
     page_id: str,
     storage_handler: IStorageHandler,
     return_content: bool,
-    settings: Settings,
+    scraping_settings: ScrapingSettings,
     stats_collector: IStatsCollector | None = None,
 ) -> str | None:
     """
@@ -30,12 +31,14 @@ def download_and_store(
     flow_id = runtime.flow_run.id
 
     try:
+
+        rate_limit("api-rate-limiting", occupy=1, strict=True)
         html = download_page(
             http_client=http_client,
             page_id=page_id,
             storage_handler=storage_handler,
             return_content=return_content,
-            settings=settings,
+            settings=scraping_settings,
         )
 
         if stats_collector:
@@ -78,7 +81,7 @@ def extract_page_links(
     http_client: IHttpClient,
     config: TableOfContents,
     link_extractor: IContentParser,
-    settings: Settings,
+    scraping_settings: ScrapingSettings,
 ) -> list[PageLink]:
     """
     downloads the HTML page and extracts the links from it.
@@ -92,11 +95,12 @@ def extract_page_links(
 
     logger = get_run_logger()
 
+    rate_limit("api-rate-limiting", occupy=1, strict=True)
     html = download_page(
         http_client=http_client,
         page_id=config.page_id,
         return_content=True,  # return the content
-        settings=settings,
+        settings=scraping_settings,
     )
 
     if html is None:
@@ -122,7 +126,7 @@ def extract_page_links(
 )
 def execute_task(
     page: PageLink,
-    settings: Settings,
+    scraping_settings: ScrapingSettings,
     http_client: IHttpClient,
     storage_handler: IStorageHandler,
     link_extractor: IContentParser | None = WikipediaParser(),
@@ -146,6 +150,8 @@ def execute_task(
             If False, it will return None.
         stats_collector (IStatsCollector | None): The stats collector to use for collecting statistics during the scraping process.
             Defaults to None.
+        scraping_settings (ScrapingSettings): The scraping settings to use for the scraping process.
+        http_client (IHttpClient): The HTTP client to use for making requests.
 
     Returns:
         list[str] | None: a list of `page_id` stored into the storage backend
@@ -158,7 +164,7 @@ def execute_task(
             http_client=http_client,
             config=page,
             link_extractor=link_extractor,
-            settings=settings,
+            scraping_settings=scraping_settings,
         )
     else:
         page_links = [page]
@@ -169,7 +175,7 @@ def execute_task(
             page_id=page_link.page_id,
             storage_handler=storage_handler,
             return_content=False,  # for memory constraints, return the content ID
-            settings=settings,
+            scraping_settings=scraping_settings,
             stats_collector=stats_collector,
         )
         for page_link in page_links

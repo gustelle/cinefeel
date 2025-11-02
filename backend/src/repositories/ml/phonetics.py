@@ -2,19 +2,16 @@ from loguru import logger
 from pyphonetics import Soundex
 
 from src.interfaces.nlp_processor import Processor
-from src.settings import Settings
 
 from .exceptions import SimilaritySearchError
 
 
 class PhoneticSearch(Processor[str]):
 
-    settings: Settings
     corpus: list[str] = []
 
-    def __init__(self, settings: Settings, corpus: list[str]):
+    def __init__(self, corpus: list[str]):
 
-        self.settings = settings
         self.corpus = corpus
 
     def process(self, query: str) -> str | None:

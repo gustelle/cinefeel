@@ -2,16 +2,16 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from src.exceptions import HttpError
-from src.settings import Settings
+from src.settings import AppSettings
 
 
-def test_sync_get_as_json(httpx_mock: HTTPXMock, test_settings: Settings):
+def test_sync_get_as_json(httpx_mock: HTTPXMock, test_settings: AppSettings):
 
     # given
     from src.repositories.http.sync_http import SyncHttpClient
 
     settings = test_settings
-    http_client = SyncHttpClient(settings=settings)
+    http_client = SyncHttpClient(settings=settings.scraping_settings)
 
     name = "Lucien Nonguet"
 
@@ -28,13 +28,13 @@ def test_sync_get_as_json(httpx_mock: HTTPXMock, test_settings: Settings):
     assert isinstance(response, dict)
 
 
-def test_sync_get_as_text(httpx_mock: HTTPXMock, test_settings: Settings):
+def test_sync_get_as_text(httpx_mock: HTTPXMock, test_settings: AppSettings):
 
     # given
     from src.repositories.http.sync_http import SyncHttpClient
 
     settings = test_settings
-    http_client = SyncHttpClient(settings=settings)
+    http_client = SyncHttpClient(settings=settings.scraping_settings)
 
     url = "https://fr.wikipedia.org/w/rest.php/v1/page/Lucien_Nonguet/bare"
 
@@ -49,13 +49,13 @@ def test_sync_get_as_text(httpx_mock: HTTPXMock, test_settings: Settings):
     assert len(response) > 0
 
 
-def test_sync_get_404(httpx_mock: HTTPXMock, test_settings: Settings):
+def test_sync_get_404(httpx_mock: HTTPXMock, test_settings: AppSettings):
 
     # given
     from src.repositories.http.sync_http import SyncHttpClient
 
     settings = test_settings
-    http_client = SyncHttpClient(settings=settings)
+    http_client = SyncHttpClient(settings=settings.scraping_settings)
 
     url = "https://fr.wikipedia.org/404"
 
@@ -69,7 +69,7 @@ def test_sync_get_404(httpx_mock: HTTPXMock, test_settings: Settings):
     assert e.value.status_code == 404
 
 
-def test_sync_get_multiple_requests(httpx_mock: HTTPXMock, test_settings: Settings):
+def test_sync_get_multiple_requests(httpx_mock: HTTPXMock, test_settings: AppSettings):
     """
     the client remains open between requests
     """
@@ -78,7 +78,7 @@ def test_sync_get_multiple_requests(httpx_mock: HTTPXMock, test_settings: Settin
     from src.repositories.http.sync_http import SyncHttpClient
 
     settings = test_settings
-    http_client = SyncHttpClient(settings=settings)
+    http_client = SyncHttpClient(settings=settings.scraping_settings)
 
     name = "Lucien Nonguet"
 
@@ -98,13 +98,13 @@ def test_sync_get_multiple_requests(httpx_mock: HTTPXMock, test_settings: Settin
 
 
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-def test_sync_timeout(httpx_mock: HTTPXMock, test_settings: Settings):
+def test_sync_timeout(httpx_mock: HTTPXMock, test_settings: AppSettings):
 
     # given
     from src.repositories.http.sync_http import SyncHttpClient
 
-    settings = test_settings
-    settings.scraping_request_timeout = 1
+    settings = test_settings.scraping_settings
+    settings.request_timeout = 1
 
     http_client = SyncHttpClient(settings=settings)
 

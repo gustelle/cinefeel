@@ -2,7 +2,7 @@ import pytest
 
 from src.interfaces.content_splitter import Section
 from src.repositories.ml.summary import SectionSummarizer
-from src.settings import Settings
+from src.settings import AppSettings
 
 
 @pytest.fixture(scope="module")
@@ -73,7 +73,7 @@ def sample_text() -> str:
     """
 
 
-def test_summary(test_settings: Settings, sample_text: str):
+def test_summary(test_settings: AppSettings, sample_text: str):
 
     # Test the summarize method with a sample text
     import time
@@ -82,7 +82,7 @@ def test_summary(test_settings: Settings, sample_text: str):
 
     section = Section(title="Test Section", content=sample_text)
 
-    summarize = SectionSummarizer(test_settings)
+    summarize = SectionSummarizer(test_settings.ml_settings)
 
     # when
     section = summarize.process(section)
@@ -94,7 +94,7 @@ def test_summary(test_settings: Settings, sample_text: str):
     print(f"Summarization took {time.time() - start} seconds")
 
 
-def test_summary_children_are_summarized(test_settings: Settings):
+def test_summary_children_are_summarized(test_settings: AppSettings):
     # given
     sample_text = """
     Les débuts
@@ -110,7 +110,7 @@ Issu d’une famille de courtiers en vins du Languedoc, après des études à Br
         children=[Section(title="Child Section", content=child_text)],
     )
 
-    summarize = SectionSummarizer(test_settings)
+    summarize = SectionSummarizer(test_settings.ml_settings)
 
     # when
     section = summarize.process(section)
@@ -120,7 +120,7 @@ Issu d’une famille de courtiers en vins du Languedoc, après des études à Br
     assert len(section.children[0].content) <= len(child_text)
 
 
-def test_summary_media_are_preserved_in_summarized_section(test_settings: Settings):
+def test_summary_media_are_preserved_in_summarized_section(test_settings: AppSettings):
     # given
     sample_text = "This is a sample text with media."
     media = [
@@ -128,7 +128,7 @@ def test_summary_media_are_preserved_in_summarized_section(test_settings: Settin
     ]
     section = Section(title="Test Section", content=sample_text, media=media)
 
-    summarize = SectionSummarizer(test_settings)
+    summarize = SectionSummarizer(test_settings.ml_settings)
 
     # when
     summarized = summarize.process(section)
@@ -137,7 +137,7 @@ def test_summary_media_are_preserved_in_summarized_section(test_settings: Settin
 
 
 def test_summary_media_in_children_are_preserved_in_summarized_section(
-    test_settings: Settings,
+    test_settings: AppSettings,
 ):
     # given
     sample_text = "This is a sample text with media."
@@ -156,7 +156,7 @@ def test_summary_media_in_children_are_preserved_in_summarized_section(
         ],
     )
 
-    summarize = SectionSummarizer(test_settings)
+    summarize = SectionSummarizer(test_settings.ml_settings)
 
     # when
     summarized = summarize.process(section)

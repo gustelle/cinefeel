@@ -1,129 +1,110 @@
 from pathlib import Path
 from typing import Self
 
-from pydantic import AnyUrl, Field, HttpUrl, RedisDsn, SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_yaml import parse_yaml_raw_as
 
 from src.entities.content import TableOfContents
 
 
-class Settings(BaseSettings):
-
-    # TODO:
-    # - refactor the settings, merging mistral_xxx and ollama_xxx into LLSettings
-    # - refactor the settings, merging mediawiki_base_url and mediawiki_api_key into MediaWikiSettings
-    # - refactor the settings, merging search_xxx into SearchSettings
-    # - refactor the settings, merging graph_db_xxx, meili and redis_xxx into StorageSettings
+class SectionSettings(BaseSettings):
+    """
+    Settings related to section extraction.
+    """
 
     model_config = SettingsConfigDict(
-        # `.env.prod` takes priority over `.env`
-        env_file=(".env", ".env.prod")
+        env_prefix="sections_", env_file=(".env", ".env.prod"), extra="ignore"
     )
 
-    scraping_cache_expire_after: int = Field(
-        default=60 * 60 * 24,
-        description="The expiration time of the cache in seconds",
-    )
-    scraping_start_pages: list[TableOfContents] | None = Field(
-        None,
-        description="Will be set through the start pages config file",
-    )
-
-    scraping_config_file: Path | None = Field(
-        ...,
-        description="""
-            The path to the YAML configuration file for the start pages,
-            must be provided in the .env file as `START_PAGES_CONFIG`.
-        """,
-    )
-
-    scraping_max_concurrency: int = Field(
+    max_children: int = Field(
         default=3,
-        description="The maximum number of concurrent connections to download pages",
-    )
-    scraping_request_timeout: int = Field(
-        default=10,
-        description="The timeout for each request in seconds",
-    )
-
-    mediawiki_api_key: str = Field(
-        default="",
         description="""
-            The API key for the MediaWiki API;
-            see https://api.wikimedia.org/wiki/Special:AppManagement
+            The maximum number of children sections per section.
+            If a section has more children than this value, the children will be truncated.
         """,
     )
-    mediawiki_base_url: str = Field(
-        default="https://api.wikimedia.org/core/v1/wikipedia/fr",
-        description="The base URL of the Wikipedia API",
-    )
-    mediawiki_user_agent: str = Field(
-        default="Cinefeel",
-        description="The user agent to use for the Wikipedia API",
-    )
-    mediawiki_user_agent: str = Field(
-        default="Cinefeel",
-        description="The user agent to use for the Wikipedia API",
-    )
-
-    search_base_url: HttpUrl | None = Field(
-        default="http://localhost:7700",
-        description="The base URL of the MeiliSearch API",
-    )
-    search_api_key: str = Field(
-        default="cinefeel",
-        description="The API key for the MeiliSearch API",
-    )
-    search_movies_index_name: str = Field(
-        default="movies",
-    )
-    search_persons_index_name: str = Field(
-        default="persons",
-    )
-
-    local_storage_directory: Path = Field(
-        default=Path("./data"),
-        description="The path (relative or absolute) to the dir where the scraped data will be saved",
-    )
-
-    mistral_llm_model: str = Field(
-        default="mistral-medium-latest",
-    )
-
-    mistral_api_key: SecretStr = Field(
-        default="",
-        description="The API key for the Mistral API",
-    )
-
-    ollama_llm_model: str = Field(
-        default="llama3-chatqa:latest",
-        description="The name of the LLM model to use for text processing.",
-    )
-
-    ollama_vision_model: str = Field(
-        default="llava:7b",
+    max_per_page: int = Field(
+        default=5,
         description="""
-            The name of the vision model to use for image processing.
-            """,
+            The maximum number of sections to extract from a page.
+            If a page has more sections than this value, the sections will be truncated.
+        """,
     )
-
-    similarity_model: str = Field(
-        default="sentence-transformers/nli-mpnet-base-v2",
+    min_length: int = Field(
+        default=500,
         description="""
-            The name of the BERT model to use for similarity search
+            The minimum length of a section.
+            If a section is shorter than this value, it will be ignored.
         """,
     )
 
-    similarity_min_score: float = Field(
-        default=0.7,
-        ge=0,
-        le=1,
+
+class StorageSettings(BaseSettings):
+    """
+    Settings related to storage backends.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="storage_", env_file=(".env", ".env.prod"), extra="ignore"
+    )
+
+    local_directory: str = Field(
+        default=Path("./data").as_posix(),
         description="""
-            The threshold for the similarity score.
-            If the score is below this value, the result will be considered as not found.
-            Be careful, the threshold is really dependent on the model used.
+        The path (relative or absolute) to the dir where the scraped data will be saved.
+        
+        NB: this field is not declared as `Path` because we need it to be serializable by Prefect.
         """,
+    )
+
+    graphdb_uri: str | None = Field(
+        default="bolt://localhost:7687/memgraph",
+        description="""
+            The URI of the database used to store the graph data.
+            
+            NB: this field is not declared as `AnyUrl` because we need it to be serializable by Prefect.
+        """,
+    )
+
+    redis_dsn: str = Field(
+        default="redis://localhost:6379/0",
+        description="""
+            used for storing html and JSON contents temporarily, before processing them into the Graph DB.
+            NB: only the /0 database is supported because we are using RedisSearch module which does not support logical DBs.
+            @see https://stackoverflow.com/questions/72116930/redisearch-cannot-create-index-on-db-0
+            
+            NB: this field is not declared as `RedisDsn` because we need it to be serializable by Prefect.
+        """,
+    )
+
+
+class StatsSettings(BaseSettings):
+    """
+    Settings related to statistics backends.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="stats_", env_file=(".env", ".env.prod"), extra="ignore"
+    )
+
+    redis_dsn: str = Field(
+        default="redis://localhost:6379/2",
+        description="""
+            used for storing statistics about the scraping and extraction processes.
+            
+            NB: this field is not declared as `RedisDsn` because we need it to be serializable by Prefect.
+        """,
+    )
+
+
+class MLSettings(BaseSettings):
+    """
+    Settings related to content summarization.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="ml_", env_file=(".env", ".env.prod"), extra="ignore"
     )
 
     summary_model: str = Field(
@@ -162,81 +143,192 @@ class Settings(BaseSettings):
         examples=["torch", "onnx", "openvino"],
     )
 
-    prefect_flows_concurrency_limit: int = Field(
+    similarity_model: str = Field(
+        default="sentence-transformers/nli-mpnet-base-v2",
+        description="""
+            The name of the BERT model to use for similarity search
+        """,
+    )
+
+    similarity_min_score: float = Field(
+        default=0.7,
+        ge=0,
+        le=1,
+        description="""
+            The threshold for the similarity score.
+            If the score is below this value, the result will be considered as not found.
+            Be careful, the threshold is really dependent on the model used.
+        """,
+    )
+
+    mistral_llm_model: str = Field(
+        default="mistral-medium-latest",
+    )
+
+    mistral_api_key: SecretStr = Field(
+        default="",
+        description="The API key for the Mistral API",
+    )
+
+    ollama_llm_model: str = Field(
+        default="llama3-chatqa:latest",
+        description="The name of the LLM model to use for text processing.",
+    )
+
+    ollama_vision_model: str = Field(
+        default="llava:7b",
+        description="""
+            The name of the vision model to use for image processing.
+            """,
+    )
+
+
+class PrefectSettings(BaseSettings):
+    """
+    Settings related to Prefect orchestration.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="prefect_", env_file=(".env", ".env.prod"), extra="ignore"
+    )
+
+    flows_concurrency_limit: int = Field(
         default=2,
         description="The maximum number of concurrent flows",
     )
 
-    prefect_task_timeout: int = Field(
+    task_timeout: int = Field(
         default=60 * 30,  # 30 minutes
         description="The timeout for prefect tasks in seconds",
     )
-    prefect_tasks_concurrency_limit: int = Field(
+    tasks_concurrency_limit: int = Field(
         default=10,
         description="The maximum number of concurrent prefect tasks",
     )
-    prefect_cache_disabled: bool = Field(
+    cache_disabled: bool = Field(
         default=False,
         description="If True, disables the prefect task cache",
     )
 
-    # section params
-    sections_max_children: int = Field(
+
+class ScrapingSettings(BaseSettings):
+    """
+    Settings related to scraping.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="scraping_",
+        env_file=(".env", ".env.prod"),
+        extra="ignore",
+    )
+
+    cache_expire_after: int = Field(
+        default=60 * 60 * 24,
+        description="The expiration time of the cache in seconds",
+    )
+    start_pages: list[TableOfContents] | None = Field(
+        None,
+        description="Will be set through the start pages config file",
+    )
+
+    config_file: str | None = Field(
+        default="./start-pages-dev.yml",
+        description="""
+            The path to the YAML configuration file for the start pages,
+            must be provided in the .env file as `START_PAGES_CONFIG`.
+        """,
+    )
+
+    max_concurrency: int = Field(
         default=3,
+        description="The maximum number of concurrent connections to download pages",
+    )
+    request_timeout: int = Field(
+        default=10,
+        description="The timeout for each request in seconds",
+    )
+    mediawiki_api_key: str = Field(
+        default="",
         description="""
-            The maximum number of children sections per section.
-            If a section has more children than this value, the children will be truncated.
+            The API key for the MediaWiki API;
+            see https://api.wikimedia.org/wiki/Special:AppManagement
         """,
     )
-    sections_max_per_page: int = Field(
-        default=5,
-        description="""
-            The maximum number of sections to extract from a page.
-            If a page has more sections than this value, the sections will be truncated.
-        """,
+    mediawiki_base_url: str = Field(
+        default="https://api.wikimedia.org/core/v1/wikipedia/fr",
+        description="The base URL of the Wikipedia API",
     )
-    sections_min_length: int = Field(
-        default=500,
-        description="""
-            The minimum length of a section.
-            If a section is shorter than this value, it will be ignored.
-        """,
-    )
-
-    graph_db_uri: AnyUrl | None = Field(
-        ...,
-        description="""
-            The URI of the database used to store the graph data.
-        """,
-    )
-
-    redis_storage_dsn: RedisDsn = Field(
-        default="redis://localhost:6379/0",
-        description="""
-            used for storing html and JSON contents temporarily, before processing them into the Graph DB.
-            NB: only the /0 database is supported because we are using RedisSearch module which does not support logical DBs.
-            @see https://stackoverflow.com/questions/72116930/redisearch-cannot-create-index-on-db-0
-        """,
-    )
-
-    redis_stats_dsn: RedisDsn = Field(
-        default="redis://localhost:6379/2",
-        description="""
-            used for storing statistics about the scraping and extraction processes.
-            We use a separate Redis logical DB to avoid conflicts with the data storage.
-        """,
+    mediawiki_user_agent: str = Field(
+        default="Cinefeel",
+        description="The user agent to use for the Wikipedia API",
     )
 
     @model_validator(mode="after")
     def on_after_init(self) -> Self:
 
-        if not self.scraping_config_file or not self.scraping_config_file.exists():
+        if not self.config_file or not Path(self.config_file).exists():
             raise ValueError(
-                f"start_pages_config is not set or the file does not exist: {self.scraping_config_file}"
+                f"start_pages_config is not set or the file does not exist: {self.config_file}"
             )
 
-        with open(self.scraping_config_file, "r") as f:
+        with open(self.config_file, "r") as f:
             list_of_tocs = parse_yaml_raw_as(list[TableOfContents], f.read())
-            self.scraping_start_pages = list_of_tocs
+            self.start_pages = list_of_tocs
 
         return self
+
+
+class SearchSettings(BaseSettings):
+    """
+    Settings related to search engine.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="search_",
+        env_file=(".env", ".env.prod"),
+        extra="ignore",
+    )
+
+    base_url: str | None = Field(
+        default="http://localhost:7700",
+        description="The base URL of the MeiliSearch API",
+    )
+    api_key: str = Field(
+        default="cinefeel",
+        description="The API key for the MeiliSearch API",
+    )
+    movies_index_name: str = Field(
+        default="movies",
+    )
+    persons_index_name: str = Field(
+        default="persons",
+    )
+
+
+class AppSettings(BaseSettings):
+
+    model_config = SettingsConfigDict(
+        env_file=(".env", ".env.prod"),
+        extra="ignore",
+    )
+    search_settings: SearchSettings = Field(
+        default_factory=SearchSettings,
+    )
+    storage_settings: StorageSettings = Field(
+        default_factory=StorageSettings,
+    )
+    prefect_settings: PrefectSettings = Field(
+        default_factory=PrefectSettings,
+    )
+    ml_settings: MLSettings = Field(
+        default_factory=MLSettings,
+    )
+    section_settings: SectionSettings = Field(
+        default_factory=SectionSettings,
+    )
+    stats_settings: StatsSettings = Field(
+        default_factory=StatsSettings,
+    )
+    scraping_settings: ScrapingSettings = Field(
+        default_factory=ScrapingSettings,
+    )
