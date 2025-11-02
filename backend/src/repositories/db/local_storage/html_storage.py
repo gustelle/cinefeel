@@ -29,6 +29,9 @@ class LocalTextStorage(IStorageHandler[str]):
         self.persistence_directory.mkdir(parents=True, exist_ok=True)
         self.entity_type = entity_type
 
+    def on_init(self) -> None:
+        pass
+
     def insert(
         self,
         content_id: str,

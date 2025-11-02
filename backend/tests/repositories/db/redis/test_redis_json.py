@@ -28,6 +28,7 @@ def test_redis_json_insert_dict(test_film: Movie, test_settings: AppSettings):
     # given
 
     storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+    storage.on_init()
 
     r = redis.Redis.from_url(
         str(test_settings.storage_settings.redis_dsn), decode_responses=True
@@ -52,6 +53,7 @@ def test_redis_json_select_film(test_film: Movie, test_settings: AppSettings):
     # given
 
     storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+    storage.on_init()
 
     r = redis.Redis.from_url(
         str(test_settings.storage_settings.redis_dsn), decode_responses=True
@@ -79,6 +81,7 @@ def test_redis_json_scan_film(test_film: Movie, test_settings: AppSettings):
     # given
 
     storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+    storage.on_init()
 
     test_film_1 = test_film.model_copy(deep=True)
     test_film_1.title = test_film_1.title + " 1"
@@ -125,6 +128,7 @@ def test_redis_json_query_by_permalink(test_film: Movie, test_settings: AppSetti
     # given
 
     storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+    storage.on_init()
 
     test_film_1 = test_film.model_copy(deep=True)
     test_film_1.title = test_film_1.title + " 1"
@@ -168,8 +172,8 @@ def test_redis_json_hashing_is_deterministic(
     """Test that the uid_hash is deterministic for the same UID."""
 
     # given
-
     storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+    storage.on_init()
 
     # when
     hash1 = storage._get_uid_hash(test_film)
@@ -183,8 +187,8 @@ def test_redis_json_query_after(test_film: Movie, test_settings: AppSettings):
     """Test the query method of RedisStorage with 'after' parameter."""
 
     # given
-
     storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+    storage.on_init()
 
     test_film_1 = test_film.model_copy(deep=True)
     test_film_1.title = test_film_1.title + " 1"
@@ -232,8 +236,8 @@ def test_redis_json_insert_many(test_film: Movie, test_settings: AppSettings):
     """Test the insert_many method of RedisStorage."""
 
     # given
-
     storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+    storage.on_init()
 
     r = redis.Redis.from_url(
         str(test_settings.storage_settings.redis_dsn), decode_responses=True
@@ -256,8 +260,8 @@ def test_redis_json_is_json_serializable(test_settings: AppSettings):
     """serialization is required for Prefect storage serializers"""
 
     # given
-
     storage = RedisJsonStorage[Movie](str(test_settings.storage_settings.redis_dsn))
+    storage.on_init()
 
     # when
     serialized = orjson.dumps(storage, default=lambda o: o.__dict__)

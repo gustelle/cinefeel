@@ -52,6 +52,9 @@ class JSONEntityStorageHandler[T: Composable](IStorageHandler[T]):
             f"Initialized JSONEntityStorageHandler for {self.entity_type.__name__} at '{self.persistence_directory}'"
         )
 
+    def on_init(self):
+        pass
+
     def insert(
         self,
         content_id: str,

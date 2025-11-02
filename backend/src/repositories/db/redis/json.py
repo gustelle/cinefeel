@@ -206,6 +206,11 @@ class RedisJsonStorage[U: Composable](IStorageHandler[U]):
             else:
                 query = Query(q)
 
+            if not hasattr(self, "_index_name"):
+                raise RuntimeError(
+                    "RedisJsonStorage not initialized. Call on_init() before querying."
+                )
+
             results = _client.ft(self._index_name).search(
                 query.paging(0, limit).sort_by("uid_hash", asc=True)
             )

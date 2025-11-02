@@ -84,7 +84,8 @@ def test_resolve_person_patch_media(
                 extracted_type=Person,
             ),
         ],
-        settings=test_settings.section_settings,
+        section_settings=test_settings.section_settings,
+        ml_settings=test_settings.ml_settings,
     )
 
     # When patching media
@@ -121,7 +122,8 @@ def test_resolve_person_validate_nationalities(
                 extracted_type=Biography,
             ),
         ],
-        settings=test_settings.section_settings,
+        section_settings=test_settings.section_settings,
+        ml_settings=test_settings.ml_settings,
     )
 
     # When validating the person
@@ -157,7 +159,8 @@ def test_resolve_person_validate_birth_date(
                 extracted_type=Biography,
             ),
         ],
-        settings=test_settings.section_settings,
+        section_settings=test_settings.section_settings,
+        ml_settings=test_settings.ml_settings,
     )
 
     # When validating the person
@@ -188,7 +191,8 @@ def test_resolve_person_validate_entity(
                 extracted_type=Biography,
             ),
         ],
-        settings=test_settings.section_settings,
+        section_settings=test_settings.section_settings,
+        ml_settings=test_settings.ml_settings,
     )
 
     # When validating the person

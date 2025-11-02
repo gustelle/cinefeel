@@ -41,7 +41,8 @@ def test_BasicFilmResolver_nominal_case(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings.section_settings,
+        section_settings=test_settings.section_settings,
+        ml_settings=test_settings.ml_settings,
     )
 
     # When resolving the film
@@ -129,7 +130,8 @@ def test_resolve_film_patch_media(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings.section_settings,
+        section_settings=test_settings.section_settings,
+        ml_settings=test_settings.ml_settings,
     )
 
     # When patching media
@@ -172,7 +174,8 @@ def test_validate_iso_duration(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings.section_settings,
+        section_settings=test_settings.section_settings,
+        ml_settings=test_settings.ml_settings,
     )
 
     # When validating the duration
@@ -207,7 +210,8 @@ def test_validate_duration_by_regex_no_hour(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings.section_settings,
+        section_settings=test_settings.section_settings,
+        ml_settings=test_settings.ml_settings,
     )
 
     # When validating the duration
@@ -244,7 +248,8 @@ def test_validate_duration_by_regex_with_hour(
                 extracted_type=FilmSpecifications,
             ),
         ],
-        settings=test_settings.section_settings,
+        section_settings=test_settings.section_settings,
+        ml_settings=test_settings.ml_settings,
     )
 
     # When validating the duration

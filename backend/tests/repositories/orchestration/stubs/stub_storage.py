@@ -26,6 +26,9 @@ class StubStorage[T: Composable](IStorageHandler[T]):
         self._inserted = []
         self.entity_type = entity_type
 
+    def on_init(self) -> None:
+        pass
+
     def insert(
         self,
         content_id: str,
