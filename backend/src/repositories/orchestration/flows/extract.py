@@ -76,7 +76,7 @@ def extract_entities_flow(
 
         if content:
 
-            with concurrency("heavy", occupy=1, strict=True):
+            with concurrency("heavy", occupy=1):
 
                 execute_task.with_options(
                     retries=RETRY_ATTEMPTS,
@@ -107,7 +107,7 @@ def extract_entities_flow(
             )
     else:
 
-        with concurrency("heavy", occupy=1, strict=True):
+        with concurrency("heavy", occupy=1):
 
             for content_id, content in html_store.scan():
                 if not content or not content_id:

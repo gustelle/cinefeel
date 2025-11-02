@@ -32,7 +32,7 @@ def download_and_store(
 
     try:
 
-        rate_limit("api-rate-limiting", occupy=1, strict=True)
+        rate_limit("api-rate-limiting", occupy=1)
         html = download_page(
             http_client=http_client,
             page_id=page_id,
@@ -95,7 +95,7 @@ def extract_page_links(
 
     logger = get_run_logger()
 
-    rate_limit("api-rate-limiting", occupy=1, strict=True)
+    rate_limit("api-rate-limiting", occupy=1)
     html = download_page(
         http_client=http_client,
         page_id=config.page_id,

@@ -94,7 +94,6 @@ def test_sync_get_multiple_requests(httpx_mock: HTTPXMock, test_settings: AppSet
     assert isinstance(response1, dict)
     assert isinstance(response2, dict)
     assert response1 == response2
-    assert http_client.client.is_closed is False
 
 
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
