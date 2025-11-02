@@ -120,6 +120,11 @@ def test_extract_entities_flow_for_all_pages(test_settings: AppSettings):
     assert entity_analyzer.is_analyzed
     assert section_searcher.is_called
 
+    # wait a bit for the tasks to complete
+    import time
+
+    time.sleep(2)
+
     # there should be 3 entities stored in the JSON storage
     results = list(json_store.scan())
     assert len(results) == 3
