@@ -60,7 +60,7 @@ def db_storage_flow(
         timeout_seconds=1,  # fail fast if the task hangs
         cache_key_fn=lambda *_: f"insert_task-json-graph-{entity_type}",
         refresh_cache=app_settings.prefect_settings.cache_disabled or refresh_cache,
-    ).delay(
+    ).submit(
         input_storage=json_store,
         output_storage=graph_store,
     )
@@ -72,6 +72,6 @@ def db_storage_flow(
         cache_key_fn=lambda *_: f"insert_task-json-search-{entity_type}",
         timeout_seconds=1,  # fail fast if the task hangs
         refresh_cache=app_settings.prefect_settings.cache_disabled or refresh_cache,
-    ).delay(input_storage=json_store, output_storage=search_handler)
+    ).submit(input_storage=json_store, output_storage=search_handler)
 
     wait([t, u])  # wait for all tasks to complete

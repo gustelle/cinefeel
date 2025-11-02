@@ -1,4 +1,5 @@
 from prefect import get_run_logger, task
+from prefect.concurrency.sync import rate_limit
 from prefect.events import emit_event
 
 from src.entities.composable import Composable
@@ -42,7 +43,7 @@ def connect_by_name(
     """
     logger = get_run_logger()
     try:
-
+        rate_limit("api-rate-limiting", occupy=1)
         permalink = get_permalink(name=name, http_client=http_client)
 
         # query the storage for the entity by its permalink

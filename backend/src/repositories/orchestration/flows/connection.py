@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import Literal
 
 from prefect import flow, get_run_logger, task
-from prefect.futures import PrefectFuture, wait
+from prefect.concurrency.sync import rate_limit
 from prefect.task_runners import ConcurrentTaskRunner
 
 from src.entities import get_entity_class
@@ -56,7 +56,7 @@ def extract_entity_from_page(
     scraping_task = task(
         cache_key_fn=lambda *_: f"on-demand-scraping-{page_id}",
         cache_expiration=timedelta(hours=1),
-    )(scraping_flow).delay(
+    )(scraping_flow).submit(
         pages=[page],
         scraping_settings=app_settings.scraping_settings,
         stats_settings=app_settings.stats_settings,
@@ -67,7 +67,7 @@ def extract_entity_from_page(
     extract_task = task(
         cache_key_fn=lambda *_: f"on-demand-extract-{entity_type}-{page_id}",
         cache_expiration=timedelta(hours=1),
-    )(extract_entities_flow).delay(
+    )(extract_entities_flow).submit(
         prefect_settings=app_settings.prefect_settings,
         ml_settings=app_settings.ml_settings,
         section_settings=app_settings.section_settings,
@@ -81,7 +81,7 @@ def extract_entity_from_page(
     storage_task = task(
         cache_key_fn=lambda *_: f"on-demand-store-{entity_type}-{page_id}",
         cache_expiration=timedelta(hours=1),
-    )(db_storage_flow).delay(
+    )(db_storage_flow).submit(
         prefect_settings=app_settings.prefect_settings,
         storage_settings=app_settings.storage_settings,
         search_settings=app_settings.search_settings,
@@ -92,7 +92,7 @@ def extract_entity_from_page(
     task(
         cache_key_fn=lambda *_: f"on-demand-connect-{entity_type}-{page_id}",
         cache_expiration=timedelta(hours=1),
-    )(connection_flow).delay(
+    )(connection_flow).submit(
         scraping_settings=app_settings.scraping_settings,
         storage_settings=app_settings.storage_settings,
         prefect_settings=app_settings.prefect_settings,
@@ -125,8 +125,6 @@ def connection_flow(
 
     logger = get_run_logger()
 
-    tasks: list[PrefectFuture] = []
-
     logger.info(
         f"Starting connection flow for entity_type={entity_type} (cache disabled={app_settings.prefect_settings.cache_disabled})"
     )
@@ -155,19 +153,16 @@ def connection_flow(
             logger.warning(f"Skipping empty entity or entity_id: '{entity_id}'")
             continue
 
-        tasks.append(
-            execute_task.with_options(
-                retries=3,
-                retry_delay_seconds=RETRY_DELAY_SECONDS,
-                cache_expiration=timedelta(hours=24),
-                cache_key_fn=lambda *_: f"connection_task-{entity_id}",
-                refresh_cache=app_settings.prefect_settings.cache_disabled,
-            ).delay(
-                entity=entity,
-                output_storage=db_storage,
-                http_client=http_client,
-            )
-        )
+        rate_limit("resource-rate-limiting", occupy=1)
 
-    # timeout is set at task level
-    wait(tasks)
+        execute_task.with_options(
+            retries=3,
+            retry_delay_seconds=RETRY_DELAY_SECONDS,
+            cache_expiration=timedelta(hours=24),
+            cache_key_fn=lambda *_: f"connection_task-{entity_id}",
+            refresh_cache=app_settings.prefect_settings.cache_disabled,
+        ).submit(
+            entity=entity,
+            output_storage=db_storage,
+            http_client=http_client,
+        )
