@@ -10,14 +10,15 @@ prefect config set PREFECT_API_URL="http://localhost:4200/api"
 prefect config set PREFECT_RESULTS_PERSIST_BY_DEFAULT=true
 
 # ********************************
-# global concurrency limit 
+# global concurrency limit and rate limiting
 # ********************************
 # delete existing limit if any
-prefect --no-prompt gcl delete cinefeel
-# slot_decay_per_second is mandatory to use rate_limit in tasks
-# slot_decay_per_second of 2.0 means that every 0.5 second, a slot is freed
-# see https://docs.prefect.io/v3/concepts/global-concurrency-limits#slot-decay
-prefect gcl create cinefeel --limit 10 --slot-decay-per-second 2.0
+prefect --no-prompt gcl delete resource-rate-limiting
+prefect gcl create resource-rate-limiting --limit 10 --slot-decay-per-second 2.0
+
+prefect --no-prompt gcl delete api-rate-limiting
+prefect gcl create api-rate-limiting --limit 10 --slot-decay-per-second 2.0
+# ************************************************************
 
 # concurrent tasks
 
@@ -35,12 +36,6 @@ prefect concurrency-limit create heavy 10
 prefect --no-prompt concurrency-limit delete scraping  # in case it already exists
 prefect concurrency-limit create scraping 20 
 # ************************************************************
-# API Calls
-# ************************************************************
-# api-rate-limiting policy must be declared in the UI
-# because Prefect CLI does not support setting the slot_decay_per_second parameter yet
-# prefect --no-prompt concurrency-limit delete api-rate-limiting  # in case it already exists
-# prefect concurrency-limit create api-rate-limiting 5 
 
 # start server
 # ************************************************************

@@ -1,6 +1,5 @@
 import nltk
 import numpy as np
-import torch
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 
@@ -8,10 +7,8 @@ from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
 from src.settings import MLSettings
 
+from .cache import load_transformer
 from .lexrank import degree_centrality_scores
-
-# load once
-nltk.download("punkt_tab")
 
 
 class SectionSummarizer(Processor[Section]):
@@ -29,16 +26,8 @@ class SectionSummarizer(Processor[Section]):
 
         self._settings = settings
 
-        device = (
-            "cuda"
-            if torch.cuda.is_available()
-            else "mps" if torch.backends.mps.is_available() else "cpu"
-        )
-
-        self._summarizer = SentenceTransformer(
-            settings.summary_model,
-            backend=settings.transformer_model_backend,
-            device=device,
+        self._summarizer = load_transformer(
+            model=settings.summary_model, backend=settings.transformer_model_backend
         )
 
         logger.info(

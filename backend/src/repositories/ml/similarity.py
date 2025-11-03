@@ -1,6 +1,5 @@
 import re
 
-import torch
 from loguru import logger
 from sentence_transformers import SentenceTransformer, util
 
@@ -8,6 +7,7 @@ from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
 from src.settings import MLSettings
 
+from .cache import load_transformer
 from .exceptions import SimilaritySearchError
 
 
@@ -23,16 +23,8 @@ class SimilarSectionSearch(Processor[Section]):
 
         self.settings = settings
 
-        device = (
-            "cuda"
-            if torch.cuda.is_available()
-            else "mps" if torch.backends.mps.is_available() else "cpu"
-        )
-
-        self.embedder = SentenceTransformer(
-            settings.similarity_model,
-            backend=settings.transformer_model_backend,
-            device=device,
+        self.embedder = load_transformer(
+            model=settings.similarity_model, backend=settings.transformer_model_backend
         )
 
         logger.info(
