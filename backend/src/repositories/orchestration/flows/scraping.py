@@ -2,12 +2,14 @@ from datetime import timedelta
 from typing import Literal
 
 from prefect import flow
+from prefect.futures import PrefectFuture
 from prefect.task_runners import ConcurrentTaskRunner
 from prefect.tasks import exponential_backoff
 
 from src.entities import get_entity_class
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
+from src.repositories.orchestration.tasks.race import wait_for_all
 from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
     is_http_task_retriable,
@@ -42,7 +44,7 @@ def scraping_flow(
     # make them unique by page_id
     pages = {p.page_id: p for p in pages}.values()
 
-    # tasks = []
+    tasks: list[PrefectFuture] = []
 
     stats_collector = RedisStatsCollector(
         redis_dsn=app_settings.stats_settings.redis_dsn
@@ -58,19 +60,23 @@ def scraping_flow(
         )
         html_store.on_init()
 
-        execute_task.with_options(
-            cache_key_fn=lambda *_: f"scraping-{config.page_id}",
-            cache_expiration=timedelta(hours=24),
-            retries=RETRY_ATTEMPTS,
-            retry_condition_fn=is_http_task_retriable,
-            retry_delay_seconds=exponential_backoff(backoff_factor=0.3),
-            retry_jitter_factor=0.1,
-            refresh_cache=app_settings.prefect_settings.cache_disabled,
-        ).submit(
-            page=config,
-            scraping_settings=app_settings.scraping_settings,
-            http_client=http_client,
-            storage_handler=html_store,
-            return_results=False,
-            stats_collector=stats_collector,
+        tasks.append(
+            execute_task.with_options(
+                cache_key_fn=lambda *_: f"scraping-{config.page_id}",
+                cache_expiration=timedelta(hours=24),
+                retries=RETRY_ATTEMPTS,
+                retry_condition_fn=is_http_task_retriable,
+                retry_delay_seconds=exponential_backoff(backoff_factor=0.3),
+                retry_jitter_factor=0.1,
+                refresh_cache=app_settings.prefect_settings.cache_disabled,
+            ).submit(
+                page=config,
+                scraping_settings=app_settings.scraping_settings,
+                http_client=http_client,
+                storage_handler=html_store,
+                return_results=False,
+                stats_collector=stats_collector,
+            )
         )
+
+    wait_for_all(tasks)

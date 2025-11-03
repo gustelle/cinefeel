@@ -5,6 +5,7 @@ from typing import Literal
 
 from prefect import flow, get_run_logger, task
 from prefect.concurrency.sync import rate_limit
+from prefect.futures import PrefectFuture
 from prefect.task_runners import ConcurrentTaskRunner
 
 from src.entities import get_entity_class
@@ -17,6 +18,7 @@ from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.orchestration.flows.db_storage import db_storage_flow
 from src.repositories.orchestration.flows.extract import extract_entities_flow
 from src.repositories.orchestration.flows.scraping import scraping_flow
+from src.repositories.orchestration.tasks.race import wait_for_all
 from src.repositories.orchestration.tasks.retry import RETRY_DELAY_SECONDS
 from src.repositories.orchestration.tasks.task_relationship import execute_task
 from src.settings import AppSettings
@@ -131,6 +133,8 @@ def connection_flow(
 
     cls = get_entity_class(entity_type)
 
+    tasks: list[PrefectFuture] = []
+
     http_client = SyncHttpClient(settings=app_settings.scraping_settings)
 
     store = input_store or RedisJsonStorage[cls](
@@ -155,14 +159,19 @@ def connection_flow(
 
         rate_limit("resource-rate-limiting", occupy=1)
 
-        execute_task.with_options(
-            retries=3,
-            retry_delay_seconds=RETRY_DELAY_SECONDS,
-            cache_expiration=timedelta(hours=24),
-            cache_key_fn=lambda *_: f"connection_task-{entity_id}",
-            refresh_cache=app_settings.prefect_settings.cache_disabled,
-        ).submit(
-            entity=entity,
-            output_storage=db_storage,
-            http_client=http_client,
+        tasks.append(
+            execute_task.with_options(
+                retries=3,
+                retry_delay_seconds=RETRY_DELAY_SECONDS,
+                cache_expiration=timedelta(hours=24),
+                cache_key_fn=lambda *_: f"connection_task-{entity_id}",
+                refresh_cache=app_settings.prefect_settings.cache_disabled,
+            ).submit(
+                entity=entity,
+                output_storage=db_storage,
+                http_client=http_client,
+            )
         )
+
+    # wait for all tasks to complete
+    wait_for_all(tasks)

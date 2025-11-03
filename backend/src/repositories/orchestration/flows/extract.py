@@ -4,6 +4,7 @@ from typing import Literal
 from prefect import flow, get_run_logger
 from prefect.concurrency.sync import concurrency
 from prefect.events import emit_event
+from prefect.futures import PrefectFuture
 from prefect.task_runners import ConcurrentTaskRunner
 
 from src.entities import get_entity_class
@@ -12,6 +13,7 @@ from src.interfaces.nlp_processor import Processor
 from src.interfaces.storage import IStorageHandler
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.db.redis.text import RedisTextStorage
+from src.repositories.orchestration.tasks.race import wait_for_all
 from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
     RETRY_DELAY_SECONDS,
@@ -61,6 +63,8 @@ def extract_entities_flow(
 
     cls = get_entity_class(entity_type)
 
+    tasks: list[PrefectFuture] = []
+
     html_store = RedisTextStorage[cls](app_settings.storage_settings.redis_dsn)
     json_store = RedisJsonStorage[cls](app_settings.storage_settings.redis_dsn)
     stats_collector = RedisStatsCollector(app_settings.stats_settings.redis_dsn)
@@ -78,24 +82,26 @@ def extract_entities_flow(
 
             with concurrency("heavy", occupy=1):
 
-                execute_task.with_options(
-                    retries=RETRY_ATTEMPTS,
-                    retry_delay_seconds=RETRY_DELAY_SECONDS,
-                    cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
-                    cache_expiration=timedelta(hours=24),
-                    timeout_seconds=60 * 10,  # 10 minutes
-                    refresh_cache=_refresh_cache,
-                    tags=["heavy"],  # mark as heavy task
-                ).submit(
-                    content_id=page_id,
-                    content=content,
-                    output_storage=json_store,
-                    section_settings=app_settings.section_settings,
-                    ml_settings=app_settings.ml_settings,
-                    entity_type=cls,
-                    analyzer=entity_analyzer,
-                    search_processor=section_searcher,
-                    stats_collector=stats_collector,
+                tasks.append(
+                    execute_task.with_options(
+                        retries=RETRY_ATTEMPTS,
+                        retry_delay_seconds=RETRY_DELAY_SECONDS,
+                        cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
+                        cache_expiration=timedelta(hours=24),
+                        timeout_seconds=60 * 10,  # 10 minutes
+                        refresh_cache=_refresh_cache,
+                        tags=["heavy"],  # mark as heavy task
+                    ).submit(
+                        content_id=page_id,
+                        content=content,
+                        output_storage=json_store,
+                        section_settings=app_settings.section_settings,
+                        ml_settings=app_settings.ml_settings,
+                        entity_type=cls,
+                        analyzer=entity_analyzer,
+                        search_processor=section_searcher,
+                        stats_collector=stats_collector,
+                    )
                 )
 
         else:
@@ -116,28 +122,30 @@ def extract_entities_flow(
                     )
                     continue
 
-                execute_task.with_options(
-                    retries=RETRY_ATTEMPTS,
-                    retry_delay_seconds=RETRY_DELAY_SECONDS,
-                    cache_key_fn=lambda *_: f"parser_execute_task-{content_id}",
-                    cache_expiration=timedelta(minutes=5),
-                    timeout_seconds=60 * 5,  # 5 minutes
-                    refresh_cache=_refresh_cache,
-                    tags=["heavy"],  # mark as heavy task
-                ).submit(
-                    content_id=content_id,
-                    content=content,
-                    output_storage=json_store,
-                    ml_settings=app_settings.ml_settings,
-                    section_settings=app_settings.section_settings,
-                    entity_type=cls,
-                    analyzer=entity_analyzer,
-                    search_processor=section_searcher,
-                    stats_collector=stats_collector,
+                tasks.append(
+                    execute_task.with_options(
+                        retries=RETRY_ATTEMPTS,
+                        retry_delay_seconds=RETRY_DELAY_SECONDS,
+                        cache_key_fn=lambda *_: f"parser_execute_task-{content_id}",
+                        cache_expiration=timedelta(minutes=5),
+                        timeout_seconds=60 * 5,  # 5 minutes
+                        refresh_cache=_refresh_cache,
+                        tags=["heavy"],  # mark as heavy task
+                    ).submit(
+                        content_id=content_id,
+                        content=content,
+                        output_storage=json_store,
+                        ml_settings=app_settings.ml_settings,
+                        section_settings=app_settings.section_settings,
+                        entity_type=cls,
+                        analyzer=entity_analyzer,
+                        search_processor=section_searcher,
+                        stats_collector=stats_collector,
+                    )
                 )
             # count += 1
             # if count >= 10:
             #     break  # for testing, process only one
 
     # print(f"Waiting for {len(tasks)} tasks to complete...")
-    # wait_for_all(tasks)
+    wait_for_all(tasks)
