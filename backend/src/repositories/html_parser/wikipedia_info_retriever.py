@@ -253,6 +253,9 @@ class WikipediaParser(IContentParser):
         Extracts the information table (aka infobox) from a wikipedia HTML content and returns parsed data as a `Section` object.
         The infobox is usually located on the right side of the page and contains key information about the subject.
 
+        TODO:
+        - test catching of IndexError on malformed tables which occurs regularly
+
         Args:
             html_content (str): The HTML content to parse.
             format_as (Literal["table", "list"]): The format in which to return the infobox data.
@@ -289,7 +292,7 @@ class WikipediaParser(IContentParser):
                     "Infobox table has less than 2 columns, cannot parse key-value pairs.",
                     status_code=500,
                 )
-        except ValueError as e:
+        except (ValueError, IndexError) as e:
             raise RetrievalError(
                 "Infobox table not found or malformed.", status_code=500
             ) from e

@@ -52,7 +52,7 @@ def is_extraction_task_retriable(
             )
             return True
         elif isinstance(e, TimeoutError):
-            logger.warning(f"Timeout error on task '{task.name}' will be retried")
+            logger.warning(f"Timeout on task '{task.name}' will be retried")
             return True
         else:
             logger.error(
