@@ -176,7 +176,6 @@ def do_analysis(
 
 @task(
     task_run_name="html-to-entity-{content_id}",
-    tags=["heavy"],  # mark as heavy task
     log_prints=False,
 )
 def execute_task(

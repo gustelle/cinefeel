@@ -17,7 +17,6 @@ from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.orchestration.tasks.race import wait_for_all
 from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
-    RETRY_DELAY_SECONDS,
     is_extraction_task_retriable,
 )
 from src.repositories.orchestration.tasks.task_html_parsing import execute_task
@@ -91,10 +90,9 @@ def extract_entities_flow(
                         retry_delay_seconds=exponential_backoff(backoff_factor=0.3),
                         retry_jitter_factor=0.1,
                         cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
-                        cache_expiration=timedelta(hours=24),
-                        timeout_seconds=60 * 10,  # 10 minutes
+                        cache_expiration=timedelta(days=1),
+                        timeout_seconds=60,  # 1 minute
                         refresh_cache=_refresh_cache,
-                        tags=["heavy"],  # mark as heavy task
                     ).submit(
                         content_id=page_id,
                         content=content,
@@ -129,12 +127,13 @@ def extract_entities_flow(
                 tasks.append(
                     execute_task.with_options(
                         retries=RETRY_ATTEMPTS,
-                        retry_delay_seconds=RETRY_DELAY_SECONDS,
-                        cache_key_fn=lambda *_: f"parser_execute_task-{content_id}",
-                        cache_expiration=timedelta(minutes=5),
-                        timeout_seconds=60 * 5,  # 5 minutes
+                        retry_condition_fn=is_extraction_task_retriable,
+                        retry_delay_seconds=exponential_backoff(backoff_factor=0.3),
+                        retry_jitter_factor=0.1,
+                        cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
+                        cache_expiration=timedelta(days=1),
+                        timeout_seconds=60,  # 1 minute
                         refresh_cache=_refresh_cache,
-                        tags=["heavy"],  # mark as heavy task
                     ).submit(
                         content_id=content_id,
                         content=content,
