@@ -8,7 +8,7 @@ from loguru import logger
 from pydantic import HttpUrl, ValidationError
 
 from src.entities.content import Media, PageLink, Section, UsualSectionTitles_FR_fr
-from src.exceptions import RetrievalError
+from src.exceptions import ParsingError, RetrievalError
 from src.interfaces.info_retriever import IContentParser
 from src.settings import TableOfContents
 
@@ -286,14 +286,14 @@ class WikipediaParser(IContentParser):
         try:
             df = pd.read_html(StringIO(content.find("table").decode()))[0]
             if df.empty:
-                raise RetrievalError("Infobox table is empty.", status_code=404)
+                raise ParsingError("Infobox table is empty.", status_code=404)
             if df.shape[1] < 2:
-                raise RetrievalError(
+                raise ParsingError(
                     "Infobox table has less than 2 columns, cannot parse key-value pairs.",
                     status_code=500,
                 )
         except (ValueError, IndexError) as e:
-            raise RetrievalError(
+            raise ParsingError(
                 "Infobox table not found or malformed.", status_code=500
             ) from e
 
@@ -301,7 +301,7 @@ class WikipediaParser(IContentParser):
             # return the raw HTML table
             content = content.find("table").decode()
             if not content:
-                raise RetrievalError(
+                raise ParsingError(
                     "Infobox table not found in the HTML content.", status_code=404
                 )
 
@@ -315,7 +315,7 @@ class WikipediaParser(IContentParser):
                 </ul>
                 """
             except Exception as e:
-                raise RetrievalError(
+                raise ParsingError(
                     "Error formatting infobox as list.", status_code=500
                 ) from e
 
