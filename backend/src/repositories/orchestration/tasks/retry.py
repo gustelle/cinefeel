@@ -5,6 +5,7 @@ from prefect.client.schemas.objects import TaskRun
 from prefect.states import State
 
 from src.exceptions import (
+    ExternalDependencyError,
     HttpError,
     SimilaritySearchError,
     SummaryError,
@@ -51,12 +52,15 @@ def is_extraction_task_retriable(
     except Exception as e:
 
         if isinstance(e, (SummaryError, SimilaritySearchError)):
-            logger.warning(
-                f"Task '{task.name}' will be retried due to exception {type(e).__name__}"
-            )
+            logger.warning(f"{type(e).__name__} on task '{task.name}' will be retried")
             return True
         elif isinstance(e, TimeoutError):
             logger.warning(f"Timeout on task '{task.name}' will be retried")
+            return True
+        elif isinstance(e, ExternalDependencyError):
+            logger.warning(
+                f"ExternalDependencyError on task '{task.name}' will be retried"
+            )
             return True
         else:
             logger.error(
