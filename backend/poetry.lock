@@ -1098,50 +1098,6 @@ ssh = ["paramiko (>=2.4.3)"]
 websockets = ["websocket-client (>=1.3.0)"]
 
 [[package]]
-name = "duckdb"
-version = "1.4.1"
-description = "DuckDB in-process database"
-optional = false
-python-versions = ">=3.9.0"
-groups = ["main"]
-files = [
-    {file = "duckdb-1.4.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:296b4fff3908fb4c47b0aa1d77bd1933375e75401009d2dc81af8e7a0b8a05b4"},
-    {file = "duckdb-1.4.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:0b4182800092115feee5d71a8691efb283d3c9f5eb0b36362b308ef007a12222"},
-    {file = "duckdb-1.4.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:67cc3b6c7f7ba07a69e9331b8ccea7a60cbcd4204bb473e5da9b71588bd2eca9"},
-    {file = "duckdb-1.4.1-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:0cef0cee7030b561640cb9af718f8841b19cdd2aa020d53561057b5743bea90b"},
-    {file = "duckdb-1.4.1-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:2bf93347f37a46bacce6ac859d651dbf5731e2c94a64ab358300425b09e3de23"},
-    {file = "duckdb-1.4.1-cp310-cp310-win_amd64.whl", hash = "sha256:2e60d2361f978908a3d96eebaf1f4b346f283afcc467351aae50ea45ca293a2b"},
-    {file = "duckdb-1.4.1-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:605d563c1d5203ca992497cd33fb386ac3d533deca970f9dcf539f62a34e22a9"},
-    {file = "duckdb-1.4.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:d3305c7c4b70336171de7adfdb50431f23671c000f11839b580c4201d9ce6ef5"},
-    {file = "duckdb-1.4.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:a063d6febbe34b32f1ad2e68822db4d0e4b1102036f49aaeeb22b844427a75df"},
-    {file = "duckdb-1.4.1-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:d1ffcaaf74f7d1df3684b54685cbf8d3ce732781c541def8e1ced304859733ae"},
-    {file = "duckdb-1.4.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:685d3d1599dc08160e0fa0cf09e93ac4ff8b8ed399cb69f8b5391cd46b5b207c"},
-    {file = "duckdb-1.4.1-cp311-cp311-win_amd64.whl", hash = "sha256:78f1d28a15ae73bd449c43f80233732adffa49be1840a32de8f1a6bb5b286764"},
-    {file = "duckdb-1.4.1-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:cd1765a7d180b7482874586859fc23bc9969d7d6c96ced83b245e6c6f49cde7f"},
-    {file = "duckdb-1.4.1-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:8ed7a86725185470953410823762956606693c0813bb64e09c7d44dbd9253a64"},
-    {file = "duckdb-1.4.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8a189bdfc64cfb9cc1adfbe4f2dcfde0a4992ec08505ad8ce33c886e4813f0bf"},
-    {file = "duckdb-1.4.1-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:a9090089b6486f7319c92acdeed8acda022d4374032d78a465956f50fc52fabf"},
-    {file = "duckdb-1.4.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:142552ea3e768048e0e8c832077a545ca07792631c59edaee925e3e67401c2a0"},
-    {file = "duckdb-1.4.1-cp312-cp312-win_amd64.whl", hash = "sha256:567f3b3a785a9e8650612461893c49ca799661d2345a6024dda48324ece89ded"},
-    {file = "duckdb-1.4.1-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:46496a2518752ae0c6c5d75d4cdecf56ea23dd098746391176dd8e42cf157791"},
-    {file = "duckdb-1.4.1-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:1c65ae7e9b541cea07d8075343bcfebdecc29a3c0481aa6078ee63d51951cfcd"},
-    {file = "duckdb-1.4.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:598d1a314e34b65d9399ddd066ccce1eeab6a60a2ef5885a84ce5ed62dbaf729"},
-    {file = "duckdb-1.4.1-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e2f16b8def782d484a9f035fc422bb6f06941ed0054b4511ddcdc514a7fb6a75"},
-    {file = "duckdb-1.4.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:a5a7d0aed068a5c33622a8848857947cab5cfb3f2a315b1251849bac2c74c492"},
-    {file = "duckdb-1.4.1-cp313-cp313-win_amd64.whl", hash = "sha256:280fd663dacdd12bb3c3bf41f3e5b2e5b95e00b88120afabb8b8befa5f335c6f"},
-    {file = "duckdb-1.4.1-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:04a31b3cf84d77ef02c9914567b5d63a43fc791b144655ee99581cd9f4949e63"},
-    {file = "duckdb-1.4.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:c01c5f9d0657a26938d640aa8d8effa91cacf66195ed4787824e6d5537bcaf21"},
-    {file = "duckdb-1.4.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:80c12239abb2a063abcd75dc052e9884b41060615735a532a6e3e8390eee7f70"},
-    {file = "duckdb-1.4.1-cp39-cp39-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4b96d16a10256d05d818b34903243681764b6afc98f7d50b1ae60d23aa1f1f9e"},
-    {file = "duckdb-1.4.1-cp39-cp39-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e8aa4a4298a6a627599f6606c7bedfe77309c1fb05a606af48e0e72333861ef4"},
-    {file = "duckdb-1.4.1-cp39-cp39-win_amd64.whl", hash = "sha256:09d152dd4ab24a5984cd289b553e142980b3f029292cdda29e34303c75138de6"},
-    {file = "duckdb-1.4.1.tar.gz", hash = "sha256:f903882f045d057ebccad12ac69975952832edfe133697694854bb784b8d6c76"},
-]
-
-[package.extras]
-all = ["adbc-driver-manager", "fsspec", "ipython", "numpy", "pandas", "pyarrow"]
-
-[[package]]
 name = "eval-type-backport"
 version = "0.2.2"
 description = "Like `typing._eval_type`, but lets older Python versions use newer typing features."
@@ -4584,67 +4540,6 @@ dev = ["pre-commit", "tox"]
 testing = ["coverage", "pytest", "pytest-benchmark"]
 
 [[package]]
-name = "polars"
-version = "1.34.0"
-description = "Blazingly fast DataFrame library"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "polars-1.34.0-py3-none-any.whl", hash = "sha256:40d2f357b4d9e447ad28bd2c9923e4318791a7c18eb68f31f1fbf11180f41391"},
-    {file = "polars-1.34.0.tar.gz", hash = "sha256:5de5f871027db4b11bcf39215a2d6b13b4a80baf8a55c5862d4ebedfd5cd4013"},
-]
-
-[package.dependencies]
-polars-runtime-32 = "1.34.0"
-
-[package.extras]
-adbc = ["adbc-driver-manager[dbapi]", "adbc-driver-sqlite[dbapi]"]
-all = ["polars[async,cloudpickle,database,deltalake,excel,fsspec,graph,iceberg,numpy,pandas,plot,pyarrow,pydantic,style,timezone]"]
-async = ["gevent"]
-calamine = ["fastexcel (>=0.9)"]
-cloudpickle = ["cloudpickle"]
-connectorx = ["connectorx (>=0.3.2)"]
-database = ["polars[adbc,connectorx,sqlalchemy]"]
-deltalake = ["deltalake (>=1.0.0)"]
-excel = ["polars[calamine,openpyxl,xlsx2csv,xlsxwriter]"]
-fsspec = ["fsspec"]
-gpu = ["cudf-polars-cu12"]
-graph = ["matplotlib"]
-iceberg = ["pyiceberg (>=0.7.1)"]
-numpy = ["numpy (>=1.16.0)"]
-openpyxl = ["openpyxl (>=3.0.0)"]
-pandas = ["pandas", "polars[pyarrow]"]
-plot = ["altair (>=5.4.0)"]
-polars-cloud = ["polars_cloud (>=0.0.1a1)"]
-pyarrow = ["pyarrow (>=7.0.0)"]
-pydantic = ["pydantic"]
-rt64 = ["polars-runtime-64 (==1.34.0)"]
-rtcompat = ["polars-runtime-compat (==1.34.0)"]
-sqlalchemy = ["polars[pandas]", "sqlalchemy"]
-style = ["great-tables (>=0.8.0)"]
-timezone = ["tzdata ; platform_system == \"Windows\""]
-xlsx2csv = ["xlsx2csv (>=0.8.0)"]
-xlsxwriter = ["xlsxwriter"]
-
-[[package]]
-name = "polars-runtime-32"
-version = "1.34.0"
-description = "Blazingly fast DataFrame library"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "polars_runtime_32-1.34.0-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:2878f9951e91121afe60c25433ef270b9a221e6ebf3de5f6642346b38cab3f03"},
-    {file = "polars_runtime_32-1.34.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:fbc329c7d34a924228cc5dcdbbd4696d94411a3a5b15ad8bb868634c204e1951"},
-    {file = "polars_runtime_32-1.34.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:93fa51d88a2d12ea996a5747aad5647d22a86cce73c80f208e61f487b10bc448"},
-    {file = "polars_runtime_32-1.34.0-cp39-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:79e4d696392c6d8d51f4347f0b167c52eef303c9d87093c0c68e8651198735b7"},
-    {file = "polars_runtime_32-1.34.0-cp39-abi3-win_amd64.whl", hash = "sha256:2501d6b29d9001ea5ea2fd9b598787e10ddf45d8c4a87c2bead75159e8a15711"},
-    {file = "polars_runtime_32-1.34.0-cp39-abi3-win_arm64.whl", hash = "sha256:f9ed1765378dfe0bcd1ac5ec570dd9eab27ea728bbc980cc9a76eebc55586559"},
-    {file = "polars_runtime_32-1.34.0.tar.gz", hash = "sha256:ebe6f865128a0d833f53a3f6828360761ad86d1698bceb22bef9fd999500dc1c"},
-]
-
-[[package]]
 name = "prefect"
 version = "3.4.25"
 description = "Workflow orchestration and management."
@@ -7729,4 +7624,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "2b2dde8907c0466a1979916a0581d2c7f5acb9552a2fe21a9f2d23620ca84856"
+content-hash = "67c7d4a884edda6263244d2ec95e0c3404c8aa2e2f07fe84087725161ff4d270"

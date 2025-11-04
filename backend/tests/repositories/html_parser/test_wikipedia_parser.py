@@ -148,11 +148,11 @@ def test_dedup_extract_links():
         </tr>
         <tr>
             <td><a href="./Film_Title">Film Title</a></td>
-            <td><a rel="mw:WikiLink" href="./Lucien_Nonguet" title="Lucien Nonguet" id="mwFw">Lucien Nonguet</a></td>
+            <td><a rel="mw:WikiLink" href="./Lucien_Nonguet" title="Toto"> Toto </a></td>
         </tr>
         <tr>
             <td><a href="./Film_Title">Film Title</a></td>
-            <td><a rel="mw:WikiLink" href="./Lucien_Nonguet" title="Toto"> Toto </a></td>
+            <td><a rel="mw:WikiLink" href="./Lucien_Nonguet" title="Lucien Nonguet" id="mwFw">Lucien Nonguet</a></td>
         </tr>
     </table>
     """
