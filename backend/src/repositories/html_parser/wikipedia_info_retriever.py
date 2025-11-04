@@ -255,6 +255,7 @@ class WikipediaParser(IContentParser):
 
         TODO:
         - test catching of IndexError on malformed tables which occurs regularly
+        - test raising of ParsingError  when the table is not as expected, it is catched later
 
         Args:
             html_content (str): The HTML content to parse.
@@ -286,24 +287,19 @@ class WikipediaParser(IContentParser):
         try:
             df = pd.read_html(StringIO(content.find("table").decode()))[0]
             if df.empty:
-                raise ParsingError("Infobox table is empty.", status_code=404)
+                raise ParsingError("Infobox table is empty.")
             if df.shape[1] < 2:
                 raise ParsingError(
                     "Infobox table has less than 2 columns, cannot parse key-value pairs.",
-                    status_code=500,
                 )
         except (ValueError, IndexError) as e:
-            raise ParsingError(
-                "Infobox table not found or malformed.", status_code=500
-            ) from e
+            raise ParsingError("Infobox table not found or malformed.") from e
 
         if format_as == "table":
             # return the raw HTML table
             content = content.find("table").decode()
             if not content:
-                raise ParsingError(
-                    "Infobox table not found in the HTML content.", status_code=404
-                )
+                raise ParsingError("Infobox table not found in the HTML content.")
 
         else:
             # format the DataFrame as a list of values
@@ -315,9 +311,7 @@ class WikipediaParser(IContentParser):
                 </ul>
                 """
             except Exception as e:
-                raise ParsingError(
-                    "Error formatting infobox as list.", status_code=500
-                ) from e
+                raise ParsingError("Error formatting infobox as list.") from e
 
         # convert the DataFrame to a list of Section objects
         info_table = Section(
