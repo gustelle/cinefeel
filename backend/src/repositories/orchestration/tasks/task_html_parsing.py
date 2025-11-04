@@ -234,14 +234,14 @@ def execute_task(
             if stats_collector:
                 stats_collector.inc_value(StatKey.EXTRACTION_VOID, flow_id=flow_id)
 
-    except Exception as e:
+    except Exception:
+
+        # track extraction failure
         if stats_collector:
             stats_collector.inc_value(StatKey.EXTRACTION_FAILED, flow_id=flow_id)
 
-        import traceback
-
-        logger.error(traceback.format_exc())
-        logger.error(f"Error extracting entity for content ID '{content_id}': {e}")
+        # re-raise for Prefect to handle retries if needed
+        raise
 
     finally:
         if stats_collector:

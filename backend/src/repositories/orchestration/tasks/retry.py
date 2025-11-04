@@ -4,7 +4,7 @@ from prefect import Task, get_run_logger
 from prefect.client.schemas.objects import TaskRun
 from prefect.states import State
 
-from src.exceptions import HttpError
+from src.exceptions import HttpError, RetrievalError, SummaryError
 
 RETRY_ATTEMPTS: int = 30
 RETRY_DELAY_SECONDS: list[int] = [
@@ -33,4 +33,27 @@ def is_http_task_retriable(
             return True
         else:
             logger.error(f"Exception is not retriable: {e}")
+
+    return False
+
+
+def is_extraction_task_retriable(
+    task: Task[..., Any], task_run: TaskRun, state: State[Any]
+) -> bool:
+    """determine if a task related to a HTTP response should be retried"""
+    logger = get_run_logger()
+    try:
+        state.result()
+    except Exception as e:
+
+        if isinstance(e, (SummaryError, RetrievalError)):
+            logger.warning(
+                f"Task '{task.name}' will be retried due to exception {type(e).__name__}"
+            )
+            return True
+        else:
+            logger.error(
+                f"Task '{task.name}' will NOT be retried due to exception '{type(e).__name__}'"
+            )
+
     return False

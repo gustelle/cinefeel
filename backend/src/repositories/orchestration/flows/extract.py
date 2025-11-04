@@ -6,6 +6,7 @@ from prefect.concurrency.sync import concurrency
 from prefect.events import emit_event
 from prefect.futures import PrefectFuture
 from prefect.task_runners import ConcurrentTaskRunner
+from prefect.tasks import exponential_backoff
 
 from src.entities import get_entity_class
 from src.interfaces.analyzer import IContentAnalyzer
@@ -17,6 +18,7 @@ from src.repositories.orchestration.tasks.race import wait_for_all
 from src.repositories.orchestration.tasks.retry import (
     RETRY_ATTEMPTS,
     RETRY_DELAY_SECONDS,
+    is_extraction_task_retriable,
 )
 from src.repositories.orchestration.tasks.task_html_parsing import execute_task
 from src.repositories.stats import RedisStatsCollector
@@ -80,12 +82,14 @@ def extract_entities_flow(
 
         if content:
 
-            with concurrency("heavy", occupy=1):
+            with concurrency("resource-rate-limiting", occupy=1):
 
                 tasks.append(
                     execute_task.with_options(
                         retries=RETRY_ATTEMPTS,
-                        retry_delay_seconds=RETRY_DELAY_SECONDS,
+                        retry_condition_fn=is_extraction_task_retriable,
+                        retry_delay_seconds=exponential_backoff(backoff_factor=0.3),
+                        retry_jitter_factor=0.1,
                         cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
                         cache_expiration=timedelta(hours=24),
                         timeout_seconds=60 * 10,  # 10 minutes
@@ -113,7 +117,7 @@ def extract_entities_flow(
             )
     else:
 
-        with concurrency("heavy", occupy=1):
+        with concurrency("resource-rate-limiting", occupy=1):
 
             for content_id, content in html_store.scan():
                 if not content or not content_id:

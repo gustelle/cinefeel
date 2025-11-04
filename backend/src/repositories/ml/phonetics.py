@@ -1,9 +1,8 @@
 from loguru import logger
 from pyphonetics import Soundex
 
+from src.exceptions import SimilaritySearchError
 from src.interfaces.nlp_processor import Processor
-
-from .exceptions import SimilaritySearchError
 
 
 class PhoneticSearch(Processor[str]):
@@ -41,7 +40,7 @@ class PhoneticSearch(Processor[str]):
             return first_match
 
         except Exception as e:
-            import traceback
 
-            logger.error(traceback.format_exc())
-            raise SimilaritySearchError(f"Error in phonetic search: {e}") from e
+            raise SimilaritySearchError(
+                f"Error in phonetic search: {e}", status_code=500
+            ) from e

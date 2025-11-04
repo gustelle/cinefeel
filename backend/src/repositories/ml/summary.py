@@ -3,6 +3,7 @@ import numpy as np
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 
+from src.exceptions import SummaryError
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
 from src.settings import MLSettings
@@ -69,54 +70,62 @@ class SectionSummarizer(Processor[Section]):
         Returns:
             Section: The processed section with summarized content.
         """
-        new_content = section.content
-        title = section.title
 
-        if len(section.content) > self._settings.summary_max_length:
-            sentences = nltk.sent_tokenize(section.content, language="french")
+        try:
 
-            # Compute the sentence embeddings
-            embeddings = self._summarizer.encode(sentences)
+            new_content = section.content
+            title = section.title
 
-            # Compute the similarity scores
-            similarity_scores = self._summarizer.similarity(
-                embeddings, embeddings
-            ).numpy()
+            if len(section.content) > self._settings.summary_max_length:
 
-            # Compute the centrality for each sentence
-            centrality_scores = degree_centrality_scores(
-                similarity_scores, threshold=None
-            )
+                sentences = nltk.sent_tokenize(section.content, language="french")
 
-            # We argsort so that the first element is the sentence with the highest score
-            most_central_sentence_indices = np.argsort(-centrality_scores)
-            num_sentences_to_keep = len(sentences) // 3
-            new_content = " ".join(
-                [
-                    sentences[idx]
-                    for idx in most_central_sentence_indices[:num_sentences_to_keep]
-                ]
-            )
-            logger.info(
-                f"Section '{title}' content summarized from {len(section.content)} to {len(new_content)} characters."
-            )
+                # Compute the sentence embeddings
+                embeddings = self._summarizer.encode(sentences)
 
-        children = None
-        if section.children:
-            children = []
-            for child in section.children:
-                children.append(
-                    Section(
-                        title=child.title,
-                        content=child.content,
-                        children=[
-                            self._process_section(grandchild)
-                            for grandchild in child.children
-                        ],
-                        media=child.media,
-                    )
+                # Compute the similarity scores
+                similarity_scores = self._summarizer.similarity(
+                    embeddings, embeddings
+                ).numpy()
+
+                # Compute the centrality for each sentence
+                centrality_scores = degree_centrality_scores(
+                    similarity_scores, threshold=None
                 )
 
-        return Section(
-            title=title, content=new_content, children=children, media=section.media
-        )
+                # We argsort so that the first element is the sentence with the highest score
+                most_central_sentence_indices = np.argsort(-centrality_scores)
+                num_sentences_to_keep = len(sentences) // 3
+                new_content = " ".join(
+                    [
+                        sentences[idx]
+                        for idx in most_central_sentence_indices[:num_sentences_to_keep]
+                    ]
+                )
+                logger.info(
+                    f"Section '{title}' content summarized from {len(section.content)} to {len(new_content)} characters."
+                )
+
+            children = None
+            if section.children:
+                children = []
+                for child in section.children:
+                    children.append(
+                        Section(
+                            title=child.title,
+                            content=child.content,
+                            children=[
+                                self._process_section(grandchild)
+                                for grandchild in child.children
+                            ],
+                            media=child.media,
+                        )
+                    )
+
+            return Section(
+                title=title, content=new_content, children=children, media=section.media
+            )
+
+        except Exception as e:
+
+            raise SummaryError(f"Error summarizing content: {e}") from e

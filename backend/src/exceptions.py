@@ -30,5 +30,14 @@ class StorageError(_BaseError):
     pass
 
 
+class SummaryError(_BaseError):
+    pass
+
+
 class RelationshipError(_BaseError):
+    pass
+
+
+class SimilaritySearchError(RetrievalError):
+
     pass

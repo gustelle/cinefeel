@@ -27,7 +27,7 @@ prefect gcl create api-rate-limiting --limit 10 --slot-decay-per-second 2.0
 # *********************************
 prefect config set PREFECT_TASK_RUN_TAG_CONCURRENCY_SLOT_WAIT_SECONDS=10
 prefect --no-prompt concurrency-limit delete heavy  # in case it already exists
-prefect concurrency-limit create heavy 10
+prefect concurrency-limit create heavy 5
 
 
 # *********************************

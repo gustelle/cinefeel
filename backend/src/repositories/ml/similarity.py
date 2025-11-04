@@ -3,12 +3,12 @@ import re
 from loguru import logger
 from sentence_transformers import SentenceTransformer, util
 
+from src.exceptions import SimilaritySearchError
 from src.interfaces.content_splitter import Section
 from src.interfaces.nlp_processor import Processor
 from src.settings import MLSettings
 
 from .cache import load_transformer
-from .exceptions import SimilaritySearchError
 
 
 class SimilarSectionSearch(Processor[Section]):
@@ -93,10 +93,10 @@ class SimilarSectionSearch(Processor[Section]):
             return most_similar_section_title
 
         except Exception as e:
-            import traceback
 
-            logger.error(traceback.format_exc())
-            raise SimilaritySearchError(f"Error in BERT similarity search: {e}") from e
+            raise SimilaritySearchError(
+                f"Error in BERT similarity search: {e}", status_code=500
+            ) from e
 
     def process(self, title: str, sections: list[Section]) -> Section | None:
         """
