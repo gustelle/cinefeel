@@ -51,6 +51,9 @@ def is_extraction_task_retriable(
                 f"Task '{task.name}' will be retried due to exception {type(e).__name__}"
             )
             return True
+        elif isinstance(e, TimeoutError):
+            logger.warning(f"Timeout error on task '{task.name}' will be retried")
+            return True
         else:
             logger.error(
                 f"Task '{task.name}' will NOT be retried due to exception '{type(e).__name__}'"
