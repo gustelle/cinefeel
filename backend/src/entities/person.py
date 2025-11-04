@@ -93,11 +93,13 @@ class Biography(EntityComponent):
     def load_from_dt(cls, value: Any) -> str | None:
         """case when loading from a datetime.date object
         which occurs when loading from duckdb JSON files
+
+        TODO:
+        - remove this code since duckdb is not used anymore?
         """
 
         if isinstance(value, datetime):
             # Convert datetime.time to HH:MM:SS format
-            print(f"Converting {value} to ISO 8601 format")
             return value.isoformat().split("T")[0]  # Return only the date part
 
         return str(value) if value else None

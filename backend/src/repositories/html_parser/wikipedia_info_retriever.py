@@ -3,7 +3,6 @@ from io import StringIO
 from typing import Generator, Literal
 
 import pandas as pd
-import polars as pl
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
 from pydantic import HttpUrl, ValidationError
@@ -243,10 +242,9 @@ class WikipediaParser(IContentParser):
         if not links or len(links) == 0:
             return []
 
-        df = pl.from_records(links)
-        df = df.unique(subset=["page_id"])
+        unique_links = {link.page_id: link for link in links}.values()
 
-        return [PageLink(**row) for row in df.to_dicts()]
+        return list(unique_links)
 
     def retrieve_infobox(
         self, html_content: str, format_as: Literal["table", "list"] = "list"
