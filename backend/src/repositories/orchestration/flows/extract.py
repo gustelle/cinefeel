@@ -91,7 +91,7 @@ def extract_entities_flow(
                         retry_jitter_factor=0.1,
                         cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
                         cache_expiration=timedelta(days=1),
-                        timeout_seconds=60,  # 1 minute
+                        timeout_seconds=120,  # 2 minutes
                         refresh_cache=_refresh_cache,
                         tags=["heavy"],  # mark as heavy task
                     ).submit(
@@ -133,7 +133,7 @@ def extract_entities_flow(
                         retry_jitter_factor=0.1,
                         cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
                         cache_expiration=timedelta(days=1),
-                        timeout_seconds=60,  # 1 minute
+                        timeout_seconds=120,  # 2 minutes
                         refresh_cache=_refresh_cache,
                         tags=["heavy"],  # mark as heavy task
                     ).submit(
