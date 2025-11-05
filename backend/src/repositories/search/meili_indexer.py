@@ -36,19 +36,7 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
         return new_cls
 
     def on_init(self):
-        if self.entity_type == Movie:
-            self._init_index(self.settings.movies_index_name)
-        elif self.entity_type == Person:
-            self._init_index(self.settings.persons_index_name)
-        else:
-            raise ValueError(f"Unsupported entity type: {self.entity_type}")
-
-    @contextmanager
-    def client(self) -> Generator[meilisearch.Client, None, None]:
-
-        yield meilisearch.Client(str(self.settings.base_url), self.settings.api_key)
-
-    def _init_index(self, index_name: str) -> None:
+        index_name = self._get_index_name()
 
         with self.client() as _client:
 
@@ -83,6 +71,19 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
                     ["biography.full_name", "biography.nicknames"]
                 )
 
+    def _get_index_name(self) -> str:
+        if self.entity_type == Movie:
+            return self.settings.movies_index_name
+        elif self.entity_type == Person:
+            return self.settings.persons_index_name
+        else:
+            raise ValueError(f"Unsupported entity type: {self.entity_type}")
+
+    @contextmanager
+    def client(self) -> Generator[meilisearch.Client, None, None]:
+
+        yield meilisearch.Client(str(self.settings.base_url), self.settings.api_key)
+
     def insert_many(
         self,
         contents: list[T],
@@ -106,7 +107,8 @@ class MeiliHandler[T: Movie | Person](IStorageHandler[T]):
                 return
 
             with self.client() as _client:
-                index = _client.get_index(self.index.uid)
+                index_name = self._get_index_name()
+                index = _client.get_index(index_name)
                 index.update_documents(json_docs, primary_key="uid")
 
             logger.info(f"Indexation started with {len(json_docs)} documents.")
