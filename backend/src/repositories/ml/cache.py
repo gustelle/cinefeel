@@ -5,6 +5,8 @@ import torch
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 
+from src.exceptions import ExternalDependencyError
+
 # load once
 nltk.download("punkt_tab")
 
@@ -21,8 +23,14 @@ def load_transformer(model: str, backend: str) -> SentenceTransformer:
         if torch.cuda.is_available()
         else "mps" if torch.backends.mps.is_available() else "cpu"
     )
-    return SentenceTransformer(
-        model,
-        backend=backend,
-        device=device,
-    )
+
+    try:
+        return SentenceTransformer(
+            model,
+            backend=backend,
+            device=device,
+        )
+    except Exception as e:
+        raise ExternalDependencyError(
+            f"Failed to load transformer model '{model}': {e}"
+        ) from e

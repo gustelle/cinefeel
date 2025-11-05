@@ -81,7 +81,7 @@ def extract_entities_flow(
 
         if content:
 
-            with concurrency("resource-rate-limiting", occupy=1):
+            with concurrency("resource-rate-limiting", occupy=1, strict=True):
 
                 tasks.append(
                     execute_task.with_options(
@@ -91,8 +91,9 @@ def extract_entities_flow(
                         retry_jitter_factor=0.1,
                         cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
                         cache_expiration=timedelta(days=1),
-                        timeout_seconds=60,  # 1 minute
+                        timeout_seconds=120,  # 2 minutes
                         refresh_cache=_refresh_cache,
+                        tags=["heavy"],  # mark as heavy task
                     ).submit(
                         content_id=page_id,
                         content=content,
@@ -115,7 +116,7 @@ def extract_entities_flow(
             )
     else:
 
-        with concurrency("resource-rate-limiting", occupy=1):
+        with concurrency("resource-rate-limiting", occupy=1, strict=True):
 
             for content_id, content in html_store.scan():
                 if not content or not content_id:
@@ -132,8 +133,9 @@ def extract_entities_flow(
                         retry_jitter_factor=0.1,
                         cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
                         cache_expiration=timedelta(days=1),
-                        timeout_seconds=60,  # 1 minute
+                        timeout_seconds=120,  # 2 minutes
                         refresh_cache=_refresh_cache,
+                        tags=["heavy"],  # mark as heavy task
                     ).submit(
                         content_id=content_id,
                         content=content,

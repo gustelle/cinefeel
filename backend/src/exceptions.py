@@ -39,5 +39,12 @@ class RelationshipError(_BaseError):
 
 
 class SimilaritySearchError(RetrievalError):
+    pass
+
+
+class ExternalDependencyError(_BaseError):
+    """Exception raised when an external dependency fails or is unreachable,
+    such as HuggingFace API, OpenAI API, etc.
+    """
 
     pass
