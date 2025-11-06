@@ -5,7 +5,7 @@ from prefect.futures import wait
 
 from src.entities import get_entity_class
 from src.entities.movie import Movie
-from src.interfaces.storage import IStorageHandler
+from src.interfaces.storage import IRelationshipHandler, IStorageHandler
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.db.redis.json import RedisJsonStorage
@@ -27,7 +27,7 @@ def db_storage_flow(
     entity_type: Literal["Movie", "Person"],
     # for testing purposes, we can inject custom storage handlers
     json_store: IStorageHandler | None = None,
-    graph_store: IStorageHandler | None = None,
+    graph_store: IRelationshipHandler | None = None,
     search_store: IStorageHandler | None = None,
     refresh_cache: bool = False,
 ) -> None:
