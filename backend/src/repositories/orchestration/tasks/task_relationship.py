@@ -52,7 +52,7 @@ def connect_by_name(
             limit=1,
         )
 
-        if results is not None:
+        if results is not None and len(results) > 0:
             storage.add_relationship(
                 relationship=StrongRelationship(
                     from_entity=entity,

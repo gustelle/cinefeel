@@ -4,6 +4,7 @@ from prefect import deploy, flow
 from prefect.events import DeploymentEventTrigger
 
 from src.entities.movie import Movie
+from src.entities.person import Person
 from src.settings import AppSettings
 
 from .uc_types import EntityType
@@ -88,7 +89,7 @@ class EntitiesConnectionUseCase:
                     description="Adds connections to persons.",
                     parameters={
                         "app_settings": self._app_settings,
-                        # "entity_type": Person.__name__,
+                        "entity_type": Person.__name__,
                     },
                     concurrency_limit=self._app_settings.prefect_settings.flows_concurrency_limit,
                     job_variables={

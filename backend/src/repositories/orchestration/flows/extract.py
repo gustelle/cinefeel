@@ -49,6 +49,9 @@ def extract_entities_flow(
     If page_id is provided, only that specific page will be processed. If not, all pages in the HTML storage will be processed.
     Other params are injected for testing purposes.
 
+    TODO:
+    - mark json as processed to avoid re-processing
+
     Args:
         entity_type (Literal["Movie", "Person"]): The type of entity to extract
         app_settings (AppSettings): Application settings
