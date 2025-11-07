@@ -5,7 +5,7 @@ import pytest
 from bs4 import BeautifulSoup
 
 from src.entities.content import TableOfContents, UsualSectionTitles_FR_fr
-from src.exceptions import RetrievalError
+from src.exceptions import ParsingError, RetrievalError
 from src.interfaces.info_retriever import PageLink
 from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParser
 
@@ -386,7 +386,7 @@ def test_retrieve_infobox_format_list_raises(read_not_enough_cols_infobox):
     semantic = WikipediaParser()
 
     # when / then
-    with pytest.raises(RetrievalError, match="cannot parse"):
+    with pytest.raises(ParsingError, match="cannot parse"):
         semantic.retrieve_infobox(read_not_enough_cols_infobox)
 
 
@@ -395,7 +395,7 @@ def test_retrieve_infobox_format_table_no_content_raises(read_defective_table_in
     semantic = WikipediaParser()
 
     # when / then
-    with pytest.raises(RetrievalError, match="Infobox table not found"):
+    with pytest.raises(ParsingError, match="Infobox table not found"):
         semantic.retrieve_infobox(read_defective_table_infobox, format_as="table")
 
 
