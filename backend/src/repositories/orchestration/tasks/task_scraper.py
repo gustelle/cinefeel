@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from logging import Logger
+
 import orjson
-from prefect import get_run_logger, runtime, task
+from prefect import runtime, task
 from prefect.concurrency.sync import rate_limit
 
 from src.entities.content import PageLink, TableOfContents
@@ -14,6 +16,8 @@ from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParse
 from src.repositories.wikipedia import download_page
 from src.settings import ScrapingSettings
 
+from .logger import get_task_logger
+
 
 def download_and_store(
     http_client: IHttpClient,
@@ -22,17 +26,16 @@ def download_and_store(
     return_content: bool,
     scraping_settings: ScrapingSettings,
     stats_collector: IStatsCollector | None = None,
+    flow_id: str | None = None,
 ) -> str | None:
     """
     Helper function to download a page and update stats.
     """
 
-    logger = get_run_logger()
-    flow_id = runtime.flow_run.id
-
     try:
 
         rate_limit("api-rate-limiting", occupy=1)
+
         html = download_page(
             http_client=http_client,
             page_id=page_id,
@@ -46,12 +49,6 @@ def download_and_store(
                 stats_collector.inc_value(StatKey.SCRAPING_SUCCESS, flow_id=flow_id)
             else:
                 stats_collector.inc_value(StatKey.SCRAPING_VOID, flow_id=flow_id)
-
-            logger.info(
-                orjson.dumps(
-                    stats_collector.collect(flow_id=flow_id), option=orjson.OPT_INDENT_2
-                ).decode()
-            )
 
         if html is not None and storage_handler is not None:
             storage_handler.insert(
@@ -93,9 +90,10 @@ def extract_page_links(
         list[PageLink]: A list of page links.
     """
 
-    logger = get_run_logger()
+    logger: Logger = get_task_logger()
 
     rate_limit("api-rate-limiting", occupy=1)
+
     html = download_page(
         http_client=http_client,
         page_id=config.page_id,
@@ -116,7 +114,8 @@ def extract_page_links(
         return _links
 
     except Exception as e:
-        logger.error(f"Error extracting list of movies: {e}")
+
+        logger.error(f"Error extracting links: {e}")
         return []
 
 
@@ -158,6 +157,10 @@ def execute_task(
             if `return_results` is set to True, else None
     """
 
+    flow_id = runtime.flow_run.id
+
+    logger: Logger = get_task_logger()
+
     if isinstance(page, TableOfContents):
         # extract the links from the table of contents
         page_links = extract_page_links(
@@ -169,21 +172,31 @@ def execute_task(
     else:
         page_links = [page]
 
-    content_ids = [
-        download_and_store(
-            http_client=http_client,
-            page_id=page_link.page_id,
-            storage_handler=storage_handler,
-            return_content=False,  # for memory constraints, return the content ID
-            scraping_settings=scraping_settings,
-            stats_collector=stats_collector,
+    content_ids: set[str | None] = set()
+
+    for page_link in page_links:
+        if isinstance(page_link, PageLink):
+
+            content_ids.add(
+                download_and_store(
+                    http_client=http_client,
+                    page_id=page_link.page_id,
+                    storage_handler=storage_handler,
+                    return_content=False,  # for memory constraints, return the content ID
+                    scraping_settings=scraping_settings,
+                    stats_collector=stats_collector,
+                    flow_id=flow_id,
+                )
+            )
+
+        logger.info(
+            orjson.dumps(
+                stats_collector.collect(flow_id=flow_id), option=orjson.OPT_INDENT_2
+            ).decode()
         )
-        for page_link in page_links
-        if isinstance(page_link, PageLink)
-    ]
 
     # filter out None values
-    content_ids = [cid for cid in content_ids if cid is not None]
+    content_ids = {cid for cid in content_ids if cid is not None}
 
     if return_results:
-        return content_ids
+        return list(content_ids)

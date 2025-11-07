@@ -1,8 +1,9 @@
 import time
+from logging import Logger
 from typing import Type
 
 import orjson
-from prefect import get_run_logger, runtime, task
+from prefect import runtime, task
 
 from src.entities.composable import Composable
 from src.entities.content import UsualSectionTitles_FR_fr
@@ -27,6 +28,8 @@ from src.repositories.resolver.movie_resolver import MovieResolver
 from src.repositories.resolver.person_resolver import PersonResolver
 from src.settings import MLSettings, SectionSettings
 
+from .logger import get_task_logger
+
 
 def do_analysis(
     content_id: str,
@@ -41,7 +44,7 @@ def do_analysis(
     Analyze the content and return a storable entity.
 
     """
-    logger = get_run_logger()
+    logger: Logger = get_task_logger()
 
     start = time.time()
 
@@ -205,7 +208,7 @@ def execute_task(
 
     try:
 
-        logger = get_run_logger()
+        logger: Logger = get_task_logger()
 
         start = time.time()
 

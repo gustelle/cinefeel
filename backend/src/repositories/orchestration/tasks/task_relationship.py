@@ -1,4 +1,6 @@
-from prefect import get_run_logger, task
+from logging import Logger
+
+from prefect import task
 from prefect.concurrency.sync import rate_limit
 from prefect.events import emit_event
 
@@ -14,6 +16,8 @@ from src.exceptions import RetrievalError
 from src.interfaces.http_client import IHttpClient
 from src.interfaces.storage import IRelationshipHandler
 from src.repositories.wikipedia import get_page_id, get_permalink
+
+from .logger import get_task_logger
 
 
 def connect_by_name(
@@ -41,7 +45,7 @@ def connect_by_name(
     Returns:
         Relationship | None: The created relationship or None if unsuccessful.
     """
-    logger = get_run_logger()
+    logger: Logger = get_task_logger()
     try:
         rate_limit("api-rate-limiting", occupy=1)
         permalink = get_permalink(name=name, http_client=http_client)
