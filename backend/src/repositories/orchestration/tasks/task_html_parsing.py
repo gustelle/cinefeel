@@ -1,3 +1,4 @@
+import time
 from typing import Type
 
 import orjson
@@ -42,7 +43,15 @@ def do_analysis(
     """
     logger = get_run_logger()
 
+    start = time.time()
+
     result = analyzer.process(content_id, html_content)
+
+    analysis_time = time.time() - start
+
+    logger.info(
+        f" do_analysis > analyzer.process('{content_id}') took {analysis_time:.2f} seconds."
+    )
 
     if result is None:
         logger.warning(
@@ -52,7 +61,7 @@ def do_analysis(
 
     base_info, sections = result
 
-    logger.info(
+    logger.debug(
         f"Extracted base info & {len(sections) if sections else 0} sections of a '{entity_type.__name__}' for content '{content_id}'"
     )
 
@@ -198,6 +207,8 @@ def execute_task(
 
         logger = get_run_logger()
 
+        start = time.time()
+
         analyzer = analyzer or Html2TextSectionsChopper(
             content_splitter=WikipediaAPIContentSplitter(
                 parser=WikipediaParser(),
@@ -222,6 +233,12 @@ def execute_task(
             entity_type=entity_type,
             analyzer=analyzer,
             search_processor=search_processor,
+        )
+
+        analysis_time = time.time() - start
+
+        logger.info(
+            f"Analysis for content ID '{content_id}' took {analysis_time:.2f} seconds."
         )
 
         if entity is not None:

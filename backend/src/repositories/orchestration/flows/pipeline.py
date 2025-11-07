@@ -27,11 +27,10 @@ def run_pipeline_for_page(
     app_settings: AppSettings,
 ) -> None:
     """
-    Extract an entity (Movie or Person) from a given permalink.
+    Runs a full pipeline for a given entity page.
     This flow will download the content, parse it, index it, and store it in the graph database.
 
-    It is useful when making a relationship between two entities, and one of them is not existing yet in the database.
-    typically, it is triggered on-demand by the connection workflow.
+    It is triggered on-demand for specific pages/entities.
 
     """
     logger = get_run_logger()

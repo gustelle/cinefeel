@@ -1,3 +1,4 @@
+import time
 from datetime import timedelta
 from typing import Literal
 
@@ -48,9 +49,6 @@ def extract_entities_flow(
 
     If page_id is provided, only that specific page will be processed. If not, all pages in the HTML storage will be processed.
     Other params are injected for testing purposes.
-
-    TODO:
-    - mark json as processed to avoid re-processing
 
     Args:
         entity_type (Literal["Movie", "Person"]): The type of entity to extract
@@ -119,7 +117,15 @@ def extract_entities_flow(
             )
     else:
 
+        start = time.time()
+
         with concurrency("resource-rate-limiting", occupy=1, strict=True):
+
+            acquisition_time = time.time() - start
+
+            logger.info(
+                f"Acquired concurrency lock for 'resource-rate-limiting' after {acquisition_time:.2f} seconds"
+            )
 
             for content_id, content in html_store.scan():
                 if not content or not content_id:

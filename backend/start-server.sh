@@ -9,15 +9,17 @@ prefect config set PREFECT_API_URL="http://localhost:4200/api"
 # see https://docs.prefect.io/v3/concepts/caching
 prefect config set PREFECT_RESULTS_PERSIST_BY_DEFAULT=true
 
+prefect config set PREFECT_LOGGING_LEVEL=INFO
+
 # ********************************
 # global concurrency limit and rate limiting
 # ********************************
 # delete existing limit if any
 prefect --no-prompt gcl delete resource-rate-limiting
-prefect gcl create resource-rate-limiting --limit 10 --slot-decay-per-second 2.0
+prefect gcl create resource-rate-limiting --limit 20 --slot-decay-per-second 4.0
 
 prefect --no-prompt gcl delete api-rate-limiting
-prefect gcl create api-rate-limiting --limit 10 --slot-decay-per-second 2.0
+prefect gcl create api-rate-limiting --limit 10 --slot-decay-per-second 1.0
 # ************************************************************
 
 # concurrent tasks

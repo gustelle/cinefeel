@@ -1,4 +1,5 @@
 import abc
+import time
 
 from loguru import logger
 
@@ -63,11 +64,18 @@ class AbstractResolver[T: Composable](abc.ABC, IEntityResolver[T]):
         if not sections:
             raise ValueError("No sections provided to resolve the Person.")
 
+        start = time.time()
+
         # don't process all sections, but only the ones that are relevant
         sections = self.filter_sections(sections)
 
         # Extract entities from sections
         results = self.extract_entities(sections, base_info)
+
+        end = time.time()
+        logger.info(
+            f"Resolution process > self.extract_entities took {end - start:.2f} seconds."
+        )
 
         # assemble the entity from the base info and extracted parts
         entity = self.assemble(base_info, results)
