@@ -17,7 +17,7 @@ from src.interfaces.http_client import IHttpClient
 from src.interfaces.storage import IRelationshipHandler
 from src.repositories.wikipedia import get_page_id, get_permalink
 
-from .logger import get_task_logger
+from .logger import get_logger
 
 
 def connect_by_name(
@@ -45,7 +45,7 @@ def connect_by_name(
     Returns:
         Relationship | None: The created relationship or None if unsuccessful.
     """
-    logger: Logger = get_task_logger()
+    logger: Logger = get_logger()
     try:
         rate_limit("api-rate-limiting", occupy=1)
         permalink = get_permalink(name=name, http_client=http_client)

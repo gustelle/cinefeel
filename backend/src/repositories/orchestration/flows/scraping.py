@@ -79,4 +79,4 @@ def scraping_flow(
             )
         )
 
-    wait_for_all(tasks)
+    wait_for_all(tasks, stats_collector=stats_collector)

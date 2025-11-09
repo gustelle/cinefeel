@@ -5,9 +5,10 @@ from prefect import get_run_logger
 from prefect.context import MissingContextError
 
 
-def get_task_logger() -> Logger:
+def get_logger() -> Logger:
     """
-    Get a logger for use within Prefect tasks.
+    Get a logger compatible with Prefect tasks, with a fallback to loguru
+    if not in a Prefect task context.
 
     Args:
         name (str): The name of the logger.

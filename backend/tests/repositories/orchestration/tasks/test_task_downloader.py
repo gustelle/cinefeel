@@ -158,7 +158,9 @@ def test_downloader_task_execute_with_TableOfContents(test_settings: AppSettings
 
     # then
     assert extractor._is_called is True
-    assert result == ["link1", "link2"]
+    assert len(result) == 2
+    assert "link1" in result
+    assert "link2" in result
     assert storage_handler.is_inserted is True
 
 

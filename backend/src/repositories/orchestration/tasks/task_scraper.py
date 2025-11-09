@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from logging import Logger
 
-import orjson
 from prefect import runtime, task
 from prefect.concurrency.sync import rate_limit
 
@@ -16,7 +15,7 @@ from src.repositories.html_parser.wikipedia_info_retriever import WikipediaParse
 from src.repositories.wikipedia import download_page
 from src.settings import ScrapingSettings
 
-from .logger import get_task_logger
+from .logger import get_logger
 
 
 def download_and_store(
@@ -90,7 +89,7 @@ def extract_page_links(
         list[PageLink]: A list of page links.
     """
 
-    logger: Logger = get_task_logger()
+    logger: Logger = get_logger()
 
     rate_limit("api-rate-limiting", occupy=1)
 
@@ -159,8 +158,6 @@ def execute_task(
 
     flow_id = runtime.flow_run.id
 
-    logger: Logger = get_task_logger()
-
     if isinstance(page, TableOfContents):
         # extract the links from the table of contents
         page_links = extract_page_links(
@@ -188,12 +185,6 @@ def execute_task(
                     flow_id=flow_id,
                 )
             )
-
-        logger.info(
-            orjson.dumps(
-                stats_collector.collect(flow_id=flow_id), option=orjson.OPT_INDENT_2
-            ).decode()
-        )
 
     # filter out None values
     content_ids = {cid for cid in content_ids if cid is not None}

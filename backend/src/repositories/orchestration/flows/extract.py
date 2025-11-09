@@ -162,4 +162,4 @@ def extract_entities_flow(
             #     break  # for testing, process only one
 
     # print(f"Waiting for {len(tasks)} tasks to complete...")
-    wait_for_all(tasks)
+    wait_for_all(tasks, stats_collector=stats_collector)

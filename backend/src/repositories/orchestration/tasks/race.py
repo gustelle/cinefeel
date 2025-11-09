@@ -1,7 +1,10 @@
 import time
 
-from prefect import get_run_logger
+import orjson
+from prefect import get_run_logger, runtime
 from prefect.futures import PrefectFuture
+
+from src.interfaces.stats import IStatsCollector
 
 
 def _is_safe_done(future: PrefectFuture) -> bool:
@@ -20,6 +23,7 @@ def _is_safe_done(future: PrefectFuture) -> bool:
 
 def wait_for_all(
     tasks: list[PrefectFuture],
+    stats_collector: IStatsCollector | None = None,
 ) -> tuple[set[PrefectFuture], set[PrefectFuture]]:
     """
     Waits for a list of Prefect tasks to really complete, handling exceptions for each task individually,
@@ -28,7 +32,8 @@ def wait_for_all(
     PENDING tasks are relaunched until they complete successfully or fail.
 
     Args:
-        tasks (list[PrefectFuture]): A list of PrefectFuture objects representing the tasks to wait for.
+        tasks (list[PrefectFuture]): A list of PrefectFuture objects representing the tasks to wait for
+        stats_collector (IStatsCollector | None): An optional stats collector to log stats during waiting.
 
     Returns:
         tuple[set[PrefectFuture], set[PrefectFuture]]: A tuple containing two sets:
@@ -60,7 +65,15 @@ def wait_for_all(
         logger.info(
             f"Waiting for {len(pending_tasks)} pending tasks to complete...sleeping"
         )
-        time.sleep(1)  # avoid busy waiting
+        time.sleep(5)  # avoid busy waiting
+
+        if stats_collector is not None:
+            logger.info(
+                orjson.dumps(
+                    stats_collector.collect(flow_id=runtime.flow_run.id),
+                    option=orjson.OPT_INDENT_2,
+                ).decode()
+            )
 
     logger.info(
         f"All tasks completed: {len(completed_tasks)}, failed: {len(failed_tasks)}"

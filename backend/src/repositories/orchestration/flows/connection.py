@@ -48,10 +48,6 @@ def connection_flow(
 
     logger = get_run_logger()
 
-    logger.info(
-        f"Starting connection flow for entity_type={entity_type} (cache disabled={app_settings.prefect_settings.cache_disabled})"
-    )
-
     cls = get_entity_class(entity_type)
 
     tasks: list[PrefectFuture] = []

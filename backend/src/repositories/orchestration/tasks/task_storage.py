@@ -5,7 +5,7 @@ from prefect import task
 from src.entities.composable import Composable
 from src.interfaces.storage import IStorageHandler
 
-from .logger import get_task_logger
+from .logger import get_logger
 
 
 @task(
@@ -18,7 +18,7 @@ def execute_task(
     batch_size: int = 100,
 ):
 
-    logger: Logger = get_task_logger()
+    logger: Logger = get_logger()
 
     batch: list[Composable] = []
 

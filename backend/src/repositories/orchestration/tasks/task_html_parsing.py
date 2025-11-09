@@ -2,7 +2,6 @@ import time
 from logging import Logger
 from typing import Type
 
-import orjson
 from prefect import runtime, task
 
 from src.entities.composable import Composable
@@ -28,7 +27,7 @@ from src.repositories.resolver.movie_resolver import MovieResolver
 from src.repositories.resolver.person_resolver import PersonResolver
 from src.settings import MLSettings, SectionSettings
 
-from .logger import get_task_logger
+from .logger import get_logger
 
 
 def do_analysis(
@@ -44,7 +43,7 @@ def do_analysis(
     Analyze the content and return a storable entity.
 
     """
-    logger: Logger = get_task_logger()
+    logger: Logger = get_logger()
 
     start = time.time()
 
@@ -208,7 +207,7 @@ def execute_task(
 
     try:
 
-        logger: Logger = get_task_logger()
+        logger: Logger = get_logger()
 
         start = time.time()
 
@@ -261,11 +260,3 @@ def execute_task(
 
         # re-raise for Prefect to handle retries if needed
         raise
-
-    finally:
-        if stats_collector:
-            logger.info(
-                orjson.dumps(
-                    stats_collector.collect(flow_id=flow_id), option=orjson.OPT_INDENT_2
-                ).decode()
-            )
