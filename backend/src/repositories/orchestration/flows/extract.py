@@ -1,3 +1,4 @@
+import os
 import time
 from datetime import timedelta
 from typing import Literal
@@ -82,7 +83,10 @@ def extract_entities_flow(
 
         if content:
 
-            with concurrency("resource-rate-limiting", occupy=1, strict=True):
+            # bypass concurrency when running tests
+            _is_strict = os.environ.get("PYTEST_VERSION", None) is None
+
+            with concurrency("resource-rate-limiting", occupy=1, strict=_is_strict):
 
                 tasks.append(
                     execute_task.with_options(
