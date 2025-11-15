@@ -22,6 +22,7 @@ fn main() {
         Some(records) => {
             for record   in records {
                 println!("{}", record);
+                
             }
         },
         None => println!("No results found or query failed."),

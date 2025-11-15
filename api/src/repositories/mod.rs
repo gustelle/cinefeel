@@ -3,13 +3,12 @@ use dotenv::dotenv;
 use std::env;
 use std::collections::HashMap;
 
-use crate::{entities::{Person, StorableEntity}, interfaces::DbRepository};
+use crate::{entities::{Biography, Person, StorableEntity}, interfaces::DbRepository};
 
 
 #[derive(Default, Debug, PartialEq)]
 pub struct PersonRepository {   
 }
-
 
 
 impl DbRepository<Person> for PersonRepository {
@@ -68,7 +67,12 @@ impl DbRepository<Person> for PersonRepository {
                                     title: node.properties.get("title").unwrap().to_string(),
                                     permalink: node.properties.get("permalink").unwrap().to_string(),
                                 },
-                                biography: None,
+                                biography: Biography {
+                                    full_name: match node.properties.get("full_name") {
+                                        Some(Value::String(name)) => Some(name.clone()),
+                                        _ => None,
+                                    }
+                                }.into(),
                             }
                         ),
                         _ => {
