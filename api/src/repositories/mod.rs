@@ -1,27 +1,26 @@
 use rsmgclient::{ConnectParams, Connection, Value, SSLMode, ConnectionStatus, QueryParam};
 use dotenv::dotenv;
 use std::env;
+use std::collections::HashMap;
 
-use crate::interfaces::DbRepository;
+use crate::{entities::{Person, StorableEntity}, interfaces::DbRepository};
 
 
-pub struct MemgraphRepository {   
+#[derive(Default, Debug, PartialEq)]
+pub struct PersonRepository {   
 }
 
-impl DbRepository for MemgraphRepository {
 
-    fn connect(&self) -> bool {
-        // Implementation for connecting to Memgraph
-        true
-    }
 
-    fn disconnect(&self) -> bool {
-        // Implementation for disconnecting from Memgraph
-        true
-    }
+impl DbRepository<Person> for PersonRepository {
 
-    fn query(&self, query: &str, params: Option<&[(&str, &str)]>) -> Option<Vec<String>> {
+    fn new() -> Self {
         dotenv().ok(); // Reads the .env file
+        Default::default()
+    }
+
+    fn query(&self, query: &str, params: HashMap<String, String>) -> Option<Vec<Person>> {
+        
 
         let host = env::var("GRAPHDB_HOST").unwrap_or("localhost".to_string());
         let db_port: String = env::var("GRAPHDB_PORT").unwrap_or("7687".to_string());
@@ -49,33 +48,31 @@ impl DbRepository for MemgraphRepository {
 
         // transform the params into the required format
         // it must be a HashMap<String, QueryParam>
-        let formatted_params = match params {
-            Some(p) => {
-                let mut map = std::collections::HashMap::new();
-                for (key, value) in p.iter() {
-                    map.insert(key.to_string(), QueryParam::String(value.to_string()));
-                }
-                map
-            },
-            None => std::collections::HashMap::new(),
-        };
+        let formatted_params: HashMap<String, QueryParam> = params.into_iter().map(|(k, v)| {
+            (k, QueryParam::String(v))
+        }).collect();
     
         // Fetch the graph.
         let _columns = connection.execute(query, Some(&formatted_params));
 
-        let mut results = Vec::new();
+        let mut results: Vec<Person> = Vec::new();
         
         while let Ok(result) = connection.fetchall() {
             for record in result {
                 for value in record.values {
                     match value {
-                        Value::Node(node) => results.push(format!("Node: {}", node.properties.iter()
-                            .map(|(k, v)| format!("{}: {}", k, v))
-                            .collect::<Vec<String>>()
-                            .join(", ") )),
-                        Value::Relationship(edge) => results.push(format!("Edge: {}", edge.id)),
+                        Value::Node(node) => results.push(
+                            Person {
+                                root: StorableEntity {
+                                    uid: node.properties.get("uid").unwrap().to_string(),
+                                    title: node.properties.get("title").unwrap().to_string(),
+                                    permalink: node.properties.get("permalink").unwrap().to_string(),
+                                },
+                                biography: None,
+                            }
+                        ),
                         _ => {
-                            results.push(format!("Other Value: {:?}", value));
+                            return None
                         }
                     }
                 }
@@ -89,8 +86,4 @@ impl DbRepository for MemgraphRepository {
 
 }
 
-pub fn query_memgraph(query: &str, params: Option<&[(&str, &str)]>) -> Option<Vec<String>> {
-    let repo = MemgraphRepository{};
-    repo.query(query, params)
-}
 
