@@ -8,7 +8,8 @@ mod entities;
 use std::collections::HashMap;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 
-use crate::{interfaces::{DbRepository}, repositories::{PersonRepository}};
+use crate::{interfaces::db::DbRepository, repositories::person_repository::PersonRepository}; 
+
 
 
 #[get("/hello")]
