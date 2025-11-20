@@ -33,7 +33,7 @@ GRAPHDB_URI = f"bolt://localhost:{GRAPHDB_HOST_PORT}"
 
 mp.setenv("GRAPH_DB_URI", GRAPHDB_URI)
 
-DOCKER_MEMGRAPH_IMAGE_NAME = "memgraph/memgraph-mage"
+DOCKER_MEMGRAPH_IMAGE_NAME = "memgraph/memgraph-mage:3.7"
 DOCKER_MEMGRAPH_CONTAINER_NAME = "memgraph_test_storage"
 
 REDIS_NATIVE_PORT = 6379
