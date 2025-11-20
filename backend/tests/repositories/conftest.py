@@ -10,7 +10,7 @@ from neo4j import GraphDatabase
 
 from src.entities.movie import FilmActor, FilmMedia, FilmSpecifications, Movie
 from src.entities.person import Biography, Person
-from src.entities.woa import WOAInfluence, WOAType
+from src.entities.woa import Influences, WOAType
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.settings import (
@@ -124,7 +124,7 @@ def test_film():
         permalink="https://example.com/inception",
     )
     film.influences = [
-        WOAInfluence(
+        Influences(
             parent_uid=film.uid,
             type=WOAType.MOVIE,
             persons=["Christopher Nolan"],
@@ -170,12 +170,10 @@ def test_person():
         full_name="Christopher Nolan",
     )
 
-    person.influences = [
-        WOAInfluence(
-            parent_uid=person.uid,
-            persons=["Steven Spielberg"],
-        ),
-    ]
+    person.influences = Influences(
+        parent_uid=person.uid,
+        persons=["Steven Spielberg"],
+    )
 
     yield person
 

@@ -8,7 +8,7 @@ from src.entities.composable import Composable
 from src.entities.content import UsualSectionTitles_FR_fr
 from src.entities.movie import FilmActor, FilmSpecifications, FilmSummary, Movie
 from src.entities.person import Biography, Person
-from src.entities.woa import WOAInfluence
+from src.entities.woa import Influences
 from src.interfaces.analyzer import IContentAnalyzer
 from src.interfaces.nlp_processor import Processor
 from src.interfaces.resolver import ResolutionConfiguration
@@ -109,7 +109,7 @@ def do_analysis(
                         UsualSectionTitles_FR_fr.INFLUENCES,
                         UsualSectionTitles_FR_fr.NO_TITLE,
                     ],
-                    extracted_type=WOAInfluence,
+                    extracted_type=Influences,
                 ),
             ],
         ).resolve(
@@ -139,7 +139,7 @@ def do_analysis(
                         UsualSectionTitles_FR_fr.INFLUENCES,
                         UsualSectionTitles_FR_fr.NO_TITLE,
                     ],
-                    extracted_type=WOAInfluence,
+                    extracted_type=Influences,
                 ),
                 # ResolutionConfiguration(
                 #     extractor=ChildhoodOllamaExtractor(settings=self.settings),

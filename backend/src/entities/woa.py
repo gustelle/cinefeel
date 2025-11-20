@@ -52,24 +52,20 @@ class WorkOfArt(BaseModel):
 
     woa_type: WOAType | None = Field(
         None,
-        description="The type of the work of art. ",
         examples=[str(woa_type) for woa_type in WOAType],
     )
 
 
-class WOAInfluence(EntityComponent):
-    """
-    Représente les influences d'une oeuvre d'art.
-    """
+class Influences(EntityComponent):
 
     persons: list[str] | None = Field(
         None,
-        description="les personnes qui ont influencé l'oeuvre d'art actuelle.",
+        description="les personnes qui ont influencé l'entité.",
     )
 
     work_of_arts: list[str] | None = Field(
         None,
-        description="les autres oeuvres d'art qui ont influencé l'oeuvre d'art actuelle.",
+        description="les œuvres d'art qui ont influencé l'entité.",
     )
 
     @field_validator("persons", "work_of_arts", mode="before")

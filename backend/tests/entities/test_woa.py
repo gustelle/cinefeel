@@ -1,10 +1,10 @@
-from src.entities.woa import WOAInfluence
+from src.entities.woa import Influences
 
 
 def test_WOAInfluence_has_no_empty_value():
     # GIVEN
 
-    influence = WOAInfluence(
+    influence = Influences(
         persons=["", "  ", None, "John Doe"],
         work_of_arts=["", "  ", None, "Mona Lisa"],
         parent_uid="parent-uid-123",

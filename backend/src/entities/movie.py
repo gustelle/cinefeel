@@ -7,7 +7,7 @@ from pydantic import Field, HttpUrl, field_serializer, field_validator
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
 
-from .woa import WOAInfluence, WOASpecifications, WOAType, WorkOfArt
+from .woa import Influences, WOASpecifications, WOAType, WorkOfArt
 
 
 class FilmActor(EntityComponent):
@@ -133,7 +133,7 @@ class Movie(Composable, WorkOfArt):
     media: FilmMedia | None = Field(
         None,
     )
-    influences: list[WOAInfluence] | None = Field(
+    influences: list[Influences] | None = Field(
         None,
     )
     specifications: FilmSpecifications | None = Field(

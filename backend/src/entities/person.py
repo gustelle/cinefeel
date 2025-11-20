@@ -8,7 +8,7 @@ from src.entities.color import SkinColor
 from src.entities.component import EntityComponent
 from src.entities.composable import Composable
 from src.entities.sexual_orientation import SexualOrientation
-from src.entities.woa import WOAInfluence
+from src.entities.woa import Influences
 
 
 class GenderEnum(StrEnum):
@@ -165,11 +165,7 @@ class Person(Composable):
         None,
     )
 
-    # characteristics: PersonCharacteristics | None = Field(
-    #     None,
-    # )
-
-    influences: list[WOAInfluence] | None = Field(
+    influences: Influences | None = Field(
         None,
     )
 
