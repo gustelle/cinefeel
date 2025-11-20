@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
 
   memgraph:
-    image: memgraph/memgraph-mage:latest
+    image: memgraph/memgraph-mage
     container_name: memgraph-mage
     pull_policy: always
     ports:
@@ -21,7 +21,7 @@ services:
     command: ["--log-level=TRACE"]
 
   memgraph-ui:
-    image: memgraph/lab:latest
+    image: memgraph/lab
     container_name: memgraph-lab
     pull_policy: always
     ports:
