@@ -1,3 +1,4 @@
+use log::info;
 use rsmgclient::{ConnectParams, Connection, Value, SSLMode, ConnectionStatus, QueryParam};
 use dotenv::dotenv;
 use std::env;
@@ -62,7 +63,9 @@ impl DbRepository<Person> for PersonRepository {
             for record in result {
                 for value in record.values {
                     match value {
-                        Value::Node(node) => results.push(
+                        Value::Node(node) => {
+                            //info!("Node properties: {:?}", node.properties);
+                            results.push(
                             Person {
                                 root: StorableEntity {
                                     uid: node.properties.get("uid").unwrap().to_string(),
@@ -70,13 +73,27 @@ impl DbRepository<Person> for PersonRepository {
                                     permalink: node.properties.get("permalink").unwrap().to_string(),
                                 },
                                 biography: Biography {
-                                    full_name: match node.properties.get("full_name") {
-                                        Some(Value::String(name)) => Some(name.clone()),
-                                        _ => None,
-                                    }
+                                    // complete the biography fields
+                                    // if the property does not exist, set it to None
+                                    full_name: node.properties.get("biography").and_then(|v| {
+                                        match v {
+                                            Value::Map(map) => {
+                                                map.get("full_name").map(|v| v.to_string())
+                                            },
+                                            _ => None,
+                                        }
+                                    }),
+                                    birth_date: node.properties.get("biography").and_then(|v| {
+                                        match v {
+                                            Value::Map(map) => {
+                                                map.get("birth_date").map(|v| v.to_string())
+                                            },
+                                            _ => None,
+                                        }
+                                    }),
                                 }.into(),
                             }
-                        ),
+                        )},
                         _ => {
                             return None
                         }

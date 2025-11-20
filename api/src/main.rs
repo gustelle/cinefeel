@@ -7,9 +7,14 @@ mod entities;
 
 
 use actix_web::{App, HttpServer};
+use actix_cors::Cors;
+use actix_web::{middleware::Logger};
+use log::{debug, error, log_enabled, info, Level};
 
 
-use crate::repositories::routes::hello::hello;
+use crate::repositories::routes::persons::register;
+
+
 
 
 #[actix_web::main]
@@ -20,10 +25,17 @@ async fn main() -> std::io::Result<()> {
 
     // see https://github.com/actix/examples/blob/main/graphql/juniper-advanced/src/main.rs
 
-    HttpServer::new(|| {
+    info!("starting HTTP server on port 8080");
+    info!("GraphiQL playground: http://localhost:8080/graphiql");
+
+    HttpServer::new(move || {
         App::new()
-            .service(hello)
+            //.app_data(Data::new())
+            .configure(register)
+            .wrap(Cors::permissive())
+            .wrap(Logger::default())
     })
+    .workers(2)
     .bind(("127.0.0.1", 8080))?
     .run()
     .await

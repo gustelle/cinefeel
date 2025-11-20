@@ -2,10 +2,13 @@ use std::fmt;
 
 use crate::entities::storable::StorableEntity;
 
+#[derive(Debug)]
 pub struct Biography {
-    pub(crate) full_name: Option<String>
+    pub(crate) full_name: Option<String>,
+    pub(crate) birth_date: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct Person {
     pub(crate) root: StorableEntity,
     pub(crate) biography: Option<Biography>,

@@ -1,4 +1,5 @@
 
+#[derive(Debug)]
 pub struct StorableEntity {
     pub uid: String,
     pub title: String,
