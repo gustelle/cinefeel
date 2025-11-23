@@ -205,6 +205,19 @@ class PrefectSettings(BaseSettings):
         default=10,
         description="The maximum number of concurrent prefect tasks",
     )
+    task_retry_attempts: int = Field(
+        default=30,
+        description="The number of retry attempts for failed tasks",
+    )
+    task_retry_backoff_factor: float = Field(
+        default=0.1,
+        description="The exponential backoff factor for task retries",
+    )
+    task_cache_expiration_hours: int = Field(
+        default=24,
+        description="The expiration time of the prefect task cache in hours",
+    )
+
     cache_disabled: bool = Field(
         default=False,
         description="If True, disables the prefect task cache",

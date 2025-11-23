@@ -11,11 +11,6 @@ from src.exceptions import (
     SummaryError,
 )
 
-RETRY_ATTEMPTS: int = 30
-RETRY_DELAY_SECONDS: list[int] = [
-    0.1 * ((i**2) / 8) for i in range(RETRY_ATTEMPTS)
-]  # exponential backoff
-
 
 def is_http_task_retriable(
     task: Task[..., Any], task_run: TaskRun, state: State[Any]

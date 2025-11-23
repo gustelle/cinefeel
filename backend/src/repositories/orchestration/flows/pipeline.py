@@ -3,6 +3,7 @@ from typing import Literal
 
 from prefect import flow, get_run_logger, task
 from prefect.task_runners import ConcurrentTaskRunner
+from prefect.tasks import exponential_backoff
 
 from src.entities.content import TableOfContents
 from src.repositories.orchestration.flows.connection import connection_flow
@@ -44,7 +45,13 @@ def run_pipeline_for_page(
 
     scraping_task = task(
         cache_key_fn=lambda *_: f"on-demand-scraping-{page_id}",
-        cache_expiration=timedelta(hours=1),
+        retries=app_settings.prefect_settings.task_retry_attempts,
+        retry_delay_seconds=exponential_backoff(
+            backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+        ),
+        cache_expiration=timedelta(
+            hours=app_settings.prefect_settings.task_cache_expiration_hours
+        ),
     )(scraping_flow).submit(
         pages=[page],
         scraping_settings=app_settings.scraping_settings,
@@ -55,7 +62,13 @@ def run_pipeline_for_page(
 
     extract_task = task(
         cache_key_fn=lambda *_: f"on-demand-extract-{entity_type}-{page_id}",
-        cache_expiration=timedelta(hours=1),
+        retries=app_settings.prefect_settings.task_retry_attempts,
+        retry_delay_seconds=exponential_backoff(
+            backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+        ),
+        cache_expiration=timedelta(
+            hours=app_settings.prefect_settings.task_cache_expiration_hours
+        ),
     )(extract_entities_flow).submit(
         prefect_settings=app_settings.prefect_settings,
         ml_settings=app_settings.ml_settings,
@@ -69,7 +82,13 @@ def run_pipeline_for_page(
 
     storage_task = task(
         cache_key_fn=lambda *_: f"on-demand-store-{entity_type}-{page_id}",
-        cache_expiration=timedelta(hours=1),
+        retries=app_settings.prefect_settings.task_retry_attempts,
+        retry_delay_seconds=exponential_backoff(
+            backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+        ),
+        cache_expiration=timedelta(
+            hours=app_settings.prefect_settings.task_cache_expiration_hours
+        ),
     )(db_storage_flow).submit(
         prefect_settings=app_settings.prefect_settings,
         storage_settings=app_settings.storage_settings,
@@ -80,7 +99,13 @@ def run_pipeline_for_page(
 
     task(
         cache_key_fn=lambda *_: f"on-demand-connect-{entity_type}-{page_id}",
-        cache_expiration=timedelta(hours=1),
+        retries=app_settings.prefect_settings.task_retry_attempts,
+        retry_delay_seconds=exponential_backoff(
+            backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+        ),
+        cache_expiration=timedelta(
+            hours=app_settings.prefect_settings.task_cache_expiration_hours
+        ),
     )(connection_flow).submit(
         scraping_settings=app_settings.scraping_settings,
         storage_settings=app_settings.storage_settings,

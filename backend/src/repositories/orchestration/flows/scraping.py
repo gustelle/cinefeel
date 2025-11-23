@@ -10,10 +10,7 @@ from src.entities import get_entity_class
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.orchestration.tasks.race import wait_for_all
-from src.repositories.orchestration.tasks.retry import (
-    RETRY_ATTEMPTS,
-    is_http_task_retriable,
-)
+from src.repositories.orchestration.tasks.retry import is_http_task_retriable
 from src.repositories.orchestration.tasks.task_scraper import execute_task
 from src.repositories.stats import RedisStatsCollector
 from src.settings import AppSettings
@@ -63,11 +60,14 @@ def scraping_flow(
         tasks.append(
             execute_task.with_options(
                 cache_key_fn=lambda *_: f"scraping-{config.page_id}",
-                cache_expiration=timedelta(hours=24),
-                retries=RETRY_ATTEMPTS,
+                retries=app_settings.prefect_settings.task_retry_attempts,
+                retry_delay_seconds=exponential_backoff(
+                    backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+                ),
+                cache_expiration=timedelta(
+                    hours=app_settings.prefect_settings.task_cache_expiration_hours
+                ),
                 retry_condition_fn=is_http_task_retriable,
-                retry_delay_seconds=exponential_backoff(backoff_factor=0.3),
-                retry_jitter_factor=0.1,
                 refresh_cache=app_settings.prefect_settings.cache_disabled,
             ).submit(
                 page=config,

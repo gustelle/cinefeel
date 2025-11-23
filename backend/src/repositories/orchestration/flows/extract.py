@@ -17,10 +17,7 @@ from src.interfaces.storage import IStorageHandler
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.db.redis.text import RedisTextStorage
 from src.repositories.orchestration.tasks.race import wait_for_all
-from src.repositories.orchestration.tasks.retry import (
-    RETRY_ATTEMPTS,
-    is_extraction_task_retriable,
-)
+from src.repositories.orchestration.tasks.retry import is_extraction_task_retriable
 from src.repositories.orchestration.tasks.task_html_parsing import execute_task
 from src.repositories.stats import RedisStatsCollector
 from src.settings import AppSettings
@@ -90,12 +87,15 @@ def extract_entities_flow(
 
                 tasks.append(
                     execute_task.with_options(
-                        retries=RETRY_ATTEMPTS,
+                        retries=app_settings.prefect_settings.task_retry_attempts,
+                        retry_delay_seconds=exponential_backoff(
+                            backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+                        ),
+                        cache_expiration=timedelta(
+                            hours=app_settings.prefect_settings.task_cache_expiration_hours
+                        ),
                         retry_condition_fn=is_extraction_task_retriable,
-                        retry_delay_seconds=exponential_backoff(backoff_factor=0.3),
-                        retry_jitter_factor=0.1,
                         cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
-                        cache_expiration=timedelta(days=1),
                         timeout_seconds=120,  # 2 minutes
                         refresh_cache=_refresh_cache,
                         tags=["heavy"],  # mark as heavy task
@@ -143,12 +143,15 @@ def extract_entities_flow(
 
                 tasks.append(
                     execute_task.with_options(
-                        retries=RETRY_ATTEMPTS,
+                        retries=app_settings.prefect_settings.task_retry_attempts,
+                        retry_delay_seconds=exponential_backoff(
+                            backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+                        ),
+                        cache_expiration=timedelta(
+                            hours=app_settings.prefect_settings.task_cache_expiration_hours
+                        ),
                         retry_condition_fn=is_extraction_task_retriable,
-                        retry_delay_seconds=exponential_backoff(backoff_factor=0.3),
-                        retry_jitter_factor=0.1,
-                        cache_key_fn=lambda *_: f"html-to-entity-{page_id}",
-                        cache_expiration=timedelta(days=1),
+                        cache_key_fn=lambda *_: f"html-to-entity-{content_id}",
                         timeout_seconds=120,  # 2 minutes
                         refresh_cache=_refresh_cache,
                         tags=["heavy"],  # mark as heavy task

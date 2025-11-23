@@ -1,7 +1,9 @@
+from datetime import timedelta
 from typing import Literal
 
 from prefect import flow
 from prefect.futures import wait
+from prefect.tasks import exponential_backoff
 
 from src.entities import get_entity_class
 from src.entities.movie import Movie
@@ -9,10 +11,6 @@ from src.interfaces.storage import IRelationshipHandler, IStorageHandler
 from src.repositories.db.graph.mg_movie import MovieGraphRepository
 from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.db.redis.json import RedisJsonStorage
-from src.repositories.orchestration.tasks.retry import (
-    RETRY_ATTEMPTS,
-    RETRY_DELAY_SECONDS,
-)
 from src.repositories.orchestration.tasks.task_storage import execute_task
 from src.repositories.search.meili_indexer import MeiliHandler
 from src.settings import AppSettings
@@ -55,8 +53,13 @@ def db_storage_flow(
     search_handler.on_init()
 
     t = execute_task.with_options(
-        retries=RETRY_ATTEMPTS,
-        retry_delay_seconds=RETRY_DELAY_SECONDS,
+        retries=app_settings.prefect_settings.task_retry_attempts,
+        retry_delay_seconds=exponential_backoff(
+            backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+        ),
+        cache_expiration=timedelta(
+            hours=app_settings.prefect_settings.task_cache_expiration_hours
+        ),
         timeout_seconds=1,  # fail fast if the task hangs
         cache_key_fn=lambda *_: f"insert_task-json-graph-{entity_type}",
         refresh_cache=app_settings.prefect_settings.cache_disabled or refresh_cache,
@@ -67,8 +70,13 @@ def db_storage_flow(
 
     # for all pages
     u = execute_task.with_options(
-        retries=RETRY_ATTEMPTS,
-        retry_delay_seconds=RETRY_DELAY_SECONDS,
+        retries=app_settings.prefect_settings.task_retry_attempts,
+        retry_delay_seconds=exponential_backoff(
+            backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+        ),
+        cache_expiration=timedelta(
+            hours=app_settings.prefect_settings.task_cache_expiration_hours
+        ),
         cache_key_fn=lambda *_: f"insert_task-json-search-{entity_type}",
         timeout_seconds=1,  # fail fast if the task hangs
         refresh_cache=app_settings.prefect_settings.cache_disabled or refresh_cache,

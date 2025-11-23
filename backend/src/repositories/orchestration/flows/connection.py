@@ -5,6 +5,7 @@ from prefect import flow, get_run_logger
 from prefect.concurrency.sync import rate_limit
 from prefect.futures import PrefectFuture
 from prefect.task_runners import ConcurrentTaskRunner
+from prefect.tasks import exponential_backoff
 
 from src.entities import get_entity_class
 from src.interfaces.storage import IRelationshipHandler, IStorageHandler
@@ -13,7 +14,6 @@ from src.repositories.db.graph.mg_person import PersonGraphRepository
 from src.repositories.db.redis.json import RedisJsonStorage
 from src.repositories.http.sync_http import SyncHttpClient
 from src.repositories.orchestration.tasks.race import wait_for_all
-from src.repositories.orchestration.tasks.retry import RETRY_DELAY_SECONDS
 from src.repositories.orchestration.tasks.task_relationship import execute_task
 from src.settings import AppSettings
 
@@ -78,9 +78,13 @@ def connection_flow(
 
         tasks.append(
             execute_task.with_options(
-                retries=3,
-                retry_delay_seconds=RETRY_DELAY_SECONDS,
-                cache_expiration=timedelta(hours=24),
+                retries=app_settings.prefect_settings.task_retry_attempts,
+                retry_delay_seconds=exponential_backoff(
+                    backoff_factor=app_settings.prefect_settings.task_retry_backoff_factor
+                ),
+                cache_expiration=timedelta(
+                    hours=app_settings.prefect_settings.task_cache_expiration_hours
+                ),
                 cache_key_fn=lambda *_: f"connection_task-{entity_id}",
                 refresh_cache=app_settings.prefect_settings.cache_disabled,
             ).submit(
