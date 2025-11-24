@@ -20,13 +20,16 @@ fn remove_quotes(s: &str) -> String {
 }
 
 // converts a Value::Node into a Person entity
-fn from_node(node: &Node) -> Person {
+// returns None if the conversion fails
+fn from_node(node: &Node) -> Option<Person> {
+
+    let default_value = Value::String("".to_string());
     
-    Person {
+    let p = Person {
         root: StorableEntity {
-            uid: remove_quotes(&node.properties.get("uid").unwrap().to_string()),
-            title: remove_quotes(&node.properties.get("title").unwrap().to_string()),
-            permalink: remove_quotes(&node.properties.get("permalink").unwrap().to_string()),
+            uid: remove_quotes(&node.properties.get("uid").unwrap_or(&default_value).to_string()),
+            title: remove_quotes(&node.properties.get("title").unwrap_or(&default_value).to_string()),
+            permalink: remove_quotes(&node.properties.get("permalink").unwrap_or(&default_value).to_string()),
         },
         biography: Biography {
             // complete the biography fields
@@ -48,6 +51,7 @@ fn from_node(node: &Node) -> Person {
                 }
             }),
         }.into(),
+
         // a list of influences
         influences: Influences {
             persons: node.properties.get("influences").and_then(|v| {
@@ -81,7 +85,13 @@ fn from_node(node: &Node) -> Person {
                 }
             }),
         }.into(),
+    };
+
+    match p.root.uid.is_empty() || p.root.title.is_empty() || p.root.permalink.is_empty() {
+        true => None,
+        false => Some(p)
     }
+
 }
 
 
@@ -117,10 +127,14 @@ impl DbRepository<Person> for PersonRepository {
                 for value in record.values {
                     match value {
                         Value::Node(node) => {
-                            //info!("Node properties: {:?}", node.properties);
-                            results.push(
-                                from_node(&node)
-                            );
+                            match from_node(&node) {
+                                Some(person) => {
+                                    results.push(person);
+                                },
+                                None => {
+                                    return None;
+                                }
+                            }
                         },
                         _ => {
                             return None
@@ -155,7 +169,7 @@ mod tests {
             properties,
             label_count: 1,
         };
-        let person = from_node(&node);
+        let person = from_node(&node).unwrap();
         assert_eq!(person.root.uid, "123");
         assert_eq!(person.root.title, "John Doe");
         assert_eq!(person.root.permalink, "john-doe");
@@ -180,8 +194,54 @@ mod tests {
             properties,
             label_count: 1,
         };
-        let person = from_node(&node);
+        let person = from_node(&node).unwrap();
         assert_eq!(person.biography.as_ref().unwrap().full_name.as_ref().unwrap(), "Johnathan Doe");
         assert_eq!(person.biography.as_ref().unwrap().birth_date.as_ref().unwrap(), "1990-01-01");
     }
+
+    #[test]
+    fn test_missing_biography() {
+        // Test from_node function without biography
+        let mut properties = HashMap::new();
+        properties.insert("uid".to_string(), Value::String("123".to_string()));
+        properties.insert("title".to_string(), Value::String("John Doe".to_string()));
+        properties.insert("permalink".to_string(), Value::String("john-doe".to_string()));
+        let node = Node {
+            id: 1,
+            labels: vec!["Person".to_string()],
+            properties,
+            label_count: 1,
+        };
+        let person = from_node(&node).unwrap();
+        let bio = person.biography;;
+        match bio {
+            Some(value) => {
+                assert!(value.full_name.is_none());
+                assert!(value.birth_date.is_none());
+            }
+            None => (),
+        }
+    }
+
+    #[test]
+    // Test missing fields in node properties
+    // like missing permalink
+    fn test_bad_data() {
+        // Test from_node function with bad data
+        let mut properties = HashMap::new();
+        properties.insert("uid".to_string(), Value::String("123".to_string()));
+        properties.insert("title".to_string(), Value::String("John Doe".to_string()));
+        // Missing permalink
+        let node = Node {
+            id: 1,
+            labels: vec!["Person".to_string()],
+            properties,
+            label_count: 1,
+        };
+        let person = from_node(&node);
+
+        // assert the Person is None
+        assert!(person.is_none());
+    }
+
 }
