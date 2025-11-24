@@ -224,6 +224,30 @@ mod tests {
     }
 
     #[test]
+    fn test_missing_influences() {
+        // Test from_node function without influences
+        let mut properties = HashMap::new();
+        properties.insert("uid".to_string(), Value::String("123".to_string()));
+        properties.insert("title".to_string(), Value::String("John Doe".to_string()));
+        properties.insert("permalink".to_string(), Value::String("john-doe".to_string()));
+        let node = Node {
+            id: 1,
+            labels: vec!["Person".to_string()],
+            properties,
+            label_count: 1,
+        };
+        let person = from_node(&node).unwrap();
+        let influences = person.influences;
+        match influences {
+            Some(value) => {
+                assert!(value.persons.is_none());
+                assert!(value.work_of_arts.is_none());
+            }
+            None => (),
+        }
+    }
+
+    #[test]
     // Test missing fields in node properties
     // like missing permalink
     fn test_bad_data() {
