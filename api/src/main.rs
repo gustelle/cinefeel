@@ -9,10 +9,11 @@ mod entities;
 use actix_web::{App, HttpServer};
 use actix_cors::Cors;
 use actix_web::{middleware::Logger};
-use log::{debug, error, log_enabled, info, Level};
+use log::{info};
 
 
-use crate::repositories::routes::persons::register;
+
+use crate::repositories::{routes::persons::register_persons_routes};
 
 
 
@@ -30,8 +31,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            //.app_data(Data::new())
-            .configure(register)
+            .configure(register_persons_routes)
             .wrap(Cors::permissive())
             .wrap(Logger::default())
     })

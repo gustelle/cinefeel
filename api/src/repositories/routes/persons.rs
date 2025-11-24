@@ -1,10 +1,12 @@
 
 
 use actix_web::{HttpResponse, Responder, get, http::Error, post, web};
-use juniper::{Context, Variables, http::{GraphQLRequest, graphiql::graphiql_source}};
+use juniper::{http::{GraphQLRequest, graphiql::graphiql_source}};
 use log::info;
 
-use crate::repositories::query::person_schema::{Ctx, Schema, create_schema}; 
+use crate::interfaces::db::DbRepository;
+use crate::repositories::db::person_repository::PersonRepository;
+use crate::repositories::query::person_schema::{Schema, create_schema, PersonContext}; 
 
 
 
@@ -12,9 +14,9 @@ use crate::repositories::query::person_schema::{Ctx, Schema, create_schema};
 async fn persons(
     schema: web::Data<Schema>,
     data: web::Json<GraphQLRequest>,
+    ctx: web::Data<PersonContext>,
 ) ->  Result<HttpResponse, Error> {
-    // see https://github.com/actix/examples/blob/main/graphql/juniper-advanced/src/handlers.rs
-    let ctx = ();
+    
     let res = data.execute(&schema, &ctx).await;
     Ok(HttpResponse::Ok().json(res))
 }
@@ -25,9 +27,15 @@ async fn graphql_playground() -> impl Responder {
     web::Html::new(graphiql_source("/graphql", None))
 }
 
-pub fn register(config: &mut web::ServiceConfig) {
+pub fn register_persons_routes(config: &mut web::ServiceConfig) {
+
+    let ctx = PersonContext {
+        repo: PersonRepository::new(),
+    };
+
     config
         .app_data(web::Data::new(create_schema()))
+        .app_data(web::Data::new(ctx))
         .service(persons)
         .service(graphql_playground);
 }

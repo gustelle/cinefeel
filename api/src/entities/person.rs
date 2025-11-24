@@ -9,9 +9,16 @@ pub struct Biography {
 }
 
 #[derive(Debug)]
+pub struct Influences {
+    pub(crate) persons: Option<Vec<String>>,
+    pub(crate) work_of_arts: Option<Vec<String>>,
+}
+
+#[derive(Debug)]
 pub struct Person {
     pub(crate) root: StorableEntity,
     pub(crate) biography: Option<Biography>,
+    pub(crate) influences: Option<Influences>,
 }
 
 impl fmt::Display for Person {
